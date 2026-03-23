@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+
 
 class Currency(models.Model):
     name = models.CharField(max_length=50)
@@ -9,6 +11,7 @@ class Currency(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.name}"
+
 
 class Organization(models.Model):
     name = models.CharField(max_length=255)
@@ -21,6 +24,16 @@ class Organization(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Activity tracking (self-referential — set during create/update)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_organizations'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='updated_organizations'
+    )
+
 
 class OrganizationAccountDetails(models.Model):
     organization = models.OneToOneField(Organization, on_delete=models.CASCADE, related_name='account_details')
@@ -30,7 +43,16 @@ class OrganizationAccountDetails(models.Model):
     bank_code = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_org_account_details'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='updated_org_account_details'
+    )
+
+
 class Subscription(models.Model):
     organization = models.OneToOneField(Organization, on_delete=models.CASCADE, related_name='subscription')
     subscription_id = models.CharField(max_length=255, blank=True, null=True)
@@ -39,6 +61,15 @@ class Subscription(models.Model):
     current_period_end = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_subscriptions'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='updated_subscriptions'
+    )
+
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -54,6 +85,12 @@ class User(AbstractUser):
     email_verified = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    # Track who last modified this user
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='modified_users'
+    )
+
 
 class Client(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='clients')
@@ -69,6 +106,15 @@ class Client(models.Model):
     status = models.CharField(max_length=20, choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_clients'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='updated_clients'
+    )
+
 
 class OTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otps')

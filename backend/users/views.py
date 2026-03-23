@@ -179,6 +179,16 @@ class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         return super().get_queryset().annotate(bookings_count=Count('bookings'))
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user, 'updated_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
 class SuperAdminStatsAPIView(APIView):
     permission_classes = [IsAdminUser]
     
@@ -186,8 +196,8 @@ class SuperAdminStatsAPIView(APIView):
         total_orgs = Organization.objects.count()
         total_users = User.objects.count()
         
-        # Total Platform Revenue
-        platform_revenue_agg = Payment.objects.filter(status='completed').aggregate(total=Sum('amount'))
+        # Total Platform Revenue (global sum of amount_paid)
+        platform_revenue_agg = Booking.objects.aggregate(total=Sum('amount_paid'))
         platform_revenue = platform_revenue_agg['total'] or 0
         
         # Global booking volume
@@ -202,16 +212,12 @@ class SuperAdminStatsAPIView(APIView):
         for i in range(5, -1, -1):
             start = start_of_month - relativedelta(months=i)
             end = start + relativedelta(months=1)
-            b_count = Booking.objects.filter(
+            bookings_qs = Booking.objects.filter(
                 created_at__gte=start,
                 created_at__lt=end
-            ).count()
-
-            p_agg = Payment.objects.filter(
-                payment_date__gte=start,
-                payment_date__lt=end,
-                status='completed'
-            ).aggregate(total_rev=Sum('amount'))
+            )
+            b_count = bookings_qs.count()
+            p_agg = bookings_qs.aggregate(total_rev=Sum('amount_paid'))
             
             chart_data.append({
                 'name': start.strftime('%b'),
@@ -229,10 +235,9 @@ class SuperAdminStatsAPIView(APIView):
                 'type': 'booking'
             })
 
-        # Top Organizations Overview
         top_orgs_qs = Organization.objects.annotate(
             total_bookings=Count('bookings', distinct=True),
-            revenue=Sum('bookings__payments__amount', filter=Q(bookings__payments__status='completed'))
+            revenue=Sum('bookings__amount_paid')
         ).order_by('-total_bookings')[:10]
         
         orgs_overview = []
@@ -273,7 +278,7 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
             
         qs = qs.annotate(
             total_bookings=Count('bookings', distinct=True),
-            revenue=Sum('bookings__payments__amount', filter=Q(bookings__payments__status='completed'))
+            revenue=Sum('bookings__amount_paid')
         )
         return qs
 

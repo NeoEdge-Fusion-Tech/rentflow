@@ -1,5 +1,51 @@
-from users.models import Organization
+from django.db import models
+from django.conf import settings
 from rest_framework import serializers
+
+
+class TrackableModel(models.Model):
+    """
+    Abstract base class that adds organization scoping and full user-activity tracking.
+
+    All concrete models that inherit this gain:
+      - organization  : which tenant this record belongs to
+      - created_by    : the User who created the record
+      - updated_by    : the last User who modified the record
+      - created_at    : auto timestamp on creation
+      - updated_at    : auto timestamp on every save
+    """
+    organization = models.ForeignKey(
+        'users.Organization',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='+',  # disable reverse accessor by default; subclasses override
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Keep existing imports below for backward-compat
+# ──────────────────────────────────────────────────────────────────────────────
+from users.models import Organization  # noqa: E402
 
 class TenantIsolationMixin:
     """Enforces that users only see and interact with data from their own organization."""
@@ -48,17 +94,17 @@ class TenantIsolationMixin:
             return qs.filter(id=user.organization.id)
             
         if hasattr(qs.model, 'organization'):
-            return qs.filter(organization=user.organization)
+            return qs.filter(organization_id=user.organization_id)
             
         model_name = qs.model.__name__
         if model_name == 'BookingItem':
-            return qs.filter(booking__organization=user.organization)
+            return qs.filter(booking__organization_id=user.organization_id)
         if model_name == 'BookingItemUnit':
-            return qs.filter(booking_item__booking__organization=user.organization)
+            return qs.filter(booking_item__booking__organization_id=user.organization_id)
         if model_name == 'Payment':
-            return qs.filter(booking__organization=user.organization)
+            return qs.filter(booking__organization_id=user.organization_id)
         if model_name == 'ProductUnit':
-            return qs.filter(product__organization=user.organization)
+            return qs.filter(product__organization_id=user.organization_id)
             
         return qs.none()
 
@@ -98,11 +144,11 @@ class TenantSerializerMixin:
         for field_name, field in self.fields.items():
             if isinstance(field, serializers.PrimaryKeyRelatedField):
                 if hasattr(field.queryset.model, 'organization'):
-                    field.queryset = field.queryset.filter(organization=organization)
+                    field.queryset = field.queryset.filter(organization_id=user.organization_id)
                 elif field.queryset.model == Organization:
-                    field.queryset = field.queryset.filter(id=organization.id)
+                    field.queryset = field.queryset.filter(id=user.organization_id)
             elif isinstance(field, serializers.ManyRelatedField) and isinstance(field.child_relation, serializers.PrimaryKeyRelatedField):
                 if hasattr(field.child_relation.queryset.model, 'organization'):
-                    field.child_relation.queryset = field.child_relation.queryset.filter(organization=organization)
+                    field.child_relation.queryset = field.child_relation.queryset.filter(organization_id=user.organization_id)
                 elif field.child_relation.queryset.model == Organization:
-                    field.child_relation.queryset = field.child_relation.queryset.filter(id=organization.id)
+                    field.child_relation.queryset = field.child_relation.queryset.filter(id=user.organization_id)

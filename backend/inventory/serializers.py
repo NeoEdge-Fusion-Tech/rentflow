@@ -56,13 +56,26 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     units = ProductUnitSerializer(many=True, required=False)
+    created_by_name = serializers.SerializerMethodField()
+    updated_by_name = serializers.SerializerMethodField()
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return None
+
+    def get_updated_by_name(self, obj):
+        if obj.updated_by:
+            return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip() or obj.updated_by.email
+        return None
 
     class Meta:
         model = Product
         fields = ['product_id', 'category', 'category_name', 'name', 'slug', 'description', 
                   'total_quantity', 'total_quantity_good_condition', 'total_quantity_good_condition_available', 
-                  'total_quantity_damaged_condition', 'is_active', 'total_cost_price', 'units']
-        read_only_fields = ['total_quantity_good_condition', 'total_quantity_good_condition_available', 'total_quantity_damaged_condition', 'total_quantity', 'total_cost_price', 'slug']
+                  'total_quantity_damaged_condition', 'is_active', 'total_cost_price', 'units',
+                  'created_by_name', 'updated_by_name', 'created_at', 'updated_at']
+        read_only_fields = ['total_quantity_good_condition', 'total_quantity_good_condition_available', 'total_quantity_damaged_condition', 'total_quantity', 'total_cost_price', 'slug', 'created_at', 'updated_at']
 
     def validate(self, data):
         if not self.instance and not data.get('units'):
@@ -110,9 +123,16 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
 class BookingItemUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     serial_number = serializers.ReadOnlyField(source='product_unit.serial_number')
+    unit_type = serializers.ReadOnlyField(source='product_unit.unit_type')
+    quantity_returned = serializers.ReadOnlyField(source='total_returned')
+    
     class Meta:
         model = BookingItemUnit
-        fields = ['booking_item_unit_id', 'product_unit', 'serial_number', 'quantity', 'pickup_date', 'return_date']
+        fields = [
+            'booking_item_unit_id', 'product_unit', 'unit_type', 'serial_number', 
+            'quantity', 'quantity_picked_up', 'quantity_returned_good', 
+            'quantity_returned_damaged', 'quantity_returned', 'pickup_date', 'return_date'
+        ]
 
 class BookingItemSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     units = BookingItemUnitSerializer(many=True, required=False)
@@ -120,7 +140,7 @@ class BookingItemSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')
     class Meta:
         model = BookingItem
-        fields = ['booking_item_id', 'product', 'product_name', 'quantity_booked', 'unit_price', 'total_price', 'units']
+        fields = ['booking_item_id', 'product', 'product_name', 'quantity_booked', 'unit_price', 'total_price', 'units', 'total_picked_up', 'total_returned']
         read_only_fields = ['total_price']
 
     def validate(self, data):
@@ -146,18 +166,31 @@ class ProductAvailabilitySerializer(serializers.Serializer):
 class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     items = BookingItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+    updated_by_name = serializers.SerializerMethodField()
 
     def get_client_name(self, obj):
         if obj.client:
             return f"{obj.client.first_name} {obj.client.last_name}"
         return "Unknown Client"
 
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return None
+
+    def get_updated_by_name(self, obj):
+        if obj.updated_by:
+            return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip() or obj.updated_by.email
+        return None
+
     class Meta:
         model = Booking
         fields = ['booking_id', 'client', 'client_name', 'booking_date', 'pickup_date', 'return_date', 'delivery_mode', 
                   'event_name', 'event_location', 'contact_name', 'contact_phone', 'status', 'payment_status', 
-                  'total_amount', 'discount_amount', 'discount_percentage', 'items']
-        read_only_fields = ['total_amount']
+                  'total_amount', 'amount_paid', 'discount_amount', 'discount_percentage', 'items',
+                  'created_by_name', 'updated_by_name', 'created_at', 'updated_at']
+        read_only_fields = ['total_amount', 'payment_status', 'created_at', 'updated_at']
 
     def validate(self, data):
         # Validate existence of items
@@ -263,16 +296,35 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
                 # Sync Units
                 if units_data is not None:
-                    # Clear and recreate units for simplicity
-                    booking_item.units.all().delete()
+                    existing_units = {u.booking_item_unit_id: u for u in booking_item.units.all()}
+                    
                     for unit_entry in units_data:
-                        BookingItemUnit.objects.create(
-                            booking_item=booking_item,
-                            product_unit=unit_entry['product_unit'],
-                            quantity=unit_entry.get('quantity', 1),
-                            pickup_date=instance.pickup_date,
-                            return_date=instance.return_date
-                        )
+                        unit_id = unit_entry.get('booking_item_unit_id')
+                        # Basic fields for create/update
+                        unit_fields = {
+                            'product_unit': unit_entry['product_unit'],
+                            'quantity': unit_entry.get('quantity', 1),
+                            'quantity_picked_up': unit_entry.get('quantity_picked_up', 0),
+                            'quantity_returned_good': unit_entry.get('quantity_returned_good', 0),
+                            'quantity_returned_damaged': unit_entry.get('quantity_returned_damaged', 0),
+                            'pickup_date': instance.pickup_date,
+                            'return_date': instance.return_date
+                        }
+                        
+                        if unit_id and unit_id in existing_units:
+                            unit = existing_units.pop(unit_id)
+                            for attr, value in unit_fields.items():
+                                setattr(unit, attr, value)
+                            unit.save()
+                        else:
+                            BookingItemUnit.objects.create(
+                                booking_item=booking_item,
+                                **unit_fields
+                            )
+                    
+                    # Delete removed units
+                    for unit in existing_units.values():
+                        unit.delete()
             
             # Delete removed items
             for item in existing_items.values():

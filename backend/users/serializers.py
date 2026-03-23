@@ -57,10 +57,23 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
 class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     bookings_count = serializers.IntegerField(read_only=True)
-    
+    created_by_name = serializers.SerializerMethodField()
+    updated_by_name = serializers.SerializerMethodField()
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return None
+
+    def get_updated_by_name(self, obj):
+        if obj.updated_by:
+            return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip() or obj.updated_by.email
+        return None
+
     class Meta:
         model = Client
-        fields = ['client_id', 'first_name', 'last_name', 'email', 'phone_number', 'company_name', 'address', 'country', 'state', 'status', 'bookings_count']
+        fields = ['client_id', 'first_name', 'last_name', 'email', 'phone_number', 'company_name', 'address', 'country', 'state', 'status', 'bookings_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 from django.db import transaction
 

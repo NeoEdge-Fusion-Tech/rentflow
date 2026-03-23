@@ -4,6 +4,7 @@ from django.db.models import Sum, Q
 from django.utils import timezone
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.conf import settings
 from users.models import Organization, Client
 
 class ProductCategory(models.Model):
@@ -14,6 +15,9 @@ class ProductCategory(models.Model):
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_categories')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_categories')
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -42,6 +46,8 @@ class Product(models.Model):
     total_cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_products')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_products')
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -126,6 +132,8 @@ class Product(models.Model):
 class ProductUnit(models.Model):
     product_unit_id = models.AutoField(primary_key=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='units')
+    # Denormalized organization for fast tenant-scoped queries
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='product_units')
     name = models.CharField(max_length=255, blank=True, null=True)
     unit_type = models.CharField(max_length=10, choices=[('single', 'Single (SN)'), ('bulk', 'Bulk')], default='single')
     serial_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
@@ -152,15 +160,15 @@ class ProductUnit(models.Model):
     unit = models.CharField(max_length=20, blank=True, null=True, choices=unit_choices, default='per_day')
 
     # --- Quantity breakdown tracking ---
-    # For single units: each field is 0 or 1 depending on status
-    # For bulk units: can be any value up to `quantity`
-    quantity_available = models.PositiveIntegerField(default=0)   # can be rented now
-    quantity_rented = models.PositiveIntegerField(default=0)       # currently out on booking
-    quantity_good = models.PositiveIntegerField(default=0)         # returned in good condition (available again)
-    quantity_damaged = models.PositiveIntegerField(default=0)      # damaged / not available
+    quantity_available = models.PositiveIntegerField(default=0)
+    quantity_rented = models.PositiveIntegerField(default=0)
+    quantity_good = models.PositiveIntegerField(default=0)
+    quantity_damaged = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_product_units')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_product_units')
 
     def sync_quantities(self):
         """
@@ -208,6 +216,9 @@ class ProductUnit(models.Model):
             self.quantity_good      = 0 if s == 'damaged' else 1
 
     def save(self, *args, **kwargs):
+        # Auto-populate organization from parent product
+        if self.product_id and not self.organization_id:
+            self.organization = self.product.organization
         # Auto-calculate cost_price for the unit record
         self.cost_price = self.unit_cost_price * self.quantity
         # Sync quantity breakdown before persisting
@@ -243,9 +254,11 @@ class Booking(models.Model):
         ('confirmed', 'Confirmed'),
         ('picked_up', 'Picked Up'),
         ('returned', 'Returned'),
+        ('completed', 'Completed'),
         ('cancelled', 'Cancelled')
     ]
     status = models.CharField(max_length=20, choices=status_choices, default='pending')
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     comments = models.TextField(blank=True, null=True)
     payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('partial', 'Partial'), ('paid', 'Paid')], default='pending')
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
@@ -253,32 +266,54 @@ class Booking(models.Model):
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_bookings')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_bookings')
+
+    def save(self, *args, **kwargs):
+        # Auto-update payment status based on amount_paid
+        if self.total_amount <= 0:
+            self.payment_status = 'paid'
+        else:
+            if self.amount_paid >= self.total_amount:
+                self.payment_status = 'paid'
+            elif self.amount_paid > 0:
+                self.payment_status = 'partial'
+            else:
+                self.payment_status = 'pending'
+        super().save(*args, **kwargs)
 
 class BookingItem(models.Model):
     booking_item_id = models.AutoField(primary_key=True)
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='booking_items')
     quantity_booked = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_picked_up = models.PositiveIntegerField(default=0)
     total_returned = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_booking_items')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_booking_items')
 
 class BookingItemUnit(models.Model):
     booking_item_unit_id = models.AutoField(primary_key=True)
     booking_item = models.ForeignKey(BookingItem, on_delete=models.CASCADE, related_name='units')
     product_unit = models.ForeignKey(ProductUnit, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1) # How many from this unit are booked
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='booking_item_units')
+    quantity = models.PositiveIntegerField(default=1)
     quantity_picked_up = models.PositiveIntegerField(default=0)
     quantity_returned_good = models.PositiveIntegerField(default=0)
     quantity_returned_damaged = models.PositiveIntegerField(default=0)
-    # Ghost fields in DB that need to be satisfied to avoid IntegrityError
-    quantity_returned_in_good_condition = models.PositiveIntegerField(default=0)
-    quantity_returned_in_damaged_condition = models.PositiveIntegerField(default=0)
     pickup_date = models.DateTimeField(null=True, blank=True)
     return_date = models.DateTimeField(null=True, blank=True)
     return_condition = models.CharField(max_length=20, choices=[('good', 'Good'), ('damaged', 'Damaged')], blank=True, null=True)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('picked_up', 'Picked Up'), ('returned', 'Returned')], default='pending')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_booking_item_units')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_booking_item_units')
+
+    @property
+    def total_returned(self):
+        return self.quantity_returned_good + self.quantity_returned_damaged
 
 @receiver([post_save, post_delete], sender=BookingItem)
 def update_product_availability_on_item_change(sender, instance, **kwargs):
@@ -296,3 +331,32 @@ def update_product_availability_on_booking_change(sender, instance, **kwargs):
 def update_product_availability_on_unit_item_change(sender, instance, **kwargs):
     if instance.booking_item and instance.booking_item.product:
         instance.booking_item.product.save()
+
+@receiver([post_save, post_delete], sender=BookingItemUnit)
+def update_booking_and_item_status(sender, instance, **kwargs):
+    """
+    Sync total_picked_up/total_returned on BookingItem + Check for Booking completion.
+    """
+    if instance.booking_item:
+        item = instance.booking_item
+        agg = item.units.aggregate(
+            total_picked_up=Sum('quantity_picked_up'),
+            total_returned_good=Sum('quantity_returned_good'),
+            total_returned_damaged=Sum('quantity_returned_damaged'),
+        )
+        item.total_picked_up = agg['total_picked_up'] or 0
+        item.total_returned = (agg['total_returned_good'] or 0) + (agg['total_returned_damaged'] or 0)
+        item.save(update_fields=['total_picked_up', 'total_returned'])
+
+        # Check Booking Status
+        booking = item.booking
+        if booking.status in ['confirmed', 'picked_up', 'returned']:
+            items = booking.items.all()
+            total_picked_up = sum(i.total_picked_up for i in items)
+            total_returned = sum(i.total_returned for i in items)
+            
+            # Booking is completed if everything picked up was returned
+            if total_picked_up > 0 and total_picked_up == total_returned:
+                if booking.status != 'completed':
+                    booking.status = 'completed'
+                    booking.save(update_fields=['status'])

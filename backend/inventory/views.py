@@ -29,7 +29,16 @@ class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if self.action == 'list' and self.request.query_params.get('all') != 'true':
             qs = qs.filter(is_active=True)
         return qs
-        
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user, 'updated_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -53,6 +62,16 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             qs = qs.filter(is_active=True)
         return qs
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user, 'updated_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
         product = self.get_object()
@@ -75,6 +94,18 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         available_qty = product.get_availability(start_date, end_date, exclude_booking_id=exclude_booking_id)
         available_units = product.get_available_units(start_date, end_date, exclude_booking_id=exclude_booking_id)
         
+        # If excluding a booking, we want to know the fulfillment of units already in that booking
+        booking_units_stats = {}
+        if exclude_booking_id:
+            from .models import BookingItemUnit
+            bus = BookingItemUnit.objects.filter(booking_item__booking_id=exclude_booking_id)
+            for bu in bus:
+                booking_units_stats[bu.product_unit_id] = {
+                    "quantity_picked_up": bu.quantity_picked_up,
+                    "quantity_returned_good": bu.quantity_returned_good,
+                    "quantity_returned_damaged": bu.quantity_returned_damaged
+                }
+
         data = {
             "product_id": product.product_id,
             "start_date": start_date,
@@ -85,7 +116,10 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
                 {
                     "product_unit_id": u.product_unit_id,
                     "serial_number": u.serial_number,
-                    "name": u.name or u.serial_number
+                    "name": u.name or u.serial_number,
+                    "quantity_picked_up": booking_units_stats.get(u.product_unit_id, {}).get("quantity_picked_up", 0),
+                    "quantity_returned_good": booking_units_stats.get(u.product_unit_id, {}).get("quantity_returned_good", 0),
+                    "quantity_returned_damaged": booking_units_stats.get(u.product_unit_id, {}).get("quantity_returned_damaged", 0)
                 } for u in available_units
             ]
         }
@@ -118,13 +152,35 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     filterset_class = BookingFilter
     search_fields = ['event_location', 'contact_name', 'client__first_name', 'client__last_name', 'booking_id']
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user, 'updated_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
 class BookingItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BookingItem.objects.all()
     serializer_class = BookingItemSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
 class BookingItemUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BookingItemUnit.objects.all()
     serializer_class = BookingItemUnitSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
 
 class TenantStatsAPIView(APIView):
     def get(self, request):
@@ -148,25 +204,33 @@ class TenantStatsAPIView(APIView):
             return Response({'error': 'No organization associated with user'}, status=400)
             
         # Total Products
-        total_products = Product.objects.filter(organization=organization).count()
+        total_products = Product.objects.filter(organization_id=organization.id).count()
         
-        # Active Bookings
-        active_bookings = Booking.objects.filter(
-            organization=organization
-        ).exclude(status__in=['returned', 'cancelled']).count()
+        # Granular Booking Stats
+        booking_stats = Booking.objects.filter(organization_id=organization.id).aggregate(
+            total=Count('booking_id'),
+            pending=Count('booking_id', filter=Q(status='pending')),
+            confirmed=Count('booking_id', filter=Q(status='confirmed')),
+            picked_up=Count('booking_id', filter=Q(status='picked_up')),
+            returned=Count('booking_id', filter=Q(status='returned')),
+            completed=Count('booking_id', filter=Q(status='completed')),
+            cancelled=Count('booking_id', filter=Q(status='cancelled')),
+        )
+        
+        # Active Bookings (Confirmed + Picked Up)
+        active_bookings = booking_stats['confirmed'] + booking_stats['picked_up']
         
         # Total Clients
-        total_clients = Client.objects.filter(organization=organization).count()
+        total_clients = Client.objects.filter(organization_id=organization.id).count()
         
-        # Monthly Revenue (approximated for this month)
+        # Monthly Revenue (sum of amount_paid for bookings created this month)
         today = timezone.now()
         start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        revenue_agg = Payment.objects.filter(
-            booking__organization=organization,
-            payment_date__gte=start_of_month,
-            status='completed'
-        ).aggregate(total=Sum('amount'))
+        revenue_agg = Booking.objects.filter(
+            organization_id=organization.id,
+            created_at__gte=start_of_month
+        ).aggregate(total=Sum('amount_paid'))
         monthly_revenue = revenue_agg['total'] or 0
         
         # Chart Data
@@ -174,18 +238,14 @@ class TenantStatsAPIView(APIView):
         for i in range(5, -1, -1):
             start = start_of_month - relativedelta(months=i)
             end = start + relativedelta(months=1)
-            b_count = Booking.objects.filter(
-                organization=organization,
+            
+            bookings_qs = Booking.objects.filter(
+                organization_id=organization.id,
                 created_at__gte=start,
                 created_at__lt=end
-            ).count()
-
-            p_agg = Payment.objects.filter(
-                booking__organization=organization,
-                payment_date__gte=start,
-                payment_date__lt=end,
-                status='completed'
-            ).aggregate(total_rev=Sum('amount'))
+            )
+            b_count = bookings_qs.count()
+            p_agg = bookings_qs.aggregate(total_rev=Sum('amount_paid'))
             
             chart_data.append({
                 'name': start.strftime('%b'),
@@ -195,7 +255,7 @@ class TenantStatsAPIView(APIView):
             
         # Recent Activity
         recent_activity = []
-        recent_bookings = Booking.objects.filter(organization=organization).order_by('-updated_at')[:4]
+        recent_bookings = Booking.objects.filter(organization_id=organization.id).order_by('-updated_at')[:4]
         for b in recent_bookings:
             recent_activity.append({
                 'title': f"Booking #{b.booking_id} {b.get_status_display()}",
@@ -210,7 +270,8 @@ class TenantStatsAPIView(APIView):
             'monthly_revenue': float(monthly_revenue),
             'currency_symbol': organization.currency.symbol if organization.currency else '$',
             'chart_data': chart_data,
-            'recent_activity': recent_activity
+            'recent_activity': recent_activity,
+            'booking_stats': booking_stats,
         })
 
 class ScanItemAPIView(APIView):
@@ -230,7 +291,7 @@ class ScanItemAPIView(APIView):
             
         try:
             unit = ProductUnit.objects.select_related('product').get(
-                product__organization=request.user.organization, 
+                product__organization_id=request.user.organization_id, 
                 serial_number=serial_number
             )
         except ProductUnit.DoesNotExist:
