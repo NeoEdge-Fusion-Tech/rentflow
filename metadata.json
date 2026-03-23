@@ -1,0 +1,7 @@
+{
+  "name": "RentFlow SaaS",
+  "description": "A comprehensive SaaS inventory and booking management system with real-time tracking and mobile scanning capabilities.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
