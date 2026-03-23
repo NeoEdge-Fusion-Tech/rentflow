@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Coins
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,7 @@ interface SidebarProps {
   isOpen: boolean;
   toggle: () => void;
   isSuperuser?: boolean;
+  currentUser?: any;
 }
 
 const navItems = [
@@ -35,9 +37,10 @@ const navItems = [
 const superAdminItems = [
   { icon: Users, label: 'Organizations', path: '/superadmin/organizations' },
   { icon: Users, label: 'Internal Users', path: '/superadmin/users' },
+  { icon: Coins, label: 'Currencies', path: '/superadmin/currencies' },
 ];
 
-export function Sidebar({ isOpen, toggle, isSuperuser }: SidebarProps) {
+export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -126,14 +129,18 @@ export function Sidebar({ isOpen, toggle, isSuperuser }: SidebarProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-slate-100">
+          <div className="p-4 border-t border-slate-100 mt-auto">
             <div className="flex items-center gap-3 px-3 py-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
-                JD
+              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 uppercase">
+                {currentUser?.first_name?.[0] || currentUser?.email?.[0] || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">John Doe</p>
-                <p className="text-xs text-slate-500 truncate">Admin</p>
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {currentUser?.first_name ? `${currentUser.first_name} ${currentUser.last_name}` : currentUser?.email?.split('@')[0] || 'User'}
+                </p>
+                <p className="text-xs text-slate-500 truncate capitalize">
+                  {currentUser?.role || (isSuperuser ? 'Super Admin' : 'Member')}
+                </p>
               </div>
             </div>
             <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-red-600 rounded-xl transition-colors">

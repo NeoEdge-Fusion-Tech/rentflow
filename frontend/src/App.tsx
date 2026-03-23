@@ -16,6 +16,7 @@ import { Settings } from './pages/Settings';
 import { Organizations } from './pages/SuperAdmin/Organizations';
 import { OrganizationDetail } from './pages/SuperAdmin/OrganizationDetail';
 import { Users as SuperAdminUsers } from './pages/SuperAdmin/Users';
+import { Currencies } from './pages/SuperAdmin/Currencies';
 import { OrganizationSelector } from './components/OrganizationSelector';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -128,6 +129,7 @@ function AppLayout() {
         isOpen={isSidebarOpen} 
         toggle={() => setIsSidebarOpen(!isSidebarOpen)} 
         isSuperuser={currentUser?.is_superuser}
+        currentUser={currentUser}
       />
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -266,6 +268,7 @@ function AppLayout() {
                 <Route path="/superadmin/organizations" element={<Organizations />} />
                 <Route path="/superadmin/organizations/:id" element={<OrganizationDetail />} />
                 <Route path="/superadmin/users" element={<SuperAdminUsers />} />
+                <Route path="/superadmin/currencies" element={<Currencies />} />
               </Routes>
             </div>
           </main>

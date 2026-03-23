@@ -16,13 +16,12 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // Inject selected organization ID for super admins
+  // Inject selected organization ID for super admins conditionally
   const selectedOrgId = localStorage.getItem('selectedOrganizationId');
-  if (selectedOrgId) {
+  if (selectedOrgId && (!config.params || !('organization' in config.params))) {
     config.params = { 
       ...config.params, 
-      organization_id: selectedOrgId,
-      organization: selectedOrgId // For django-filters compatibility
+      organization: selectedOrgId // For django-filters and custom mixins compatibility
     };
   }
 
@@ -114,6 +113,9 @@ export const NotificationService = {
 
 export const CurrencyService = {
   getAll: (params?: any) => api.get('/users/currencies/', { params }),
+  create: (data: any) => api.post('/users/currencies/', data),
+  update: (id: number | string, data: any) => api.patch(`/users/currencies/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/users/currencies/${id}/`),
 };
 
 export const OrganizationService = {

@@ -27,11 +27,19 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     currency_id = serializers.PrimaryKeyRelatedField(
         queryset=Currency.objects.all(), source='currency', write_only=True, required=False
     )
+    revenue = serializers.SerializerMethodField()
+    total_bookings = serializers.SerializerMethodField()
     
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'company_logo', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'is_active', 'created_at']
+        fields = ['id', 'name', 'company_logo', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'is_active', 'created_at', 'revenue', 'total_bookings']
         read_only_fields = ['created_at']
+
+    def get_revenue(self, obj):
+        return getattr(obj, 'revenue', 0.00)
+
+    def get_total_bookings(self, obj):
+        return getattr(obj, 'total_bookings', 0)
 
 class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_id = serializers.IntegerField(source='organization.id', read_only=True)

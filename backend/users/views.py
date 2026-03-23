@@ -264,6 +264,35 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     ordering_fields = ['created_at', 'name']
 
+    def get_queryset(self):
+        from django.db.models import Sum, Q, Count
+        # Exclude deleted organizations by default unless specifically requested
+        qs = super().get_queryset()
+        if self.request.query_params.get('include_deleted') != 'true':
+            qs = qs.filter(is_deleted=False)
+            
+        qs = qs.annotate(
+            total_bookings=Count('bookings', distinct=True),
+            revenue=Sum('bookings__payments__amount', filter=Q(bookings__payments__status='completed'))
+        )
+        return qs
+
+    def perform_destroy(self, instance):
+        timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+        instance.is_deleted = True
+        instance.is_active = False
+        instance.deleted_at = timezone.now()
+        instance.name = f"{instance.name}_deleted_{timestamp}"
+        instance.save()
+        
+        # Soft delete users associated with the organization and free up their emails
+        for user in instance.users.all():
+            user.is_deleted = True
+            user.is_active = False
+            user.deleted_at = timezone.now()
+            user.email = f"deleted_{timestamp}_{user.email}"
+            user.save()
+
 class SuperAdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
     queryset = User.objects.all()

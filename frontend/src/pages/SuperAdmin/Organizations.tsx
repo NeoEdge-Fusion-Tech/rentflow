@@ -187,7 +187,7 @@ export function Organizations() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-slate-900">{org.currency_symbol || currencySymbol}{formatCurrency(org.revenue || 0)}</p>
+                      <p className="font-bold text-slate-900">{org.currency?.symbol || currencySymbol}{formatCurrency(org.revenue || 0)}</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm text-slate-600">

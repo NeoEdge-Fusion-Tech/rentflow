@@ -128,13 +128,20 @@ class BookingItemUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
 class TenantStatsAPIView(APIView):
     def get(self, request):
-        organization_id = request.query_params.get('organization_id')
-        if organization_id and request.user.is_superuser:
-            from users.models import Organization
-            try:
-                organization = Organization.objects.get(id=organization_id)
-            except Organization.DoesNotExist:
-                return Response({'error': 'Organization not found'}, status=404)
+        user = request.user
+        
+        # Super admin can optionally query stats for a specific organization
+        if user.is_superuser:
+            org_id = request.query_params.get('organization')
+            if org_id:
+                from users.models import Organization
+                try:
+                    organization = Organization.objects.get(id=org_id)
+                except Organization.DoesNotExist:
+                    return Response({'error': 'Organization not found'}, status=404)
+            else:
+                # If superuser and no organization specified, return an error or default to superuser's org if any
+                return Response({'error': 'Superuser must specify an organization ID'}, status=400)
         elif hasattr(request.user, 'organization') and request.user.organization:
             organization = request.user.organization
         else:

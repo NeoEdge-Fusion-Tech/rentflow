@@ -47,7 +47,7 @@ export function OrganizationDetail() {
       const [orgRes, usersRes, statsRes] = await Promise.all([
         SuperAdminService.getOrganization(id!),
         SuperAdminService.getUsers({ organization: id }),
-        StatsService.getTenantStats({ organization_id: id })
+        StatsService.getTenantStats({ organization: id })
       ]);
       setOrg(orgRes.data);
       setUsers(usersRes.data.results || usersRes.data);
@@ -101,6 +101,28 @@ export function OrganizationDetail() {
       fetchData();
     } catch (error) {
       console.error("Failed to update status", error);
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string | number, currentStatus: boolean) => {
+    if (!window.confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) return;
+    try {
+      await SuperAdminService.updateUser(userId, { is_active: !currentStatus });
+      fetchData();
+    } catch (error) {
+      console.error("Failed to update user status", error);
+      alert("Failed to update user.");
+    }
+  };
+
+  const handleDeleteOrg = async () => {
+    if (!window.confirm("Are you SURE you want to delete this organization? This will soft-delete the organization and modify user accounts.")) return;
+    try {
+      await SuperAdminService.deleteOrganization(id!);
+      navigate('/superadmin/organizations');
+    } catch (error) {
+      console.error("Failed to delete organization", error);
+      alert("Failed to delete organization.");
     }
   };
 
@@ -191,6 +213,7 @@ export function OrganizationDetail() {
                     <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase">User</th>
                     <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase">Role</th>
                     <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -214,6 +237,14 @@ export function OrganizationDetail() {
                         <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${user.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                           {user.is_active ? 'Active' : 'Deactivated'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => handleToggleUserStatus(user.id, user.is_active)}
+                          className="text-xs font-medium text-slate-500 hover:text-brand-primary transition-colors"
+                        >
+                          {user.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -258,6 +289,12 @@ export function OrganizationDetail() {
                   }`}
                 >
                   {org.is_active ? 'Deactivate Organization' : 'Activate Organization'}
+                </button>
+                <button 
+                  onClick={handleDeleteOrg}
+                  className="w-full mt-3 py-2 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-bold border border-rose-200 transition-colors"
+                >
+                  Delete Organization
                 </button>
               </div>
             </div>

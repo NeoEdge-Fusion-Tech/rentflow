@@ -23,9 +23,9 @@ class TenantIsolationMixin:
         if qs is None:
             return None # Should handled by the viewset
         
-        # Superuser can see everything and optionally filter by organization_id
+        # Superuser can see everything and optionally filter by organization
         if user.is_superuser:
-            org_id = self.request.query_params.get('organization_id')
+            org_id = self.request.query_params.get('organization')
             if org_id:
                 if qs.model == Organization:
                     return qs.filter(id=org_id)

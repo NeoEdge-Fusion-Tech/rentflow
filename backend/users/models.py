@@ -17,6 +17,8 @@ class Organization(models.Model):
     currency = models.ForeignKey(Currency, on_delete=models.SET_NULL, null=True, blank=True)
     subscription_plan = models.CharField(max_length=50, choices=[('free', 'Free'), ('basic', 'Basic'), ('pro', 'Pro')], default='free')
     is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -50,6 +52,8 @@ class User(AbstractUser):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email_verified = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
 class Client(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='clients')
