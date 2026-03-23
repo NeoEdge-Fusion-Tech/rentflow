@@ -16,13 +16,14 @@ import {
   Save,
   X
 } from 'lucide-react';
-import { SuperAdminService, StatsService, OrganizationService, CurrencyService } from '../../api';
+import { SuperAdminService, StatsService, OrganizationService, CurrencyService, AuthService } from '../../api';
 
 export function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [org, setOrg] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +34,25 @@ export function OrganizationDetail() {
   const [editCurrencyId, setEditCurrencyId] = useState('');
   const [editPayoutId, setEditPayoutId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Password Reset Modal state
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await AuthService.getMe();
+      setCurrentUser(res.data);
+    } catch (e) {
+      console.error("Failed to fetch current user", e);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -107,11 +127,30 @@ export function OrganizationDetail() {
   const handleToggleUserStatus = async (userId: string | number, currentStatus: boolean) => {
     if (!window.confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) return;
     try {
-      await SuperAdminService.updateUser(userId, { is_active: !currentStatus });
+      await SuperAdminService.deactivateUser(userId);
       fetchData();
     } catch (error) {
       console.error("Failed to update user status", error);
       alert("Failed to update user.");
+    }
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !newPassword) return;
+
+    try {
+      setIsSettingPassword(true);
+      await SuperAdminService.setPassword(selectedUser.id, { new_password: newPassword });
+      setIsPasswordModalOpen(false);
+      setNewPassword('');
+      setSelectedUser(null);
+      alert("Password updated successfully.");
+    } catch (error) {
+      console.error("Failed to set password", error);
+      alert("Failed to update password.");
+    } finally {
+      setIsSettingPassword(false);
     }
   };
 
@@ -239,12 +278,25 @@ export function OrganizationDetail() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button 
-                          onClick={() => handleToggleUserStatus(user.id, user.is_active)}
-                          className="text-xs font-medium text-slate-500 hover:text-brand-primary transition-colors"
-                        >
-                          {user.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
+                        <div className="flex items-center justify-end gap-3">
+                          <button 
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsPasswordModalOpen(true);
+                            }}
+                            className="text-xs font-medium text-brand-primary hover:underline transition-colors"
+                          >
+                            Set Password
+                          </button>
+                          {user.id !== currentUser?.id && (
+                            <button 
+                              onClick={() => handleToggleUserStatus(user.id, user.is_active)}
+                              className="text-xs font-medium text-slate-500 hover:text-brand-primary transition-colors"
+                            >
+                              {user.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -370,6 +422,53 @@ export function OrganizationDetail() {
                   className="w-full py-3 bg-brand-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
                 >
                   {isSaving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Set Password Modal */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Set User Password</h3>
+                <p className="text-xs text-slate-500">For user: {selectedUser?.email}</p>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsPasswordModalOpen(false);
+                  setNewPassword('');
+                }} 
+                className="p-2 hover:bg-slate-200 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSetPassword} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase px-1">New Password</label>
+                <input 
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
+                  placeholder="Enter new strong password"
+                  autoFocus
+                />
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  disabled={isSettingPassword || !newPassword}
+                  className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-900/20"
+                >
+                  {isSettingPassword ? 'Updating...' : <><Shield className="w-4 h-4" /> Update Password</>}
                 </button>
               </div>
             </form>

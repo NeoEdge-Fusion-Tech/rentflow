@@ -141,4 +141,6 @@ export const SuperAdminService = {
   createUser: (data: any) => api.post('/users/superadmin/users/', data),
   updateUser: (id: number | string, data: any) => api.patch(`/users/superadmin/users/${id}/`, data),
   deleteUser: (id: number | string) => api.delete(`/users/superadmin/users/${id}/`),
+  setPassword: (id: number | string, data: { new_password: string }) => api.post(`/users/superadmin/users/${id}/set_password/`, data),
+  deactivateUser: (id: number | string) => api.post(`/users/superadmin/users/${id}/deactivate/`),
 };

@@ -156,7 +156,7 @@ class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if request.user.role != 'admin':
             return Response({"error": "Only organization admins can deactivate users."}, status=status.HTTP_403_FORBIDDEN)
         if request.user == user_to_modify:
-            return Response({"error": "You cannot deactivate yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You cannot deactivate or activate yourself."}, status=status.HTTP_400_BAD_REQUEST)
         
         user_to_modify.is_active = not user_to_modify.is_active
         user_to_modify.save()
@@ -301,6 +301,32 @@ class SuperAdminUserViewSet(viewsets.ModelViewSet):
     filterset_fields = ['organization', 'role', 'is_active']
     search_fields = ['username', 'email', 'first_name', 'last_name']
     ordering_fields = ['date_joined', 'username']
+
+    @action(detail=True, methods=['post'])
+    def set_password(self, request, pk=None):
+        user_to_modify = self.get_object()
+        serializer = AdminChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user_to_modify.set_password(serializer.validated_data['new_password'])
+            user_to_modify.save()
+            return Response({"message": "User password updated successfully by Superadmin."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        user_to_modify = self.get_object()
+        if request.user == user_to_modify:
+            return Response({"error": "You cannot deactivate or activate yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        user_to_modify.is_active = not user_to_modify.is_active
+        user_to_modify.save()
+        status_text = "activated" if user_to_modify.is_active else "deactivated"
+        return Response({"message": f"User {status_text} safely by Superadmin.", "is_active": user_to_modify.is_active})
+
+    def destroy(self, request, *args, **kwargs):
+        user_to_modify = self.get_object()
+        if request.user == user_to_modify:
+            return Response({"error": "As a Superadmin, you cannot delete your own account here."}, status=status.HTTP_400_BAD_REQUEST)
+        return super().destroy(request, *args, **kwargs)
 
 class CurrencyViewSet(viewsets.ModelViewSet):
     queryset = Currency.objects.all()
