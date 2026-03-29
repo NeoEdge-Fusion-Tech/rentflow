@@ -28,20 +28,20 @@ import { StatsService } from '../api';
 
 
 const StatCard = ({ title, value, change, icon: Icon, trend }: any) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+  <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
     <div className="flex items-center justify-between mb-4">
-      <div className="p-2 bg-brand-primary/5 rounded-xl">
+      <div className="p-2 bg-brand-primary/10 rounded-xl">
         <Icon className="w-6 h-6 text-brand-primary" />
       </div>
       <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
-        trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+        trend === 'up' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
       }`}>
         {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
         {change}
       </div>
     </div>
-    <h3 className="text-slate-500 text-sm font-medium">{title}</h3>
-    <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+    <h3 className="text-[var(--text-muted)] text-sm font-medium">{title}</h3>
+    <p className="text-2xl font-bold text-[var(--text-main)] mt-1">{value}</p>
   </div>
 );
 
@@ -96,17 +96,17 @@ export function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-12 text-slate-500">
+      <div className="flex items-center justify-center p-12 text-[var(--text-muted)]">
         Loading dashboard metrics...
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
-        <p className="text-slate-500">Welcome back, here's what's happening today.</p>
+        <h1 className="text-2xl font-bold text-[var(--text-main)]">Dashboard Overview</h1>
+        <p className="text-[var(--text-muted)]">Welcome back, here's what's happening today.</p>
       </div>
 
       {/* Stats Grid */}
@@ -178,10 +178,10 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-slate-900">Revenue & Bookings</h3>
-            <select className="text-sm border-slate-200 rounded-lg bg-slate-50 px-2 py-1 outline-none">
+            <h3 className="font-bold text-[var(--text-main)]">Revenue & Bookings</h3>
+            <select className="text-sm border border-[var(--border-soft)] rounded-lg bg-[var(--bg-app)] text-[var(--text-main)] px-2 py-1 outline-none">
               <option>Last 7 days</option>
               <option>Last 30 days</option>
             </select>
@@ -195,34 +195,37 @@ export function Dashboard() {
                     <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
                   dy={10}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#fff', 
+                    backgroundColor: 'var(--bg-surface)', 
                     borderRadius: '12px', 
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                  }} 
+                    border: '1px solid var(--border-soft)',
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    color: 'var(--text-main)'
+                  }}
+                  itemStyle={{ color: 'var(--text-main)' }}
+                  labelStyle={{ color: 'var(--text-muted)' }}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="revenue" 
-                  stroke="#002B4E" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
+                  stroke="var(--color-brand-accent)" 
+                  strokeWidth={3}
+                  fillOpacity={0.2} 
+                  fill="var(--color-brand-accent)" 
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -230,8 +233,8 @@ export function Dashboard() {
         </div>
 
         {/* Dynamic Activity / Clients Sidebar */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-900 mb-6">{isAdmin ? 'SaaS Tenants Overview' : 'Recent Activity'}</h3>
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
+          <h3 className="font-bold text-[var(--text-main)] mb-6">{isAdmin ? 'SaaS Tenants Overview' : 'Recent Activity'}</h3>
           <div className="space-y-6">
             {isAdmin ? (
               (stats?.organizations_overview || []).length > 0 ? (
@@ -242,50 +245,50 @@ export function Dashboard() {
                         {org.name.substring(0,2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-900">{org.name}</p>
-                        <p className="text-xs text-slate-500">{org.total_bookings} Bookings • {org.currency_symbol || currencySymbol}{formatCurrency(org.revenue)}</p>
+                        <p className="font-bold text-sm text-[var(--text-main)]">{org.name}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{org.total_bookings} Bookings • {org.currency_symbol || currencySymbol}{formatCurrency(org.revenue)}</p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-slate-500">No organizations found.</div>
+                <div className="text-sm text-[var(--text-muted)]">No organizations found.</div>
               )
             ) : (
               (stats?.recent_activity || []).length > 0 ? (
                 (stats.recent_activity).map((item: any, i: number) => {
                   let Icon = CheckCircle2;
                   let colorClass = 'text-emerald-500';
-                  let bgClass = 'bg-emerald-50';
+                  let bgClass = 'bg-emerald-500/10';
                   
                   if (item.title.toLowerCase().includes('pending')) {
                     Icon = Clock;
                     colorClass = 'text-amber-500';
-                    bgClass = 'bg-amber-50';
+                    bgClass = 'bg-amber-500/10';
                   } else if (item.title.toLowerCase().includes('cancel')) {
                     Icon = AlertCircle;
                     colorClass = 'text-rose-500';
-                    bgClass = 'bg-rose-50';
+                    bgClass = 'bg-rose-500/10';
                   } else if (item.title.toLowerCase().includes('pick')) {
                     Icon = Package;
                     colorClass = 'text-brand-primary';
-                    bgClass = 'bg-brand-primary/5';
+                    bgClass = 'bg-brand-primary/10';
                   }
 
                   return (
-                    <div key={i} className="flex gap-4">
-                      <div className={`p-2 rounded-xl h-fit ${bgClass}`}>
+                    <div key={i} className="flex gap-4 group cursor-default">
+                      <div className={`p-2 rounded-xl h-fit transition-colors ${bgClass}`}>
                         <Icon className={`w-5 h-5 ${colorClass}`} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                        <p className="text-xs text-slate-500">{item.time}</p>
+                        <p className="text-sm font-medium text-[var(--text-main)] group-hover:text-brand-primary transition-colors">{item.title}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{item.time}</p>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className="text-sm text-slate-500">No recent activity found.</div>
+                <div className="text-sm text-[var(--text-muted)]">No recent activity found.</div>
               )
             )}
           </div>

@@ -25,9 +25,12 @@ import { VerifyEmail } from './pages/VerifyEmail';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Menu, Bell, User, LogOut, Settings as SettingsIcon, X, AlertCircle } from 'lucide-react';
+import { ThemeToggle } from './components/ThemeToggle';
 import { NotificationService, AuthService } from './api';
+import { useTheme } from './context/ThemeContext';
 
 function AppLayout() {
+  const { theme, toggleTheme } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -124,7 +127,7 @@ function AppLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden transition-colors duration-300">
       <Sidebar 
         isOpen={isSidebarOpen} 
         toggle={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -134,10 +137,10 @@ function AppLayout() {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
-          <header className="h-16 bg-white border-b border-slate-200 flex items-center px-4 lg:px-8 shrink-0">
+          <header className="h-16 bg-[var(--bg-surface)] border-b border-[var(--border-soft)] flex items-center px-4 lg:px-8 shrink-0 transition-colors duration-300">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 text-slate-500 hover:bg-slate-50 rounded-lg lg:hidden"
+              className="p-2 text-[var(--text-muted)] hover:bg-[var(--border-subtle)] rounded-lg lg:hidden"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -147,23 +150,24 @@ function AppLayout() {
               </div>
               {currentUser?.is_superuser && <OrganizationSelector />}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
+              <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />
               
               <div className="relative">
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors"
+                  className="relative p-2 text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
                 >
-                  <Bell className="w-5 h-5 text-slate-700" />
+                  <Bell className="w-5 h-5 text-[var(--text-main)]" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-brand-primary rounded-full ring-2 ring-white"></span>
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-brand-primary rounded-full ring-2 ring-[var(--bg-surface)]"></span>
                   )}
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                      <h3 className="font-bold text-slate-900 text-sm">Notifications</h3>
+                  <div className="absolute right-0 mt-2 w-80 bg-[var(--bg-surface)] rounded-xl shadow-xl border border-[var(--border-soft)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 border-b border-[var(--border-soft)] flex justify-between items-center bg-[var(--bg-app)]/50">
+                      <h3 className="font-bold text-[var(--text-main)] text-sm">Notifications</h3>
                       {unreadCount > 0 && (
                         <button 
                           onClick={async () => {
@@ -178,7 +182,7 @@ function AppLayout() {
                     </div>
                     <div className="max-h-96 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-slate-500">No notifications yet.</div>
+                        <div className="p-8 text-center text-sm text-[var(--text-muted)]">No notifications yet.</div>
                       ) : (
                         notifications.map((notif: any) => (
                           <div 
@@ -189,10 +193,10 @@ function AppLayout() {
                                 fetchNotifications();
                               }
                             }}
-                            className={`p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer ${notif.is_read ? 'opacity-70' : 'bg-brand-primary/5'}`}
+                            className={`p-4 border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-app)] transition-colors cursor-pointer ${notif.is_read ? 'opacity-70' : 'bg-brand-primary/5'}`}
                           >
-                            <p className={`text-sm ${notif.is_read ? 'text-slate-600' : 'text-slate-900 font-medium'}`}>{notif.title || 'Notification'}</p>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{notif.message}</p>
+                            <p className={`text-sm ${notif.is_read ? 'text-[var(--text-muted)]' : 'text-[var(--text-main)] font-medium'}`}>{notif.title || 'Notification'}</p>
+                            <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{notif.message}</p>
                           </div>
                         ))
                       )}
@@ -201,9 +205,9 @@ function AppLayout() {
                 )}
               </div>
 
-              <div className="text-right hidden sm:block border-l border-slate-200 pl-4 ml-2">
-                <p className="text-sm font-bold text-slate-900">{currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'RentFlow User'}</p>
-                <p className="text-xs text-slate-500 capitalize">{currentUser?.role || 'Operator'}</p>
+              <div className="text-right hidden sm:block border-l border-[var(--border-soft)] pl-4 ml-2">
+                <p className="text-sm font-bold text-[var(--text-main)]">{currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'NeoEvent User'}</p>
+                <p className="text-xs text-[var(--text-muted)] capitalize">{currentUser?.role || 'Operator'}</p>
               </div>
               
               <div className="relative">
@@ -215,9 +219,9 @@ function AppLayout() {
                 </button>
 
                 {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-                      <p className="font-bold text-slate-900 text-sm truncate">{currentUser?.email}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-[var(--bg-surface)] rounded-xl shadow-xl border border-[var(--border-soft)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+                      <p className="font-bold text-[var(--text-main)] text-sm truncate">{currentUser?.email}</p>
                     </div>
                     <div className="p-2 space-y-1">
                       <button 
@@ -225,23 +229,23 @@ function AppLayout() {
                           setShowProfileMenu(false);
                           setShowProfileModal(true);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 rounded-lg transition-colors"
+                        className="w-full text-left px-3 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2 rounded-lg transition-colors"
                       >
-                        <User className="w-4 h-4 text-slate-400" /> Manage Profile
+                        <User className="w-4 h-4 text-[var(--text-muted)]" /> Manage Profile
                       </button>
                       <button 
                         onClick={() => {
                           setShowProfileMenu(false);
                           navigate('/settings');
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 rounded-lg transition-colors"
+                        className="w-full text-left px-3 py-2 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2 rounded-lg transition-colors"
                       >
-                        <SettingsIcon className="w-4 h-4 text-slate-400" /> Workspace Settings
+                        <SettingsIcon className="w-4 h-4 text-[var(--text-muted)]" /> Workspace Settings
                       </button>
-                      <div className="border-t border-slate-100 my-1"></div>
+                      <div className="border-t border-[var(--border-subtle)] my-1"></div>
                       <button 
                         onClick={handleLogout}
-                        className="w-full text-left px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 rounded-lg transition-colors font-medium"
+                        className="w-full text-left px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/10 flex items-center gap-2 rounded-lg transition-colors font-medium"
                       >
                         <LogOut className="w-4 h-4 text-rose-500" /> Log out
                       </button>
@@ -276,11 +280,11 @@ function AppLayout() {
         
         {/* Profile Management Modal */}
         {showProfileModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900">My Profile</h2>
-                <button onClick={() => setShowProfileModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50">
+          <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+              <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)]">
+                <h2 className="text-xl font-bold text-[var(--text-main)]">My Profile</h2>
+                <button onClick={() => setShowProfileModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors p-1 rounded-lg hover:bg-[var(--bg-app)]">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -289,30 +293,30 @@ function AppLayout() {
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                      <input type="text" value={profileData.first_name} onChange={e => setProfileData({...profileData, first_name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-2.5 outline-none focus:border-brand-primary bg-white transition-colors" />
+                      <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">First Name</label>
+                      <input type="text" value={profileData.first_name} onChange={e => setProfileData({...profileData, first_name: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)] transition-colors" />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
-                      <input type="text" value={profileData.last_name} onChange={e => setProfileData({...profileData, last_name: e.target.value})} className="w-full border border-slate-200 rounded-xl p-2.5 outline-none focus:border-brand-primary bg-white transition-colors" />
+                      <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Last Name</label>
+                      <input type="text" value={profileData.last_name} onChange={e => setProfileData({...profileData, last_name: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)] transition-colors" />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Email <span className="text-slate-400 font-normal">(Cannot be changed directly)</span></label>
-                    <input type="email" value={profileData.email} disabled className="w-full border border-slate-200 rounded-xl p-2.5 outline-none bg-slate-50 text-slate-500" />
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Email <span className="text-[var(--text-muted)] opacity-60 font-normal">(Cannot be changed directly)</span></label>
+                    <input type="email" value={profileData.email} disabled className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none bg-[var(--bg-app)] opacity-60 text-[var(--text-main)]" />
                   </div>
                   
-                  <div className="pt-4 flex justify-end gap-3 border-b border-slate-100 pb-6">
-                    <button type="button" onClick={() => setShowProfileModal(false)} className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-xl transition-colors">Cancel</button>
-                    <button type="submit" className="px-5 py-2.5 bg-brand-primary text-white font-medium rounded-xl hover:bg-slate-800 transition-colors shadow-sm">Save Changes</button>
+                  <div className="pt-4 flex justify-end gap-3 border-b border-[var(--border-soft)] pb-6">
+                    <button type="button" onClick={() => setShowProfileModal(false)} className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors">Cancel</button>
+                    <button type="submit" className="px-5 py-2.5 bg-brand-primary text-white font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm">Save Changes</button>
                   </div>
                 </form>
 
                 <div className="mt-6 pt-2">
-                  <h3 className="text-sm font-bold text-rose-600 mb-2 flex items-center gap-2"><AlertCircle className="w-4 h-4"/> Danger Zone</h3>
-                  <p className="text-xs text-slate-500 mb-4">Once you delete your account, there is no going back. Please be certain.</p>
-                  <button onClick={handleDeleteAccount} className="w-full py-2.5 bg-rose-50 text-rose-600 font-bold rounded-xl border border-rose-200 hover:bg-rose-100 transition-colors">
+                  <h3 className="text-sm font-bold text-rose-500 mb-2 flex items-center gap-2"><AlertCircle className="w-4 h-4"/> Danger Zone</h3>
+                  <p className="text-xs text-[var(--text-muted)] mb-4">Once you delete your account, there is no going back. Please be certain.</p>
+                  <button onClick={handleDeleteAccount} className="w-full py-2.5 bg-rose-500/10 text-rose-500 font-bold rounded-xl border border-rose-500/20 hover:bg-rose-500/20 transition-colors">
                     Delete My Account
                   </button>
                 </div>

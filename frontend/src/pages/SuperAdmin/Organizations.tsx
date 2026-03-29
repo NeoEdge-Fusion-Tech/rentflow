@@ -61,65 +61,65 @@ export function Organizations() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Organizations</h1>
-          <p className="text-slate-500">Oversee and manage all tenants on the platform.</p>
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">Organizations</h1>
+          <p className="text-[var(--text-muted)]">Oversee and manage all tenants on the platform.</p>
         </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 rounded-xl">
-              <Building2 className="w-6 h-6 text-indigo-600" />
+            <div className="p-3 bg-indigo-500/10 rounded-xl">
+              <Building2 className="w-6 h-6 text-indigo-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Tenants</p>
-              <h3 className="text-2xl font-bold text-slate-900">{orgs.length}</h3>
+              <p className="text-sm font-medium text-[var(--text-muted)]">Total Tenants</p>
+              <h3 className="text-2xl font-bold text-[var(--text-main)]">{orgs.length}</h3>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-emerald-600" />
+            <div className="p-3 bg-emerald-500/10 rounded-xl">
+              <TrendingUp className="w-6 h-6 text-emerald-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Pro Subscriptions</p>
-              <h3 className="text-2xl font-bold text-slate-900">
+              <p className="text-sm font-medium text-[var(--text-muted)]">Pro Subscriptions</p>
+              <h3 className="text-2xl font-bold text-[var(--text-main)]">
                 {orgs.filter(o => (o as any).subscription?.plan_name?.toLowerCase() === 'pro').length}
               </h3>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-amber-50 rounded-xl">
-              <ShieldCheck className="w-6 h-6 text-amber-600" />
+            <div className="p-3 bg-amber-500/10 rounded-xl">
+              <ShieldCheck className="w-6 h-6 text-amber-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Active Status</p>
-              <h3 className="text-2xl font-bold text-slate-900">{orgs.length}</h3>
+              <p className="text-sm font-medium text-[var(--text-muted)]">Active Status</p>
+              <h3 className="text-2xl font-bold text-[var(--text-main)]">{orgs.length}</h3>
             </div>
           </div>
         </div>
       </div>
 
       {/* Organizations Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search organizations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-primary focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-sm outline-none focus:border-brand-primary placeholder-[var(--text-muted)] transition-all"
             />
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors border border-slate-200">
+            <button className="p-2 text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-xl transition-colors border border-[var(--border-soft)]">
               <Filter className="w-4 h-4" />
             </button>
           </div>
@@ -127,70 +127,70 @@ export function Organizations() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50">
+            <thead className="bg-[var(--bg-app)]/50">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Organization</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Plan</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Activity</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Revenue</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Joined</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Organization</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Activity</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Revenue</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Joined</th>
                 <th className="px-6 py-4"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading tenants...</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">Loading tenants...</td>
                 </tr>
               ) : filteredOrgs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No organizations found.</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No organizations found.</td>
                 </tr>
               ) : (
                 filteredOrgs.map((org: any) => (
-                  <tr key={org.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={org.id} className="hover:bg-[var(--bg-app)]/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-                          <Building2 className="w-5 h-5 text-indigo-600" />
+                        <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center">
+                          <Building2 className="w-5 h-5 text-indigo-500" />
                         </div>
                         <div>
                           <p 
-                            className="font-bold text-slate-900 cursor-pointer hover:text-brand-primary transition-colors"
+                            className="font-bold text-[var(--text-main)] cursor-pointer hover:text-brand-primary transition-colors"
                             onClick={() => navigate(`/superadmin/organizations/${org.id}`)}
                           >
                             {org.name}
                           </p>
-                          <p className="text-xs text-slate-500">ID: {org.id}</p>
+                          <p className="text-xs text-[var(--text-muted)]">ID: {org.id}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         (org.subscription?.plan_name || 'Free').toLowerCase() === 'pro' 
-                          ? 'bg-purple-50 text-purple-600' 
-                          : 'bg-slate-100 text-slate-600'
+                          ? 'bg-purple-500/10 text-purple-500' 
+                          : 'bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-soft)]'
                       }`}>
                         {org.subscription?.plan_name || 'Free'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                           <Calendar className="w-3 h-3" />
                           <span>{org.total_bookings || 0} Bookings</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                           <Users className="w-3 h-3" />
                           <span>Active Clients</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-slate-900">{org.currency?.symbol || currencySymbol}{formatCurrency(org.revenue || 0)}</p>
+                      <p className="font-bold text-[var(--text-main)]">{org.currency?.symbol || currencySymbol}{formatCurrency(org.revenue || 0)}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-slate-600">
+                      <p className="text-sm text-[var(--text-muted)]">
                         {new Date(org.created_at).toLocaleDateString()}
                       </p>
                     </td>
@@ -203,7 +203,7 @@ export function Organizations() {
                           Manage
                           <ExternalLink className="w-3 h-3" />
                         </button>
-                        <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                        <button className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-all">
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>

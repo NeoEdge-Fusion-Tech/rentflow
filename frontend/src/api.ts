@@ -100,6 +100,22 @@ export const PaymentService = {
     api.post('/payment/create_payment_link/', { booking_id: bookingId, amount }),
 };
 
+export const InvoiceService = {
+  get: (id: number | string) => api.get(`/payment/invoices/${id}/`),
+  getAll: (params?: any) => api.get('/payment/invoices/', { params }),
+  generate: (bookingId: number | string) => 
+    api.post('/payment/invoices/generate/', { booking_id: bookingId }),
+  update: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
+};
+
+export const ReceiptService = {
+  get: (id: number | string) => api.get(`/payment/receipts/${id}/`),
+  getAll: (params?: any) => api.get('/payment/receipts/', { params }),
+  generate: (paymentId: number | string) => 
+    api.post('/payment/receipts/generate/', { payment_id: paymentId }),
+  update: (id: number | string, data: any) => api.patch(`/payment/receipts/${id}/`, data),
+};
+
 export const StatsService = {
   getTenantStats: (params?: any) => api.get('/inventory/stats/', { params }),
   getSuperAdminStats: () => api.get('/users/superadmin/stats/')

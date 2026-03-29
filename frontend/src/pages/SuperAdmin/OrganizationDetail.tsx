@@ -166,14 +166,23 @@ export function OrganizationDetail() {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-slate-500">Loading organization details...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-[var(--text-muted)] font-medium animate-pulse">Loading organization details...</p>
+      </div>
+    );
   }
 
   if (!org) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-slate-500 mb-4">Organization not found.</p>
-        <button onClick={() => navigate('/superadmin/organizations')} className="text-brand-primary font-bold">
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)]">
+        <div className="p-4 bg-rose-500/10 rounded-2xl text-rose-500 mb-4">
+          <XCircle className="w-12 h-12" />
+        </div>
+        <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">Organization not found</h3>
+        <p className="text-[var(--text-muted)] mb-6 max-w-sm">The organization you're looking for might have been removed or the ID is incorrect.</p>
+        <button onClick={() => navigate('/superadmin/organizations')} className="bg-brand-primary text-brand-accent px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-brand-primary/20">
           Back to Organizations
         </button>
       </div>
@@ -187,13 +196,13 @@ export function OrganizationDetail() {
       <div className="flex items-center gap-4">
         <button 
           onClick={() => navigate('/superadmin/organizations')}
-          className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500"
+          className="p-2 hover:bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl transition-colors text-[var(--text-muted)]"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{org.name}</h1>
-          <p className="text-sm text-slate-500 flex items-center gap-1.5">
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">{org.name}</h1>
+          <p className="text-sm text-[var(--text-muted)] flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5" />
             Organization ID: {id}
           </p>
@@ -202,35 +211,35 @@ export function OrganizationDetail() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Status</p>
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Status</p>
           <div className="flex items-center gap-2">
             {org.is_active ? (
-              <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> <span className="font-bold text-emerald-600">Active</span></>
+              <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> <span className="font-bold text-emerald-500">Active</span></>
             ) : (
-              <><XCircle className="w-4 h-4 text-rose-500" /> <span className="font-bold text-rose-600">Deactivated</span></>
+              <><XCircle className="w-4 h-4 text-rose-500" /> <span className="font-bold text-rose-500">Deactivated</span></>
             )}
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Plan</p>
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Plan</p>
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-brand-primary" />
-            <span className="font-bold text-slate-900">{org.subscription?.plan_name || 'Free'}</span>
+            <span className="font-bold text-[var(--text-main)]">{org.subscription?.plan_name || 'Free'}</span>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Bookings</p>
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Total Bookings</p>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-indigo-500" />
-            <span className="font-bold text-slate-900">{stats?.total_bookings || 0}</span>
+            <span className="font-bold text-[var(--text-main)]">{stats?.total_bookings || 0}</span>
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Revenue</p>
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Revenue</p>
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-500" />
-            <span className="font-bold text-slate-900">{currencySymbol}{stats?.monthly_revenue?.toLocaleString() || '0.00'}</span>
+            <span className="font-bold text-[var(--text-main)]">{currencySymbol}{stats?.monthly_revenue?.toLocaleString() || '0.00'}</span>
           </div>
         </div>
       </div>
@@ -238,42 +247,42 @@ export function OrganizationDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Users List */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+          <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
+              <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2">
                 <Users className="w-4 h-4 text-brand-primary" />
                 Team Members ({users.length})
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-50/50">
+                <thead className="bg-[var(--bg-app)]/50">
                   <tr>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase">User</th>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase">Role</th>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase text-right">Actions</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase">User</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase">Role</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase">Status</th>
+                    <th className="px-6 py-3 text-[10px] font-bold text-[var(--text-muted)] uppercase text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-[var(--border-subtle)] font-medium">
                   {users.map((user) => (
                     <tr key={user.id}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold">
+                          <div className="w-8 h-8 rounded-lg bg-[var(--bg-app)] text-[var(--text-main)] border border-[var(--border-soft)] flex items-center justify-center text-xs font-bold">
                             {user.first_name?.[0] || user.username?.[0]?.toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-sm text-slate-900">{user.first_name} {user.last_name}</p>
-                            <p className="text-[10px] text-slate-500 flex items-center gap-1"><Mail className="w-2.5 h-2.5" />{user.email}</p>
+                            <p className="text-sm text-[var(--text-main)]">{user.first_name} {user.last_name}</p>
+                            <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1"><Mail className="w-2.5 h-2.5" />{user.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs text-slate-600 capitalize">{user.role}</span>
+                        <span className="text-xs text-[var(--text-muted)] font-medium capitalize">{user.role}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${user.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${user.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
                           {user.is_active ? 'Active' : 'Deactivated'}
                         </span>
                       </td>
@@ -291,7 +300,9 @@ export function OrganizationDetail() {
                           {user.id !== currentUser?.id && (
                             <button 
                               onClick={() => handleToggleUserStatus(user.id, user.is_active)}
-                              className="text-xs font-medium text-slate-500 hover:text-brand-primary transition-colors"
+                              className={`text-xs font-medium transition-colors ${
+                                user.is_active ? 'text-[var(--text-muted)] hover:text-rose-500' : 'text-emerald-500 hover:opacity-80'
+                              }`}
                             >
                               {user.is_active ? 'Deactivate' : 'Activate'}
                             </button>
@@ -308,15 +319,15 @@ export function OrganizationDetail() {
 
         {/* Settings & Controls */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <SettingsIcon className="w-4 h-4 text-slate-400" />
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+            <h3 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
+              <SettingsIcon className="w-4 h-4 text-[var(--text-muted)]" />
               Controls
             </h3>
             <div className="space-y-3">
               <button 
                 onClick={() => setIsEditModalOpen(true)}
-                className="w-full py-2 px-4 bg-slate-50 hover:bg-slate-100 text-slate-900 rounded-xl text-sm font-bold border border-slate-200 transition-colors flex items-center justify-between"
+                className="w-full py-2 px-4 bg-[var(--bg-app)] hover:opacity-80 text-[var(--text-main)] rounded-xl text-sm font-bold border border-[var(--border-soft)] transition-colors flex items-center justify-between"
               >
                 Edit Organization Settings
                 <SettingsIcon className="w-4 h-4 opacity-40" />
@@ -336,15 +347,15 @@ export function OrganizationDetail() {
                   onClick={handleToggleStatus}
                   className={`w-full py-2 px-4 rounded-xl text-sm font-bold border transition-colors ${
                     org.is_active 
-                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200' 
-                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200'
+                      ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/20' 
+                      : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/20'
                   }`}
                 >
                   {org.is_active ? 'Deactivate Organization' : 'Activate Organization'}
                 </button>
                 <button 
                   onClick={handleDeleteOrg}
-                  className="w-full mt-3 py-2 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-bold border border-rose-200 transition-colors"
+                  className="w-full mt-3 py-2 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-sm font-bold border border-rose-500/20 transition-colors"
                 >
                   Delete Organization
                 </button>
@@ -352,13 +363,13 @@ export function OrganizationDetail() {
             </div>
           </div>
 
-          <div className="bg-indigo-600 p-6 rounded-2xl text-white shadow-lg shadow-indigo-200">
+          <div className="bg-brand-primary p-6 rounded-2xl text-brand-accent shadow-lg shadow-brand-primary/20">
             <h3 className="font-bold mb-2 flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
               Subscription
             </h3>
-            <p className="text-sm text-indigo-100 mb-4">Manage billing and tier levels for this organization.</p>
-            <button className="w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold border border-white/20 transition-colors">
+            <p className="text-sm opacity-80 mb-4">Manage billing and tier levels for this organization.</p>
+            <button className="w-full py-2 px-4 bg-brand-accent/10 hover:bg-brand-accent/20 rounded-xl text-sm font-bold border border-brand-accent/20 transition-colors">
               Manage Tier
             </button>
           </div>
@@ -367,32 +378,32 @@ export function OrganizationDetail() {
 
       {/* Edit Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="text-lg font-bold text-slate-900">Edit Organization</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
-                <X className="w-5 h-5 text-slate-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30">
+              <h3 className="text-lg font-bold text-[var(--text-main)]">Edit Organization</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-[var(--bg-app)] rounded-xl transition-colors">
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
               </button>
             </div>
             
             <form onSubmit={handleUpdateOrg} className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase px-1">Organization Name</label>
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">Organization Name</label>
                 <input 
                   type="text"
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
+                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
                   placeholder="Company Name"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase px-1">Default Currency</label>
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">Default Currency</label>
                 <select 
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
+                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
                   value={editCurrencyId}
                   onChange={(e) => setEditCurrencyId(e.target.value)}
                   required
@@ -405,12 +416,12 @@ export function OrganizationDetail() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase px-1">Payout Account ID (Stripe)</label>
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">Payout Account ID (Stripe)</label>
                 <input 
                   type="text"
                   value={editPayoutId}
                   onChange={(e) => setEditPayoutId(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
+                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
                   placeholder="acct_..."
                 />
               </div>
@@ -419,7 +430,7 @@ export function OrganizationDetail() {
                 <button 
                   type="submit"
                   disabled={isSaving}
-                  className="w-full py-3 bg-brand-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
+                  className="w-full py-3 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
                 >
                   {isSaving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
                 </button>
@@ -430,33 +441,33 @@ export function OrganizationDetail() {
       )}
       {/* Set Password Modal */}
       {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Set User Password</h3>
-                <p className="text-xs text-slate-500">For user: {selectedUser?.email}</p>
+                <h3 className="text-lg font-bold text-[var(--text-main)]">Set User Password</h3>
+                <p className="text-xs text-[var(--text-muted)]">For user: {selectedUser?.email}</p>
               </div>
               <button 
                 onClick={() => {
                   setIsPasswordModalOpen(false);
                   setNewPassword('');
                 }} 
-                className="p-2 hover:bg-slate-200 rounded-xl transition-colors"
+                className="p-2 hover:bg-[var(--bg-app)] rounded-xl transition-colors"
               >
-                <X className="w-5 h-5 text-slate-500" />
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
               </button>
             </div>
             
             <form onSubmit={handleSetPassword} className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase px-1">New Password</label>
+                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">New Password</label>
                 <input 
                   type="password"
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
+                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
                   placeholder="Enter new strong password"
                   autoFocus
                 />
@@ -466,7 +477,7 @@ export function OrganizationDetail() {
                 <button 
                   type="submit"
                   disabled={isSettingPassword || !newPassword}
-                  className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-900/20"
+                  className="w-full py-3 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
                 >
                   {isSettingPassword ? 'Updating...' : <><Shield className="w-4 h-4" /> Update Password</>}
                 </button>

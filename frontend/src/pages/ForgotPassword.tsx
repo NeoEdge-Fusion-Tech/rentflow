@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthService } from '../api';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export function ForgotPassword() {
   const navigate = useNavigate();
@@ -25,17 +26,20 @@ export function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-sm border border-slate-100">
+    <div className="min-h-screen flex bg-[var(--bg-app)] items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
+      <div className="max-w-md w-full space-y-8 bg-[var(--bg-surface)] p-10 rounded-2xl shadow-sm border border-[var(--border-soft)]">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">Reset your password</h2>
-          <p className="mt-2 text-center text-sm text-slate-600">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-[var(--text-main)]">Reset your password</h2>
+          <p className="mt-2 text-center text-sm text-[var(--text-muted)]">
             Enter your email and we'll send you a reset code.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && <div className="text-red-500 text-sm font-medium text-center bg-red-50 py-2 rounded">{error}</div>}
-          {success && <div className="text-emerald-500 text-sm font-medium text-center bg-emerald-50 py-2 rounded">{success}</div>}
+          {error && <div className="text-rose-500 text-sm font-medium text-center bg-rose-500/10 py-2 rounded">{error}</div>}
+          {success && <div className="text-emerald-500 text-sm font-medium text-center bg-emerald-500/10 py-2 rounded">{success}</div>}
           
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
@@ -48,7 +52,7 @@ export function ForgotPassword() {
                 required 
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="appearance-none block w-full px-3 py-2.5 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" 
+                className="appearance-none block w-full px-3 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] opacity-80 focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" 
                 placeholder="Email address" 
               />
             </div>
@@ -56,7 +60,7 @@ export function ForgotPassword() {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <button type="button" onClick={() => navigate('/login')} className="font-medium text-brand-primary hover:text-brand-accent transition-colors">
+              <button type="button" onClick={() => navigate('/login')} className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors">
                 Back to sign in
               </button>
             </div>
@@ -66,7 +70,7 @@ export function ForgotPassword() {
             <button 
               type="submit" 
               disabled={loading}
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-brand-primary hover:bg-slate-800 transition-all disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg bg-brand-primary text-brand-accent dark:bg-brand-accent dark:text-brand-primary hover:opacity-90 active:scale-[0.98]"
             >
               {loading ? 'Sending...' : 'Send reset code'}
             </button>

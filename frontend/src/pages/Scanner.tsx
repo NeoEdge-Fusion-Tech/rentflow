@@ -138,28 +138,28 @@ export function Scanner() {
   return (
     <div className="max-w-2xl mx-auto space-y-4 sm:space-y-8 pb-10">
       <div className="text-center px-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Inventory Scanner</h1>
-        <p className="text-xs sm:text-sm text-slate-500">Record equipment pickups and returns quickly.</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Inventory Scanner</h1>
+        <p className="text-xs sm:text-sm text-[var(--text-muted)]">Record equipment pickups and returns quickly.</p>
       </div>
 
-      <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-3xl border border-slate-200 shadow-xl relative mx-4 sm:mx-0">
+      <div className="bg-[var(--bg-surface)] p-6 sm:p-8 rounded-[2rem] sm:rounded-3xl border border-[var(--border-soft)] shadow-xl relative mx-4 sm:mx-0">
         
         {/* SUCCESS STATE */}
         {status === 'success' && (
           <div className="flex flex-col items-center justify-center py-6 animate-in fade-in zoom-in duration-300">
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
               <CheckCircle2 className="w-10 h-10 text-emerald-500" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 text-center">{actionData?.message || 'Action Successful'}</h3>
-            <p className="text-sm text-slate-500 font-medium text-center mt-1">
-              Product: <span className="text-slate-900">{actionData?.product_name || 'Item'}</span>
+            <h3 className="text-xl font-bold text-[var(--text-main)] text-center">{actionData?.message || 'Action Successful'}</h3>
+            <p className="text-sm text-[var(--text-muted)] font-medium text-center mt-1">
+              Product: <span className="text-[var(--text-main)]">{actionData?.product_name || 'Item'}</span>
             </p>
             {actionData?.serial_number && (
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">SN: {actionData.serial_number}</p>
+              <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1">SN: {actionData.serial_number}</p>
             )}
             
             <div className="mt-6 flex flex-col gap-3 w-full max-w-xs">
-              <button onClick={resetStatus} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
+              <button onClick={resetStatus} className="w-full bg-brand-primary text-brand-accent py-3 rounded-xl font-bold hover:opacity-90 transition-opacity whitespace-nowrap">
                 Scan Next Item
               </button>
             </div>
@@ -169,15 +169,15 @@ export function Scanner() {
         {/* ERROR STATE */}
         {status === 'error' && (
           <div className="flex flex-col items-center justify-center py-6 animate-in fade-in zoom-in duration-300">
-            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+            <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
               <AlertCircle className="w-10 h-10 text-rose-500" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Action Failed</h3>
-            <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-sm font-bold w-full text-center border border-rose-100">
+            <h3 className="text-xl font-bold text-[var(--text-main)] text-center mb-2">Action Failed</h3>
+            <div className="bg-rose-500/10 text-rose-500 p-4 rounded-xl text-sm font-bold w-full text-center border border-rose-500/20">
               {error}
             </div>
             <div className="mt-6 flex flex-col gap-3 w-full max-w-xs">
-              <button onClick={resetStatus} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
+              <button onClick={resetStatus} className="w-full bg-brand-primary text-brand-accent py-3 rounded-xl font-bold hover:opacity-90 transition-opacity whitespace-nowrap">
                 Try Again
               </button>
             </div>
@@ -188,7 +188,7 @@ export function Scanner() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-10 h-10 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin mb-4" />
-            <p className="text-sm font-bold text-slate-500">Processing with server...</p>
+            <p className="text-sm font-bold text-[var(--text-muted)]">Processing with server...</p>
           </div>
         )}
 
@@ -200,14 +200,14 @@ export function Scanner() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Action Type */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Action</label>
-                <div className="flex p-1 bg-slate-100 rounded-xl">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Action</label>
+                <div className="flex p-1 bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)]">
                   <button
                     type="button"
                     onClick={() => setActionType('pickup')}
                     className={cn(
                       "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
-                      actionType === 'pickup' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                      actionType === 'pickup' ? "bg-[var(--bg-surface)] text-[var(--text-main)] shadow-sm border border-[var(--border-soft)]" : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)]/50"
                     )}
                   >
                     Pickup
@@ -217,7 +217,7 @@ export function Scanner() {
                     onClick={() => setActionType('return')}
                     className={cn(
                       "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
-                      actionType === 'return' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                      actionType === 'return' ? "bg-[var(--bg-surface)] text-[var(--text-main)] shadow-sm border border-[var(--border-soft)]" : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)]/50"
                     )}
                   >
                     Return
@@ -227,14 +227,14 @@ export function Scanner() {
 
               {/* Unit Type */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Item Type</label>
-                <div className="flex p-1 bg-slate-100 rounded-xl">
+                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Item Type</label>
+                <div className="flex p-1 bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)]">
                   <button
                     type="button"
                     onClick={() => setUnitType('single')}
                     className={cn(
                       "flex-1 py-2 text-sm font-bold text-center rounded-lg transition-all flex items-center justify-center gap-2",
-                      unitType === 'single' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                      unitType === 'single' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)]/50"
                     )}
                   >
                     <Tag className="w-4 h-4" /> Single Unit
@@ -244,7 +244,7 @@ export function Scanner() {
                     onClick={() => setUnitType('bulk')}
                     className={cn(
                       "flex-1 py-2 text-sm font-bold text-center rounded-lg transition-all flex items-center justify-center gap-2",
-                      unitType === 'bulk' ? "bg-purple-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                      unitType === 'bulk' ? "bg-purple-600 text-white shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)]/50"
                     )}
                   >
                     <Layers className="w-4 h-4" /> Bulk Item
@@ -253,7 +253,7 @@ export function Scanner() {
               </div>
             </div>
 
-            <div className="w-full border-t border-slate-100" />
+            <div className="w-full border-t border-[var(--border-soft)]" />
 
             {/* Inputs */}
             <div className="space-y-6">
@@ -261,7 +261,7 @@ export function Scanner() {
               {/* Serial Code */}
               <div className="space-y-2">
                 <div className="flex justify-between items-end">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
                     {unitType === 'single' ? 'Serial Number (SN)' : 'Bulk Item Code'}
                   </label>
                   {isScanning ? (
@@ -277,18 +277,18 @@ export function Scanner() {
 
                 {isScanning && (
                   <div className="relative mb-4">
-                    <div id="reader" className="w-full overflow-hidden rounded-xl border-4 border-slate-100 min-h-[250px]" />
+                    <div id="reader" className="w-full overflow-hidden rounded-xl border-4 border-[var(--border-soft)] min-h-[250px]" />
                   </div>
                 )}
 
                 <div className="relative">
-                  <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                   <input
                     type="text"
                     value={serialCode}
                     onChange={(e) => setSerialCode(e.target.value)}
                     placeholder={unitType === 'single' ? "Enter or scan serial number..." : "Enter bulk asset code..."}
-                    className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary text-sm font-bold uppercase"
+                    className="w-full h-12 pl-12 pr-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary text-sm font-bold uppercase text-[var(--text-main)]"
                     required
                   />
                 </div>
@@ -298,7 +298,7 @@ export function Scanner() {
               {unitType === 'bulk' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
                       {actionType === 'pickup' ? 'Quantity to Pickup' : 'Total Returned'}
                     </label>
                     <input
@@ -306,7 +306,7 @@ export function Scanner() {
                       min="1"
                       value={quantity}
                       onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary text-sm font-bold"
+                      className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary text-sm font-bold text-[var(--text-main)]"
                       required
                     />
                   </div>
@@ -320,7 +320,7 @@ export function Scanner() {
                         max={quantity}
                         value={qtyDamaged}
                         onChange={(e) => setQtyDamaged(Math.min(quantity, Math.max(0, parseInt(e.target.value) || 0)))}
-                        className="w-full h-12 px-4 bg-rose-50/50 border border-rose-200 text-rose-600 rounded-xl outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-sm font-bold"
+                        className="w-full h-12 px-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl outline-none focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-sm font-bold"
                         required
                       />
                     </div>
@@ -331,24 +331,24 @@ export function Scanner() {
               {/* Single Condition Fields */}
               {unitType === 'single' && actionType === 'return' && (
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Item Condition</label>
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Item Condition</label>
                   <div className="grid grid-cols-2 gap-3">
                     <label className={cn(
                       "flex items-center gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all",
-                      condition === 'good' ? "bg-emerald-50 border-emerald-500" : "bg-white border-slate-200 hover:border-emerald-200"
+                      condition === 'good' ? "bg-emerald-500/10 border-emerald-500" : "bg-[var(--bg-app)] border-[var(--border-soft)] hover:border-emerald-500/50"
                     )}>
                       <input type="radio" value="good" checked={condition === 'good'} onChange={() => setCondition('good')} className="hidden" />
-                      <CheckCircle2 className={cn("w-5 h-5", condition === 'good' ? "text-emerald-500" : "text-slate-300")} />
-                      <span className={cn("text-sm font-bold flex-1", condition === 'good' ? "text-emerald-700" : "text-slate-500")}>Good Condition</span>
+                      <CheckCircle2 className={cn("w-5 h-5", condition === 'good' ? "text-emerald-500" : "text-[var(--text-muted)]")} />
+                      <span className={cn("text-sm font-bold flex-1", condition === 'good' ? "text-emerald-500" : "text-[var(--text-muted)]")}>Good Condition</span>
                     </label>
-
+ 
                     <label className={cn(
                       "flex items-center gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all",
-                      condition === 'damaged' ? "bg-rose-50 border-rose-500" : "bg-white border-slate-200 hover:border-rose-200"
+                      condition === 'damaged' ? "bg-rose-500/10 border-rose-500" : "bg-[var(--bg-app)] border-[var(--border-soft)] hover:border-rose-500/50"
                     )}>
                       <input type="radio" value="damaged" checked={condition === 'damaged'} onChange={() => setCondition('damaged')} className="hidden" />
-                      <AlertCircle className={cn("w-5 h-5", condition === 'damaged' ? "text-rose-500" : "text-slate-300")} />
-                      <span className={cn("text-sm font-bold flex-1", condition === 'damaged' ? "text-rose-700" : "text-slate-500")}>Damaged</span>
+                      <AlertCircle className={cn("w-5 h-5", condition === 'damaged' ? "text-rose-500" : "text-[var(--text-muted)]")} />
+                      <span className={cn("text-sm font-bold flex-1", condition === 'damaged' ? "text-rose-500" : "text-[var(--text-muted)]")}>Damaged</span>
                     </label>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export function Scanner() {
             <button
               type="submit"
               disabled={isLoading || !serialCode.trim()}
-              className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-xl shadow-slate-900/10"
+              className="w-full h-14 bg-brand-primary text-brand-accent rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-xl shadow-brand-primary/20"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
