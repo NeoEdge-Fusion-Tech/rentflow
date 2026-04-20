@@ -4,18 +4,18 @@ import 'screens/scanner_screen.dart';
 import 'api_service.dart';
 
 void main() {
-  runApp(const RentFlowApp());
+  runApp(const NeoEventApp());
 }
 
-class RentFlowApp extends StatelessWidget {
-  const RentFlowApp({super.key});
+class NeoEventApp extends StatelessWidget {
+  const NeoEventApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RentFlow Scanner',
+      title: 'NeoEvent Rentals',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF002B4E)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF001C3D)),
         useMaterial3: true,
       ),
       home: FutureBuilder<String?>(

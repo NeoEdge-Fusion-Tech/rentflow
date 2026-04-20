@@ -22,6 +22,24 @@ class _ScannerScreenState extends State<ScannerScreen> {
   bool _isScanning = false;
   bool _isLoading = false;
 
+  List<dynamic> _products = [];
+  int? _selectedProductId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    final prods = await ApiService.getProducts();
+    if (mounted) {
+      setState(() {
+        _products = prods;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _serialController.dispose();
@@ -67,6 +85,29 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    if (_actionType == 'add_unit') {
+      if (_selectedProductId == null) {
+        _showResultSnackBar('Please select a product first.', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+      final res = await ApiService.addProductUnit(_selectedProductId!, {
+        'serial_number': serial,
+        'unit_type': _unitType,
+        'quantity': _unitType == 'bulk' ? _quantity : 1,
+        'status': 'available',
+      });
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (res['success']) {
+        _showResultSnackBar(res['message'], isError: false);
+        _serialController.clear();
+      } else {
+        _showResultSnackBar(res['error'], isError: true);
+      }
+      return;
+    }
 
     int? reqQty;
     int? reqQtyGood;
@@ -237,9 +278,50 @@ class _ScannerScreenState extends State<ScannerScreen> {
                           ),
                         ),
                       ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () { setState(() { _actionType = 'add_unit'; _handleActionUnitTypeChange(); }); },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _actionType == 'add_unit' ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: _actionType == 'add_unit' ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)] : [],
+                            ),
+                            child: const Text('Add Unit', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                if (_actionType == 'add_unit') ...[
+                  const Text('SELECT PRODUCT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _selectedProductId,
+                        hint: const Text('Select a product'),
+                        isExpanded: true,
+                        items: _products.map((p) {
+                          return DropdownMenuItem<int>(
+                            value: p['product_id'],
+                            child: Text(p['name']),
+                          );
+                        }).toList(),
+                        onChanged: (val) => setState(() => _selectedProductId = val),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
 
                 // UNIT TYPE TOGGLE

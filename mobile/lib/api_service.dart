@@ -87,4 +87,51 @@ class ApiService {
       return {'success': false, 'error': 'Network error occurred'};
     }
   }
+
+  static Future<List<dynamic>> getProducts() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/inventory/products/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['results'] ?? data;
+      }
+      return [];
+    } catch (e) {
+      print('Get products error: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> addProductUnit(int productId, Map<String, dynamic> unitData) async {
+    try {
+      final token = await getToken();
+      // First get the product to see its current units
+      final response = await http.patch(
+        Uri.parse('$baseUrl/inventory/products/$productId/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'units': [unitData] // The backend Serializer handles partial updates by merging/adding
+        }),
+      );
+      
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, 'message': 'Unit added successfully'};
+      } else {
+        return {'success': false, 'error': data['detail'] ?? 'Failed to add unit'};
+      }
+    } catch (e) {
+      print('Add unit error: $e');
+      return {'success': false, 'error': 'Network error occurred'};
+    }
+  }
 }

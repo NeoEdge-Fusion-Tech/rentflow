@@ -1370,6 +1370,7 @@ export function Bookings() {
                   </div>
 
                   {activeManagerTab === 'items' ? (
+                    <>
 
                   <div className="space-y-4">
                     {(isManagingBooking ? editFormData?.items : selectedBooking.items)?.map((item: any, i: number) => (
@@ -1631,7 +1632,6 @@ export function Bookings() {
                       </div>
                     ))}
                   </div>
-                </div>
 
                 {/* Final Actions & Total */}
                 <div className="pt-6 border-t border-[var(--border-subtle)] p-2 space-y-4">
@@ -1714,7 +1714,11 @@ export function Bookings() {
                           ) : 'Save'}
                         </button>
                       </div>
-                    ) : (
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
                       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         {/* Invoice Section */}
                         <div className="bg-[var(--bg-surface)] p-6 rounded-[2rem] border border-[var(--border-soft)] shadow-sm">
@@ -1836,6 +1840,9 @@ export function Bookings() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+      )}
 
       {/* Success Overlay for Booking Creation */}
       {showSuccessOverlay && lastCreatedBooking && (
@@ -1877,7 +1884,7 @@ export function Bookings() {
                   )}
                   Generate Payment Link
                 </button>
-              )}
+            )}
 
               <button 
                 onClick={() => handleUpdateStatus(lastCreatedBooking.booking_id, 'confirmed')}
