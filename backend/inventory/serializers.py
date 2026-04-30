@@ -125,7 +125,9 @@ class BookingItemUnitSerializer(TenantSerializerMixin, serializers.ModelSerializ
     serial_number = serializers.ReadOnlyField(source='product_unit.serial_number')
     unit_type = serializers.ReadOnlyField(source='product_unit.unit_type')
     quantity_returned = serializers.ReadOnlyField(source='total_returned')
-    
+    pickup_date = serializers.DateTimeField(allow_null=True, required=False)
+    return_date = serializers.DateTimeField(allow_null=True, required=False)
+
     class Meta:
         model = BookingItemUnit
         fields = [
@@ -168,6 +170,8 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
+    pickup_date = serializers.DateTimeField(allow_null=True, required=False)
+    return_date = serializers.DateTimeField(allow_null=True, required=False)
 
     def get_client_name(self, obj):
         if obj.client:
