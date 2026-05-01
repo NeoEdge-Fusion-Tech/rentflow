@@ -192,19 +192,22 @@ class ProductUnit(models.Model):
             self.quantity_good = qty_good
 
             # rented = currently picked up but not returned
-            agg = BookingItemUnit.objects.filter(product_unit=self).aggregate(
-                total_picked_up=Sum('quantity_picked_up'),
-                total_returned_good=Sum('quantity_returned_good'),
-                total_returned_damaged=Sum('quantity_returned_damaged'),
-            )
-            picked_up = agg['total_picked_up'] or 0
-            returned_good = agg['total_returned_good'] or 0
-            returned_damaged = agg['total_returned_damaged'] or 0
-            currently_rented = max(0, picked_up - returned_good - returned_damaged)
-            self.quantity_rented = min(currently_rented, qty_good)  # can't exceed good qty
+            if self.pk:
+                agg = BookingItemUnit.objects.filter(product_unit=self).aggregate(
+                    total_picked_up=Sum('quantity_picked_up'),
+                    total_returned_good=Sum('quantity_returned_good'),
+                    total_returned_damaged=Sum('quantity_returned_damaged'),
+                )
+                picked_up = agg['total_picked_up'] or 0
+                returned_good = agg['total_returned_good'] or 0
+                returned_damaged = agg['total_returned_damaged'] or 0
+                currently_rented = max(0, picked_up - returned_good - returned_damaged)
+                self.quantity_rented = min(currently_rented, qty_good)  # can't exceed good qty
 
             # available = good units not currently out
-            self.quantity_available = max(0, qty_good - self.quantity_rented)
+                self.quantity_available = max(0, qty_good - self.quantity_rented)
+            else:
+                self.quantity_rented = 0        
 
         else:
             # Single unit — all four fields derived from status
