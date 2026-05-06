@@ -32,5 +32,5 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             'amount', 'status', 'payment_date', 'invoice_id', 
             'receipt_id', 'receipt'
         ]
-        read_only_fields = ['status', 'payment_date', 'invoice_id', 'receipt_id']
+        read_only_fields = ['payment_date', 'invoice_id', 'receipt_id']
 

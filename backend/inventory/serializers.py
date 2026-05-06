@@ -168,6 +168,38 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
+    has_invoice = serializers.SerializerMethodField()
+    receipts_summary = serializers.SerializerMethodField()
+    invoices_summary = serializers.SerializerMethodField()
+
+    def get_invoices_summary(self, obj):
+        from payment.models import Invoice
+        invoices = Invoice.objects.filter(booking=obj)
+        return [
+            {
+                "invoice_id": inv.invoice_id,
+                "invoice_number": inv.invoice_number,
+                "amount": inv.total_amount,
+                "date": inv.issue_date,
+                "status": inv.status
+            } for inv in invoices
+        ]
+
+    def get_receipts_summary(self, obj):
+        from payment.models import Receipt
+        receipts = Receipt.objects.filter(payment__booking=obj)
+        return [
+            {
+                "receipt_id": r.receipt_id,
+                "receipt_number": r.receipt_number,
+                "amount": r.amount,
+                "date": r.issue_date
+            } for r in receipts
+        ]
+
+    def get_has_invoice(self, obj):
+        from payment.models import Invoice
+        return Invoice.objects.filter(booking=obj).exists()
 
     def get_client_name(self, obj):
         if obj.client:
@@ -189,7 +221,7 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         fields = ['booking_id', 'client', 'client_name', 'booking_date', 'pickup_date', 'return_date', 'delivery_mode', 
                   'event_name', 'event_location', 'contact_name', 'contact_phone', 'status', 'payment_status', 
                   'total_amount', 'amount_paid', 'discount_amount', 'discount_percentage', 'items',
-                  'created_by_name', 'updated_by_name', 'created_at', 'updated_at']
+                  'created_by_name', 'updated_by_name', 'has_invoice', 'receipts_summary', 'invoices_summary', 'created_at', 'updated_at']
         read_only_fields = ['total_amount', 'payment_status', 'created_at', 'updated_at']
 
     def validate(self, data):

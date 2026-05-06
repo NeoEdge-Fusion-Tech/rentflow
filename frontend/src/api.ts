@@ -96,8 +96,9 @@ export const AuthService = {
 
 export const PaymentService = {
   getAll: (params?: any) => api.get('/payment/payments/', { params }),
+  create: (data: any) => api.post('/payment/payments/', data),
   createLink: (bookingId: number, amount: number) => 
-    api.post('/payment/create_payment_link/', { booking_id: bookingId, amount }),
+    api.post('/payment/payments/create_payment_link/', { booking_id: bookingId, amount }),
 };
 
 export const InvoiceService = {
@@ -106,6 +107,7 @@ export const InvoiceService = {
   generate: (bookingId: number | string) => 
     api.post('/payment/invoices/generate/', { booking_id: bookingId }),
   update: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
+  download: (id: number | string) => api.get(`/payment/invoices/${id}/download/`, { responseType: 'blob' }),
 };
 
 export const ReceiptService = {
@@ -114,6 +116,7 @@ export const ReceiptService = {
   generate: (paymentId: number | string) => 
     api.post('/payment/receipts/generate/', { payment_id: paymentId }),
   update: (id: number | string, data: any) => api.patch(`/payment/receipts/${id}/`, data),
+  download: (id: number | string) => api.get(`/payment/receipts/${id}/download/`, { responseType: 'blob' }),
 };
 
 export const StatsService = {
