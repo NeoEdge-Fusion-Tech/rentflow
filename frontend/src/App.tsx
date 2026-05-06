@@ -26,6 +26,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Menu, Bell, User, LogOut, Settings as SettingsIcon, X, AlertCircle } from 'lucide-react';
 import { ThemeToggle } from './components/ThemeToggle';
+import { UserHint } from './components/UserHint';
 import { NotificationService, AuthService } from './api';
 import { useTheme } from './context/ThemeContext';
 
@@ -278,6 +279,8 @@ function AppLayout() {
           </main>
         </div>
         
+        <UserHint />
+
         {/* Profile Management Modal */}
         {showProfileModal && (
           <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">

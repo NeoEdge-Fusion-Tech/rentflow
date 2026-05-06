@@ -5,6 +5,8 @@ from datetime import timedelta
 from .models import OTP
 from notification.services import dispatch_email
 
+from django.template.loader import render_to_string
+
 def generate_otp(user, purpose):
     # Invalidate previous un-used OTPs for this purpose
     OTP.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
@@ -23,11 +25,13 @@ def generate_otp(user, purpose):
 def send_verification_email(user):
     otp = generate_otp(user, 'email_verification')
     subject = "Verify your NeoEvent Account"
-    body = f"Hello {user.first_name},\n\nYour verification code is: {otp.code}\n\nThis code will expire in 15 minutes."
-    dispatch_email(to_email=user.email, subject=subject, body_text=body)
+    body_text = f"Hello {user.first_name},\n\nYour verification code is: {otp.code}\n\nThis code will expire in 15 minutes."
+    body_html = render_to_string('emails/verification.html', {'user': user, 'otp': otp})
+    dispatch_email(to_email=user.email, subject=subject, body_text=body_text, body_html=body_html)
 
 def send_password_reset_email(user):
     otp = generate_otp(user, 'password_reset')
     subject = "NeoEvent Password Reset"
-    body = f"Hello {user.first_name},\n\nSomeone requested a password reset for your account.\nYour reset code is: {otp.code}\n\nIf this was not you, please ignore this email."
-    dispatch_email(to_email=user.email, subject=subject, body_text=body)
+    body_text = f"Hello {user.first_name},\n\nSomeone requested a password reset for your account.\nYour reset code is: {otp.code}\n\nIf this was not you, please ignore this email."
+    body_html = render_to_string('emails/password_reset.html', {'user': user, 'otp': otp})
+    dispatch_email(to_email=user.email, subject=subject, body_text=body_text, body_html=body_html)

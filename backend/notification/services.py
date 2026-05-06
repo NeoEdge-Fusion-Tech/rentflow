@@ -70,3 +70,18 @@ def dispatch_sms(phone_number, body):
     """
     logger.info(f"[SMS DISPATCH SIMULATOR] To: {phone_number} | Message: {body}")
     return True
+
+from django.template.loader import render_to_string
+
+def send_credit_alert_email(user, current_credits, topup_url):
+    """
+    Sends a low credit alert email using HTML templates.
+    """
+    subject = "NeoEvent - Low Credit Alert"
+    body_text = f"Hello {user.first_name},\n\nYour organization's credit balance is running low ({current_credits} credits).\nPlease top up your account at {topup_url}."
+    body_html = render_to_string('emails/credit_alert.html', {
+        'user': user,
+        'current_credits': current_credits,
+        'topup_url': topup_url
+    })
+    dispatch_email(to_email=user.email, subject=subject, body_text=body_text, body_html=body_html)
