@@ -30,6 +30,20 @@ export function VerifyEmail() {
     }
   };
 
+  const handleResend = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await AuthService.resendVerifyEmail({ email });
+      setSuccess('A new verification code has been sent to your email.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to resend code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-[var(--bg-app)] items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="absolute top-6 right-6 z-50">
@@ -68,6 +82,19 @@ export function VerifyEmail() {
             >
               {loading ? 'Verifying...' : 'Verify Email'}
             </button>
+          </div>
+          <div className="text-center mt-4">
+            <p className="text-sm text-[var(--text-muted)]">
+              Didn't receive the code? {' '}
+              <button 
+                type="button" 
+                onClick={handleResend} 
+                disabled={loading}
+                className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors disabled:opacity-50"
+              >
+                Resend it
+              </button>
+            </p>
           </div>
         </form>
       </div>

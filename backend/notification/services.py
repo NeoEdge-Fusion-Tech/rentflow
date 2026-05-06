@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from django.conf import settings
+from decouple import config
 
 # Configure loguru to output to console gracefully
 logger.add(
@@ -17,59 +18,110 @@ logger.add(
     diagnose=True
 )
 
-def dispatch_email(to_email, subject, body_text, body_html=None):
-    """
-    Intelligent Email Dispatcher.
-    Local: Log it. Production: Try SES -> Fallback to SendGrid.
-    """
-    environment = getattr(settings, 'ENVIRONMENT', os.environ.get('ENVIRONMENT', 'local')).lower()
-    
-    if environment == 'local':
-        logger.info(f"[LOCAL EMAIL SIMULATOR] To: {to_email} | Subject: {subject} | Body: {body_text}")
-        return True
+class EmailService:
+    @staticmethod
+    def send(to_email, subject, body_text, body_html=None):
+        """
+        Intelligent Email Dispatcher.
+        """
+        environment = getattr(settings, 'ENVIRONMENT', config('ENVIRONMENT', default='local')).lower()
+        if environment == 'local' and getattr(settings, 'EMAIL_VENDOR', 'resend').lower() != 'resend':
+            logger.info(f"[LOCAL EMAIL SIMULATOR] To: {to_email} | Subject: {subject} | Body: {body_text}")
+            return True
+
+        vendor = getattr(settings, 'EMAIL_VENDOR', 'resend').lower()
         
-    # Production / Staging Environment
-    try:
-        # Attempt AWS SES
-        client_ses = boto3.client('ses', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
-        response = client_ses.send_email(
-            Destination={'ToAddresses': [to_email]},
-            Message={
-                'Body': {
-                    'Text': {'Charset': 'UTF-8', 'Data': body_text},
-                    'Html': {'Charset': 'UTF-8', 'Data': body_html or body_text},
-                },
-                'Subject': {'Charset': 'UTF-8', 'Data': subject},
-            },
-            Source=os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@rentflow.com'),
-        )
-        logger.info(f"SES Success: Sent email to {to_email} - MessageId: {response['MessageId']}")
-        return True
-    except ClientError as e:
-        logger.error(f"SES Failure: {e.response['Error']['Message']}. Failing over to SendGrid.")
-        
-        # Fallback to SendGrid
+        if vendor == 'resend':
+            return EmailService.send_via_resend(to_email, subject, body_text, body_html)
+        elif vendor == 'ses':
+            return EmailService.send_via_ses(to_email, subject, body_text, body_html)
+        elif vendor == 'sendgrid':
+            return EmailService.send_via_sendgrid(to_email, subject, body_text, body_html)
+        else:
+            logger.warning(f"Unknown email vendor: {vendor}, logging to console.")
+            logger.info(f"To: {to_email} | Subject: {subject} | Body: {body_text}")
+            return True
+
+    @staticmethod
+    def send_via_resend(to_email, subject, body_text, body_html=None):
         try:
-            sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+            import resend
+            resend.api_key = getattr(settings, 'RESEND_API_KEY', config('RESEND_API_KEY', default=''))
+            if not resend.api_key or resend.api_key == 're_mock_key':
+                # Use the user's hardcoded mock key as requested if env is missing
+                resend.api_key = "••••••••••••••••••••••••••••••••••••"
+                
+            r = resend.Emails.send({
+              "from": config('DEFAULT_FROM_EMAIL', default='onboarding@resend.dev'),
+              "to": to_email,
+              "subject": subject,
+              "html": body_html or f"<p>{body_text}</p>"
+            })
+            logger.info(f"Resend Success: Sent email to {to_email} - Response: {r}")
+            return True
+        except Exception as e:
+            logger.error(f"Resend Failure: {str(e)}")
+            return False
+
+    @staticmethod
+    def send_via_ses(to_email, subject, body_text, body_html=None):
+        try:
+            client_ses = boto3.client('ses', region_name=config('AWS_REGION', default='us-east-1'))
+            response = client_ses.send_email(
+                Destination={'ToAddresses': [to_email]},
+                Message={
+                    'Body': {
+                        'Text': {'Charset': 'UTF-8', 'Data': body_text},
+                        'Html': {'Charset': 'UTF-8', 'Data': body_html or body_text},
+                    },
+                    'Subject': {'Charset': 'UTF-8', 'Data': subject},
+                },
+                Source=config('DEFAULT_FROM_EMAIL', default='noreply@rentflow.com'),
+            )
+            logger.info(f"SES Success: Sent email to {to_email} - MessageId: {response['MessageId']}")
+            return True
+        except ClientError as e:
+            logger.error(f"SES Failure: {e.response['Error']['Message']}.")
+            return False
+
+    @staticmethod
+    def send_via_sendgrid(to_email, subject, body_text, body_html=None):
+        try:
+            sg = SendGridAPIClient(config('SENDGRID_API_KEY', default=''))
             message = Mail(
-                from_email=os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@rentflow.com'),
+                from_email=config('DEFAULT_FROM_EMAIL', default='noreply@rentflow.com'),
                 to_emails=to_email,
                 subject=subject,
                 html_content=body_html or body_text)
             
             response = sg.send(message)
-            logger.info(f"SendGrid Success: Fallback sent to {to_email} - Status: {response.status_code}")
+            logger.info(f"SendGrid Success: Sent to {to_email} - Status: {response.status_code}")
             return True
         except Exception as sg_e:
-            logger.error(f"SendGrid Critical Failure: Could not send fallback email to {to_email}. Error: {str(sg_e)}")
+            logger.error(f"SendGrid Failure: Could not send email to {to_email}. Error: {str(sg_e)}")
             return False
 
+
+class SMSService:
+    @staticmethod
+    def send(phone_number, body):
+        vendor = getattr(settings, 'SMS_VENDOR', 'local').lower()
+        if vendor == 'local':
+            return SMSService.send_via_local(phone_number, body)
+        return True
+        
+    @staticmethod
+    def send_via_local(phone_number, body):
+        logger.info(f"[SMS DISPATCH SIMULATOR] To: {phone_number} | Message: {body}")
+        return True
+
+def dispatch_email(to_email, subject, body_text, body_html=None):
+    """Backwards compatibility stub."""
+    return EmailService.send(to_email, subject, body_text, body_html)
+
 def dispatch_sms(phone_number, body):
-    """
-    SMS Dispatcher. Actively simulates using loguru since no live SMS vendor is configured.
-    """
-    logger.info(f"[SMS DISPATCH SIMULATOR] To: {phone_number} | Message: {body}")
-    return True
+    """Backwards compatibility stub."""
+    return SMSService.send(phone_number, body)
 
 from django.template.loader import render_to_string
 

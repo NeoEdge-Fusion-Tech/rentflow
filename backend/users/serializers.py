@@ -1,5 +1,13 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Organization, OrganizationAccountDetails, Subscription, User, Client, Currency
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        if not self.user.email_verified:
+            raise serializers.ValidationError({"email": "Please verify your email address before logging in."})
+        return data
 
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:

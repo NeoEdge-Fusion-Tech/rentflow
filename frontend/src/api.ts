@@ -87,6 +87,7 @@ export const AuthService = {
   login: (data: { username: string; password: string }) => api.post('/users/token/', data),
   register: (data: any) => api.post('/users/register/', data),
   verifyEmail: (data: { email: string; code: string }) => api.post('/users/verify-email/', data),
+  resendVerifyEmail: (data: { email: string }) => api.post('/users/resend-verification-email/', data),
   triggerPasswordReset: (data: { email: string }) => api.post('/users/password-reset/trigger/', data),
   setPasswordReset: (data: any) => api.post('/users/password-reset/set/', data),
   getMe: () => api.get('/users/me/'),

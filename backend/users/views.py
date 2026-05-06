@@ -76,6 +76,22 @@ class VerifyEmailAPIView(APIView):
                 return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ResendVerificationEmailAPIView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=email)
+            if user.email_verified:
+                return Response({"message": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
+            send_verification_email(user)
+            return Response({"message": "Verification email sent successfully."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
 class TriggerPasswordResetAPIView(APIView):
     permission_classes = []
 

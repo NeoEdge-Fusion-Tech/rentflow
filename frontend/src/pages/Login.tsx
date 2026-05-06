@@ -24,8 +24,12 @@ export function Login() {
       } else {
         setErrorText('Invalid credentials. Please try again.');
       }
-    } catch (err) {
-      setErrorText('Invalid credentials. Please try again.');
+    } catch (err: any) {
+      if (err.response?.data?.email?.[0] === "Please verify your email address before logging in.") {
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+      } else {
+        setErrorText('Invalid credentials. Please try again.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
