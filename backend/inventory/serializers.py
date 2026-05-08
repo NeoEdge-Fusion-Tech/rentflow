@@ -233,19 +233,39 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         pickup = data.get('pickup_date')
         return_date = data.get('return_date')
         
-        if pickup and return_date:
-            if pickup > return_date:
-                raise serializers.ValidationError("Return date must be after pickup date.")
+        if pickup and return_date and pickup > return_date:
+            raise serializers.ValidationError("Return date must be after pickup date.")
             
-            for item in data.get('items', []):
-                product = item.get('product')
-                qty = item.get('quantity_booked')
-                if product and qty:
-                    avail = product.get_availability(pickup, return_date)
-                    if qty > avail:
-                        raise serializers.ValidationError(
-                            f"Only {avail} units of '{product.name}' are available for the selected dates."
-                        )
+        # Aggregate requested quantities by product from the payload
+        product_quantities = {}
+        items_payload = data.get('items', [])
+        for item in items_payload:
+            product = item.get('product')
+            qty = item.get('quantity_booked', 0)
+            if product:
+                p_id = product.product_id
+                product_quantities[p_id] = product_quantities.get(p_id, 0) + qty
+
+        # Check availability for each unique product in the request
+        for product_id, total_requested_qty in product_quantities.items():
+            from .models import Product
+            product = Product.objects.get(pk=product_id)
+            
+            # Use specific availability if dates are provided, otherwise fallback to total good condition
+            if pickup and return_date:
+                avail = product.get_availability(
+                    pickup, 
+                    return_date, 
+                    exclude_booking_id=self.instance.booking_id if self.instance else None
+                )
+            else:
+                avail = product.total_quantity_good_condition
+                
+            if total_requested_qty > avail:
+                raise serializers.ValidationError(
+                    f"Overbooked: Only {avail} units of '{product.name}' are available for the selected configuration."
+                )
+
         return data
 
     def create(self, validated_data):

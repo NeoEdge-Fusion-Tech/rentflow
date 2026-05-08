@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../context/NotificationContext';
 import { Building, Upload, CreditCard, Shield, Check, Plus, X, Trash2 } from 'lucide-react';
 import { UserService, AuthService, OrganizationService, CurrencyService } from '../api';
 
 export function Settings() {
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('Workspace');
   
   const [users, setUsers] = useState<any[]>([]);
@@ -72,12 +74,12 @@ export function Settings() {
           currency_id: org.currency?.id || org.currency_id || null
         };
         await OrganizationService.patch(org.id, payload);
-        alert("Workspace updated! Settings are saved.");
+        showNotification("Workspace updated! Settings are saved.", 'success');
         fetchWorkspaceData();
       }
     } catch (e) {
       console.error(e);
-      alert("Failed to update workspace.");
+      showNotification("Failed to update workspace.", 'error');
     }
   };
 
@@ -93,7 +95,7 @@ export function Settings() {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.first_name || !newUser.last_name || !newUser.email || !newUser.password) {
-      alert("All fields are required.");
+      showNotification("All fields are required.", 'warning');
       return;
     }
     try {
@@ -108,33 +110,46 @@ export function Settings() {
       setShowAddUserModal(false);
       setNewUser({ first_name: '', last_name: '', email: '', password: '', role: 'Admin' });
       fetchUsers();
-      alert("Team member added!");
+      showNotification("Team member added!", 'success');
     } catch (e) {
       console.error(e);
-      alert("Failed to add user.");
+      showNotification("Failed to add user.", 'error');
     }
   };
 
-  const handleDeleteUser = async (id: number) => {
-    if (!window.confirm('Are you sure you want to remove this team member?')) return;
-    try {
-      await UserService.delete(id);
-      fetchUsers();
-    } catch (e) {
-      console.error(e);
-      alert('Failed to remove user.');
-    }
+  const handleRemoveUser = async (id: number) => {
+    showConfirm({
+      title: 'Remove Team Member',
+      message: 'Are you sure you want to remove this team member? They will lose all access immediately.',
+      type: 'danger',
+      confirmText: 'Remove',
+      onConfirm: async () => {
+        try {
+          await UserService.delete(id);
+          fetchUsers();
+          showNotification('Team member removed.', 'success');
+        } catch (e) {
+          console.error(e);
+          showNotification('Failed to remove user.', 'error');
+        }
+      }
+    });
   };
 
   const handleTriggerReset = async (id: number) => {
-    if (!window.confirm('Send a password reset email to this user?')) return;
-    try {
-      await UserService.adminTriggerReset(id);
-      alert('Reset email sent successfully.');
-    } catch (e) {
-      console.error(e);
-      alert('Failed to trigger reset.');
-    }
+    showConfirm({
+      title: 'Send Password Reset',
+      message: 'Send a password reset email to this user?',
+      onConfirm: async () => {
+        try {
+          await UserService.adminTriggerReset(id);
+          showNotification('Reset email sent successfully.', 'success');
+        } catch (e) {
+          console.error(e);
+          showNotification('Failed to trigger reset.', 'error');
+        }
+      }
+    });
   };
 
   const handleDeactivate = async (id: number) => {
@@ -143,7 +158,7 @@ export function Settings() {
       fetchUsers();
     } catch (e) {
       console.error(e);
-      alert('Failed to toggle active status.');
+      showNotification('Failed to toggle active status.', 'error');
     }
   };
 
@@ -157,10 +172,10 @@ export function Settings() {
       setIsPasswordModalOpen(false);
       setNewPassword('');
       setSelectedUser(null);
-      alert("Password updated successfully.");
+      showNotification("Password updated successfully.", 'success');
     } catch (error) {
       console.error("Failed to set password", error);
-      alert("Failed to update password.");
+      showNotification("Failed to update password.", 'error');
     } finally {
       setIsSettingPassword(false);
     }

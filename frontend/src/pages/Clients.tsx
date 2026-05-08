@@ -17,9 +17,11 @@ import {
   History
 } from 'lucide-react';
 import { cn } from '@/src/utils';
+import { useNotification } from '../context/NotificationContext';
 import { ClientService } from '@/src/api';
 
 export function Clients() {
+  const { showNotification, showConfirm } = useNotification();
   const [clients, setClients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,14 +85,22 @@ export function Clients() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this client?')) {
-      try {
-        await ClientService.delete(id);
-        fetchClients();
-      } catch (e) {
-        console.error("Failed to delete client", e);
+    showConfirm({
+      title: 'Delete Client',
+      message: 'Are you sure you want to delete this client? All historic data will be preserved but the profile will be removed.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await ClientService.delete(id);
+          showNotification("Client deleted successfully", 'success');
+          fetchClients();
+        } catch (e) {
+          console.error("Failed to delete client", e);
+          showNotification("Failed to delete client", 'error');
+        }
       }
-    }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,9 +112,11 @@ export function Clients() {
         await ClientService.create(formData);
       }
       setIsModalOpen(false);
+      showNotification(editingClient ? "Client updated!" : "Client created!", 'success');
       fetchClients();
     } catch (error) {
       console.error("Failed to save client", error);
+      showNotification("Failed to save client", 'error');
     }
   };
 

@@ -29,9 +29,11 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { UserHint } from './components/UserHint';
 import { NotificationService, AuthService } from './api';
 import { useTheme } from './context/ThemeContext';
+import { useNotification } from './context/NotificationContext';
 
 function AppLayout() {
   const { theme, toggleTheme } = useTheme();
+  const { showNotification } = useNotification();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -88,23 +90,30 @@ function AppLayout() {
       });
       setShowProfileModal(false);
       fetchMe();
-      alert('Profile updated successfully!');
+      showNotification('Profile updated successfully!', 'success');
     } catch(e) {
       console.error(e);
-      alert('Failed to update profile.');
+      showNotification('Failed to update profile.', 'error');
     }
   };
 
   const handleDeleteAccount = async () => {
-    if(!window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) return;
-    try {
-      await AuthService.deleteMe();
-      localStorage.removeItem('token');
-      navigate('/login');
-    } catch(e) {
-      console.error(e);
-      alert('Failed to delete account.');
-    }
+    showConfirm({
+      title: 'Delete Account',
+      message: 'Are you absolutely sure you want to delete your account? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete My Account',
+      onConfirm: async () => {
+        try {
+          await AuthService.deleteMe();
+          localStorage.removeItem('token');
+          navigate('/login');
+        } catch(e) {
+          console.error(e);
+          showNotification('Failed to delete account.', 'error');
+        }
+      }
+    });
   };
 
   const handleLogout = () => {

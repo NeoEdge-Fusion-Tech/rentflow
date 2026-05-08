@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../context/NotificationContext';
 import { CurrencyService } from '../../api';
 import { Coins, Plus, CheckCircle2, XCircle, Search, X } from 'lucide-react';
 
 export function Currencies() {
+  const { showNotification } = useNotification();
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,7 +46,7 @@ export function Currencies() {
       fetchCurrencies();
     } catch (error) {
       console.error("Failed to create currency", error);
-      alert("Failed to create currency. Ensure the code is unique.");
+      showNotification("Failed to create currency. Ensure the code is unique.", 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -52,14 +54,20 @@ export function Currencies() {
 
   const handleToggleStatus = async (currency: any) => {
     const newStatus = currency.status === 'active' ? 'inactive' : 'active';
-    if (!window.confirm(`Are you sure you want to change the status to ${newStatus}?`)) return;
-    
-    try {
-      await CurrencyService.update(currency.id, { status: newStatus });
-      fetchCurrencies();
-    } catch (error) {
-      console.error("Failed to update currency status", error);
-    }
+    showConfirm({
+      title: 'Change Currency Status',
+      message: `Are you sure you want to change the status of ${currency.code} to ${newStatus}?`,
+      onConfirm: async () => {
+        try {
+          await CurrencyService.update(currency.id, { status: newStatus });
+          fetchCurrencies();
+          showNotification(`Currency ${newStatus === 'active' ? 'activated' : 'deactivated'}`, 'success');
+        } catch (error) {
+          console.error("Failed to update currency status", error);
+          showNotification('Failed to update status', 'error');
+        }
+      }
+    });
   };
 
   const filteredCurrencies = currencies.filter(c => 

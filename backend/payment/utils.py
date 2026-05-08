@@ -118,6 +118,19 @@ def generate_invoice_pdf(invoice):
         elements.append(Paragraph("<b>Notes:</b>", styles['Normal']))
         elements.append(Paragraph(invoice.notes, styles['Normal']))
 
+    # Logo Footer
+    try:
+        import os
+        from loguru import logger
+        logo_path = os.path.join(settings.BASE_DIR, 'static/images/logo.png')
+        if os.path.exists(logo_path):
+            elements.append(Spacer(1, 0.5 * inch))
+            logo = Image(logo_path, 1.2 * inch, 1.2 * inch)
+            elements.append(logo)
+    except Exception as e:
+        import logging
+        logging.error(f"Error adding logo to PDF: {e}")
+
     doc.build(elements)
     buffer.seek(0)
     return buffer
@@ -193,8 +206,20 @@ def generate_receipt_pdf(receipt):
         elements.append(Paragraph("<b>Notes:</b>", styles['Normal']))
         elements.append(Paragraph(receipt.notes, styles['Normal']))
 
-    elements.append(Spacer(1, 1 * inch))
+    elements.append(Spacer(1, 0.5 * inch))
     elements.append(Paragraph("Thank you for your business!", ParagraphStyle('CenterStyle', parent=styles['Normal'], alignment=1)))
+
+    # Logo Footer
+    try:
+        import os
+        logo_path = os.path.join(settings.BASE_DIR, 'static/images/logo.png')
+        if os.path.exists(logo_path):
+            elements.append(Spacer(1, 0.5 * inch))
+            logo = Image(logo_path, 1.2 * inch, 1.2 * inch)
+            elements.append(logo)
+    except Exception as e:
+        import logging
+        logging.error(f"Error adding logo to PDF: {e}")
 
     doc.build(elements)
     buffer.seek(0)

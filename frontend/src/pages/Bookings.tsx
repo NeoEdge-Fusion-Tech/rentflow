@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNotification } from '../context/NotificationContext';
 import { 
   User,
   Plus,
@@ -18,20 +20,26 @@ import {
   FileText,
   Receipt,
   Edit2,
+  Edit3,
   Save,
   X,
   Download,
-  Eye
+  Eye,
+  ReceiptText
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 
 import { BookingService, ClientService, ProductService, PaymentService, StatsService, InvoiceService, ReceiptService } from '../api';
 
 export function Bookings() {
+  const { showNotification, showConfirm } = useNotification();
   const [activeTab, setActiveTab] = useState('All');
   const [isAddingBooking, setIsAddingBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
+  const [editingReceipt, setEditingReceipt] = useState<any>(null);
   const [isGeneratingPaymentLink, setIsGeneratingPaymentLink] = useState<any | null>(null);
   const [paymentLinkAmount, setPaymentLinkAmount] = useState<number>(0);
   useEffect(() => {
@@ -53,27 +61,46 @@ export function Bookings() {
   };
 
   const handleGenerateInvoice = async () => {
-    if (!selectedBooking) return;
-    setIsLoading(true);
     try {
-      await InvoiceService.generate(selectedBooking.booking_id);
-      await fetchBillingDocs(selectedBooking.booking_id);
-      setShowInvoicePreview(false);
+      setIsLoading(true);
+      if (editingInvoice) {
+        // Update existing invoice
+        await InvoiceService.patch(editingInvoice.invoice_id, {
+          notes: editingInvoice.notes,
+          due_date: editingInvoice.due_date,
+          status: editingInvoice.status
+        });
+        showNotification("Invoice updated successfully.", 'success');
+      } else {
+        // Create new invoice
+        await InvoiceService.generate(selectedBooking.booking_id);
+        showNotification("Invoice issued successfully.", 'success');
+      }
       fetchBookings();
-    } catch (err) {
-      console.error("Failed to generate invoice", err);
+      setShowInvoicePreview(false);
+      setEditingInvoice(null);
+    } catch (e) {
+      showNotification("Failed to process invoice.", 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGenerateReceipt = async (paymentId: any) => {
-    setIsLoading(true);
+  const handleGenerateReceipt = async () => {
     try {
-      await ReceiptService.generate(paymentId);
-      await fetchBillingDocs(selectedBooking?.booking_id);
-    } catch (err) {
-      console.error("Failed to generate receipt", err);
+      setIsLoading(true);
+      if (editingReceipt) {
+        await ReceiptService.patch(editingReceipt.receipt_id, {
+          notes: editingReceipt.notes,
+          status: editingReceipt.status
+        });
+        showNotification("Receipt updated successfully.", 'success');
+      }
+      fetchBookings();
+      setShowReceiptPreview(false);
+      setEditingReceipt(null);
+    } catch (e) {
+      showNotification("Failed to process receipt.", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +138,7 @@ export function Bookings() {
       fetchBookings();
     } catch (err) {
       console.error("Failed to create payment", err);
-      alert("Failed to record payment");
+      showNotification("Failed to record payment", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +159,7 @@ export function Bookings() {
       link.remove();
     } catch (err) {
       console.error("Failed to download document", err);
-      alert("Failed to download document");
+      showNotification("Failed to download document", 'error');
     }
   };
   const [isManagingBooking, setIsManagingBooking] = useState(false);
@@ -268,14 +295,44 @@ export function Bookings() {
     });
   }, [formData.pickup_date, formData.return_date]);
 
+  const validateForm = () => {
+    if (!formData.client_id) {
+      showNotification("Please select a client.", 'warning');
+      return false;
+    }
+    if (!formData.pickup_date || !formData.return_date) {
+      showNotification("Please select both pickup and return dates.", 'warning');
+      return false;
+    }
+    if (new Date(formData.pickup_date) >= new Date(formData.return_date)) {
+      showNotification("Return date must be after pickup date.", 'warning');
+      return false;
+    }
+    if (bookingItems.length === 0) {
+      showNotification("Please add at least one product.", 'warning');
+      return false;
+    }
+    if (bookingItems.some(i => !i.product_id)) {
+      showNotification("One or more items have no product selected.", 'warning');
+      return false;
+    }
+    
+    // Overbooked check
+    const overbookedItem = bookingItems.find(i => i.quantity_booked > i.available_qty);
+    if (overbookedItem) {
+      const prod = products.find(p => p.product_id === parseInt(overbookedItem.product_id));
+      showNotification(`Overbooked: Only ${overbookedItem.available_qty} of "${prod?.name || 'product'}" available.`, 'error');
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleCreateBooking = async () => {
+    if (!validateForm()) return;
+
     try {
       setIsLoading(true);
-      
-      if (!formData.client_id || bookingItems.some(i => !i.product_id)) {
-        alert("Please select a client and products for all items.");
-        return;
-      }
 
       const payload = {
         client: parseInt(formData.client_id),
@@ -313,7 +370,7 @@ export function Bookings() {
     } catch (e: any) {
       console.error(e);
       const errorMsg = e.response?.data?.non_field_errors?.[0] || e.response?.data?.detail || "Failed to create booking.";
-      alert(errorMsg);
+      showNotification(errorMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -326,7 +383,7 @@ export function Bookings() {
       const res = await PaymentService.createLink(booking.booking_id, amount);
       setPaymentLink(res.data.payment_link);
     } catch (e) {
-      alert("Failed to generate payment link");
+      showNotification("Failed to generate payment link", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -357,7 +414,7 @@ export function Bookings() {
       setSelectedBooking(res.data);
       fetchBookings();
     } catch (e) {
-      alert('Failed to update amount paid');
+      showNotification('Failed to update amount paid', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -384,8 +441,30 @@ export function Bookings() {
 
   const handleSaveBookingEdits = async () => {
     if (!selectedBooking || !editFormData) return;
+    
+    if (!editFormData.pickup_date || !editFormData.return_date) {
+      showNotification("Pickup and return dates are required.", 'warning');
+      return;
+    }
+    if (new Date(editFormData.pickup_date) >= new Date(editFormData.return_date)) {
+      showNotification("Return date must be after pickup date.", 'warning');
+      return;
+    }
+    if (editFormData.items.length === 0) {
+      showNotification("At least one item is required.", 'warning');
+      return;
+    }
+
     try {
       setIsLoading(true);
+
+      // Overbooking check
+      const overbookedItem = editFormData.items.find((i: any) => i.quantity_booked > (i.available_qty ?? Infinity));
+      if (overbookedItem) {
+        showNotification(`Overbooked: Only ${overbookedItem.available_qty} of "${overbookedItem.product_name}" available.`, 'error');
+        return;
+      }
+
       // Construct items for update
       const itemsUpdate = editFormData.items.map((item: any) => ({
         booking_item_id: item.booking_item_id,
@@ -413,7 +492,7 @@ export function Bookings() {
       setSelectedBooking(null);
       setEditFormData(null);
     } catch (e) {
-      alert("Failed to save changes");
+      showNotification("Failed to save changes", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -471,10 +550,21 @@ export function Bookings() {
     if (!productId || !start || !end) return;
     try {
       const res = await ProductService.getAvailability(productId, start, end, bookingId);
+      const availQty = res.data.available_quantity;
       setAvailableUnitsMap(prev => ({
         ...prev,
         [productId]: res.data.available_units
       }));
+      setEditFormData(prev => {
+        if (!prev) return prev;
+        const newItems = prev.items.map((item: any) => {
+          if ((item.product_id || item.product) === parseInt(productId)) {
+            return { ...item, available_qty: availQty };
+          }
+          return item;
+        });
+        return { ...prev, items: newItems };
+      });
     } catch (e) {
       console.error("Failed to fetch units for manage", e);
     }
@@ -492,24 +582,32 @@ export function Bookings() {
       if (setIsAddingBooking) setIsAddingBooking(false);
       resetForm();
     } catch (e) {
-      alert("Failed to update status");
+      showNotification("Failed to update status", 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteBooking = async (bookingId: number) => {
-    if (!confirm("Are you sure you want to delete this booking?")) return;
-    try {
-      setIsLoading(true);
-      await BookingService.delete(bookingId);
-      fetchBookings();
-      setActiveMenuId(null);
-    } catch (e) {
-      alert("Failed to delete booking");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleDelete = async (id: number) => {
+    showConfirm({
+      title: 'Delete Booking',
+      message: 'Are you sure you want to delete this booking? This action is permanent.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          setIsLoading(true);
+          await BookingService.delete(id);
+          showNotification("Booking deleted successfully", 'success');
+          fetchBookings();
+        } catch (e) {
+          console.error(e);
+          showNotification("Failed to delete booking", 'error');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    });
   };
 
   const totalBeforeDiscount = bookingItems.reduce((acc, item) => acc + (item.unit_price * item.quantity_booked), 0);
@@ -727,6 +825,7 @@ export function Bookings() {
                         contact_name: booking.contact_name || '',
                         contact_phone: booking.contact_phone || '',
                         event_name: booking.event_name || '',
+                        delivery_mode: booking.delivery_mode || 'pickup',
                         items: initialItems
                       });
                       // Fetch available units for each product
@@ -780,20 +879,13 @@ export function Bookings() {
                   )}
                 </div>
                 <div className="relative">
-                  <button 
-                    onClick={() => setActiveMenuId(activeMenuId === booking.booking_id ? null : booking.booking_id)}
-                    className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] rounded-lg"
+                   <button 
+                    onClick={() => handleDelete(booking.booking_id)}
+                    className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    title="Delete Booking"
                   >
-                    <MoreVertical className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                  
-                  {activeMenuId === booking.booking_id && (
-                    <div className="absolute right-0 bottom-full mb-2 w-48 bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] py-2 z-20 animate-in fade-in slide-in-from-bottom-2">
-                      <button onClick={() => handleDeleteBooking(booking.booking_id)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-rose-500 hover:bg-rose-500/10 flex items-center gap-2">
-                        Delete Booking
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -942,7 +1034,7 @@ export function Bookings() {
                                   const prod = products.find(p => p.product_id === parseInt(prodId));
                                   setBookingItems(prev => {
                                     const newItems = [...prev];
-                                    newItems[i] = { ...newItems[i], product_id: prodId, unit_price: prod?.price_per_day || 0, selected_unit_ids: [] };
+                                    newItems[i] = { ...newItems[i], product_id: prodId, unit_price: prod?.units?.[0]?.rental_price || 0, selected_unit_ids: [] };
                                     return newItems;
                                   });
                                   fetchAvailability(i, prodId);
@@ -1083,32 +1175,43 @@ export function Bookings() {
                         <button onClick={() => setFormData({...formData, delivery_mode: 'delivery'})} className={cn("py-2.5 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest", formData.delivery_mode === 'delivery' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]")}>Delivery</button>
                       </div>
                       
-                      <div className="relative">
-                        <Search className="absolute left-4 top-4 w-4 h-4 text-[var(--text-muted)]" />
-                        <textarea 
-                          placeholder="Full Address or Event Location" 
-                          value={formData.event_location}
-                          onChange={e => setFormData({...formData, event_location: e.target.value})}
-                          className="w-full h-24 pl-11 pr-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:border-brand-primary text-sm font-medium resize-none transition-all text-[var(--text-main)]" 
-                        />
-                      </div>
+                      <AnimatePresence>
+                        {formData.delivery_mode === 'delivery' && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden space-y-4"
+                          >
+                            <div className="relative pt-2">
+                              <Search className="absolute left-4 top-6 w-4 h-4 text-[var(--text-muted)]" />
+                              <textarea 
+                                placeholder="Full Address or Event Location" 
+                                value={formData.event_location}
+                                onChange={e => setFormData({...formData, event_location: e.target.value})}
+                                className="w-full h-24 pl-11 pr-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:border-brand-primary text-sm font-medium resize-none transition-all text-[var(--text-main)]" 
+                              />
+                            </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <input 
-                          type="text" 
-                          placeholder="Point of Contact Name" 
-                          value={formData.contact_name}
-                          onChange={e => setFormData({...formData, contact_name: e.target.value})}
-                          className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]" 
-                        />
-                        <input 
-                          type="tel" 
-                          placeholder="Contact Phone Number" 
-                          value={formData.contact_phone}
-                          onChange={e => setFormData({...formData, contact_phone: e.target.value})}
-                          className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]" 
-                        />
-                      </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-2">
+                              <input 
+                                type="text" 
+                                placeholder="Point of Contact Name" 
+                                value={formData.contact_name}
+                                onChange={e => setFormData({...formData, contact_name: e.target.value})}
+                                className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]" 
+                              />
+                              <input 
+                                type="tel" 
+                                placeholder="Contact Phone Number" 
+                                value={formData.contact_phone}
+                                onChange={e => setFormData({...formData, contact_phone: e.target.value})}
+                                className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]" 
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </section>
                 </div>
@@ -1286,7 +1389,7 @@ export function Bookings() {
                           selectedBooking.status === 'completed' ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30 font-black shadow-sm" :
                           "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]"
                         )}>
-                          {selectedBooking.status.replace('_', ' ')}
+                          {selectedBooking.status?.replace('_', ' ') || 'Pending'}
                         </span>
                         {/* Payment Status Badge */}
                         <span className={cn(
@@ -1402,48 +1505,73 @@ export function Bookings() {
                   </div>
 
                   <div className="space-y-4 pl-11">
-                    <div>
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Event Location</label>
-                      {isManagingBooking ? (
-                        <textarea 
-                          value={editFormData?.event_location || ''} 
-                          onChange={(e) => setEditFormData({...editFormData, event_location: e.target.value})}
-                          className="w-full text-sm font-medium text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 focus:ring-2 focus:ring-brand-primary/20 outline-none resize-none"
-                          rows={2}
-                        />
-                      ) : (
-                        <p className="text-sm font-medium text-[var(--text-main)]">{selectedBooking.event_location || 'Not specified'}</p>
-                      )}
-                    </div>
+                    {isManagingBooking && (
+                      <div className="grid grid-cols-2 gap-2 p-1 bg-[var(--bg-app)] rounded-xl w-full md:w-48 border border-[var(--border-soft)] mb-2">
+                        <button onClick={() => setEditFormData({...editFormData, delivery_mode: 'pickup'})} className={cn("py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest", editFormData.delivery_mode === 'pickup' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]")}>Self Pickup</button>
+                        <button onClick={() => setEditFormData({...editFormData, delivery_mode: 'delivery'})} className={cn("py-1.5 text-[9px] font-black rounded-lg transition-all uppercase tracking-widest", editFormData.delivery_mode === 'delivery' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]")}>Delivery</button>
+                      </div>
+                    )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Point of Contact</label>
-                        {isManagingBooking ? (
-                          <input 
-                            type="text" 
-                            value={editFormData?.contact_name || ''} 
-                            onChange={(e) => setEditFormData({...editFormData, contact_name: e.target.value})}
-                            className="w-full text-sm font-medium text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-1.5 focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                          />
-                        ) : (
-                          <p className="text-sm font-medium text-[var(--text-main)]">{selectedBooking.contact_name || 'N/A'}</p>
-                        )}
+                    <AnimatePresence>
+                      {((isManagingBooking ? editFormData?.delivery_mode : selectedBooking.delivery_mode) === 'delivery') && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden space-y-4"
+                        >
+                          <div>
+                            <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Event Location</label>
+                            {isManagingBooking ? (
+                              <textarea 
+                                value={editFormData?.event_location || ''} 
+                                onChange={(e) => setEditFormData({...editFormData, event_location: e.target.value})}
+                                className="w-full text-sm font-medium text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 focus:ring-2 focus:ring-brand-primary/20 outline-none resize-none"
+                                rows={2}
+                              />
+                            ) : (
+                              <p className="text-sm font-medium text-[var(--text-main)]">{selectedBooking.event_location || 'Not specified'}</p>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 pb-1">
+                            <div>
+                              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Point of Contact</label>
+                              {isManagingBooking ? (
+                                <input 
+                                  type="text" 
+                                  value={editFormData?.contact_name || ''} 
+                                  onChange={(e) => setEditFormData({...editFormData, contact_name: e.target.value})}
+                                  className="w-full text-sm font-medium text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-1.5 focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                />
+                              ) : (
+                                <p className="text-sm font-medium text-[var(--text-main)]">{selectedBooking.contact_name || 'N/A'}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Phone Number</label>
+                              {isManagingBooking ? (
+                                <input 
+                                  type="text" 
+                                  value={editFormData?.contact_phone || ''} 
+                                  onChange={(e) => setEditFormData({...editFormData, contact_phone: e.target.value})}
+                                  className="w-full text-sm font-medium text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-1.5 focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                />
+                              ) : (
+                                <p className="text-sm font-medium text-[var(--text-main)]">{selectedBooking.contact_phone || 'N/A'}</p>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    
+                    {(!isManagingBooking && selectedBooking.delivery_mode === 'pickup') && (
+                      <div className="flex items-center gap-2 py-2 px-4 bg-indigo-500/5 rounded-xl border border-indigo-500/10 w-fit">
+                        <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Self Pickup Arranged</span>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Phone Number</label>
-                        {isManagingBooking ? (
-                          <input 
-                            type="text" 
-                            value={editFormData?.contact_phone || ''} 
-                            onChange={(e) => setEditFormData({...editFormData, contact_phone: e.target.value})}
-                            className="w-full text-sm font-medium text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-1.5 focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                          />
-                        ) : (
-                          <p className="text-sm font-medium text-[var(--text-main)]">{selectedBooking.contact_phone || 'N/A'}</p>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </section>
               </div>
@@ -1519,24 +1647,44 @@ export function Bookings() {
                   {!isManagingBooking && (
                     <div className="flex flex-wrap gap-2 pb-4 border-b border-[var(--border-subtle)]">
                       {selectedBooking.invoices_summary?.map((inv: any) => (
-                        <button
-                          key={inv.invoice_id}
-                          onClick={() => handleDownloadDocument('invoice', inv.invoice_id, `invoice_${inv.invoice_number}`)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 rounded-xl text-[10px] font-black border border-blue-500/10 transition-all shadow-sm"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          INV: {inv.invoice_number}
-                        </button>
+                        <div key={inv.invoice_id} className="flex items-center bg-blue-500/5 rounded-xl border border-blue-500/10 shadow-sm overflow-hidden group">
+                           <button
+                            onClick={() => handleDownloadDocument('invoice', inv.invoice_id, `invoice_${inv.invoice_number}`)}
+                            className="flex items-center gap-1.5 px-3 py-2 hover:bg-blue-500/10 text-blue-600 text-[10px] font-black transition-all"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> INV: {inv.invoice_number}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setEditingInvoice(inv);
+                              setShowInvoicePreview(true);
+                            }}
+                            className="p-2 border-l border-blue-500/10 hover:bg-blue-500/10 text-blue-400 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"
+                            title="Edit Invoice"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                        </div>
                       ))}
                       {selectedBooking.receipts_summary?.map((r: any) => (
-                        <button
-                          key={r.receipt_id}
-                          onClick={() => handleDownloadDocument('receipt', r.receipt_id, `receipt_${r.receipt_number}`)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 rounded-xl text-[10px] font-black border border-emerald-500/10 transition-all shadow-sm"
-                        >
-                          <Receipt className="w-3.5 h-3.5" />
-                          REC: {r.receipt_number}
-                        </button>
+                        <div key={r.receipt_id} className="flex items-center bg-emerald-500/5 rounded-xl border border-emerald-500/10 shadow-sm overflow-hidden group">
+                           <button
+                            onClick={() => handleDownloadDocument('receipt', r.receipt_id, `receipt_${r.receipt_number}`)}
+                            className="flex items-center gap-1.5 px-3 py-2 hover:bg-emerald-500/10 text-emerald-600 text-[10px] font-black transition-all"
+                          >
+                            <Receipt className="w-3.5 h-3.5" /> REC: {r.receipt_number}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setEditingReceipt(r);
+                              setShowReceiptPreview(true);
+                            }}
+                            className="p-2 border-l border-emerald-500/10 hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-600 transition-all opacity-0 group-hover:opacity-100"
+                            title="Edit Receipt"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1580,7 +1728,7 @@ export function Bookings() {
                                       product: parseInt(prodId), 
                                       product_id: parseInt(prodId),
                                       product_name: prod?.name || '', 
-                                      unit_price: prod?.price_per_day || 0, 
+                                      unit_price: prod?.units?.[0]?.rental_price || 0, 
                                       selected_unit_ids: [] 
                                     };
                                     setEditFormData({ ...editFormData, items: newItems });
@@ -1616,6 +1764,14 @@ export function Bookings() {
                                     {item.quantity_booked} Units
                                   </span>
                                 )}
+                                {isManagingBooking && item.available_qty !== undefined && (
+                                  <div className="flex items-center gap-1.5 ml-1">
+                                    <div className={cn("w-1.5 h-1.5 rounded-full", (item.available_qty < item.quantity_booked) ? "bg-rose-500 animate-pulse" : "bg-emerald-500")} />
+                                    <span className={cn("text-[9px] font-black uppercase tracking-tight", (item.available_qty < item.quantity_booked) ? "text-rose-600" : "text-emerald-600")}>
+                                      {item.available_qty < item.quantity_booked ? `Overbooked (Max: ${item.available_qty})` : 'In Stock'}
+                                    </span>
+                                  </div>
+                                )}
                                 {!isManagingBooking && (
                                   <span className="text-[10px] text-[var(--text-link)] font-bold uppercase tracking-widest flex items-center gap-1">
                                     {expandedItemId === i ? "Hide details" : "Show units"}
@@ -1624,10 +1780,27 @@ export function Bookings() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right ml-4">
-                            <span className="text-sm font-black text-[var(--text-main)] block">{currencySymbol}{formatCurrency(item.unit_price)}</span>
-                            <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">Per unit</span>
-                          </div>
+                           <div className="text-right ml-4">
+                             {isManagingBooking ? (
+                               <div className="relative inline-block w-24">
+                                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] font-bold text-xs">{currencySymbol}</span>
+                                 <input 
+                                   type="number" 
+                                   value={item.unit_price}
+                                   onChange={(e) => {
+                                     const p = parseFloat(e.target.value) || 0;
+                                     const newItems = [...editFormData.items];
+                                     newItems[i] = { ...item, unit_price: p };
+                                     setEditFormData({ ...editFormData, items: newItems });
+                                   }}
+                                   className="w-full h-8 pl-5 pr-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-xs font-black outline-none focus:border-brand-primary text-right text-[var(--text-main)]"
+                                 />
+                               </div>
+                             ) : (
+                               <span className="text-sm font-black text-[var(--text-main)] block">{currencySymbol}{formatCurrency(item.unit_price)}</span>
+                             )}
+                             <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest block">Per unit</span>
+                           </div>
                         </div>
                         
                         {(isManagingBooking || expandedItemId === i) && (
@@ -1888,6 +2061,22 @@ export function Bookings() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Danger Zone */}
+                  <div className="pt-6 border-t border-rose-100 mt-6">
+                    <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3">Danger Zone</p>
+                    <button 
+                      onClick={() => {
+                        setIsViewingDetails(false);
+                        setIsManagingBooking(false);
+                        handleDelete(selectedBooking.booking_id);
+                      }}
+                      className="w-full py-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Entire Booking
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (
@@ -1990,7 +2179,7 @@ export function Bookings() {
                               <div className="flex items-center gap-2">
                                 <input readOnly value={paymentLink} className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--text-main)] outline-none" />
                                 <button 
-                                  onClick={() => { navigator.clipboard.writeText(paymentLink); alert("Copied to clipboard!"); }}
+                                  onClick={() => { navigator.clipboard.writeText(paymentLink); showNotification("Copied to clipboard!", 'success'); }}
                                   className="p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600"
                                 >
                                   <ExternalLink className="w-4 h-4" />
@@ -2092,7 +2281,7 @@ export function Bookings() {
                   <div className="flex items-center gap-2">
                     <input readOnly value={paymentLink} className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl px-3 py-2 text-xs font-mono text-[var(--text-main)] outline-none" />
                     <button 
-                      onClick={() => { navigator.clipboard.writeText(paymentLink); alert("Copied to clipboard!"); }}
+                      onClick={() => { navigator.clipboard.writeText(paymentLink); showNotification("Copied to clipboard!", 'success'); }}
                       className="p-2 bg-brand-primary text-brand-accent rounded-xl hover:bg-brand-primary/90"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -2227,9 +2416,11 @@ export function Bookings() {
                 <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
                   <FileText className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-widest">Invoice Preview</h3>
+                <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-widest">
+                  {editingInvoice ? 'Edit Invoice' : 'Invoice Preview'}
+                </h3>
               </div>
-              <button onClick={() => setShowInvoicePreview(false)} className="p-2 hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <button onClick={() => { setShowInvoicePreview(false); setEditingInvoice(null); }} className="p-2 hover:bg-[var(--bg-app)] rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2246,6 +2437,34 @@ export function Bookings() {
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Booking Details</p>
                   <p className="text-sm font-bold text-[var(--text-main)]">ID: #{selectedBooking.booking_id}</p>
                   <p className="text-xs text-[var(--text-muted)]">{selectedBooking.event_name || 'No Event Name'}</p>
+                </div>
+              </div>
+
+              {/* Editable Fields for Invoice */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Due Date</label>
+                  <input 
+                    type="date"
+                    value={editingInvoice ? formatDateForInput(editingInvoice.due_date) : ''}
+                    onChange={(e) => setEditingInvoice(prev => ({...prev, due_date: e.target.value}))}
+                    disabled={!editingInvoice}
+                    className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-primary disabled:opacity-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Status</label>
+                  <select 
+                    value={editingInvoice?.status || 'issued'}
+                    onChange={(e) => setEditingInvoice(prev => ({...prev, status: e.target.value}))}
+                    disabled={!editingInvoice}
+                    className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-primary disabled:opacity-50"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="issued">Issued</option>
+                    <option value="paid">Paid</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
                 </div>
               </div>
 
@@ -2276,8 +2495,25 @@ export function Bookings() {
                 </div>
               </div>
 
+              {/* Notes */}
+              <div>
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Internal Notes</label>
+                <textarea 
+                  value={editingInvoice ? editingInvoice.notes : ''}
+                  onChange={(e) => setEditingInvoice(prev => ({...prev, notes: e.target.value}))}
+                  placeholder="Add any specific instructions or terms..."
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-4 text-sm font-bold outline-none focus:border-brand-primary min-h-[100px] transition-all"
+                />
+              </div>
+
               {/* Summary Section */}
-              <div className="flex justify-end pt-8">
+              <div className="flex justify-between items-center pt-8 border-t border-[var(--border-soft)]">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-brand-primary animate-pulse flex items-center justify-center">
+                    <span className="text-[10px] font-black text-brand-primary">NEO</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest italic">Branded by Neo Event Management</p>
+                </div>
                 <div className="w-64 space-y-3">
                   <div className="flex justify-between text-xs text-[var(--text-muted)]">
                     <span>Subtotal</span>
@@ -2293,7 +2529,7 @@ export function Bookings() {
 
             <div className="p-8 bg-[var(--bg-app)] flex gap-4">
               <button 
-                onClick={() => setShowInvoicePreview(false)}
+                onClick={() => { setShowInvoicePreview(false); setEditingInvoice(null); }}
                 className="flex-1 py-4 text-[var(--text-muted)] font-bold text-sm hover:text-[var(--text-main)] transition-all"
               >
                 Cancel
@@ -2308,9 +2544,80 @@ export function Bookings() {
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    Confirm & Issue Invoice
+                    {editingInvoice ? 'Update Invoice' : 'Confirm & Issue Invoice'}
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReceiptPreview && editingReceipt && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
+            <div className="p-8 border-b border-[var(--border-soft)] flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
+                  <ReceiptText className="w-5 h-5" />
+                </div>
+                <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-widest">Receipt View</h3>
+              </div>
+              <button onClick={() => { setShowReceiptPreview(false); setEditingReceipt(null); }} className="p-2 hover:bg-[var(--bg-app)] rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-8 max-h-[60vh] overflow-y-auto space-y-8">
+              <div className="grid grid-cols-2 gap-8 pb-8 border-b border-[var(--border-soft)]">
+                <div>
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Received From</p>
+                  <p className="text-sm font-bold text-[var(--text-main)]">{selectedBooking.client_name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Receipt Details</p>
+                  <p className="text-sm font-bold text-[var(--text-main)]">No: {editingReceipt.receipt_number}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{new Date(editingReceipt.issue_date).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-emerald-700 uppercase tracking-widest">Amount Received</span>
+                  <span className="text-2xl font-black text-emerald-800">{currencySymbol}{formatCurrency(editingReceipt.amount)}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Notes</label>
+                <textarea 
+                  value={editingReceipt.notes || ''}
+                  onChange={(e) => setEditingReceipt(prev => ({...prev, notes: e.target.value}))}
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-4 text-sm font-bold outline-none focus:border-brand-primary min-h-[100px]"
+                />
+              </div>
+
+              <div className="flex items-center gap-4 pt-8">
+                <div className="w-12 h-12 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-pulse flex items-center justify-center">
+                  <span className="text-[10px] font-black text-emerald-500">NEO</span>
+                </div>
+                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest italic">Official Receipt • Branded by Neo Event</p>
+              </div>
+            </div>
+
+            <div className="p-8 bg-[var(--bg-app)] flex gap-4">
+              <button 
+                onClick={() => { setShowReceiptPreview(false); setEditingReceipt(null); }}
+                className="flex-1 py-4 text-[var(--text-muted)] font-bold text-sm"
+              >
+                Close
+              </button>
+              <button 
+                onClick={handleGenerateReceipt}
+                disabled={isLoading}
+                className="flex-[2] py-4 bg-emerald-500 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
+              >
+                {isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save className="w-4 h-4" /> Save Changes</>}
               </button>
             </div>
           </div>

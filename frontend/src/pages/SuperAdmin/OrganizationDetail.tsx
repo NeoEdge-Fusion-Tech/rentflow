@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNotification } from '../../context/NotificationContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Building2, 
@@ -19,6 +20,7 @@ import {
 import { SuperAdminService, StatsService, OrganizationService, CurrencyService, AuthService } from '../../api';
 
 export function OrganizationDetail() {
+  const { showNotification } = useNotification();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [org, setOrg] = useState<any>(null);
@@ -106,7 +108,7 @@ export function OrganizationDetail() {
       fetchData(); // Refresh data
     } catch (error) {
       console.error("Failed to update organization", error);
-      alert("Failed to update organization. Please try again.");
+      showNotification("Failed to update organization. Please try again.", 'error');
     } finally {
       setIsSaving(false);
     }
@@ -114,25 +116,39 @@ export function OrganizationDetail() {
 
   const handleToggleStatus = async () => {
     const newStatus = !org.is_active;
-    if (!window.confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this organization?`)) return;
-    
-    try {
-      await SuperAdminService.updateOrganization(id!, { is_active: newStatus });
-      fetchData();
-    } catch (error) {
-      console.error("Failed to update status", error);
-    }
+    showConfirm({
+      title: `${newStatus ? 'Activate' : 'Deactivate'} Organization`,
+      message: `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this organization?`,
+      type: newStatus ? 'info' : 'danger',
+      onConfirm: async () => {
+        try {
+          await SuperAdminService.updateOrganization(id!, { is_active: newStatus });
+          showNotification(`Organization ${newStatus ? 'activated' : 'deactivated'}`, 'success');
+          fetchData();
+        } catch (error) {
+          console.error("Failed to update status", error);
+          showNotification('Failed to update status', 'error');
+        }
+      }
+    });
   };
 
   const handleToggleUserStatus = async (userId: string | number, currentStatus: boolean) => {
-    if (!window.confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) return;
-    try {
-      await SuperAdminService.deactivateUser(userId);
-      fetchData();
-    } catch (error) {
-      console.error("Failed to update user status", error);
-      alert("Failed to update user.");
-    }
+    showConfirm({
+      title: `${currentStatus ? 'Deactivate' : 'Activate'} User`,
+      message: `Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`,
+      type: currentStatus ? 'danger' : 'info',
+      onConfirm: async () => {
+        try {
+          await SuperAdminService.deactivateUser(userId);
+          showNotification(`User ${currentStatus ? 'deactivated' : 'activated'}`, 'success');
+          fetchData();
+        } catch (error) {
+          console.error("Failed to update user status", error);
+          showNotification("Failed to update user.", 'error');
+        }
+      }
+    });
   };
 
   const handleSetPassword = async (e: React.FormEvent) => {
@@ -145,24 +161,32 @@ export function OrganizationDetail() {
       setIsPasswordModalOpen(false);
       setNewPassword('');
       setSelectedUser(null);
-      alert("Password updated successfully.");
+      showNotification("Password updated successfully.", 'success');
     } catch (error) {
       console.error("Failed to set password", error);
-      alert("Failed to update password.");
+      showNotification("Failed to update password.", 'error');
     } finally {
       setIsSettingPassword(false);
     }
   };
 
   const handleDeleteOrg = async () => {
-    if (!window.confirm("Are you SURE you want to delete this organization? This will soft-delete the organization and modify user accounts.")) return;
-    try {
-      await SuperAdminService.deleteOrganization(id!);
-      navigate('/superadmin/organizations');
-    } catch (error) {
-      console.error("Failed to delete organization", error);
-      alert("Failed to delete organization.");
-    }
+    showConfirm({
+      title: 'Delete Organization',
+      message: 'Are you SURE you want to delete this organization? This will soft-delete the organization and modify user accounts.',
+      type: 'danger',
+      confirmText: 'Delete Everything',
+      onConfirm: async () => {
+        try {
+          await SuperAdminService.deleteOrganization(id!);
+          showNotification('Organization deleted', 'success');
+          navigate('/superadmin/organizations');
+        } catch (error) {
+          console.error("Failed to delete organization", error);
+          showNotification("Failed to delete organization.", 'error');
+        }
+      }
+    });
   };
 
   if (isLoading) {

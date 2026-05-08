@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNotification } from '../context/NotificationContext';
 import { 
   Search, 
   Plus, 
@@ -19,6 +20,7 @@ import { cn } from '@/src/utils';
 import { ProductService, CategoryService } from '../api';
 
 export function Inventory() {
+  const { showNotification, showConfirm } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
@@ -108,11 +110,11 @@ export function Inventory() {
 
   const handleSaveProduct = async () => {
     if (!newProduct.name.trim() || !newProduct.category_id) {
-      alert("Please fill in all required product fields.");
+      showNotification("Please fill in all required product fields.", 'warning');
       return;
     }
     if (units.length === 0 || (units[0].unit_type === 'single' && !units[0].serial_number?.trim())) {
-      alert("At least one product unit is required (with serial number for single items).");
+      showNotification("At least one product unit is required (with serial number for single items).", 'warning');
       return;
     }
 
@@ -138,10 +140,10 @@ export function Inventory() {
 
       if (editingProductId) {
         await ProductService.update(editingProductId, productData);
-        alert("Product updated successfully!");
+        showNotification("Product updated successfully!", 'success');
       } else {
         await ProductService.create(productData);
-        alert("Product created successfully!");
+        showNotification("Product created successfully!", 'success');
       }
       
       setShowAddModal(false);
@@ -151,37 +153,45 @@ export function Inventory() {
       fetchProducts();
     } catch (e: any) {
       console.error(e);
-      alert(e.response?.data?.error || "Failed to save product.");
+      showNotification(e.response?.data?.error || "Failed to save product.", 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteProduct = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await ProductService.delete(id);
-      fetchProducts();
-    } catch (e) {
-      console.error(e);
-      alert('Failed to delete product.');
-    }
+    showConfirm({
+      title: 'Delete Product',
+      message: 'Are you sure you want to delete this product? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await ProductService.delete(id);
+          showNotification('Product deleted successfully', 'success');
+          fetchProducts();
+        } catch (e) {
+          console.error(e);
+          showNotification('Failed to delete product.', 'error');
+        }
+      }
+    });
   };
 
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) {
-      alert("Category name is required.");
+      showNotification("Category name is required.", 'warning');
       return;
     }
     try {
       setSavingCategory(true);
       if (editCategoryId) {
         await CategoryService.update(editCategoryId, { name: newCategoryName, description: newCategoryDesc, is_active: newCategoryIsActive });
-        alert("Category updated!");
+        showNotification("Category updated!", 'success');
       } else {
         await CategoryService.create({ name: newCategoryName, description: newCategoryDesc, is_active: newCategoryIsActive });
-        alert("Category added!");
+        showNotification("Category added!", 'success');
       }
       setNewCategoryName('');
       setNewCategoryDesc('');
@@ -190,7 +200,7 @@ export function Inventory() {
       fetchCategories();
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.error || 'Failed to save category');
+      showNotification(error.response?.data?.error || 'Failed to save category', 'error');
     } finally {
       setSavingCategory(false);
     }
@@ -204,14 +214,22 @@ export function Inventory() {
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) return;
-    try {
-      await CategoryService.delete(id);
-      fetchCategories();
-    } catch (error: any) {
-      console.error(error);
-      alert(error.response?.data?.error || 'Failed to delete category. It may be in use.');
-    }
+    showConfirm({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? This will fail if products are still assigned to it.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await CategoryService.delete(id);
+          showNotification('Category deleted successfully', 'success');
+          fetchCategories();
+        } catch (error: any) {
+          console.error(error);
+          showNotification(error.response?.data?.error || 'Failed to delete category. It may be in use.', 'error');
+        }
+      }
+    });
   };
   const fetchProducts = async () => {
     try {
