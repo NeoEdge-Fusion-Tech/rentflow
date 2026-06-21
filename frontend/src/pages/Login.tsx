@@ -20,7 +20,7 @@ export function Login() {
       const res = await AuthService.login({ username: email, password });
       if (res.data && res.data.access) {
         localStorage.setItem('token', res.data.access);
-        navigate('/');
+        navigate('/dashboard');
       } else {
         setErrorText('Invalid credentials. Please try again.');
       }
@@ -45,7 +45,7 @@ export function Login() {
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
-          <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with RentFlow</h1>
+          <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with NeoInventory</h1>
           <p className="text-lg text-brand-accent/80">The premier rentals management suite for modern event businesses.</p>
         </div>
       </div>
@@ -98,7 +98,7 @@ export function Login() {
                 <button 
                   type="submit" 
                   disabled={isLoading} 
-                  className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 bg-brand-primary text-brand-accent dark:bg-brand-accent dark:text-brand-primary hover:opacity-90"
+                  className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 bg-brand-primary text-brand-accent hover:opacity-90"
                 >
                   {isLoading ? 'Signing in...' : 'Sign in'}
                 </button>

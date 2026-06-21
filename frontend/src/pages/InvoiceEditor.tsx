@@ -505,6 +505,12 @@ export function InvoiceEditor() {
                 </button>
               </div>
             )}
+            
+            <div className="pt-6 mt-6 border-t border-[var(--border-soft)] text-center">
+              <span className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                Powered by NeoInventory
+              </span>
+            </div>
           </div>
         </div>
       </div>

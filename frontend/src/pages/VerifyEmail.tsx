@@ -78,7 +78,7 @@ export function VerifyEmail() {
             <button 
               type="submit" 
               disabled={loading || code.length !== 6}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg bg-brand-primary text-brand-accent dark:bg-brand-accent dark:text-brand-primary hover:opacity-90 active:scale-[0.98]"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg bg-brand-primary text-brand-accent hover:opacity-90 active:scale-[0.98]"
             >
               {loading ? 'Verifying...' : 'Verify Email'}
             </button>

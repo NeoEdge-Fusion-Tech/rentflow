@@ -597,7 +597,7 @@ export function Bookings() {
           <h1 className="text-2xl font-bold text-[var(--text-main)]">Booking Management</h1>
           <p className="text-[var(--text-muted)]">Track rentals, schedules, and fulfillment status.</p>
         </div>
-        <button onClick={() => setIsAddingBooking(true)} className="flex items-center justify-center gap-2 bg-brand-accent text-brand-primary px-4 py-2.5 rounded-xl font-bold hover:bg-brand-accent-hover transition-colors shadow-sm shadow-brand-accent/20">
+        <button onClick={() => setIsAddingBooking(true)} className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20">
           <Plus className="w-5 h-5" />
           New Booking
         </button>
@@ -1276,7 +1276,7 @@ export function Bookings() {
                         <button 
                           onClick={handleCreateBooking}
                           disabled={isLoading}
-                          className="w-full mt-6 h-16 bg-brand-accent text-brand-primary rounded-2xl font-black text-sm uppercase tracking-[0.3em] hover:bg-brand-accent-hover active:scale-95 transition-all shadow-xl shadow-brand-accent/20 disabled:opacity-50 flex items-center justify-center gap-3"
+                          className="w-full mt-6 h-16 bg-brand-primary text-brand-accent rounded-2xl font-black text-sm uppercase tracking-[0.3em] hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-brand-primary/20 disabled:opacity-50 flex items-center justify-center gap-3"
                         >
                           {isLoading ? (
                             <div className="w-5 h-5 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />

@@ -139,7 +139,7 @@ export function Clients() {
         </div>
         <button 
           onClick={openAddModal}
-          className="flex items-center justify-center gap-2 bg-brand-accent text-brand-primary px-4 py-2.5 rounded-xl font-bold hover:bg-brand-accent-hover transition-colors shadow-sm shadow-brand-accent/20"
+          className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20"
         >
           <Plus className="w-5 h-5" />
           Add Client

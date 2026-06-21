@@ -90,7 +90,7 @@ export function Register() {
                 <button 
                   type="submit" 
                   disabled={loading} 
-                  className="w-full flex justify-center py-2.5 px-4 rounded-xl shadow-lg text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 bg-brand-primary text-brand-accent dark:bg-brand-accent dark:text-brand-primary hover:opacity-90 border border-transparent"
+                  className="w-full flex justify-center py-2.5 px-4 rounded-xl shadow-lg text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 bg-brand-primary text-brand-accent hover:opacity-90 border border-transparent"
                 >
                   {loading ? 'Processing...' : 'Continue'}
                 </button>

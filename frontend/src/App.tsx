@@ -33,6 +33,9 @@ import { NotificationService, AuthService } from './api';
 import { useTheme } from './context/ThemeContext';
 import { useNotification } from './context/NotificationContext';
 
+import { Landing } from './pages/Landing';
+import { Footer } from './components/Footer';
+
 function AppLayout() {
   const { theme, toggleTheme } = useTheme();
   const { showNotification } = useNotification();
@@ -47,14 +50,15 @@ function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isAuthRoute = ['/login', '/register', '/onboarding', '/verify-email', '/forgot-password', '/reset-password'].includes(location.pathname);
+  const isAuthRoute = ['/', '/login', '/register', '/onboarding', '/verify-email', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token && !isAuthRoute) {
       navigate('/login');
-    } else if (token && isAuthRoute) {
-      navigate('/');
+    } else if (token && isAuthRoute && location.pathname !== '/onboarding') {
+      // If token exists and they are on an auth route, go to dashboard
+      navigate('/dashboard');
     }
 
     if (token) {
@@ -127,14 +131,20 @@ function AppLayout() {
 
   if (isAuthRoute) {
     return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-      </Routes>
+      <div className="flex flex-col min-h-screen bg-[var(--bg-app)] transition-colors duration-300">
+        <div className="flex-1 flex flex-col">
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+          </Routes>
+        </div>
+        {location.pathname !== '/' && <Footer />}
+      </div>
     );
   }
 
@@ -218,7 +228,7 @@ function AppLayout() {
               </div>
 
               <div className="text-right hidden sm:block border-l border-[var(--border-soft)] pl-4 ml-2">
-                <p className="text-sm font-bold text-[var(--text-main)]">{currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'NeoEvent User'}</p>
+                <p className="text-sm font-bold text-[var(--text-main)]">{currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'NeoInventory User'}</p>
                 <p className="text-xs text-[var(--text-muted)] capitalize">{currentUser?.role || 'Operator'}</p>
               </div>
               
@@ -269,10 +279,10 @@ function AppLayout() {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col">
+            <div className="max-w-7xl mx-auto flex-1 w-full">
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/clients" element={<Clients />} />
                 <Route path="/bookings" element={<Bookings />} />
@@ -290,6 +300,7 @@ function AppLayout() {
                 <Route path="/superadmin/currencies" element={<Currencies />} />
               </Routes>
             </div>
+            <Footer className="mt-8" />
           </main>
         </div>
         

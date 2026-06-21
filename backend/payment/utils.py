@@ -248,6 +248,14 @@ def generate_invoice_pdf(invoice):
     elements.append(Spacer(1, 0.5 * inch))
     elements.append(Paragraph("Thank you for your business!", ParagraphStyle('CenterStyle', parent=styles['Normal'], alignment=TA_CENTER)))
 
+    # Powered by NeoInventory footer
+    small_style = ParagraphStyle(
+        'SmallStyle', parent=styles['Normal'], fontSize=8,
+        textColor=colors.HexColor("#94a3b8"), alignment=TA_CENTER
+    )
+    elements.append(Spacer(1, 0.3 * inch))
+    elements.append(Paragraph("Powered by NeoInventory", small_style))
+
     doc.build(elements)
     buffer.seek(0)
     return buffer

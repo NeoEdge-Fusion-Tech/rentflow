@@ -70,7 +70,7 @@ export function ForgotPassword() {
             <button 
               type="submit" 
               disabled={loading}
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg bg-brand-primary text-brand-accent dark:bg-brand-accent dark:text-brand-primary hover:opacity-90 active:scale-[0.98]"
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg bg-brand-primary text-brand-accent hover:opacity-90 active:scale-[0.98]"
             >
               {loading ? 'Sending...' : 'Send reset code'}
             </button>

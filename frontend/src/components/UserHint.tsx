@@ -8,7 +8,7 @@ export function UserHint() {
 
   const hints = [
     {
-      title: "Welcome to NeoEvent!",
+      title: "Welcome to NeoInventory!",
       content: "This platform helps you manage your rentals and bookings efficiently. Let's take a quick tour."
     },
     {
@@ -27,7 +27,7 @@ export function UserHint() {
 
   useEffect(() => {
     // Check if the user has seen the hint before
-    const hasSeenHint = localStorage.getItem('neoevent_has_seen_hint');
+    const hasSeenHint = localStorage.getItem('neoinventory_has_seen_hint');
     if (!hasSeenHint) {
       // Add a slight delay before showing the hint
       const timer = setTimeout(() => {
@@ -47,7 +47,7 @@ export function UserHint() {
 
   const handleClose = () => {
     setIsVisible(false);
-    localStorage.setItem('neoevent_has_seen_hint', 'true');
+    localStorage.setItem('neoinventory_has_seen_hint', 'true');
   };
 
   return (

@@ -158,8 +158,8 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'NeoEvent Rentals API',
-    'DESCRIPTION': 'NeoEvent SaaS Inventory and Booking APIs',
+    'TITLE': 'NeoInventory API',
+    'DESCRIPTION': 'NeoInventory SaaS Inventory and Booking APIs',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
