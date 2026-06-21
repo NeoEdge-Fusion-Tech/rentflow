@@ -1,4 +1,5 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
+import django_filters.rest_framework as django_filters
 from loguru import logger
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -47,30 +48,45 @@ class PaymentViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
-    filterset_fields = ['booking']
+    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['booking', 'client', 'status']
+    search_fields = ['invoice_number']
 
-    @action(detail=False, methods=['post'])
-    def generate(self, request):
-        booking_id = request.data.get('booking_id')
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    @action(detail=False, methods=['get'])
+    def prefill(self, request):
+        """
+        Returns an unsaved draft payload (client, line items, discount) built
+        from a booking, for the frontend Invoice editor to populate. Creates
+        nothing.
+        """
+        booking_id = request.query_params.get('booking_id')
         try:
             booking = Booking.objects.get(pk=booking_id, organization=request.user.organization)
-            
-            # Check if invoice already exists
-            invoice = Invoice.objects.filter(booking=booking).first()
-            if invoice:
-                return Response(InvoiceSerializer(invoice).data)
-            
-            invoice = Invoice.objects.create(
-                booking=booking,
-                organization=request.user.organization,
-                total_amount=booking.total_amount,
-                status='issued',
-                created_by=request.user
-            )
-            return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            logger.error(f"Error generating invoice: {str(e)}")
-            return Response({"error": str(e)}, status=400)
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found."}, status=404)
+
+        line_items = [
+            {
+                "description": item.product.name,
+                "quantity": item.quantity_booked,
+                "unit_price": item.unit_price,
+            }
+            for item in booking.items.all()
+        ]
+        return Response({
+            "booking": booking.booking_id,
+            "client": booking.client_id,
+            "line_items": line_items,
+            "discount_amount": booking.discount_amount,
+            "discount_percentage": booking.discount_percentage,
+        })
 
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
@@ -113,6 +129,7 @@ class ReceiptViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         filename = f"receipt_{receipt.receipt_number}.pdf"
         return FileResponse(pdf_buffer, as_attachment=True, filename=filename, content_type='application/pdf')
 
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView

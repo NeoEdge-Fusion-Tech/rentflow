@@ -16,6 +16,10 @@ class Currency(models.Model):
 class Organization(models.Model):
     name = models.CharField(max_length=255)
     company_logo = models.ImageField(upload_to='logos/', blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    tax_id = models.CharField(max_length=100, blank=True, null=True, help_text="VAT/Tax Identification Number")
     payout_account_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Connect Account ID or similar")
     currency = models.ForeignKey(Currency, on_delete=models.SET_NULL, null=True, blank=True)
     subscription_plan = models.CharField(max_length=50, choices=[('free', 'Free'), ('basic', 'Basic'), ('pro', 'Pro')], default='free')
@@ -50,6 +54,33 @@ class OrganizationAccountDetails(models.Model):
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='updated_org_account_details'
+    )
+
+
+class BankAccount(models.Model):
+    """
+    A bank account belonging to an organization that can be selected per-invoice
+    (e.g. an org may quote different accounts for different currencies/banks).
+    Distinct from OrganizationAccountDetails, which is the single payout account
+    used for Paystack transfer reconciliation.
+    """
+    bank_account_id = models.AutoField(primary_key=True)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='bank_accounts')
+    bank_name = models.CharField(max_length=255)
+    account_number = models.CharField(max_length=50)
+    account_name = models.CharField(max_length=255)
+    account_type = models.CharField(
+        max_length=20, choices=[('savings', 'Savings'), ('current', 'Current')], default='savings'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_bank_accounts'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='updated_bank_accounts'
     )
 
 

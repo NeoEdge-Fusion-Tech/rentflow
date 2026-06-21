@@ -3,9 +3,7 @@ import ast
 import sys
 import argparse
 import json
-import urllib.request
 import re
-from decouple import config
 
 class ImportExtractor(ast.NodeVisitor):
     """AST Visitor to extract all imports from a Python file."""
@@ -76,48 +74,9 @@ def extract_from_requirements(project_path):
                     print(f"Warning: Could not parse {file_path}: {e}")
     return list(req_packages)
 
-def analyze_with_ai(packages, api_key):
-    """Sends the list of packages to an AI (Gemini) for analysis."""
-    if not packages:
-        return "No external packages found."
-
-    print(f"Analyzing {len(packages)} packages with AI...")
-    
-    prompt = (
-        "I am working on a Python project and using the following third-party packages:\n"
-        f"{', '.join(packages)}\n\n"
-        "Please provide a comprehensive analysis of this stack. Include:\n"
-        "1. What kind of project does this look like? (e.g. Django web app, Data Science, etc.)\n"
-        "2. Are there any known major security vulnerabilities, deprecated packages, or red flags in this list?\n"
-        "3. Are there any overlapping tools? (e.g. using both requests and httpx)\n"
-        "4. Strictly review the list of packages, scan and check if it is comprised, vulnerable or poisoned?"
-    )
-
-    # Using Google Gemini API securely by passing the API key in headers instead of URL params
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-    headers = {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': api_key
-    }
-    data = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-
-    req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
-    
-    try:
-        with urllib.request.urlopen(req) as response:
-            result = json.loads(response.read().decode('utf-8'))
-            text_response = result['candidates'][0]['content']['parts'][0]['text']
-            return text_response
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8')
-        return f"AI Analysis failed: HTTP Error {e.code}\nDetails: {error_body}"
-    except Exception as e:
-        return f"AI Analysis failed: {e}\nMake sure your GEMINI_API_KEY is valid."
 
 def main():
-    parser = argparse.ArgumentParser(description="AI-powered Python package scanner.")
+    parser = argparse.ArgumentParser(description="Python package scanner.")
     parser.add_argument("path", help="Path to the Python project directory")
     args = parser.parse_args()
 
@@ -144,19 +103,6 @@ def main():
         print(f"- {pkg} (Found in: {', '.join(source)})")
     print("------------------------------------\n")
 
-    api_key = config("GEMINI_API_KEY", default="")
-    api_key = api_key.strip("'\"") # Clean up any accidental quotes from .env
-    if not api_key:
-        print("Note: GEMINI_API_KEY environment variable not set.")
-        print("Set it to get an AI analysis of your packages.")
-        print("Example: GEMINI_API_KEY='your_api_key'")
-        sys.exit(0)
-
-    analysis = analyze_with_ai(list(all_packages), api_key)
-    
-    print("\n========= AI ANALYSIS =========")
-    print(analysis)
-    print("===============================")
 
 if __name__ == "__main__":
     main()

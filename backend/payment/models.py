@@ -36,10 +36,22 @@ class Payment(models.Model):
 
 class Invoice(models.Model):
     invoice_id = models.AutoField(primary_key=True)
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='invoices')
+    booking = models.ForeignKey(Booking, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
+    client = models.ForeignKey(
+        'users.Client', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='invoices'
+    )
     organization = models.ForeignKey(
         'users.Organization', on_delete=models.CASCADE,
         related_name='invoices'
+    )
+    currency = models.ForeignKey(
+        'users.Currency', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='invoices'
+    )
+    bank_account = models.ForeignKey(
+        'users.BankAccount', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='invoices'
     )
     invoice_number = models.CharField(max_length=50, unique=True)
     issue_date = models.DateTimeField(auto_now_add=True)
@@ -51,9 +63,14 @@ class Invoice(models.Model):
         ('cancelled', 'Cancelled')
     ]
     status = models.CharField(max_length=20, choices=status_choices, default='draft')
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     notes = models.TextField(blank=True, null=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -69,6 +86,23 @@ class Invoice(models.Model):
             # This is a bit raceconfirmy but fine for now
             last_id = Invoice.objects.filter(invoice_number__startswith=f"INV-{year}").count()
             self.invoice_number = f"INV-{year}-{last_id + 1:04d}"
+        super().save(*args, **kwargs)
+
+
+class InvoiceLineItem(models.Model):
+    line_item_id = models.AutoField(primary_key=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='line_items')
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position', 'line_item_id']
+
+    def save(self, *args, **kwargs):
+        self.total = (self.quantity or 0) * (self.unit_price or 0)
         super().save(*args, **kwargs)
 
 

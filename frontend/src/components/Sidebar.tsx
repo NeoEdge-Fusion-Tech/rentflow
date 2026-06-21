@@ -1,18 +1,19 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  Calendar, 
-  CreditCard, 
-  QrCode, 
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  Calendar,
+  CreditCard,
+  QrCode,
   Settings,
   LogOut,
   Menu,
   X,
   ChevronRight,
-  Coins
+  Coins,
+  FileText
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { cn } from '@/src/utils';
@@ -31,6 +32,7 @@ const navItems = [
   { icon: Package, label: 'Inventory', path: '/inventory' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Calendar, label: 'Bookings', path: '/bookings' },
+  { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: QrCode, label: 'Scanner', path: '/scanner' },
   { icon: Settings, label: 'Settings', path: '/settings' },

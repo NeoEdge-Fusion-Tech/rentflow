@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotification } from '../context/NotificationContext';
 import { 
@@ -32,13 +33,12 @@ import { cn } from '@/src/utils';
 import { BookingService, ClientService, ProductService, PaymentService, StatsService, InvoiceService, ReceiptService } from '../api';
 
 export function Bookings() {
+  const navigate = useNavigate();
   const { showNotification, showConfirm } = useNotification();
   const [activeTab, setActiveTab] = useState('All');
   const [isAddingBooking, setIsAddingBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
-  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [editingReceipt, setEditingReceipt] = useState<any>(null);
   const [isGeneratingPaymentLink, setIsGeneratingPaymentLink] = useState<any | null>(null);
   const [paymentLinkAmount, setPaymentLinkAmount] = useState<number>(0);
@@ -60,37 +60,11 @@ export function Bookings() {
     }
   };
 
-  const handleGenerateInvoice = async () => {
-    try {
-      setIsLoading(true);
-      if (editingInvoice) {
-        // Update existing invoice
-        await InvoiceService.patch(editingInvoice.invoice_id, {
-          notes: editingInvoice.notes,
-          due_date: editingInvoice.due_date,
-          status: editingInvoice.status
-        });
-        showNotification("Invoice updated successfully.", 'success');
-      } else {
-        // Create new invoice
-        await InvoiceService.generate(selectedBooking.booking_id);
-        showNotification("Invoice issued successfully.", 'success');
-      }
-      fetchBookings();
-      setShowInvoicePreview(false);
-      setEditingInvoice(null);
-    } catch (e) {
-      showNotification("Failed to process invoice.", 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleGenerateReceipt = async () => {
     try {
       setIsLoading(true);
       if (editingReceipt) {
-        await ReceiptService.patch(editingReceipt.receipt_id, {
+        await ReceiptService.update(editingReceipt.receipt_id, {
           notes: editingReceipt.notes,
           status: editingReceipt.status
         });
@@ -780,29 +754,28 @@ export function Bookings() {
                     Details
                   </button>
                   {booking.has_invoice ? (
-                    <button 
+                    <button
                       onClick={async (e) => {
                         e.stopPropagation();
                         setIsLoading(true);
                         try {
                           const res = await InvoiceService.getAll({ booking: booking.booking_id });
                           const inv = res.data.results?.[0] || res.data[0];
-                          if (inv) handleDownloadDocument('invoice', inv.invoice_id, `invoice_${inv.invoice_number}`);
+                          if (inv) navigate(`/invoices/${inv.invoice_id}/edit`);
                         } finally {
                           setIsLoading(false);
                         }
                       }}
                       className="px-4 py-2 bg-blue-500/10 text-blue-600 border border-blue-500/20 font-bold rounded-xl hover:bg-blue-500/20 transition-colors text-sm flex items-center gap-2"
                     >
-                      <Download className="w-4 h-4" />
+                      <FileText className="w-4 h-4" />
                       Invoice
                     </button>
                   ) : (
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedBooking(booking);
-                        setShowInvoicePreview(true);
+                        navigate(`/invoices/new?booking_id=${booking.booking_id}`);
                       }}
                       className="px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 font-bold rounded-xl hover:bg-amber-500/20 transition-colors text-sm flex items-center gap-2"
                     >
@@ -1606,10 +1579,10 @@ export function Bookings() {
                           {isManagingBooking ? editFormData?.items?.length : selectedBooking.items?.length} Objects
                         </span>
                         {!selectedBooking.has_invoice && !isManagingBooking && (
-                           <button 
+                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowInvoicePreview(true);
+                              navigate(`/invoices/new?booking_id=${selectedBooking.booking_id}`);
                             }}
                             className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors shadow-sm"
                           >
@@ -1629,10 +1602,10 @@ export function Bookings() {
                     {activeManagerTab === 'billing' && (
                       <div className="flex items-center gap-3">
                         {!selectedBooking.has_invoice && !isManagingBooking && (
-                           <button 
+                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowInvoicePreview(true);
+                              navigate(`/invoices/new?booking_id=${selectedBooking.booking_id}`);
                             }}
                             className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors shadow-sm"
                           >
@@ -1654,11 +1627,8 @@ export function Bookings() {
                           >
                             <FileText className="w-3.5 h-3.5" /> INV: {inv.invoice_number}
                           </button>
-                          <button 
-                            onClick={() => {
-                              setEditingInvoice(inv);
-                              setShowInvoicePreview(true);
-                            }}
+                          <button
+                            onClick={() => navigate(`/invoices/${inv.invoice_id}/edit`)}
                             className="p-2 border-l border-blue-500/10 hover:bg-blue-500/10 text-blue-400 hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"
                             title="Edit Invoice"
                           >
@@ -2306,7 +2276,7 @@ export function Bookings() {
                 </button>
             )}
 
-              <button 
+              <button
                 onClick={() => handleUpdateStatus(lastCreatedBooking.booking_id, 'confirmed')}
                 className="w-full py-4 bg-brand-primary text-brand-accent font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-brand-primary/90 transition-all flex items-center justify-center gap-3"
               >
@@ -2314,7 +2284,15 @@ export function Bookings() {
                 Confirm Order
               </button>
 
-              <button 
+              <button
+                onClick={() => navigate(`/invoices/new?booking_id=${lastCreatedBooking.booking_id}`)}
+                className="w-full py-4 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-[var(--border-soft)] transition-all flex items-center justify-center gap-3"
+              >
+                <FileText className="w-4 h-4" />
+                Create Invoice
+              </button>
+
+              <button
                 onClick={() => { setShowSuccessOverlay(false); setLastCreatedBooking(null); setIsAddingBooking(false); resetForm(); }}
                 className="w-full py-4 text-[var(--text-muted)] font-bold text-sm hover:text-[var(--text-main)] transition-all"
               >
@@ -2407,152 +2385,6 @@ export function Bookings() {
           </div>
         </div>
       )}
-      {/* Invoice Preview Modal */}
-      {showInvoicePreview && selectedBooking && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[70] flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
-            <div className="p-8 border-b border-[var(--border-soft)] flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-black text-[var(--text-main)] uppercase tracking-widest">
-                  {editingInvoice ? 'Edit Invoice' : 'Invoice Preview'}
-                </h3>
-              </div>
-              <button onClick={() => { setShowInvoicePreview(false); setEditingInvoice(null); }} className="p-2 hover:bg-[var(--bg-app)] rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-8 max-h-[60vh] overflow-y-auto space-y-8">
-              {/* Client Info Section */}
-              <div className="grid grid-cols-2 gap-8 pb-8 border-b border-[var(--border-soft)]">
-                <div>
-                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Billed To</p>
-                  <p className="text-sm font-bold text-[var(--text-main)]">{selectedBooking.client_name}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{selectedBooking.contact_phone}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">Booking Details</p>
-                  <p className="text-sm font-bold text-[var(--text-main)]">ID: #{selectedBooking.booking_id}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{selectedBooking.event_name || 'No Event Name'}</p>
-                </div>
-              </div>
-
-              {/* Editable Fields for Invoice */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Due Date</label>
-                  <input 
-                    type="date"
-                    value={editingInvoice ? formatDateForInput(editingInvoice.due_date) : ''}
-                    onChange={(e) => setEditingInvoice(prev => ({...prev, due_date: e.target.value}))}
-                    disabled={!editingInvoice}
-                    className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-primary disabled:opacity-50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Status</label>
-                  <select 
-                    value={editingInvoice?.status || 'issued'}
-                    onChange={(e) => setEditingInvoice(prev => ({...prev, status: e.target.value}))}
-                    disabled={!editingInvoice}
-                    className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 text-sm font-bold outline-none focus:border-brand-primary disabled:opacity-50"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="issued">Issued</option>
-                    <option value="paid">Paid</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="space-y-4">
-                <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Invoice Items</p>
-                <div className="rounded-2xl border border-[var(--border-soft)] overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest border-b border-[var(--border-soft)]">
-                      <tr>
-                        <th className="px-6 py-4">Product</th>
-                        <th className="px-6 py-4 text-center">Qty</th>
-                        <th className="px-6 py-4 text-right">Unit Price</th>
-                        <th className="px-6 py-4 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-sm">
-                      {selectedBooking.items?.map((item: any, i: number) => (
-                        <tr key={i} className="border-b border-[var(--border-soft)] last:border-0">
-                          <td className="px-6 py-4 font-bold text-[var(--text-main)]">{item.product_name}</td>
-                          <td className="px-6 py-4 text-center text-[var(--text-muted)]">{item.quantity_booked}</td>
-                          <td className="px-6 py-4 text-right text-[var(--text-muted)]">{currencySymbol}{formatCurrency(item.unit_price)}</td>
-                          <td className="px-6 py-4 text-right font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(item.total_price)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">Internal Notes</label>
-                <textarea 
-                  value={editingInvoice ? editingInvoice.notes : ''}
-                  onChange={(e) => setEditingInvoice(prev => ({...prev, notes: e.target.value}))}
-                  placeholder="Add any specific instructions or terms..."
-                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-4 text-sm font-bold outline-none focus:border-brand-primary min-h-[100px] transition-all"
-                />
-              </div>
-
-              {/* Summary Section */}
-              <div className="flex justify-between items-center pt-8 border-t border-[var(--border-soft)]">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-brand-primary animate-pulse flex items-center justify-center">
-                    <span className="text-[10px] font-black text-brand-primary">NEO</span>
-                  </div>
-                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest italic">Branded by Neo Event Management</p>
-                </div>
-                <div className="w-64 space-y-3">
-                  <div className="flex justify-between text-xs text-[var(--text-muted)]">
-                    <span>Subtotal</span>
-                    <span>{currencySymbol}{formatCurrency(selectedBooking.total_amount)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-black text-[var(--text-main)] border-t border-[var(--border-soft)] pt-3">
-                    <span>Grand Total</span>
-                    <span>{currencySymbol}{formatCurrency(selectedBooking.total_amount)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-[var(--bg-app)] flex gap-4">
-              <button 
-                onClick={() => { setShowInvoicePreview(false); setEditingInvoice(null); }}
-                className="flex-1 py-4 text-[var(--text-muted)] font-bold text-sm hover:text-[var(--text-main)] transition-all"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleGenerateInvoice}
-                disabled={isLoading}
-                className="flex-[2] py-4 bg-brand-primary text-brand-accent font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:shadow-xl hover:shadow-brand-primary/20 transition-all flex items-center justify-center gap-3"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    {editingInvoice ? 'Update Invoice' : 'Confirm & Issue Invoice'}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showReceiptPreview && editingReceipt && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[70] flex items-center justify-center p-4">
           <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-[var(--border-soft)]">

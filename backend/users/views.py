@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
-from .models import Organization, Subscription, OrganizationAccountDetails, User, Client, Currency
-from .serializers import OrganizationSerializer, SubscriptionSerializer, OrganizationAccountDetailsSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, CurrencySerializer
+from .models import Organization, Subscription, OrganizationAccountDetails, BankAccount, User, Client, Currency
+from .serializers import OrganizationSerializer, SubscriptionSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, CurrencySerializer
 from users.mixins import TenantIsolationMixin
 from .utils import send_verification_email, send_password_reset_email
 from rest_framework import status
@@ -194,6 +194,20 @@ class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         return super().get_queryset().annotate(bookings_count=Count('bookings'))
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user, 'updated_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
+class BankAccountViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    queryset = BankAccount.objects.all()
+    serializer_class = BankAccountSerializer
 
     def perform_create(self, serializer):
         user = self.request.user

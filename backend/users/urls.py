@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
-    OrganizationViewSet, SubscriptionViewSet, OrganizationAccountDetailsViewSet, 
+    OrganizationViewSet, SubscriptionViewSet, OrganizationAccountDetailsViewSet, BankAccountViewSet,
     UserViewSet, ClientViewSet, SuperAdminStatsAPIView, RegisterAPIView,
     VerifyEmailAPIView, TriggerPasswordResetAPIView, SetNewPasswordAPIView,
     SuperAdminOrganizationViewSet, SuperAdminUserViewSet, MeAPIView, CurrencyViewSet,
@@ -14,6 +14,7 @@ router.register(r'currencies', CurrencyViewSet, basename='currency')
 router.register(r'organizations', OrganizationViewSet, basename='organization')
 router.register(r'subscriptions', SubscriptionViewSet, basename='subscription')
 router.register(r'organization-account-details', OrganizationAccountDetailsViewSet, basename='organizationaccountdetails')
+router.register(r'bank-accounts', BankAccountViewSet, basename='bankaccount')
 router.register(r'team', UserViewSet, basename='team')
 router.register(r'clients', ClientViewSet, basename='client')
 router.register(r'superadmin/organizations', SuperAdminOrganizationViewSet, basename='superadmin-organizations')

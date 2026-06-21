@@ -128,6 +128,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (user uploads, e.g. organization logos)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True
 

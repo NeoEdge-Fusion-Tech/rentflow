@@ -10,6 +10,8 @@ import { Dashboard } from './pages/Dashboard';
 import { Inventory } from './pages/Inventory';
 import { Clients } from './pages/Clients';
 import { Bookings } from './pages/Bookings';
+import { Invoices } from './pages/Invoices';
+import { InvoiceEditor } from './pages/InvoiceEditor';
 import { Payments } from './pages/Payments';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
@@ -274,6 +276,9 @@ function AppLayout() {
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/clients" element={<Clients />} />
                 <Route path="/bookings" element={<Bookings />} />
+                <Route path="/invoices" element={<Invoices />} />
+                <Route path="/invoices/new" element={<InvoiceEditor />} />
+                <Route path="/invoices/:id/edit" element={<InvoiceEditor />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/settings" element={<Settings />} />

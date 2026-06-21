@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../context/NotificationContext';
-import { Building, Upload, CreditCard, Shield, Check, Plus, X, Trash2 } from 'lucide-react';
-import { UserService, AuthService, OrganizationService, CurrencyService } from '../api';
+import { Building, Upload, CreditCard, Shield, Check, Plus, X, Trash2, Landmark, Edit2 } from 'lucide-react';
+import { UserService, AuthService, OrganizationService, CurrencyService, BankAccountService } from '../api';
 
 export function Settings() {
-  const { showNotification } = useNotification();
+  const { showNotification, showConfirm } = useNotification();
   const [activeTab, setActiveTab] = useState('Workspace');
   
   const [users, setUsers] = useState<any[]>([]);
@@ -21,12 +21,101 @@ export function Settings() {
   const [org, setOrg] = useState<any>(null);
   const [currencies, setCurrencies] = useState<any[]>([]);
   const currencySymbol = localStorage.getItem('currencySymbol') || '$';
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [editingBankAccount, setEditingBankAccount] = useState<any>(null);
+  const [bankFormData, setBankFormData] = useState({
+    bank_name: '', account_number: '', account_name: '', account_type: 'savings'
+  });
 
   useEffect(() => {
     fetchWorkspaceData();
     fetchCurrencies();
     fetchCurrentUser();
+    fetchBankAccounts();
   }, []);
+
+  const fetchBankAccounts = async () => {
+    try {
+      const res = await BankAccountService.getAll();
+      setBankAccounts(res.data.results || res.data);
+    } catch (e) {
+      console.error("Failed to fetch bank accounts", e);
+    }
+  };
+
+  const handleLogoFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !org?.id) return;
+    try {
+      setIsUploadingLogo(true);
+      const res = await OrganizationService.uploadLogo(org.id, file);
+      setOrg(res.data);
+      showNotification("Logo updated!", 'success');
+    } catch (err) {
+      console.error("Failed to upload logo", err);
+      showNotification("Failed to upload logo.", 'error');
+    } finally {
+      setIsUploadingLogo(false);
+      e.target.value = '';
+    }
+  };
+
+  const openAddBankModal = () => {
+    setEditingBankAccount(null);
+    setBankFormData({ bank_name: '', account_number: '', account_name: '', account_type: 'savings' });
+    setIsBankModalOpen(true);
+  };
+
+  const openEditBankModal = (account: any) => {
+    setEditingBankAccount(account);
+    setBankFormData({
+      bank_name: account.bank_name || '',
+      account_number: account.account_number || '',
+      account_name: account.account_name || '',
+      account_type: account.account_type || 'savings'
+    });
+    setIsBankModalOpen(true);
+  };
+
+  const handleSaveBankAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingBankAccount) {
+        await BankAccountService.update(editingBankAccount.bank_account_id, bankFormData);
+      } else {
+        await BankAccountService.create(bankFormData);
+      }
+      setIsBankModalOpen(false);
+      showNotification(editingBankAccount ? "Bank account updated!" : "Bank account added!", 'success');
+      fetchBankAccounts();
+    } catch (err) {
+      console.error("Failed to save bank account", err);
+      showNotification("Failed to save bank account.", 'error');
+    }
+  };
+
+  const handleDeleteBankAccount = (id: number) => {
+    showConfirm({
+      title: 'Delete Bank Account',
+      message: 'Are you sure you want to delete this bank account? Invoices referencing it will no longer show these payment details on download.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await BankAccountService.delete(id);
+          showNotification("Bank account deleted.", 'success');
+          fetchBankAccounts();
+        } catch (err) {
+          console.error("Failed to delete bank account", err);
+          showNotification("Failed to delete bank account.", 'error');
+        }
+      }
+    });
+  };
 
   const fetchCurrentUser = async () => {
     try {
@@ -68,8 +157,12 @@ export function Settings() {
   const handleUpdateWorkspace = async () => {
     try {
       if (org && org.id) {
-        const payload = { 
-          name: org.name, 
+        const payload = {
+          name: org.name,
+          address: org.address,
+          phone_number: org.phone_number,
+          email: org.email,
+          tax_id: org.tax_id,
           payout_account_id: org.payout_account_id,
           currency_id: org.currency?.id || org.currency_id || null
         };
@@ -201,18 +294,30 @@ export function Settings() {
       </div>
 
       {activeTab === 'Workspace' && (
-        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-6 max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-6">
           <h2 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2"><Building className="w-5 h-5"/> Workspace Profile</h2>
-          
+          <p className="text-xs text-[var(--text-muted)] -mt-4 mb-6">This branding appears on every invoice and receipt you generate.</p>
+
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">Company Logo</label>
               <div className="flex items-center gap-6">
-                <div className="w-20 h-20 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center border-dashed">
-                  <span className="text-xs text-[var(--text-muted)]">150x150</span>
+                <div className="w-20 h-20 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center border-dashed overflow-hidden">
+                  {org?.company_logo ? (
+                    <img src={org.company_logo} alt="Company logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-xs text-[var(--text-muted)]">150x150</span>
+                  )}
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] text-[var(--text-main)] transition-colors">
-                  <Upload className="w-4 h-4"/> Upload New
+                <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoFileSelected} className="hidden" />
+                <button
+                  type="button"
+                  disabled={isUploadingLogo || !org?.id}
+                  onClick={() => logoInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] text-[var(--text-main)] transition-colors disabled:opacity-50"
+                >
+                  <Upload className="w-4 h-4"/> {isUploadingLogo ? 'Uploading...' : 'Upload New'}
                 </button>
               </div>
             </div>
@@ -220,6 +325,27 @@ export function Settings() {
             <div>
               <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Company Name</label>
               <input type="text" value={org?.name || ''} onChange={e => setOrg({...org, name: e.target.value})} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Company Address</label>
+              <textarea value={org?.address || ''} onChange={e => setOrg({...org, address: e.target.value})} rows={2} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary resize-none" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Phone Number</label>
+                <input type="tel" value={org?.phone_number || ''} onChange={e => setOrg({...org, phone_number: e.target.value})} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Contact Email</label>
+                <input type="email" value={org?.email || ''} onChange={e => setOrg({...org, email: e.target.value})} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Tax ID / VAT Number</label>
+              <input type="text" value={org?.tax_id || ''} onChange={e => setOrg({...org, tax_id: e.target.value})} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary" />
             </div>
 
             <div>
@@ -243,6 +369,39 @@ export function Settings() {
 
             <button onClick={handleUpdateWorkspace} className="bg-brand-primary text-brand-accent px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">Save Changes</button>
           </div>
+        </div>
+
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2"><Landmark className="w-5 h-5"/> Bank Accounts</h2>
+            <button onClick={openAddBankModal} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg hover:bg-brand-primary/20 transition-colors">
+              <Plus className="w-3.5 h-3.5" /> Add Account
+            </button>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mb-6">Pick which account to display when generating an invoice's payment details.</p>
+
+          <div className="space-y-3">
+            {bankAccounts.length === 0 && (
+              <p className="text-sm text-[var(--text-muted)] italic py-4 text-center">No bank accounts added yet.</p>
+            )}
+            {bankAccounts.map(account => (
+              <div key={account.bank_account_id} className="flex items-center justify-between p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]">
+                <div>
+                  <p className="font-bold text-[var(--text-main)] text-sm">{account.bank_name} · {account.account_number}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{account.account_name} — {account.account_type === 'current' ? 'Current' : 'Savings'}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => openEditBankModal(account)} className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors" title="Edit">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDeleteBankAccount(account.bank_account_id)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors" title="Delete">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
         </div>
       )}
 
@@ -328,7 +487,7 @@ export function Settings() {
                       </button>
                     )}
                     {u.id !== currentUser?.id && (
-                      <button onClick={() => handleDeleteUser(u.id)} className="text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors" title="Delete User">
+                      <button onClick={() => handleRemoveUser(u.id)} className="text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors" title="Delete User">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -448,6 +607,48 @@ export function Settings() {
                   className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50"
                 >
                   {isSettingPassword ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Bank Account Modal */}
+      {isBankModalOpen && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl overflow-hidden border border-[var(--border-soft)]">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+              <h2 className="text-xl font-bold text-[var(--text-main)]">{editingBankAccount ? 'Edit Bank Account' : 'Add Bank Account'}</h2>
+              <button onClick={() => setIsBankModalOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBankAccount} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Bank Name</label>
+                <input required type="text" value={bankFormData.bank_name} onChange={e => setBankFormData({...bankFormData, bank_name: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Account Number</label>
+                <input required type="text" value={bankFormData.account_number} onChange={e => setBankFormData({...bankFormData, account_number: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Account Name</label>
+                <input required type="text" value={bankFormData.account_name} onChange={e => setBankFormData({...bankFormData, account_name: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Account Type</label>
+                <select value={bankFormData.account_type} onChange={e => setBankFormData({...bankFormData, account_type: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]">
+                  <option value="savings" className="bg-[var(--bg-surface)]">Savings</option>
+                  <option value="current" className="bg-[var(--bg-surface)]">Current</option>
+                </select>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button type="button" onClick={() => setIsBankModalOpen(false)} className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors">Cancel</button>
+                <button type="submit" className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20">
+                  {editingBankAccount ? 'Save Changes' : 'Add Account'}
                 </button>
               </div>
             </form>

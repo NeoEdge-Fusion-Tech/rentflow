@@ -105,9 +105,12 @@ export const PaymentService = {
 export const InvoiceService = {
   get: (id: number | string) => api.get(`/payment/invoices/${id}/`),
   getAll: (params?: any) => api.get('/payment/invoices/', { params }),
-  generate: (bookingId: number | string) => 
-    api.post('/payment/invoices/generate/', { booking_id: bookingId }),
-  update: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
+  prefillFromBooking: (bookingId: number | string) =>
+    api.get('/payment/invoices/prefill/', { params: { booking_id: bookingId } }),
+  create: (data: any) => api.post('/payment/invoices/', data),
+  update: (id: number | string, data: any) => api.put(`/payment/invoices/${id}/`, data),
+  patch: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/payment/invoices/${id}/`),
   download: (id: number | string) => api.get(`/payment/invoices/${id}/download/`, { responseType: 'blob' }),
 };
 
@@ -138,10 +141,24 @@ export const CurrencyService = {
   delete: (id: number | string) => api.delete(`/users/currencies/${id}/`),
 };
 
+export const BankAccountService = {
+  getAll: (params?: any) => api.get('/users/bank-accounts/', { params }),
+  create: (data: any) => api.post('/users/bank-accounts/', data),
+  update: (id: number | string, data: any) => api.patch(`/users/bank-accounts/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/users/bank-accounts/${id}/`),
+};
+
 export const OrganizationService = {
   get: (id: number | string) => api.get(`/users/organizations/${id}/`),
   update: (id: number | string, data: any) => api.put(`/users/organizations/${id}/`, data),
   patch: (id: number | string, data: any) => api.patch(`/users/organizations/${id}/`, data),
+  uploadLogo: (id: number | string, file: File) => {
+    const formData = new FormData();
+    formData.append('company_logo', file);
+    return api.patch(`/users/organizations/${id}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export const SuperAdminService = {

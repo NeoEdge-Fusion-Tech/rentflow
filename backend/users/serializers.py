@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Organization, OrganizationAccountDetails, Subscription, User, Client, Currency
+from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, User, Client, Currency
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -28,6 +28,12 @@ class OrganizationAccountDetailsSerializer(serializers.ModelSerializer):
 
 from users.mixins import TenantSerializerMixin
 
+class BankAccountSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = BankAccount
+        fields = ['bank_account_id', 'bank_name', 'account_number', 'account_name', 'account_type', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
 class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     subscription = SubscriptionSerializer(read_only=True)
     account_details = OrganizationAccountDetailsSerializer(read_only=True)
@@ -40,7 +46,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'company_logo', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'is_active', 'created_at', 'revenue', 'total_bookings']
+        fields = ['id', 'name', 'company_logo', 'address', 'phone_number', 'email', 'tax_id', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'is_active', 'created_at', 'revenue', 'total_bookings']
         read_only_fields = ['created_at']
 
     def get_revenue(self, obj):
