@@ -85,11 +85,24 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
-    )
-}
+ENV_MODE = config('ENV_MODE', default='local')
+
+if ENV_MODE == 'dev':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='rentflow'),
+            'USER': config('DB_USERNAME', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default='postgres'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
+else:
+    default_db = config('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
+    DATABASES = {
+        'default': dj_database_url.config(default=default_db)
+    }
 
 
 # Password validation
@@ -170,3 +183,4 @@ PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='sk_test_mock_key')
 # Email Configuration
 EMAIL_VENDOR = config('EMAIL_VENDOR', default='resend') # resend, ses, sendgrid
 RESEND_API_KEY = config('RESEND_API_KEY', default='re_mock_key')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@rentflow.com')
