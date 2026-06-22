@@ -13,6 +13,7 @@ export function Footer({ className = "" }: FooterProps) {
           <img src="/logo_light.png" alt="NeoEdge Fusion" className="h-7 logo-light-mode" />
           <img src="/logo_dark.png" alt="NeoEdge Fusion" className="h-7 logo-dark-mode" />
         </a>
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">&copy; {new Date().getFullYear()}</span>
       </div>
     </div>
   );
