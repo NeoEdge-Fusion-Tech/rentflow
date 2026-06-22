@@ -19,6 +19,9 @@ import { Organizations } from './pages/SuperAdmin/Organizations';
 import { OrganizationDetail } from './pages/SuperAdmin/OrganizationDetail';
 import { Users as SuperAdminUsers } from './pages/SuperAdmin/Users';
 import { Currencies } from './pages/SuperAdmin/Currencies';
+import { Dashboard as SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
+import { Bookings as SuperAdminBookings } from './pages/SuperAdmin/Bookings';
+import { Invoices as SuperAdminInvoices } from './pages/SuperAdmin/Invoices';
 import { OrganizationSelector } from './components/OrganizationSelector';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -53,7 +56,7 @@ function AppLayout() {
   const isAuthRoute = ['/', '/login', '/register', '/onboarding', '/verify-email', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token && !isAuthRoute) {
       navigate('/login');
     } else if (token && isAuthRoute && location.pathname !== '/onboarding') {
@@ -296,9 +299,12 @@ function AppLayout() {
                 <Route path="/settings" element={<Settings />} />
 
                 {/* Super Admin Routes */}
+                <Route path="/superadmin" element={<SuperAdminDashboard />} />
                 <Route path="/superadmin/organizations" element={<Organizations />} />
                 <Route path="/superadmin/organizations/:id" element={<OrganizationDetail />} />
                 <Route path="/superadmin/users" element={<SuperAdminUsers />} />
+                <Route path="/superadmin/bookings" element={<SuperAdminBookings />} />
+                <Route path="/superadmin/invoices" element={<SuperAdminInvoices />} />
                 <Route path="/superadmin/currencies" element={<Currencies />} />
               </Routes>
             </div>

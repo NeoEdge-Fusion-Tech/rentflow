@@ -47,6 +47,7 @@ export interface Booking {
   status: 'booked' | 'picked_up' | 'returned';
   paymentStatus: 'pending' | 'partially_paid' | 'fully_paid';
   createdAt: string;
+  organization_name?: string;
 }
 
 export interface BookingItem {
@@ -56,4 +57,22 @@ export interface BookingItem {
   quantityBooked: number;
   totalPickedUp: number;
   totalReturned: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  is_superuser?: boolean;
+}
+
+export interface Invoice {
+  id: string;
+  invoice_number: string;
+  total_amount: number;
+  status: string;
+  issue_date: string;
+  organization_name?: string;
 }

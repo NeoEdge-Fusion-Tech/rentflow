@@ -105,11 +105,13 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return instance
 
 class ReceiptSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    
     class Meta:
         model = Receipt
         fields = [
             'receipt_id', 'payment', 'receipt_number', 'issue_date', 
-            'status', 'amount', 'notes'
+            'status', 'amount', 'notes', 'organization_name'
         ]
         read_only_fields = ['receipt_number', 'issue_date']
 
