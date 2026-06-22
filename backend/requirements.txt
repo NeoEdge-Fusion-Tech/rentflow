@@ -29,3 +29,5 @@ python-decouple==3.8
 django-storages==1.14.2
 cloudinary==1.41.0
 django-cloudinary-storage==0.3.0
+reportlab==4.5.0
+requests==2.33.1
