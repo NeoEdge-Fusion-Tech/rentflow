@@ -39,8 +39,11 @@ const navItems = [
 ];
 
 const superAdminItems = [
+  { icon: LayoutDashboard, label: 'Global Dashboard', path: '/superadmin' },
   { icon: Users, label: 'Organizations', path: '/superadmin/organizations' },
   { icon: Users, label: 'Internal Users', path: '/superadmin/users' },
+  { icon: Calendar, label: 'Global Bookings', path: '/superadmin/bookings' },
+  { icon: FileText, label: 'Global Invoices', path: '/superadmin/invoices' },
   { icon: Coins, label: 'Currencies', path: '/superadmin/currencies' },
 ];
 

@@ -171,6 +171,12 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     has_invoice = serializers.SerializerMethodField()
     receipts_summary = serializers.SerializerMethodField()
     invoices_summary = serializers.SerializerMethodField()
+    organization_name = serializers.SerializerMethodField()
+
+    def get_organization_name(self, obj):
+        if obj.organization:
+            return obj.organization.name
+        return None
 
     def get_invoices_summary(self, obj):
         from payment.models import Invoice
@@ -220,7 +226,7 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         model = Booking
         fields = ['booking_id', 'client', 'client_name', 'booking_date', 'pickup_date', 'return_date', 'delivery_mode', 
                   'event_name', 'event_location', 'contact_name', 'contact_phone', 'status', 'payment_status', 
-                  'total_amount', 'amount_paid', 'discount_amount', 'discount_percentage', 'items',
+                  'total_amount', 'amount_paid', 'discount_amount', 'discount_percentage', 'items', 'organization_name',
                   'created_by_name', 'updated_by_name', 'has_invoice', 'receipts_summary', 'invoices_summary', 'created_at', 'updated_at']
         read_only_fields = ['total_amount', 'payment_status', 'created_at', 'updated_at']
 

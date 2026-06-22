@@ -25,7 +25,17 @@ export function Login() {
         } else {
           sessionStorage.setItem('token', res.data.access);
         }
-        navigate('/dashboard');
+        
+        try {
+          const userRes = await AuthService.getMe();
+          if (userRes.data.is_superuser) {
+            navigate('/superadmin');
+          } else {
+            navigate('/dashboard');
+          }
+        } catch (e) {
+          navigate('/dashboard');
+        }
       } else {
         setErrorText('Invalid credentials. Please try again.');
       }
