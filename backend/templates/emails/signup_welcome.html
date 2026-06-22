@@ -1,0 +1,15 @@
+{% extends 'emails/base.html' %}
+
+{% block content %}
+<p>Hi {{ user.first_name }},</p>
+
+<p>Welcome to NeoInventory! We're thrilled to have you on board.</p>
+
+<p>You can now manage your rentals, inventory, and team all in one place. If you ever need help, just reply to this email or reach out to our support team.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ login_url|default:'https://neoinventory.com/login' }}" class="btn">Get Started</a>
+</div>
+
+<p>Welcome again!</p>
+{% endblock %}

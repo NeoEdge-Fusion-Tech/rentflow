@@ -195,6 +195,7 @@ export function Bookings() {
   const [products, setProducts] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const currencySymbol = localStorage.getItem('currencySymbol') || '$';
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const formatCurrency = (amount: number | string) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -209,7 +210,17 @@ export function Bookings() {
     fetchClients();
     fetchProducts();
     fetchStats();
+    fetchCurrentUser();
   }, [activeTab, startDate, endDate]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await AuthService.getMe();
+      setCurrentUser(res.data);
+    } catch (e) {
+      console.error("Failed to fetch current user", e);
+    }
+  };
 
   // Debounced search
   React.useEffect(() => {
@@ -1563,15 +1574,17 @@ export function Bookings() {
                       >
                         Line Items
                       </button>
-                      <button 
-                        onClick={() => setActiveManagerTab('billing')}
-                        className={cn(
-                          "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
-                          activeManagerTab === 'billing' ? "bg-[var(--bg-surface)] text-brand-primary shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                        )}
-                      >
-                        Billing & Documents
-                      </button>
+                      {(currentUser?.role === 'Admin' || currentUser?.is_superuser) && (
+                        <button 
+                          onClick={() => setActiveManagerTab('billing')}
+                          className={cn(
+                            "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                            activeManagerTab === 'billing' ? "bg-[var(--bg-surface)] text-brand-primary shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                          )}
+                        >
+                          Billing & Documents
+                        </button>
+                      )}
                     </div>
                     {activeManagerTab === 'items' && (
                       <div className="flex items-center gap-3">

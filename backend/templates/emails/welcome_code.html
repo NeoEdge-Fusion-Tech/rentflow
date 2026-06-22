@@ -1,0 +1,14 @@
+{% extends 'emails/base.html' %}
+
+{% block content %}
+<p>Hi {{ user.first_name }},</p>
+
+<p>You've been invited to join a NeoInventory workspace! Use the invite code below to complete your registration and link your account to your team.</p>
+
+<div style="text-align: center;">
+    <div class="otp-code">{{ welcome_code }}</div>
+</div>
+
+<p>This code will expire in <strong>48 hours</strong>.</p>
+<p>If you have any questions, please reach out to your organization administrator.</p>
+{% endblock %}

@@ -54,16 +54,7 @@ class Migration(migrations.Migration):
             name='organization',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='booking_item_units', to='users.organization'),
         ),
-        migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity_returned_damaged',
-            field=models.PositiveIntegerField(default=0),
-        ),
-        migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity_returned_good',
-            field=models.PositiveIntegerField(default=0),
-        ),
+
         migrations.AddField(
             model_name='bookingitemunit',
             name='quantity_returned_in_damaged_condition',

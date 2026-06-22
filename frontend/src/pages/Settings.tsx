@@ -282,7 +282,7 @@ export function Settings() {
       </div>
 
       <div className="flex gap-8 border-b border-[var(--border-soft)]">
-        {['Workspace', 'Billing & Plans', 'Team'].map(tab => (
+        {['Workspace', ...(currentUser?.role === 'Admin' || currentUser?.is_superuser ? ['Billing & Plans', 'Team'] : [])].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
