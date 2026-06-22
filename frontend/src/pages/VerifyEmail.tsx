@@ -20,9 +20,15 @@ export function VerifyEmail() {
     setError('');
     
     try {
-      await AuthService.verifyEmail({ email, code });
-      setSuccess('Email verified! Redirecting to login...');
-      setTimeout(() => navigate('/login'), 2000);
+      const res = await AuthService.verifyEmail({ email, code });
+      if (res.data && res.data.access) {
+        localStorage.setItem('token', res.data.access);
+        setSuccess('Email verified! Redirecting to dashboard...');
+        setTimeout(() => navigate('/dashboard'), 1000);
+      } else {
+        setSuccess('Email verified! Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000);
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Verification failed. Invalid code.');
     } finally {

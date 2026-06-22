@@ -50,6 +50,7 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     navigate('/login');
   };
 

@@ -54,6 +54,24 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
+        if not user.is_superuser and hasattr(user, 'organization') and user.organization:
+            org = user.organization
+            if hasattr(org, 'subscription') and org.subscription and org.subscription.status != 'active':
+                from django.conf import settings
+                from django.utils import timezone
+                from rest_framework.exceptions import PermissionDenied
+                
+                quota = getattr(settings, 'FREE_TIER_MONTHLY_QUOTA', 10)
+                now = timezone.now()
+                current_month_invoices = Invoice.objects.filter(
+                    organization=org,
+                    created_at__year=now.year,
+                    created_at__month=now.month
+                ).count()
+                
+                if current_month_invoices >= quota:
+                    raise PermissionDenied(f"You have reached your free tier limit of {quota} invoices per month. Please upgrade your plan to continue.")
+
         kwargs = {'created_by': user}
         if not user.is_superuser:
             kwargs['organization'] = user.organization

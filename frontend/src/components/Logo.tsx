@@ -7,7 +7,7 @@ interface LogoProps {
 }
 
 export function Logo({ className = "h-8", showText = true, dark = false }: LogoProps) {
-  const textColor = "text-[var(--text-main)]";
+  const textColor = dark ? "text-white" : "text-[var(--text-main)]";
   const subTextColor = "text-brand-accent";
 
   return (

@@ -113,6 +113,7 @@ function AppLayout() {
         try {
           await AuthService.deleteMe();
           localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
           navigate('/login');
         } catch(e) {
           console.error(e);
@@ -124,6 +125,7 @@ function AppLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     navigate('/login');
   };
 

@@ -40,6 +40,11 @@
   color: #050810 !important;
 }
 
+/* Image swapping logic based on the .dark class */
+.logo-dark-mode { display: none; }
+.dark .logo-dark-mode { display: block; }
+.dark .logo-light-mode { display: none; }
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;

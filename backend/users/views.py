@@ -70,7 +70,13 @@ class VerifyEmailAPIView(APIView):
                     otp.save()
                     user.email_verified = True
                     user.save()
-                    return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
+                    from rest_framework_simplejwt.tokens import RefreshToken
+                    refresh = RefreshToken.for_user(user)
+                    return Response({
+                        "message": "Email verified successfully.",
+                        "access": str(refresh.access_token),
+                        "refresh": str(refresh)
+                    }, status=status.HTTP_200_OK)
                 return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)

@@ -8,6 +8,7 @@ export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
 
@@ -19,7 +20,11 @@ export function Login() {
       setErrorText('');
       const res = await AuthService.login({ username: email, password });
       if (res.data && res.data.access) {
-        localStorage.setItem('token', res.data.access);
+        if (rememberMe) {
+          localStorage.setItem('token', res.data.access);
+        } else {
+          sessionStorage.setItem('token', res.data.access);
+        }
         navigate('/dashboard');
       } else {
         setErrorText('Invalid credentials. Please try again.');
@@ -45,6 +50,7 @@ export function Login() {
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
+          <Logo className="h-16 mb-8" dark={true} />
           <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with NeoInventory</h1>
           <p className="text-lg text-brand-accent/80">The premier rentals management suite for modern event businesses.</p>
         </div>
@@ -58,7 +64,7 @@ export function Login() {
           <p className="mt-2 text-sm text-[var(--text-muted)]">
             Or {' '}
             <button onClick={() => navigate('/register')} className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors">
-              start your 14-day free trial
+              start your free trial
             </button>
           </p>
 
@@ -81,7 +87,7 @@ export function Login() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-[var(--border-soft)] rounded accent-brand-primary" />
+                  <input id="remember-me" name="remember-me" type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-[var(--border-soft)] rounded accent-brand-primary" />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-[var(--text-main)]">
                     Remember me
                   </label>

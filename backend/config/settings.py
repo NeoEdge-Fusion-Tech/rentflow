@@ -212,3 +212,6 @@ PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='sk_test_mock_key')
 EMAIL_VENDOR = config('EMAIL_VENDOR', default='resend') # resend, ses, sendgrid
 RESEND_API_KEY = config('RESEND_API_KEY', default='re_mock_key')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@rentflow.com')
+
+# Free Tier Quotas
+FREE_TIER_MONTHLY_QUOTA = config('FREE_TIER_MONTHLY_QUOTA', default=10, cast=int)
