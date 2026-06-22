@@ -8,19 +8,19 @@ from django.conf import settings
 from decouple import config
 
 # Configure loguru to output to file only in local environment
-if config('ENV_MODE', default='local') == 'local':
-    try:
-        logger.add(
-            "logs/notifications.log", 
-            rotation="10 MB", 
-            retention="10 days", 
-            level="INFO",
-            format="{time} {level} {message}",
-            backtrace=True,
-            diagnose=True
-        )
-    except OSError:
-        pass
+# if config('ENV_MODE', default='local') == 'local':
+#     try:
+#         logger.add(
+#             "logs/notifications.log", 
+#             rotation="10 MB", 
+#             retention="10 days", 
+#             level="INFO",
+#             format="{time} {level} {message}",
+#             backtrace=True,
+#             diagnose=True
+#         )
+#     except OSError:
+#         pass
 
 class EmailService:
     @staticmethod
