@@ -47,7 +47,7 @@ class InvoiceModelTest(TestCase):
         )
         line_item = InvoiceLineItem.objects.create(
             invoice=invoice,
-            description="Consulting",
+            name="Consulting",
             quantity=Decimal('2.5'),
             unit_price=Decimal('100.00')
         )

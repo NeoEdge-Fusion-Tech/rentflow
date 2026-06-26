@@ -92,7 +92,7 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
         line_items = [
             {
-                "description": item.product.name,
+                "name": item.product.name,
                 "quantity": item.quantity_booked,
                 "unit_price": item.unit_price,
             }
