@@ -22,6 +22,7 @@ class Organization(models.Model):
     tax_id = models.CharField(max_length=100, blank=True, null=True, help_text="VAT/Tax Identification Number")
     payout_account_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Connect Account ID or similar")
     currency = models.ForeignKey(Currency, on_delete=models.SET_NULL, null=True, blank=True)
+    primary_color = models.CharField(max_length=7, blank=True, null=True, default='#7c3aed', help_text="Hex color code for invoices and branding")
     subscription_plan = models.CharField(max_length=50, choices=[('free', 'Free'), ('basic', 'Basic'), ('pro', 'Pro')], default='free')
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)

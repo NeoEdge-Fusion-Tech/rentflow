@@ -112,6 +112,7 @@ export const InvoiceService = {
   patch: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
   delete: (id: number | string) => api.delete(`/payment/invoices/${id}/`),
   download: (id: number | string) => api.get(`/payment/invoices/${id}/download/`, { responseType: 'blob' }),
+  generatePaymentLink: (id: number | string) => api.post(`/payment/invoices/${id}/generate_payment_link/`),
 };
 
 export const ReceiptService = {

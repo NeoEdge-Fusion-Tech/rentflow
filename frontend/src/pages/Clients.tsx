@@ -294,7 +294,7 @@ export function Clients() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">First Name <span className="text-rose-500">*</span></label>
                   <input 
@@ -328,7 +328,7 @@ export function Clients() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">Phone</label>
                   <input 

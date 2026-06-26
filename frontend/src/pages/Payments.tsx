@@ -91,22 +91,22 @@ export function Payments() {
 
       {/* Table */}
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-[var(--border-soft)] flex flex-col md:flex-row gap-4">
+        <div className="p-4 border-b border-[var(--border-soft)] flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-            <input 
-              type="text" 
-              placeholder="Search by transaction ID, client..." 
+            <input
+              type="text"
+              placeholder="Search by transaction ID, client..."
               className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-            <Filter className="w-4 h-4" />
-            Status
+          <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors shrink-0">
+            <Filter className="w-4 h-4" /> Status
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
@@ -120,42 +120,25 @@ export function Payments() {
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">
-                    Loading payments...
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">Loading payments...</td></tr>
               ) : payments.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">
-                    No payments found.
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No payments found.</td></tr>
               ) : payments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((payment) => (
                 <tr key={payment.payment_id} className="hover:bg-[var(--bg-app)] transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[var(--bg-app)] rounded-lg text-[var(--text-muted)] border border-[var(--border-soft)]">
-                        <CreditCard className="w-4 h-4" />
-                      </div>
+                      <div className="p-2 bg-[var(--bg-app)] rounded-lg text-[var(--text-muted)] border border-[var(--border-soft)]"><CreditCard className="w-4 h-4" /></div>
                       <span className="text-sm font-semibold text-[var(--text-main)]">{payment.payment_id}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-[var(--text-muted)] font-medium">{payment.booking_ref}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-[var(--text-main)] font-medium">{payment.client_name || 'System Generated'}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(payment.amount)}</span>
-                  </td>
+                  <td className="px-6 py-4"><span className="text-sm text-[var(--text-muted)] font-medium">{payment.booking_ref}</span></td>
+                  <td className="px-6 py-4"><span className="text-sm text-[var(--text-main)] font-medium">{payment.client_name || 'System Generated'}</span></td>
+                  <td className="px-6 py-4"><span className="text-sm font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(payment.amount)}</span></td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
                       payment.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" :
-                      payment.status === 'pending' ? "bg-amber-500/10 text-amber-500" :
-                      "bg-rose-500/10 text-rose-500"
+                      payment.status === 'pending' ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"
                     )}>
                       {payment.status === 'completed' && <CheckCircle2 className="w-3 h-3" />}
                       {payment.status === 'pending' && <Clock className="w-3 h-3" />}
@@ -163,33 +146,58 @@ export function Payments() {
                       {payment.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-[var(--text-muted)]">{new Date(payment.payment_date).toLocaleDateString()}</span>
-                  </td>
+                  <td className="px-6 py-4"><span className="text-sm text-[var(--text-muted)]">{new Date(payment.payment_date).toLocaleDateString()}</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {isLoading ? (
+            <div className="p-8 text-center text-[var(--text-muted)]">Loading payments...</div>
+          ) : payments.length === 0 ? (
+            <div className="p-8 text-center text-[var(--text-muted)]">No payments found.</div>
+          ) : payments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((payment) => (
+            <div key={payment.payment_id} className="p-4 hover:bg-[var(--bg-app)] transition-colors">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[var(--bg-app)] rounded-lg text-[var(--text-muted)] border border-[var(--border-soft)] shrink-0"><CreditCard className="w-4 h-4" /></div>
+                  <div>
+                    <p className="font-bold text-[var(--text-main)] text-sm">{payment.client_name || 'System'}</p>
+                    <p className="text-xs text-[var(--text-muted)]">#{payment.payment_id}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(payment.amount)}</p>
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mt-1",
+                    payment.status === 'completed' ? "bg-emerald-500/10 text-emerald-500" :
+                    payment.status === 'pending' ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"
+                  )}>
+                    {payment.status}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-4 text-xs text-[var(--text-muted)] pl-11">
+                {payment.booking_ref && <span>Booking: {payment.booking_ref}</span>}
+                <span>{new Date(payment.payment_date).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
-          <p className="text-sm text-[var(--text-muted)]">
-            Showing {payments.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, payments.length)} of {payments.length} results
+        <div className="px-4 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+            {payments.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, payments.length)} of {payments.length}
           </p>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" 
-              disabled={currentPage === 1}
-            >
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === 1}>
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(Math.ceil(payments.length / itemsPerPage), p + 1))}
-              className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={currentPage === Math.ceil(payments.length / itemsPerPage) || payments.length === 0}
-            >
+            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(payments.length / itemsPerPage), p + 1))} className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(payments.length / itemsPerPage) || payments.length === 0}>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

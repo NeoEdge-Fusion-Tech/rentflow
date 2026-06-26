@@ -16,6 +16,7 @@ import {
 interface LineItem {
   line_item_id?: number;
   description: string;
+  details: string;
   quantity: number;
   unit_price: number;
 }
@@ -48,7 +49,7 @@ export function InvoiceEditor() {
     tax_percentage: 0,
     notes: '',
   });
-  const [lineItems, setLineItems] = useState<LineItem[]>([{ description: '', quantity: 1, unit_price: 0 }]);
+  const [lineItems, setLineItems] = useState<LineItem[]>([{ description: '', details: '', quantity: 1, unit_price: 0 }]);
 
   const fetchClients = async () => {
     try {
@@ -102,6 +103,7 @@ export function InvoiceEditor() {
       (inv.line_items || []).map((li: any) => ({
         line_item_id: li.line_item_id,
         description: li.description,
+        details: li.details || '',
         quantity: parseFloat(li.quantity),
         unit_price: parseFloat(li.unit_price),
       }))
@@ -122,6 +124,7 @@ export function InvoiceEditor() {
     if (data.line_items?.length) {
       setLineItems(data.line_items.map((li: any) => ({
         description: li.description,
+        details: li.details || '',
         quantity: parseFloat(li.quantity),
         unit_price: parseFloat(li.unit_price),
       })));
@@ -162,7 +165,7 @@ export function InvoiceEditor() {
     });
   };
 
-  const addLineItem = () => setLineItems(prev => [...prev, { description: '', quantity: 1, unit_price: 0 }]);
+  const addLineItem = () => setLineItems(prev => [...prev, { description: '', details: '', quantity: 1, unit_price: 0 }]);
   const removeLineItem = (index: number) => setLineItems(prev => prev.filter((_, i) => i !== index));
 
   const subtotal = lineItems.reduce((acc, li) => acc + (Number(li.quantity) || 0) * (Number(li.unit_price) || 0), 0);
@@ -192,6 +195,7 @@ export function InvoiceEditor() {
     line_items: lineItems.map(li => ({
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
       description: li.description,
+      details: li.details,
       quantity: li.quantity,
       unit_price: li.unit_price,
     })),
@@ -260,16 +264,16 @@ export function InvoiceEditor() {
             <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or issue it.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {isEditMode && (
-            <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
-              <Download className="w-4 h-4" /> Download PDF
+            <button onClick={handleDownload} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
+              <Download className="w-4 h-4" /> PDF
             </button>
           )}
-          <button onClick={() => handleSave('draft')} disabled={isSaving} className="px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
-            Save as Draft
+          <button onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
+            Save Draft
           </button>
-          <button onClick={() => handleSave('issued')} disabled={isSaving} className="px-4 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm shadow-brand-primary/20">
+          <button onClick={() => handleSave('issued')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
             {isSaving ? 'Saving...' : 'Save & Issue'}
           </button>
         </div>
@@ -359,50 +363,61 @@ export function InvoiceEditor() {
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">Line Items</h3>
-              <button onClick={addLineItem} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black bg-brand-primary text-brand-accent rounded-xl hover:bg-brand-primary/90 transition-colors shadow-sm">
+              <button onClick={addLineItem} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
                 <Plus className="w-3 h-3" /> ADD ITEM
               </button>
             </div>
             <div className="space-y-3">
               {lineItems.map((item, i) => (
-                <div key={i} className="grid grid-cols-12 gap-3 items-start bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]">
-                  <div className="col-span-12 md:col-span-5">
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={e => updateLineItem(i, 'description', e.target.value)}
-                      className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
-                    />
-                  </div>
-                  <div className="col-span-4 md:col-span-2">
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={e => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
-                    />
-                  </div>
-                  <div className="col-span-4 md:col-span-2">
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs font-bold">{currencySymbol}</span>
+                <div key={i} className="flex flex-col gap-3 bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]">
+                  <div className="grid grid-cols-12 gap-3 items-start">
+                    <div className="col-span-12 md:col-span-5">
                       <input
-                        type="number"
-                        placeholder="Price"
-                        value={item.unit_price}
-                        onChange={e => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)}
-                        className="w-full h-10 pl-6 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
+                        type="text"
+                        placeholder="Item Name"
+                        value={item.description}
+                        onChange={e => updateLineItem(i, 'description', e.target.value)}
+                        className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)]"
                       />
                     </div>
+                    <div className="col-span-4 md:col-span-2">
+                      <input
+                        type="number"
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onChange={e => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)}
+                        className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
+                      />
+                    </div>
+                    <div className="col-span-4 md:col-span-2">
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs font-bold">{currencySymbol}</span>
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          value={item.unit_price}
+                          onChange={e => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)}
+                          className="w-full h-10 pl-6 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
+                        />
+                      </div>
+                    </div>
+                    <div className="col-span-3 md:col-span-2 flex items-center justify-end h-10 text-sm font-bold text-[var(--text-main)]">
+                      {currencySymbol}{formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
+                    </div>
+                    <div className="col-span-1 flex items-center justify-end h-10">
+                      <button onClick={() => removeLineItem(i)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="col-span-3 md:col-span-2 flex items-center justify-end h-10 text-sm font-bold text-[var(--text-main)]">
-                    {currencySymbol}{formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
-                  </div>
-                  <div className="col-span-1 flex items-center justify-end h-10">
-                    <button onClick={() => removeLineItem(i)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div className="w-full">
+                    <textarea
+                      placeholder="Add description..."
+                      value={item.details || ''}
+                      onChange={e => updateLineItem(i, 'details', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-muted)] resize-none"
+                    />
                   </div>
                 </div>
               ))}

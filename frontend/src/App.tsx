@@ -12,6 +12,7 @@ import { Clients } from './pages/Clients';
 import { Bookings } from './pages/Bookings';
 import { Invoices } from './pages/Invoices';
 import { InvoiceEditor } from './pages/InvoiceEditor';
+import { InvoicePreview } from './pages/InvoicePreview';
 import { Payments } from './pages/Payments';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
@@ -192,7 +193,7 @@ function AppLayout() {
                 </button>
 
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-[var(--bg-surface)] rounded-xl shadow-xl border border-[var(--border-soft)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 sm:right-0 fixed sm:absolute left-0 sm:left-auto top-[60px] sm:top-full mt-2 w-full sm:w-80 bg-[var(--bg-surface)] rounded-xl shadow-xl border border-[var(--border-soft)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="p-4 border-b border-[var(--border-soft)] flex justify-between items-center bg-[var(--bg-app)]/50">
                       <h3 className="font-bold text-[var(--text-main)] text-sm">Notifications</h3>
                       {unreadCount > 0 && (
@@ -284,7 +285,7 @@ function AppLayout() {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col">
+          <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-8 flex flex-col">
             <div className="max-w-7xl mx-auto flex-1 w-full">
               <Routes>
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -294,6 +295,7 @@ function AppLayout() {
                 <Route path="/invoices" element={<Invoices />} />
                 <Route path="/invoices/new" element={<InvoiceEditor />} />
                 <Route path="/invoices/:id/edit" element={<InvoiceEditor />} />
+                <Route path="/invoices/:id/preview" element={<InvoicePreview />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/settings" element={<Settings />} />

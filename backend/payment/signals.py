@@ -20,11 +20,24 @@ def create_invoice_on_booking_creation(sender, instance, created, **kwargs):
             }
         )
     else:
-        # If booking total amount changed, update invoice
+        # If booking total amount or payment status changed, update invoice
         invoice = Invoice.objects.filter(booking=instance).first()
-        if invoice and invoice.total_amount != instance.total_amount:
-            invoice.total_amount = instance.total_amount
-            invoice.save(update_fields=['total_amount'])
+        if invoice:
+            updated_fields = []
+            if invoice.total_amount != instance.total_amount:
+                invoice.total_amount = instance.total_amount
+                updated_fields.append('total_amount')
+            
+            # Sync payment status to invoice
+            if instance.payment_status == 'paid' and invoice.status != 'paid':
+                invoice.status = 'paid'
+                updated_fields.append('status')
+            elif instance.payment_status != 'paid' and invoice.status == 'paid':
+                invoice.status = 'issued' # revert to issued if booking is no longer fully paid
+                updated_fields.append('status')
+
+            if updated_fields:
+                invoice.save(update_fields=updated_fields)
 
 @receiver(post_save, sender=Payment)
 def create_receipt_on_payment_completion(sender, instance, **kwargs):
@@ -81,3 +94,43 @@ def update_booking_paid_amount(sender, instance, **kwargs):
         if booking.amount_paid != total_paid:
             booking.amount_paid = total_paid
             booking.save(update_fields=['amount_paid', 'payment_status'])
+
+from django.db.models.signals import post_delete
+from inventory.models import BookingItem
+from .models import InvoiceLineItem
+
+def sync_booking_items_to_invoice(booking):
+    invoice = Invoice.objects.filter(booking=booking).first()
+    # Only sync if invoice is in a mutable state
+    if not invoice or invoice.status not in ['draft', 'issued']:
+        return
+
+    # Clear existing items and recreate to ensure exact match
+    invoice.line_items.all().delete()
+    
+    for idx, item in enumerate(booking.items.all()):
+        InvoiceLineItem.objects.create(
+            invoice=invoice,
+            description=item.product.name,
+            details=item.product.description or '',
+            quantity=item.quantity_booked,
+            unit_price=item.unit_price,
+            total=item.total_price,
+            position=idx
+        )
+    
+    # Recalculate totals
+    subtotal = sum(i.total for i in invoice.line_items.all())
+    invoice.subtotal = subtotal
+    # If the invoice relies on booking total directly, it is already handled by the booking post_save signal
+    invoice.save(update_fields=['subtotal'])
+
+@receiver(post_save, sender=BookingItem)
+def update_invoice_on_booking_item_save(sender, instance, **kwargs):
+    if instance.booking:
+        sync_booking_items_to_invoice(instance.booking)
+
+@receiver(post_delete, sender=BookingItem)
+def update_invoice_on_booking_item_delete(sender, instance, **kwargs):
+    if getattr(instance, 'booking', None):
+        sync_booking_items_to_invoice(instance.booking)

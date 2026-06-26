@@ -164,7 +164,8 @@ export function Settings() {
           email: org.email,
           tax_id: org.tax_id,
           payout_account_id: org.payout_account_id,
-          currency_id: org.currency?.id || org.currency_id || null
+          currency_id: org.currency?.id || org.currency_id || null,
+          primary_color: org.primary_color
         };
         await OrganizationService.patch(org.id, payload);
         showNotification("Workspace updated! Settings are saved.", 'success');
@@ -332,7 +333,7 @@ export function Settings() {
               <textarea value={org?.address || ''} onChange={e => setOrg({...org, address: e.target.value})} rows={2} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary resize-none" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Phone Number</label>
                 <input type="tel" value={org?.phone_number || ''} onChange={e => setOrg({...org, phone_number: e.target.value})} className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary" />
@@ -359,6 +360,26 @@ export function Settings() {
                   <option key={c.id} value={c.id} className="bg-[var(--bg-surface)]">{c.name} ({c.symbol})</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Primary Brand Color</label>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="color" 
+                  value={org?.primary_color || '#7c3aed'} 
+                  onChange={e => setOrg({...org, primary_color: e.target.value})} 
+                  className="w-12 h-12 p-1 border border-[var(--border-soft)] bg-[var(--bg-app)] rounded-lg cursor-pointer" 
+                />
+                <input 
+                  type="text" 
+                  value={org?.primary_color || '#7c3aed'} 
+                  onChange={e => setOrg({...org, primary_color: e.target.value})} 
+                  placeholder="#7c3aed"
+                  className="w-32 px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary uppercase font-mono text-sm" 
+                />
+              </div>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Used for invoices and receipts to match your brand.</p>
             </div>
 
             <div>
@@ -518,7 +539,7 @@ export function Settings() {
             </div>
             
             <form onSubmit={handleAddUser} className="p-6 space-y-4">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">First Name</label>
                   <input required type="text" value={newUser.first_name} onChange={e => setNewUser({...newUser, first_name: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]" />

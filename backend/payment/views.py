@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from django.http import FileResponse
 from .models import Payment, Invoice, Receipt
 from .serializers import PaymentSerializer, InvoiceSerializer, ReceiptSerializer
-from .utils import generate_invoice_pdf, generate_receipt_pdf, initialize_paystack_transaction
+from .utils import generate_invoice_pdf, generate_receipt_pdf, initialize_paystack_transaction, initialize_paystack_transaction_for_invoice
 from inventory.models import Booking
 from users.mixins import TenantIsolationMixin
 
@@ -106,6 +106,49 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             "discount_percentage": booking.discount_percentage,
         })
 
+    @action(detail=True, methods=['post'])
+    def generate_payment_link(self, request, pk=None):
+        """
+        Generates a Paystack payment link for this invoice.
+        Only applicable when the client is Nigerian (NGN currency).
+        Returns the authorization_url to share with the client.
+        """
+        invoice = self.get_object()
+
+        if invoice.status == 'paid':
+            return Response({"error": "Invoice is already paid."}, status=400)
+
+        if not invoice.client:
+            return Response({"error": "Invoice has no client attached."}, status=400)
+
+        client_email = invoice.client.email
+        if not client_email:
+            return Response({"error": "Client has no email address."}, status=400)
+
+        try:
+            result = initialize_paystack_transaction_for_invoice(
+                email=client_email,
+                amount=invoice.total_amount,
+                invoice_id=invoice.invoice_id,
+                invoice_number=invoice.invoice_number,
+            )
+            reference = result['data']['reference']
+            auth_url = result['data']['authorization_url']
+
+            # Persist reference so webhook can look up this invoice
+            invoice.paystack_reference = reference
+            invoice.save(update_fields=['paystack_reference'])
+
+            return Response({
+                "payment_url": auth_url,
+                "reference": reference,
+                "invoice_number": invoice.invoice_number,
+                "amount": str(invoice.total_amount),
+            })
+        except Exception as e:
+            logger.error(f"Paystack payment link error for invoice {pk}: {e}")
+            return Response({"error": str(e)}, status=400)
+
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
         invoice = self.get_object()
@@ -176,20 +219,36 @@ class PaystackWebhookView(APIView):
 
         data = request.data
         event = data.get('event')
-        
+
         if event == 'charge.success':
             reference = data['data']['reference']
-            amount_paid = data['data']['amount'] / 100 # Convert back to Naira
-            
+            amount_paid = data['data']['amount'] / 100  # Convert kobo → Naira
+
+            # 1. Try to resolve as an invoice payment link reference
+            invoice = Invoice.objects.filter(paystack_reference=reference).first()
+            if invoice and invoice.status != 'paid':
+                invoice.status = 'paid'
+                invoice.save(update_fields=['status'])
+                # Also update the linked booking if present
+                if invoice.booking:
+                    booking = invoice.booking
+                    if booking.payment_status != 'paid':
+                        booking.payment_status = 'paid'
+                        booking.amount_paid = booking.total_amount
+                        booking.save(update_fields=['payment_status', 'amount_paid'])
+                logger.info(f"Invoice {invoice.invoice_number} marked paid via Paystack ref {reference}")
+                return Response({"status": "success", "source": "invoice"}, status=200)
+
+            # 2. Fall back to booking-based payment
             try:
                 payment = Payment.objects.get(invoice_id=reference)
                 if payment.status != 'completed':
                     payment.status = 'completed'
                     payment.save()
-                    # The signal update_booking_paid_amount will take care of the rest
-                    # The signal create_receipt_on_payment_completion will generate the receipt
-                return Response({"status": "success"}, status=200)
+                return Response({"status": "success", "source": "payment"}, status=200)
             except Payment.DoesNotExist:
-                return Response({"status": "payment not found"}, status=404)
-        
+                pass
+
+            return Response({"status": "reference not found"}, status=404)
+
         return Response({"status": "event ignored"}, status=200)
