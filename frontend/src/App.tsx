@@ -42,7 +42,7 @@ import { Footer } from './components/Footer';
 
 function AppLayout() {
   const { theme, toggleTheme } = useTheme();
-  const { showNotification } = useNotification();
+  const { showNotification, showConfirm } = useNotification();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);

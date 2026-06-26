@@ -20,7 +20,7 @@ import {
 import { SuperAdminService, StatsService, OrganizationService, CurrencyService, AuthService } from '../../api';
 
 export function OrganizationDetail() {
-  const { showNotification } = useNotification();
+  const { showNotification, showConfirm } = useNotification();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [org, setOrg] = useState<any>(null);

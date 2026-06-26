@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 
-import { BookingService, ClientService, ProductService, PaymentService, StatsService, InvoiceService, ReceiptService } from '../api';
+import { BookingService, ProductService, ClientService, StatsService, InvoiceService, ReceiptService, PaymentService, AuthService } from '../api';
 
 export function Bookings() {
   const navigate = useNavigate();
@@ -2221,7 +2221,7 @@ export function Bookings() {
                                     ) : (
                                       payment.status === 'completed' && (
                                         <button 
-                                          onClick={() => handleGenerateReceipt(payment.payment_id)}
+                                          onClick={() => handleGenerateReceipt()}
                                           disabled={isLoading}
                                           className="px-3 py-1.5 bg-[var(--bg-surface)] border border-emerald-500/30 text-emerald-500 text-[10px] font-black rounded-lg hover:bg-emerald-500/5 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                                         >
