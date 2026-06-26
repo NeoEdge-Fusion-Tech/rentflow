@@ -46,7 +46,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'company_logo', 'address', 'phone_number', 'email', 'tax_id', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'is_active', 'created_at', 'revenue', 'total_bookings']
+        fields = ['id', 'name', 'company_logo', 'address', 'phone_number', 'email', 'tax_id', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'primary_color', 'is_active', 'created_at', 'revenue', 'total_bookings']
         read_only_fields = ['created_at']
 
     def get_revenue(self, obj):

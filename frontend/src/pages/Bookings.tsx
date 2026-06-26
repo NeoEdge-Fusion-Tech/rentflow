@@ -757,7 +757,7 @@ export function Bookings() {
               </div>
 
               <div className="flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6 relative">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button 
                     onClick={() => { setSelectedBooking(booking); setIsViewingDetails(true); }}
                     className="px-4 py-2 bg-[var(--bg-app)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm"

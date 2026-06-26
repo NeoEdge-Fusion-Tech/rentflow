@@ -9,7 +9,9 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Calendar
+  Calendar,
+  CheckCircle,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
@@ -70,6 +72,25 @@ export function Invoices() {
       console.error("Failed to download invoice", err);
       showNotification("Failed to download invoice", 'error');
     }
+  };
+
+  const handleMarkPaid = async (invoice: any) => {
+    if (invoice.status === 'paid') return;
+    showConfirm({
+      title: 'Mark as Paid',
+      message: `Mark invoice ${invoice.invoice_number} as paid? This will also update any linked booking status.`,
+      confirmText: 'Mark Paid',
+      onConfirm: async () => {
+        try {
+          await InvoiceService.patch(invoice.invoice_id, { status: 'paid' });
+          showNotification('Invoice marked as paid!', 'success');
+          fetchInvoices();
+        } catch (err) {
+          console.error('Failed to mark invoice as paid', err);
+          showNotification('Failed to update invoice status.', 'error');
+        }
+      }
+    });
   };
 
   const handleDelete = (id: number) => {
@@ -203,7 +224,14 @@ export function Invoices() {
                 <p className="text-xl font-black text-[var(--text-main)]">{invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.total_amount)}</p>
               </div>
 
-              <div className="flex items-center gap-2 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
+              <div className="flex items-center gap-2 flex-wrap border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
+                <button
+                  onClick={() => navigate(`/invoices/${invoice.invoice_id}/preview`)}
+                  className="p-2.5 bg-[var(--bg-app)] text-[var(--text-muted)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
+                  title="Preview Invoice"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => navigate(`/invoices/${invoice.invoice_id}/edit`)}
                   className="p-2.5 bg-[var(--bg-app)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
@@ -211,6 +239,15 @@ export function Invoices() {
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
+                {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                  <button
+                    onClick={() => handleMarkPaid(invoice)}
+                    className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition-colors"
+                    title="Mark as Paid"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => handleDownload(invoice)}
                   className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl hover:bg-blue-500/20 transition-colors"
