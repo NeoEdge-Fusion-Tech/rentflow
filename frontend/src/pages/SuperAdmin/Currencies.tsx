@@ -4,7 +4,7 @@ import { CurrencyService } from '../../api';
 import { Coins, Plus, CheckCircle2, XCircle, Search, X } from 'lucide-react';
 
 export function Currencies() {
-  const { showNotification } = useNotification();
+  const { showNotification, showConfirm } = useNotification();
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
