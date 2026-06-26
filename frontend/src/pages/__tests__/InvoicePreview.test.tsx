@@ -40,8 +40,8 @@ const mockInvoice = {
   discount_amount: '0',
   line_items: [
     {
-      description: 'Test Item',
-      details: 'Test details',
+      name: 'Test Item',
+      description: 'Test details',
       quantity: 1,
       unit_price: '150.00',
       total: '150.00'

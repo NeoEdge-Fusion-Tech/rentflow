@@ -93,8 +93,8 @@ class Invoice(models.Model):
 class InvoiceLineItem(models.Model):
     line_item_id = models.AutoField(primary_key=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='line_items')
-    description = models.CharField(max_length=500)
-    details = models.TextField(blank=True, null=True)
+    name = models.CharField(max_length=500)
+    description = models.TextField(blank=True, null=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)

@@ -203,7 +203,7 @@ def generate_invoice_pdf(invoice):
     data = [['Description', 'Qty', 'Unit Price', 'Total']]
     for item in invoice.line_items.all():
         data.append([
-            item.description,
+            item.name,
             f"{float(item.quantity):g}",
             f"{currency_symbol}{item.unit_price:,.2f}",
             f"{currency_symbol}{item.total:,.2f}"

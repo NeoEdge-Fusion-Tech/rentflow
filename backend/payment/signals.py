@@ -111,8 +111,8 @@ def sync_booking_items_to_invoice(booking):
     for idx, item in enumerate(booking.items.all()):
         InvoiceLineItem.objects.create(
             invoice=invoice,
-            description=item.product.name,
-            details=item.product.description or '',
+            name=item.product.name,
+            description=item.product.description or '',
             quantity=item.quantity_booked,
             unit_price=item.unit_price,
             total=item.total_price,

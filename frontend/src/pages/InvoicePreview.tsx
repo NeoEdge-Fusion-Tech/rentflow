@@ -231,8 +231,8 @@ export function InvoicePreview() {
                   {invoice.line_items?.map((item: any, idx: number) => (
                     <tr key={item.line_item_id || idx}>
                       <td className="py-4 px-4 align-top">
-                        <p className="font-bold text-gray-900">{idx + 1}. {item.description}</p>
-                        {item.details && <p className="text-gray-500 mt-1 text-xs pl-4 whitespace-pre-wrap">{item.details}</p>}
+                        <p className="font-bold text-gray-900">{idx + 1}. {item.name}</p>
+                        {item.description && <p className="text-gray-500 mt-1 text-xs pl-4 whitespace-pre-wrap">{item.description}</p>}
                       </td>
                       <td className="py-4 px-4 align-top text-center text-gray-800">{parseFloat(item.quantity)}</td>
                       <td className="py-4 px-4 align-top text-right text-gray-800">{currencySymbol}{formatCurrency(item.unit_price)}</td>
@@ -251,10 +251,10 @@ export function InvoicePreview() {
               {invoice.line_items?.map((item: any, idx: number) => (
                 <div key={item.line_item_id || idx} className="p-3 rounded-lg border border-gray-200" style={{ backgroundColor: `${primaryColor}05` }}>
                   <div className="flex justify-between items-start gap-2 mb-1">
-                    <p className="font-bold text-gray-900 text-sm">{idx + 1}. {item.description}</p>
+                    <p className="font-bold text-gray-900 text-sm">{idx + 1}. {item.name}</p>
                     <p className="font-bold text-gray-900 text-sm shrink-0">{currencySymbol}{formatCurrency(item.total)}</p>
                   </div>
-                  {item.details && <p className="text-gray-500 text-xs mb-2 pl-3 whitespace-pre-wrap">{item.details}</p>}
+                  {item.description && <p className="text-gray-500 text-xs mb-2 pl-3 whitespace-pre-wrap">{item.description}</p>}
                   <div className="flex gap-4 text-xs text-gray-500 border-t border-gray-100 pt-2">
                     <span>Qty: <strong className="text-gray-700">{parseFloat(item.quantity)}</strong></span>
                     <span>Rate: <strong className="text-gray-700">{currencySymbol}{formatCurrency(item.unit_price)}</strong></span>

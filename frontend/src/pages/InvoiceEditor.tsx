@@ -15,8 +15,8 @@ import {
 
 interface LineItem {
   line_item_id?: number;
+  name: string;
   description: string;
-  details: string;
   quantity: number;
   unit_price: number;
 }
@@ -49,7 +49,7 @@ export function InvoiceEditor() {
     tax_percentage: 0,
     notes: '',
   });
-  const [lineItems, setLineItems] = useState<LineItem[]>([{ description: '', details: '', quantity: 1, unit_price: 0 }]);
+  const [lineItems, setLineItems] = useState<LineItem[]>([{ name: '', description: '', quantity: 1, unit_price: 0 }]);
 
   const fetchClients = async () => {
     try {
@@ -102,8 +102,8 @@ export function InvoiceEditor() {
     setLineItems(
       (inv.line_items || []).map((li: any) => ({
         line_item_id: li.line_item_id,
-        description: li.description,
-        details: li.details || '',
+        name: li.name,
+        description: li.description || '',
         quantity: parseFloat(li.quantity),
         unit_price: parseFloat(li.unit_price),
       }))
@@ -123,8 +123,8 @@ export function InvoiceEditor() {
     }));
     if (data.line_items?.length) {
       setLineItems(data.line_items.map((li: any) => ({
-        description: li.description,
-        details: li.details || '',
+        name: li.name,
+        description: li.description || '',
         quantity: parseFloat(li.quantity),
         unit_price: parseFloat(li.unit_price),
       })));
@@ -165,7 +165,7 @@ export function InvoiceEditor() {
     });
   };
 
-  const addLineItem = () => setLineItems(prev => [...prev, { description: '', details: '', quantity: 1, unit_price: 0 }]);
+  const addLineItem = () => setLineItems(prev => [...prev, { name: '', description: '', quantity: 1, unit_price: 0 }]);
   const removeLineItem = (index: number) => setLineItems(prev => prev.filter((_, i) => i !== index));
 
   const subtotal = lineItems.reduce((acc, li) => acc + (Number(li.quantity) || 0) * (Number(li.unit_price) || 0), 0);
@@ -194,8 +194,8 @@ export function InvoiceEditor() {
     notes: formData.notes,
     line_items: lineItems.map(li => ({
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
+      name: li.name,
       description: li.description,
-      details: li.details,
       quantity: li.quantity,
       unit_price: li.unit_price,
     })),
@@ -206,8 +206,8 @@ export function InvoiceEditor() {
       showNotification("Please select a client.", 'warning');
       return;
     }
-    if (lineItems.length === 0 || lineItems.some(li => !li.description)) {
-      showNotification("Every line item needs a description.", 'warning');
+    if (lineItems.length === 0 || lineItems.some(li => !li.name)) {
+      showNotification("Every line item needs a name.", 'warning');
       return;
     }
     try {
@@ -375,8 +375,8 @@ export function InvoiceEditor() {
                       <input
                         type="text"
                         placeholder="Item Name"
-                        value={item.description}
-                        onChange={e => updateLineItem(i, 'description', e.target.value)}
+                        value={item.name}
+                        onChange={e => updateLineItem(i, 'name', e.target.value)}
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)]"
                       />
                     </div>
@@ -413,8 +413,8 @@ export function InvoiceEditor() {
                   <div className="w-full">
                     <textarea
                       placeholder="Add description..."
-                      value={item.details || ''}
-                      onChange={e => updateLineItem(i, 'details', e.target.value)}
+                      value={item.description || ''}
+                      onChange={e => updateLineItem(i, 'description', e.target.value)}
                       rows={2}
                       className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-muted)] resize-none"
                     />
