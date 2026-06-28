@@ -65,10 +65,11 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     subscription_plan = serializers.CharField(source='organization.subscription_plan', read_only=True)
     currency_symbol = serializers.SerializerMethodField()
     has_booking = serializers.SerializerMethodField()
+    has_invoice = serializers.SerializerMethodField()
     subscription_usage = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'subscription_plan', 'currency_symbol', 'has_booking', 'subscription_usage', 'is_active', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'subscription_plan', 'currency_symbol', 'has_booking', 'has_invoice', 'subscription_usage', 'is_active', 'is_superuser']
         read_only_fields = ['is_active']
 
     def get_currency_symbol(self, obj):
@@ -94,6 +95,25 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
                 if free_plan:
                     return free_plan.has_booking
+        return False
+
+    def get_has_invoice(self, obj):
+        if hasattr(obj, 'organization') and obj.organization:
+            org = obj.organization
+            plan_name = None
+            if hasattr(org, 'subscription') and org.subscription:
+                plan_name = org.subscription.plan_name
+            elif org.subscription_plan:
+                plan_name = org.subscription_plan
+            
+            if plan_name:
+                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+                if plan:
+                    return plan.has_invoice
+                # Fallback to free plan if we don't find it
+                free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
+                if free_plan:
+                    return free_plan.has_invoice
         return False
 
     def get_subscription_usage(self, obj):
