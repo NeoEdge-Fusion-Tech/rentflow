@@ -1,5 +1,6 @@
 from django.db import models
 from rest_framework import viewsets, permissions, filters, status
+from .permissions import HasPaidSubscription
 from rest_framework.decorators import action
 from rest_framework.response import Response
 import django_filters.rest_framework as django_filters
@@ -23,6 +24,7 @@ from payment.models import Payment
 class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ProductCategory.objects.all()
     serializer_class = ProductCategorySerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -52,6 +54,7 @@ class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['category', 'is_active']
     search_fields = ['name', 'slug', 'description']
@@ -128,6 +131,7 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class ProductUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ProductUnit.objects.all()
     serializer_class = ProductUnitSerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
     
     def get_queryset(self):
         qs = super().get_queryset()
@@ -148,6 +152,7 @@ class BookingFilter(django_filters.FilterSet):
 class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_class = BookingFilter
     search_fields = ['event_location', 'contact_name', 'client__first_name', 'client__last_name', 'booking_id']
@@ -184,6 +189,7 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class BookingItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BookingItem.objects.all()
     serializer_class = BookingItemSerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
@@ -194,6 +200,7 @@ class BookingItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class BookingItemUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BookingItemUnit.objects.all()
     serializer_class = BookingItemUnitSerializer
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
@@ -202,6 +209,7 @@ class BookingItemUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         serializer.save(updated_by=self.request.user)
 
 class TenantStatsAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
     def get(self, request):
         user = request.user
         
@@ -294,6 +302,7 @@ class TenantStatsAPIView(APIView):
         })
 
 class ScanItemAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
     def post(self, request):
         if not hasattr(request.user, 'organization') or not request.user.organization:
             return Response({'error': 'No organization associated with user'}, status=status.HTTP_400_BAD_REQUEST)

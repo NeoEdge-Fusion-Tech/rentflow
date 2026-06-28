@@ -4,9 +4,13 @@ from loguru import logger
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.http import FileResponse
-from .models import Payment, Invoice, Receipt
-from .serializers import PaymentSerializer, InvoiceSerializer, ReceiptSerializer
-from .utils import generate_invoice_pdf, generate_receipt_pdf, initialize_paystack_transaction, initialize_paystack_transaction_for_invoice
+from .models import Payment, Invoice, Receipt, SubscriptionPayment
+from .serializers import PaymentSerializer, InvoiceSerializer, ReceiptSerializer, SubscriptionPaymentSerializer, SubscriptionSerializer
+from django.db.models import Sum, Count
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from users.models import Organization, Subscription
+from .utils import generate_invoice_pdf, generate_receipt_pdf, initialize_paystack_transaction, initialize_paystack_transaction_for_invoice, initialize_paystack_transaction_for_subscription
 from inventory.models import Booking
 from users.mixins import TenantIsolationMixin
 
@@ -43,7 +47,91 @@ class PaymentViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             })
         except Exception as e:
             logger.error(f"Error creating payment link: {str(e)}")
-            return Response({"error": str(e)}, status=400)
+            return Response({"error": "Failed to create payment link"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
+    def create_subscription_link(self, request):
+        plan_name = request.data.get('plan_name')
+        if not plan_name:
+            return Response({"error": "Plan name is required."}, status=400)
+            
+        # Determine amount based on plan
+        amount = 49000 if plan_name.lower() == 'professional' else 99000
+        if plan_name.lower() == 'free':
+            return Response({"error": "Cannot pay for a free plan."}, status=400)
+
+        try:
+            email = request.user.email
+            org_id = request.user.organization.id if hasattr(request.user, 'organization') and request.user.organization else None
+            
+            if not org_id:
+                return Response({"error": "No organization attached to user."}, status=400)
+                
+            paystack_data = initialize_paystack_transaction_for_subscription(email, amount, org_id, plan_name)
+            
+            return Response({
+                "payment_url": paystack_data['data']['authorization_url'],
+                "reference": paystack_data['data']['reference'],
+                "message": "Paystack subscription payment link generated."
+            })
+        except Exception as e:
+            logger.error(f"Error creating subscription payment link: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SubscriptionPaymentViewSet(viewsets.ModelViewSet):
+    queryset = SubscriptionPayment.objects.all()
+    serializer_class = SubscriptionPaymentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return SubscriptionPayment.objects.all().order_by('-payment_date')
+        if hasattr(user, 'organization') and user.organization:
+            return SubscriptionPayment.objects.filter(organization=user.organization).order_by('-payment_date')
+        return SubscriptionPayment.objects.none()
+
+
+class SuperAdminRevenueAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        total_revenue = SubscriptionPayment.objects.filter(status='successful').aggregate(Sum('amount'))['amount__sum'] or 0
+        active_subscriptions = Subscription.objects.filter(status='active').count()
+        
+        # Breakdown by plan
+        plan_breakdown = list(Subscription.objects.values('plan_name').annotate(count=Count('subscription_id')))
+        
+        recent_payments = SubscriptionPaymentSerializer(
+            SubscriptionPayment.objects.filter(status='successful').order_by('-payment_date')[:10],
+            many=True
+        ).data
+
+        return Response({
+            "total_revenue": total_revenue,
+            "active_subscriptions": active_subscriptions,
+            "plan_breakdown": plan_breakdown,
+            "recent_payments": recent_payments
+        })
+
+
+class OrganizationSubscriptionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not hasattr(request.user, 'organization') or not request.user.organization:
+            return Response({"error": "No organization attached"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        org = request.user.organization
+        subscription = getattr(org, 'subscription', None)
+        sub_data = SubscriptionSerializer(subscription).data if subscription else None
+        
+        return Response({
+            "organization_name": org.name,
+            "subscription_plan": org.subscription_plan,
+            "subscription_details": sub_data
+        })
 
 class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
@@ -224,7 +312,45 @@ class PaystackWebhookView(APIView):
             reference = data['data']['reference']
             amount_paid = data['data']['amount'] / 100  # Convert kobo → Naira
 
-            # 1. Try to resolve as an invoice payment link reference
+            # 1. Try to resolve as a subscription upgrade payment
+            if data['data'].get('metadata', {}).get('source') == 'subscription_upgrade':
+                metadata = data['data']['metadata']
+                org_id = metadata.get('organization_id')
+                plan_name = metadata.get('plan_name')
+                
+                try:
+                    org = Organization.objects.get(id=org_id)
+                    org.subscription_plan = plan_name
+                    org.save(update_fields=['subscription_plan'])
+                    
+                    # Ensure subscription exists
+                    from datetime import timedelta
+                    from django.utils import timezone
+                    subscription, _ = Subscription.objects.get_or_create(
+                        organization=org,
+                        defaults={'plan_name': plan_name}
+                    )
+                    subscription.plan_name = plan_name
+                    subscription.status = 'active'
+                    subscription.current_period_end = timezone.now() + timedelta(days=30)
+                    subscription.save()
+                    
+                    # Log the payment
+                    SubscriptionPayment.objects.create(
+                        organization=org,
+                        subscription=subscription,
+                        amount=amount_paid,
+                        status='successful',
+                        reference=reference,
+                        notes=f"Upgraded to {plan_name}"
+                    )
+                    logger.info(f"Subscription upgraded for org {org.name} to {plan_name}")
+                    return Response({"status": "success", "source": "subscription_upgrade"}, status=200)
+                except Organization.DoesNotExist:
+                    logger.error(f"Organization {org_id} not found for subscription payment {reference}")
+                    return Response({"status": "organization not found"}, status=404)
+
+            # 2. Try to resolve as an invoice payment link reference
             invoice = Invoice.objects.filter(paystack_reference=reference).first()
             if invoice and invoice.status != 'paid':
                 invoice.status = 'paid'

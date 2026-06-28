@@ -139,3 +139,36 @@ class Receipt(models.Model):
             last_id = Receipt.objects.filter(receipt_number__startswith=f"REC-{year}").count()
             self.receipt_number = f"REC-{year}-{last_id + 1:04d}"
         super().save(*args, **kwargs)
+
+
+class SubscriptionPayment(models.Model):
+    """
+    Tracks payments made by Organizations for their SaaS subscription plans.
+    """
+    subscription_payment_id = models.AutoField(primary_key=True)
+    organization = models.ForeignKey(
+        'users.Organization', on_delete=models.CASCADE,
+        related_name='subscription_payments'
+    )
+    subscription = models.ForeignKey(
+        'users.Subscription', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='payments'
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=10, default='NGN')
+    status_choices = [
+        ('pending', 'Pending'),
+        ('successful', 'Successful'),
+        ('failed', 'Failed'),
+    ]
+    status = models.CharField(max_length=20, choices=status_choices, default='pending')
+    payment_date = models.DateTimeField(auto_now_add=True)
+    reference = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.organization.name} - {self.amount} - {self.status}"
+

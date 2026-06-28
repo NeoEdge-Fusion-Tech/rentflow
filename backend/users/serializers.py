@@ -58,10 +58,11 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
 class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_id = serializers.IntegerField(source='organization.id', read_only=True)
     organization_name = serializers.CharField(source='organization.name', read_only=True)
+    subscription_plan = serializers.CharField(source='organization.subscription_plan', read_only=True)
     currency_symbol = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'currency_symbol', 'is_active', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'subscription_plan', 'currency_symbol', 'is_active', 'is_superuser']
         read_only_fields = ['is_active']
 
     def get_currency_symbol(self, obj):

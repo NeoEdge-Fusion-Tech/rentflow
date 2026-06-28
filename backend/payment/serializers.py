@@ -1,7 +1,20 @@
 from rest_framework import serializers
 from users.mixins import TenantSerializerMixin
-from .models import Payment, Invoice, InvoiceLineItem, Receipt
+from .models import Payment, Invoice, InvoiceLineItem, Receipt, SubscriptionPayment
 from .utils import compute_invoice_totals
+from users.models import Organization, Subscription
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['subscription_id', 'plan_name', 'status', 'current_period_end']
+
+class SubscriptionPaymentSerializer(serializers.ModelSerializer):
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    
+    class Meta:
+        model = SubscriptionPayment
+        fields = '__all__'
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):
     line_item_id = serializers.IntegerField(required=False)

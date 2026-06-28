@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../context/NotificationContext';
 import { Building, Upload, CreditCard, Shield, Check, Plus, X, Trash2, Landmark, Edit2 } from 'lucide-react';
-import { UserService, AuthService, OrganizationService, CurrencyService, BankAccountService } from '../api';
+import { UserService, AuthService, OrganizationService, CurrencyService, BankAccountService, PaymentService } from '../api';
 
 export function Settings() {
   const { showNotification, showConfirm } = useNotification();
@@ -275,6 +275,27 @@ export function Settings() {
     }
   };
 
+  const openRemoveTeamModal = (user: any) => {
+    setMemberToRemove(user);
+    setShowConfirmModal(true);
+  };
+
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const handleUpgrade = async (plan_name: string) => {
+    try {
+      setIsUpgrading(true);
+      const res = await PaymentService.createSubscriptionLink(plan_name);
+      if (res.data.payment_url) {
+        window.location.href = res.data.payment_url;
+      }
+    } catch (e: any) {
+      showNotification(e.response?.data?.error || "Failed to initialize payment", "error");
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
@@ -283,7 +304,7 @@ export function Settings() {
       </div>
 
       <div className="flex gap-8 border-b border-[var(--border-soft)]">
-        {['Workspace', ...(currentUser?.role === 'Admin' || currentUser?.is_superuser ? ['Billing & Plans', 'Team'] : [])].map(tab => (
+        {['Workspace', ...(currentUser?.role === 'admin' || currentUser?.is_superuser ? ['Billing & Plans', 'Team'] : [])].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -432,14 +453,23 @@ export function Settings() {
             <h2 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2"><CreditCard className="w-5 h-5"/> Current Subscription</h2>
             <div className="bg-[var(--bg-app)] rounded-xl p-4 flex items-center justify-between border border-[var(--border-soft)]">
               <div>
-                <p className="font-bold text-[var(--text-main)]">Professional Plan</p>
-                <p className="text-sm text-[var(--text-muted)]">Renews on April 24, 2026</p>
+                <p className="font-bold text-[var(--text-main)] capitalize">{currentUser?.subscription_plan || 'Free'} Plan</p>
+                {currentUser?.subscription_plan !== 'free' && (
+                  <p className="text-sm text-[var(--text-muted)]">Active</p>
+                )}
               </div>
-              <span className="bg-emerald-500/10 text-emerald-500 text-xs font-bold px-2.5 py-1 rounded-full uppercase border border-emerald-500/20">Active</span>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase border ${
+                currentUser?.subscription_plan === 'free' 
+                  ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' 
+                  : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+              }`}>
+                {currentUser?.subscription_plan === 'free' ? 'Free' : 'Active'}
+              </span>
             </div>
             <div className="mt-6 flex gap-3">
-              <button className="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] transition-colors">Cancel Plan</button>
-              <button className="px-4 py-2 bg-brand-primary text-brand-accent rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">View Invoices</button>
+              {currentUser?.subscription_plan !== 'free' && (
+                <button className="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] transition-colors">Cancel Plan</button>
+              )}
             </div>
           </div>
 
@@ -463,7 +493,12 @@ export function Settings() {
                 <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Custom domain</li>
                 <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Automated Webhooks</li>
               </ul>
-              <button className="w-full mt-6 bg-brand-primary text-brand-accent py-2 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-md active:translate-y-px">Upgrade to Premium</button>
+              <button 
+                onClick={() => handleUpgrade('premium')} 
+                disabled={isUpgrading}
+                className="w-full mt-6 bg-brand-primary text-brand-accent py-2 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-md active:translate-y-px disabled:opacity-50">
+                {isUpgrading ? 'Redirecting...' : 'Upgrade to Premium'}
+              </button>
             </div>
           </div>
         </div>

@@ -64,6 +64,31 @@ def initialize_paystack_transaction_for_invoice(email, amount, invoice_id, invoi
     else:
         raise Exception(f"Paystack initialization failed: {response.text}")
 
+def initialize_paystack_transaction_for_subscription(email, amount, organization_id, plan_name):
+    """
+    Initializes a Paystack transaction for SaaS subscription upgrade.
+    Amount should be in Naira (will be converted to kobo for Paystack).
+    """
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+    data = {
+        "email": email,
+        "amount": int(float(amount) * 100),  # convert to kobo
+        "metadata": {
+            "source": "subscription_upgrade",
+            "organization_id": organization_id,
+            "plan_name": plan_name,
+        },
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Paystack initialization failed: {response.text}")
 def compute_invoice_totals(line_items, discount_amount=0, discount_percentage=0, tax_percentage=0):
     """
     Computes (subtotal, discount_value, tax_amount, total_amount) as Decimals

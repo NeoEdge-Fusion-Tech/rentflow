@@ -81,7 +81,15 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
 
           {/* Nav */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
+            {navItems.filter(item => {
+              if (item.label === 'Inventory' && currentUser?.subscription_plan === 'free') {
+                return false;
+              }
+              if (item.label === 'Scanner' && currentUser?.subscription_plan === 'free') {
+                return false;
+              }
+              return true;
+            }).map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}

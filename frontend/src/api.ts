@@ -100,6 +100,10 @@ export const PaymentService = {
   create: (data: any) => api.post('/payment/payments/', data),
   createLink: (bookingId: number, amount: number) => 
     api.post('/payment/payments/create_payment_link/', { booking_id: bookingId, amount }),
+  createSubscriptionLink: (plan_name: string) => 
+    api.post('/payment/payments/create_subscription_link/', { plan_name }),
+  getOrganizationSubscription: () => api.get('/payment/organization/subscription/'),
+  getSubscriptionPayments: () => api.get('/payment/subscription-payments/'),
 };
 
 export const InvoiceService = {
