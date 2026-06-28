@@ -55,10 +55,15 @@ class PaymentViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if not plan_name:
             return Response({"error": "Plan name is required."}, status=400)
             
-        # Determine amount based on plan
-        amount = 49000 if plan_name.lower() == 'professional' else 99000
-        if plan_name.lower() == 'free':
+        from users.models import SubscriptionPlan
+        plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+        if not plan:
+            return Response({"error": "Invalid or inactive plan selected."}, status=400)
+            
+        if plan.is_free or plan.price <= 0:
             return Response({"error": "Cannot pay for a free plan."}, status=400)
+            
+        amount = plan.price
 
         try:
             email = request.user.email

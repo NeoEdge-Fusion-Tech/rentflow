@@ -34,7 +34,16 @@ def initialize_paystack_transaction(email, amount, booking_id):
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"Paystack initialization failed: {response.text}")
+        try:
+            error_data = response.json()
+            message = error_data.get('message', response.text)
+        except Exception:
+            message = response.text
+            
+        if "Invalid key" in message or "authorization key" in message.lower():
+            raise ValueError("Payment gateway is not configured properly (Invalid API Key). Please update the `.env` file or contact support.")
+            
+        raise ValueError(f"Paystack Error: {message}")
 
 
 def initialize_paystack_transaction_for_invoice(email, amount, invoice_id, invoice_number):
@@ -62,7 +71,16 @@ def initialize_paystack_transaction_for_invoice(email, amount, invoice_id, invoi
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"Paystack initialization failed: {response.text}")
+        try:
+            error_data = response.json()
+            message = error_data.get('message', response.text)
+        except Exception:
+            message = response.text
+            
+        if "Invalid key" in message or "authorization key" in message.lower():
+            raise ValueError("Payment gateway is not configured properly (Invalid API Key). Please update the `.env` file or contact support.")
+            
+        raise ValueError(f"Paystack Error: {message}")
 
 def initialize_paystack_transaction_for_subscription(email, amount, organization_id, plan_name):
     """
@@ -88,7 +106,16 @@ def initialize_paystack_transaction_for_subscription(email, amount, organization
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"Paystack initialization failed: {response.text}")
+        try:
+            error_data = response.json()
+            message = error_data.get('message', response.text)
+        except Exception:
+            message = response.text
+            
+        if "Invalid key" in message or "authorization key" in message.lower():
+            raise ValueError("Payment gateway is not configured properly (Invalid API Key). Please update the `.env` file or contact support.")
+            
+        raise ValueError(f"Paystack Error: {message}")
 def compute_invoice_totals(line_items, discount_amount=0, discount_percentage=0, tax_percentage=0):
     """
     Computes (subtotal, discount_value, tax_amount, total_amount) as Decimals
