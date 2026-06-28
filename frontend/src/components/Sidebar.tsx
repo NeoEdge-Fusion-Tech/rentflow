@@ -45,6 +45,8 @@ const superAdminItems = [
   { icon: Calendar, label: 'Global Bookings', path: '/superadmin/bookings' },
   { icon: FileText, label: 'Global Invoices', path: '/superadmin/invoices' },
   { icon: Coins, label: 'Currencies', path: '/superadmin/currencies' },
+  { icon: CreditCard, label: 'Subscriptions', path: '/superadmin/subscriptions' },
+  { icon: Coins, label: 'Revenue & Payments', path: '/superadmin/revenue' },
 ];
 
 export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarProps) {

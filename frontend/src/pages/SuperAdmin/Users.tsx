@@ -128,6 +128,7 @@ export function Users() {
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">User</th>
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Organization</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan</th>
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4"></th>
               </tr>
@@ -135,11 +136,11 @@ export function Users() {
             <tbody className="divide-y divide-[var(--border-subtle)]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">Loading platform users...</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading platform users...</td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-[var(--text-muted)]">No users found.</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No users found.</td>
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
@@ -174,6 +175,15 @@ export function Users() {
                         </div>
                         <span className="text-[10px] text-[var(--text-muted)] ml-6 opacity-70">ID: {user.organization_id || 'N/A'}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                        user.subscription_plan === 'free' 
+                          ? 'bg-gray-500/10 text-gray-500' 
+                          : 'bg-emerald-500/10 text-emerald-500'
+                      }`}>
+                        {user.subscription_plan || 'Free'}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${

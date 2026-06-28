@@ -23,6 +23,8 @@ import { Currencies } from './pages/SuperAdmin/Currencies';
 import { Dashboard as SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
 import { Bookings as SuperAdminBookings } from './pages/SuperAdmin/Bookings';
 import { Invoices as SuperAdminInvoices } from './pages/SuperAdmin/Invoices';
+import { Subscriptions as SuperAdminSubscriptions } from './pages/SuperAdmin/Subscriptions';
+import { Revenue as SuperAdminRevenue } from './pages/SuperAdmin/Revenue';
 import { OrganizationSelector } from './components/OrganizationSelector';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -305,9 +307,11 @@ function AppLayout() {
                 <Route path="/superadmin/organizations" element={<Organizations />} />
                 <Route path="/superadmin/organizations/:id" element={<OrganizationDetail />} />
                 <Route path="/superadmin/users" element={<SuperAdminUsers />} />
-                <Route path="/superadmin/bookings" element={<SuperAdminBookings />} />
-                <Route path="/superadmin/invoices" element={<SuperAdminInvoices />} />
-                <Route path="/superadmin/currencies" element={<Currencies />} />
+              <Route path="/superadmin/currencies" element={<Currencies />} />
+              <Route path="/superadmin/bookings" element={<SuperAdminBookings />} />
+              <Route path="/superadmin/invoices" element={<SuperAdminInvoices />} />
+              <Route path="/superadmin/subscriptions" element={<SuperAdminSubscriptions />} />
+              <Route path="/superadmin/revenue" element={<SuperAdminRevenue />} />
               </Routes>
             </div>
             <Footer className="mt-8" />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNotification } from '../context/NotificationContext';
 import { Building, Upload, CreditCard, Shield, Check, Plus, X, Trash2, Landmark, Edit2 } from 'lucide-react';
 import { UserService, AuthService, OrganizationService, CurrencyService, BankAccountService, PaymentService } from '../api';
+import { format } from 'date-fns';
 
 export function Settings() {
   const { showNotification, showConfirm } = useNotification();
@@ -23,6 +24,16 @@ export function Settings() {
   const currencySymbol = localStorage.getItem('currencySymbol') || '$';
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
+  const [subscriptionPayments, setSubscriptionPayments] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (activeTab === 'Billing & Plans' && currentUser) {
+      PaymentService.getOrganizationSubscription().then(res => setSubscriptionDetails(res.data)).catch(console.error);
+      PaymentService.getSubscriptionPayments().then(res => setSubscriptionPayments(res.data.results || res.data)).catch(console.error);
+    }
+  }, [activeTab, currentUser]);
 
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
@@ -454,8 +465,8 @@ export function Settings() {
             <div className="bg-[var(--bg-app)] rounded-xl p-4 flex items-center justify-between border border-[var(--border-soft)]">
               <div>
                 <p className="font-bold text-[var(--text-main)] capitalize">{currentUser?.subscription_plan || 'Free'} Plan</p>
-                {currentUser?.subscription_plan !== 'free' && (
-                  <p className="text-sm text-[var(--text-muted)]">Active</p>
+                {currentUser?.subscription_plan !== 'free' && subscriptionDetails?.current_period_end && (
+                  <p className="text-sm text-[var(--text-muted)]">Renews on {format(new Date(subscriptionDetails.current_period_end), 'MMMM d, yyyy')}</p>
                 )}
               </div>
               <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase border ${
@@ -470,6 +481,45 @@ export function Settings() {
               {currentUser?.subscription_plan !== 'free' && (
                 <button className="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] transition-colors">Cancel Plan</button>
               )}
+            </div>
+          </div>
+
+          <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-[var(--border-soft)]">
+              <h2 className="font-bold text-[var(--text-main)]">Subscription Payment History</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Date</th>
+                    <th className="px-4 py-3 font-medium">Amount</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Reference</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-soft)]">
+                  {subscriptionPayments.map(payment => (
+                    <tr key={payment.id} className="hover:bg-[var(--bg-app)]">
+                      <td className="px-4 py-3 text-[var(--text-muted)]">
+                        {payment.created_at ? format(new Date(payment.created_at), 'MMM d, yyyy') : '-'}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-[var(--text-main)]">₦{payment.amount}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">
+                          {payment.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs">{payment.reference || '-'}</td>
+                    </tr>
+                  ))}
+                  {subscriptionPayments.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-[var(--text-muted)]">No payment history found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
