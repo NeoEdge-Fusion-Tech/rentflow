@@ -91,10 +91,10 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 if plan:
                     return plan.has_booking
                 
-                # Fallback to free plan if we don't find it
-                free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
-                if free_plan:
-                    return free_plan.has_booking
+            # Fallback to free plan if we don't find it or if plan_name is empty
+            free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
+            if free_plan:
+                return free_plan.has_booking
         return False
 
     def get_has_invoice(self, obj):
@@ -110,10 +110,11 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
                 if plan:
                     return plan.has_invoice
-                # Fallback to free plan if we don't find it
-                free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
-                if free_plan:
-                    return free_plan.has_invoice
+                    
+            # Fallback to free plan if we don't find it or if plan_name is empty
+            free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
+            if free_plan:
+                return free_plan.has_invoice
         return False
 
     def get_subscription_usage(self, obj):
@@ -131,14 +132,16 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             elif org.subscription_plan:
                 plan_name = org.subscription_plan
             
+            plan = None
             if plan_name:
                 plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
-                if not plan:
-                    plan = SubscriptionPlan.objects.filter(is_free=True).first()
-                
-                if plan:
-                    usage["invoices_limit"] = plan.max_invoices_per_month
-                    usage["bookings_limit"] = plan.max_inventory_booking_per_month
+            
+            if not plan:
+                plan = SubscriptionPlan.objects.filter(is_free=True).first()
+            
+            if plan:
+                usage["invoices_limit"] = plan.max_invoices_per_month
+                usage["bookings_limit"] = plan.max_inventory_booking_per_month
             
             from django.utils import timezone
             now = timezone.now()

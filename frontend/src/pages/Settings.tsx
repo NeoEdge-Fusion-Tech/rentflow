@@ -466,25 +466,26 @@ export function Settings() {
             <h2 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2"><CreditCard className="w-5 h-5"/> Current Subscription</h2>
             <div className="bg-[var(--bg-app)] rounded-xl p-4 flex items-center justify-between border border-[var(--border-soft)]">
               <div>
-                <p className="font-bold text-[var(--text-main)] capitalize">{currentUser?.subscription_plan || 'Free'} Plan</p>
-                {currentUser?.subscription_plan !== 'free' && subscriptionDetails?.current_period_end && (
+                <p className="font-bold text-[var(--text-main)] capitalize">{currentUser?.subscription_plan || 'free'} Plan</p>
+                {(currentUser?.subscription_plan || 'free') !== 'free' && subscriptionDetails?.current_period_end && (
                   <p className="text-sm text-[var(--text-muted)]">Renews on {format(new Date(subscriptionDetails.current_period_end), 'MMMM d, yyyy')}</p>
                 )}
               </div>
               <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase border ${
-                currentUser?.subscription_plan === 'free' 
+                (currentUser?.subscription_plan || 'free') === 'free' 
                   ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' 
                   : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
               }`}>
-                {currentUser?.subscription_plan === 'free' ? 'Free' : 'Active'}
+                {(currentUser?.subscription_plan || 'free') === 'free' ? 'Free' : 'Active'}
               </span>
             </div>
             <div className="mt-6 flex gap-3">
-              {currentUser?.subscription_plan !== 'free' && (
+              {(currentUser?.subscription_plan || 'free') !== 'free' && (
                 <button className="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] transition-colors">Cancel Plan</button>
               )}
             </div>
           </div>
+
 
           <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
             <div className="p-4 border-b border-[var(--border-soft)]">
@@ -528,7 +529,8 @@ export function Settings() {
           <h3 className="text-lg font-bold text-[var(--text-main)] mt-8 mb-4">Available Plans</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {subscriptionPlans.map(plan => {
-              const isCurrent = currentUser?.subscription_plan?.toLowerCase() === plan.name.toLowerCase();
+              const currentPlanName = currentUser?.subscription_plan || 'free';
+              const isCurrent = currentPlanName.toLowerCase() === plan.name.toLowerCase();
               return (
                 <div key={plan.id} className={`border ${isCurrent ? 'border-brand-primary bg-brand-primary/10' : 'border-[var(--border-soft)] bg-[var(--bg-surface)] hover:border-brand-primary/50'} rounded-2xl p-6 relative transition-colors`}>
                   {isCurrent && (

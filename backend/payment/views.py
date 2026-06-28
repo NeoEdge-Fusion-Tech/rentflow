@@ -53,15 +53,15 @@ class PaymentViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     def create_subscription_link(self, request):
         plan_name = request.data.get('plan_name')
         if not plan_name:
-            return Response({"error": "Plan name is required."}, status=400)
+            return Response({"error": "Plan name is required"}, status=400)
             
         from users.models import SubscriptionPlan
         plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
         if not plan:
-            return Response({"error": "Invalid or inactive plan selected."}, status=400)
+            return Response({"error": "Invalid or inactive plan selected"}, status=400)
             
         if plan.is_free or plan.price <= 0:
-            return Response({"error": "Cannot pay for a free plan."}, status=400)
+            return Response({"error": "Cannot pay for a free plan"}, status=400)
             
         amount = plan.price
 

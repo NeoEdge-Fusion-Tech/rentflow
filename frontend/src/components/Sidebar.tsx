@@ -85,6 +85,7 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
           {/* Nav */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navItems.filter(item => {
+              if (isSuperuser) return true;
               if (item.label === 'Inventory' && currentUser?.has_booking === false) {
                 return false;
               }
