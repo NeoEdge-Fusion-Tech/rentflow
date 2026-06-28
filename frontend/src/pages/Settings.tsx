@@ -27,11 +27,13 @@ export function Settings() {
 
   const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
   const [subscriptionPayments, setSubscriptionPayments] = useState<any[]>([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
 
   useEffect(() => {
     if (activeTab === 'Billing & Plans' && currentUser) {
       PaymentService.getOrganizationSubscription().then(res => setSubscriptionDetails(res.data)).catch(console.error);
       PaymentService.getSubscriptionPayments().then(res => setSubscriptionPayments(res.data.results || res.data)).catch(console.error);
+      UserService.getSubscriptionPlans().then(res => setSubscriptionPlans((res.data.results || res.data).filter((p: any) => p.is_active))).catch(console.error);
     }
   }, [activeTab, currentUser]);
 
@@ -525,31 +527,40 @@ export function Settings() {
 
           <h3 className="text-lg font-bold text-[var(--text-main)] mt-8 mb-4">Available Plans</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border-2 border-brand-primary bg-brand-primary/10 rounded-2xl p-6 relative">
-              <div className="absolute top-0 right-0 bg-brand-primary text-brand-accent text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg border border-brand-primary shadow-sm shadow-brand-primary/20">CURRENT</div>
-              <h4 className="font-bold text-[var(--text-main)]">Professional</h4>
-              <p className="text-2xl font-bold mt-2 text-brand-primary">{currencySymbol}49<span className="text-sm font-normal text-[var(--text-muted)]">/mo</span></p>
-              <ul className="mt-4 space-y-2 text-sm text-[var(--text-muted)]">
-                <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Unlimited products</li>
-                <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> 3 Users</li>
-                <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Basic Payout Routing</li>
-              </ul>
-            </div>
-            <div className="border border-[var(--border-soft)] rounded-2xl p-6 hover:border-brand-primary/50 transition-colors cursor-pointer bg-[var(--bg-surface)]">
-              <h4 className="font-bold text-[var(--text-main)]">Premium</h4>
-              <p className="text-2xl font-bold mt-2 text-[var(--text-main)]">{currencySymbol}99<span className="text-sm font-normal text-[var(--text-muted)]">/mo</span></p>
-              <ul className="mt-4 space-y-2 text-sm text-[var(--text-muted)]">
-                <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Everything in Pro</li>
-                <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Custom domain</li>
-                <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Automated Webhooks</li>
-              </ul>
-              <button 
-                onClick={() => handleUpgrade('premium')} 
-                disabled={isUpgrading}
-                className="w-full mt-6 bg-brand-primary text-brand-accent py-2 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-md active:translate-y-px disabled:opacity-50">
-                {isUpgrading ? 'Redirecting...' : 'Upgrade to Premium'}
-              </button>
-            </div>
+            {subscriptionPlans.map(plan => {
+              const isCurrent = currentUser?.subscription_plan?.toLowerCase() === plan.name.toLowerCase();
+              return (
+                <div key={plan.id} className={`border ${isCurrent ? 'border-brand-primary bg-brand-primary/10' : 'border-[var(--border-soft)] bg-[var(--bg-surface)] hover:border-brand-primary/50'} rounded-2xl p-6 relative transition-colors`}>
+                  {isCurrent && (
+                    <div className="absolute top-0 right-0 bg-brand-primary text-brand-accent text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg border border-brand-primary shadow-sm shadow-brand-primary/20">CURRENT</div>
+                  )}
+                  <h4 className="font-bold text-[var(--text-main)]">{plan.name}</h4>
+                  <p className="text-2xl font-bold mt-2 text-[var(--text-main)]">{currencySymbol}{plan.price}<span className="text-sm font-normal text-[var(--text-muted)]">/{plan.billing_cycle === 'yearly' ? 'yr' : 'mo'}</span></p>
+                  
+                  <ul className="mt-4 space-y-2 text-sm text-[var(--text-muted)]">
+                    {plan.has_invoice && (
+                      <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Invoicing ({plan.max_invoices_per_month === -1 ? 'Unlimited' : plan.max_invoices_per_month}/month)</li>
+                    )}
+                    {plan.has_booking && (
+                      <li className="flex gap-2 items-center"><Check className="w-4 h-4 text-brand-primary"/> Inventory bookings ({plan.max_inventory_booking_per_month === -1 ? 'Unlimited' : plan.max_inventory_booking_per_month}/month)</li>
+                    )}
+                  </ul>
+                  {!isCurrent && (
+                    <button 
+                      onClick={() => handleUpgrade(plan.name.toLowerCase())} 
+                      disabled={isUpgrading}
+                      className="w-full mt-6 bg-brand-primary text-brand-accent py-2 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-md active:translate-y-px disabled:opacity-50">
+                      {isUpgrading ? 'Redirecting...' : `Upgrade to ${plan.name}`}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            {subscriptionPlans.length === 0 && (
+              <div className="col-span-full text-center py-8 text-[var(--text-muted)]">
+                No subscription plans available.
+              </div>
+            )}
           </div>
         </div>
       )}

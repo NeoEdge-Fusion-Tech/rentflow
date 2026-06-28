@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
-from .models import Organization, Subscription, OrganizationAccountDetails, BankAccount, User, Client, Currency
-from .serializers import OrganizationSerializer, SubscriptionSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, CurrencySerializer
+from .models import Organization, Subscription, SubscriptionPlan, OrganizationAccountDetails, BankAccount, User, Client, Currency
+from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, CurrencySerializer
 from users.mixins import TenantIsolationMixin
 from .utils import send_verification_email, send_password_reset_email
 from rest_framework import status
@@ -140,6 +140,16 @@ class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class SubscriptionViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+
+class SubscriptionPlanViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SubscriptionPlan.objects.all()
+    serializer_class = SubscriptionPlanSerializer
+    # Usually only superadmins should manage plans, but any user can view them
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdminUser()]
+        return super().get_permissions()
 
 class OrganizationAccountDetailsViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = OrganizationAccountDetails.objects.all()

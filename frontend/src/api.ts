@@ -40,6 +40,7 @@ export const UserService = {
   create: (data: any) => api.post('/users/team/', data),
   update: (id: number | string, data: any) => api.put(`/users/team/${id}/`, data),
   delete: (id: number | string) => api.delete(`/users/team/${id}/`),
+  getSubscriptionPlans: () => api.get('/users/subscription-plans/'),
   adminChangePassword: (id: number | string, data: any) => api.post(`/users/team/${id}/admin_change_password/`, data),
   adminTriggerReset: (id: number | string) => api.post(`/users/team/${id}/admin_trigger_reset/`),
   deactivate: (id: number | string) => api.post(`/users/team/${id}/deactivate/`),

@@ -24,6 +24,7 @@ import { Dashboard as SuperAdminDashboard } from './pages/SuperAdmin/Dashboard';
 import { Bookings as SuperAdminBookings } from './pages/SuperAdmin/Bookings';
 import { Invoices as SuperAdminInvoices } from './pages/SuperAdmin/Invoices';
 import { Subscriptions as SuperAdminSubscriptions } from './pages/SuperAdmin/Subscriptions';
+import { SubscriptionPlans as SuperAdminSubscriptionPlans } from './pages/SuperAdmin/SubscriptionPlans';
 import { Revenue as SuperAdminRevenue } from './pages/SuperAdmin/Revenue';
 import { OrganizationSelector } from './components/OrganizationSelector';
 import { Login } from './pages/Login';
@@ -311,6 +312,7 @@ function AppLayout() {
               <Route path="/superadmin/bookings" element={<SuperAdminBookings />} />
               <Route path="/superadmin/invoices" element={<SuperAdminInvoices />} />
               <Route path="/superadmin/subscriptions" element={<SuperAdminSubscriptions />} />
+              <Route path="/superadmin/subscription-plans" element={<SuperAdminSubscriptionPlans />} />
               <Route path="/superadmin/revenue" element={<SuperAdminRevenue />} />
               </Routes>
             </div>

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, User, Client, Currency
+from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Currency
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -13,12 +13,16 @@ class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = Currency
         fields = ['id', 'name', 'code', 'symbol', 'status']
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubscriptionPlan
+        fields = ['id', 'name', 'description', 'price', 'billing_cycle', 'max_invoices_per_month', 'max_inventory_booking_per_month', 'has_booking', 'has_invoice', 'is_free', 'is_active', 'created_at']
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
-        fields = ['id', 'subscription_id', 'plan_name', 'status', 'current_period_end']
+        fields = ['id', 'subscription_id', 'plan_name', 'status', 'current_period_end', 'max_invoices_per_month']
         read_only_fields = ['status', 'current_period_end']
         
 class OrganizationAccountDetailsSerializer(serializers.ModelSerializer):
@@ -60,15 +64,81 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     subscription_plan = serializers.CharField(source='organization.subscription_plan', read_only=True)
     currency_symbol = serializers.SerializerMethodField()
+    has_booking = serializers.SerializerMethodField()
+    subscription_usage = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'subscription_plan', 'currency_symbol', 'is_active', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'subscription_plan', 'currency_symbol', 'has_booking', 'subscription_usage', 'is_active', 'is_superuser']
         read_only_fields = ['is_active']
 
     def get_currency_symbol(self, obj):
         if hasattr(obj, 'organization') and obj.organization and obj.organization.currency:
             return obj.organization.currency.symbol
         return '$'
+
+    def get_has_booking(self, obj):
+        if hasattr(obj, 'organization') and obj.organization:
+            org = obj.organization
+            plan_name = None
+            if hasattr(org, 'subscription') and org.subscription:
+                plan_name = org.subscription.plan_name
+            elif org.subscription_plan:
+                plan_name = org.subscription_plan
+            
+            if plan_name:
+                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+                if plan:
+                    return plan.has_booking
+                
+                # Fallback to free plan if we don't find it
+                free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
+                if free_plan:
+                    return free_plan.has_booking
+        return False
+
+    def get_subscription_usage(self, obj):
+        usage = {
+            "invoices_used": 0,
+            "invoices_limit": 10,
+            "bookings_used": 0,
+            "bookings_limit": 10
+        }
+        if hasattr(obj, 'organization') and obj.organization:
+            org = obj.organization
+            plan_name = None
+            if hasattr(org, 'subscription') and org.subscription:
+                plan_name = org.subscription.plan_name
+            elif org.subscription_plan:
+                plan_name = org.subscription_plan
+            
+            if plan_name:
+                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+                if not plan:
+                    plan = SubscriptionPlan.objects.filter(is_free=True).first()
+                
+                if plan:
+                    usage["invoices_limit"] = plan.max_invoices_per_month
+                    usage["bookings_limit"] = plan.max_inventory_booking_per_month
+            
+            from django.utils import timezone
+            now = timezone.now()
+            
+            from payment.models import Invoice
+            usage["invoices_used"] = Invoice.objects.filter(
+                organization=org,
+                booking__isnull=True,
+                created_at__year=now.year,
+                created_at__month=now.month
+            ).count()
+            
+            from inventory.models import Booking
+            usage["bookings_used"] = Booking.objects.filter(
+                organization=org,
+                created_at__year=now.year,
+                created_at__month=now.month
+            ).count()
+            
+        return usage
 
 class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     bookings_count = serializers.IntegerField(read_only=True)

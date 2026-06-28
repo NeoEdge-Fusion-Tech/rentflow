@@ -46,6 +46,7 @@ const superAdminItems = [
   { icon: FileText, label: 'Global Invoices', path: '/superadmin/invoices' },
   { icon: Coins, label: 'Currencies', path: '/superadmin/currencies' },
   { icon: CreditCard, label: 'Subscriptions', path: '/superadmin/subscriptions' },
+  { icon: CreditCard, label: 'Subscription Plans', path: '/superadmin/subscription-plans' },
   { icon: Coins, label: 'Revenue & Payments', path: '/superadmin/revenue' },
 ];
 
@@ -84,10 +85,16 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
           {/* Nav */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navItems.filter(item => {
-              if (item.label === 'Inventory' && currentUser?.subscription_plan === 'free') {
+              if (item.label === 'Inventory' && currentUser?.has_booking === false) {
                 return false;
               }
-              if (item.label === 'Scanner' && currentUser?.subscription_plan === 'free') {
+              if (item.label === 'Bookings' && currentUser?.has_booking === false) {
+                return false;
+              }
+              if (item.label === 'Scanner' && currentUser?.has_booking === false) {
+                return false;
+              }
+              if (item.label === 'Invoices' && currentUser?.has_invoice === false) {
                 return false;
               }
               return true;
@@ -140,6 +147,55 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
               </>
             )}
           </nav>
+
+          {/* Usage Tracker */}
+          {currentUser && currentUser.subscription_usage && !isSuperuser && (
+            <div className="px-4 py-2 space-y-4">
+              {currentUser.has_invoice && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-[var(--text-muted)]">Invoices</span>
+                    <span className="text-[var(--text-main)]">
+                      {currentUser.subscription_usage.invoices_used} / {currentUser.subscription_usage.invoices_limit === -1 ? '∞' : currentUser.subscription_usage.invoices_limit}
+                    </span>
+                  </div>
+                  {currentUser.subscription_usage.invoices_limit !== -1 && (
+                    <div className="h-1.5 w-full bg-[var(--bg-app)] rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${currentUser.subscription_usage.invoices_used >= currentUser.subscription_usage.invoices_limit ? 'bg-rose-500' : 'bg-brand-primary'}`} 
+                        style={{width: `${Math.min((currentUser.subscription_usage.invoices_used / currentUser.subscription_usage.invoices_limit) * 100, 100)}%`}}
+                      ></div>
+                    </div>
+                  )}
+                  {currentUser.subscription_usage.invoices_limit !== -1 && currentUser.subscription_usage.invoices_used >= currentUser.subscription_usage.invoices_limit && (
+                    <p className="text-[10px] text-rose-500 font-medium">Limit reached</p>
+                  )}
+                </div>
+              )}
+
+              {currentUser.has_booking && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-[var(--text-muted)]">Bookings</span>
+                    <span className="text-[var(--text-main)]">
+                      {currentUser.subscription_usage.bookings_used} / {currentUser.subscription_usage.bookings_limit === -1 ? '∞' : currentUser.subscription_usage.bookings_limit}
+                    </span>
+                  </div>
+                  {currentUser.subscription_usage.bookings_limit !== -1 && (
+                    <div className="h-1.5 w-full bg-[var(--bg-app)] rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${currentUser.subscription_usage.bookings_used >= currentUser.subscription_usage.bookings_limit ? 'bg-rose-500' : 'bg-brand-primary'}`} 
+                        style={{width: `${Math.min((currentUser.subscription_usage.bookings_used / currentUser.subscription_usage.bookings_limit) * 100, 100)}%`}}
+                      ></div>
+                    </div>
+                  )}
+                  {currentUser.subscription_usage.bookings_limit !== -1 && currentUser.subscription_usage.bookings_used >= currentUser.subscription_usage.bookings_limit && (
+                    <p className="text-[10px] text-rose-500 font-medium">Limit reached</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Footer */}
           <div className="p-4 border-t border-[var(--border-soft)] mt-auto bg-[var(--bg-app)]/50">

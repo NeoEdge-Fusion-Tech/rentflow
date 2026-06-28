@@ -144,21 +144,39 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_superuser and hasattr(user, 'organization') and user.organization:
             org = user.organization
-            if hasattr(org, 'subscription') and org.subscription and org.subscription.status != 'active':
-                from django.conf import settings
-                from django.utils import timezone
-                from rest_framework.exceptions import PermissionDenied
+            from django.utils import timezone
+            from rest_framework.exceptions import PermissionDenied
+            from users.models import SubscriptionPlan
+            
+            plan_name = None
+            if hasattr(org, 'subscription') and org.subscription:
+                plan_name = org.subscription.plan_name
+            elif org.subscription_plan:
+                plan_name = org.subscription_plan
                 
-                quota = getattr(settings, 'FREE_TIER_MONTHLY_QUOTA', 10)
-                now = timezone.now()
-                current_month_invoices = Invoice.objects.filter(
-                    organization=org,
-                    created_at__year=now.year,
-                    created_at__month=now.month
-                ).count()
+            plan = None
+            if plan_name:
+                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+            if not plan:
+                plan = SubscriptionPlan.objects.filter(is_free=True).first()
                 
-                if current_month_invoices >= quota:
-                    raise PermissionDenied(f"You have reached your free tier limit of {quota} invoices per month. Please upgrade your plan to continue.")
+            if plan:
+                if not plan.has_invoice:
+                    raise PermissionDenied("Your current subscription plan does not include the Invoicing module. Please upgrade to continue.")
+                
+                if not serializer.validated_data.get('booking'):
+                    quota = plan.max_invoices_per_month
+                    if quota != -1:
+                        now = timezone.now()
+                        current_month_invoices = Invoice.objects.filter(
+                            organization=org,
+                            booking__isnull=True,
+                            created_at__year=now.year,
+                            created_at__month=now.month
+                        ).count()
+                        
+                        if current_month_invoices >= quota:
+                            raise PermissionDenied(f"You have reached your limit of {quota} standalone invoices per month. Please upgrade your plan or contact support to continue.")
 
         kwargs = {'created_by': user}
         if not user.is_superuser:
