@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Calendar,
   CheckCircle,
-  Eye
+  Eye,
+  Copy
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
@@ -238,6 +239,13 @@ export function Invoices() {
                   title="Edit Invoice"
                 >
                   <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => navigate(`/invoices/new?duplicate_from=${invoice.invoice_id}`)}
+                  className="p-2.5 bg-[var(--bg-app)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
+                  title="Duplicate Invoice"
+                >
+                  <Copy className="w-4 h-4" />
                 </button>
                 {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
                   <button

@@ -26,6 +26,7 @@ export function InvoiceEditor() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const bookingIdParam = searchParams.get('booking_id');
+  const duplicateFromParam = searchParams.get('duplicate_from');
   const isEditMode = !!id;
   const { showNotification } = useNotification();
 
@@ -85,32 +86,34 @@ export function InvoiceEditor() {
     return null;
   };
 
-  const loadInvoice = async (invoiceId: string) => {
+  const loadInvoice = async (invoiceId: string, isDuplicate = false) => {
     const res = await InvoiceService.get(invoiceId);
     const inv = res.data;
     setFormData({
       client: inv.client || '',
       booking: inv.booking || '',
-      due_date: inv.due_date ? inv.due_date.split('T')[0] : '',
-      status: inv.status,
+      due_date: isDuplicate ? '' : (inv.due_date ? inv.due_date.split('T')[0] : ''),
+      status: isDuplicate ? 'draft' : inv.status,
       currency: inv.currency || '',
       bank_account: inv.bank_account || '',
       discount_amount: parseFloat(inv.discount_amount) || 0,
       discount_percentage: parseFloat(inv.discount_percentage) || 0,
       tax_percentage: parseFloat(inv.tax_percentage) || 0,
       notes: inv.notes || '',
-      title: inv.title || 'Invoice',
+      title: isDuplicate ? `Copy of ${inv.title || 'Invoice'}` : (inv.title || 'Invoice'),
     });
     setLineItems(
       (inv.line_items || []).map((li: any) => ({
-        line_item_id: li.line_item_id,
+        ...(isDuplicate ? {} : { line_item_id: li.line_item_id }),
         name: li.name,
         description: li.description || '',
         quantity: parseFloat(li.quantity),
         unit_price: parseFloat(li.unit_price),
       }))
     );
-    setInvoiceMeta(inv);
+    if (!isDuplicate) {
+      setInvoiceMeta(inv);
+    }
   };
 
   const loadPrefill = async (bookingId: string) => {
@@ -141,6 +144,11 @@ export function InvoiceEditor() {
       try {
         if (id) {
           await loadInvoice(id);
+        } else if (duplicateFromParam) {
+          await loadInvoice(duplicateFromParam, true);
+          if (orgData?.currency?.id) {
+            setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
+          }
         } else if (bookingIdParam) {
           await loadPrefill(bookingIdParam);
           if (orgData?.currency?.id) {

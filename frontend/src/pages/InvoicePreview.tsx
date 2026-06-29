@@ -112,6 +112,9 @@ export function InvoicePreview() {
           <button onClick={() => navigate(`/invoices/${invoice.invoice_id}/edit`)} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
             <Edit2 className="w-4 h-4" /> Edit
           </button>
+          <button onClick={() => navigate(`/invoices/new?duplicate_from=${invoice.invoice_id}`)} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
+            <Copy className="w-4 h-4" /> Duplicate
+          </button>
           <button onClick={() => window.print()} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
             <Printer className="w-4 h-4" /> Print
           </button>
@@ -154,6 +157,9 @@ export function InvoicePreview() {
             </button>
             {showMobileMenu && (
               <div className="absolute right-0 top-10 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl shadow-xl z-50 w-40 py-1">
+                <button onClick={() => navigate(`/invoices/new?duplicate_from=${invoice.invoice_id}`)} className="w-full text-left px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2">
+                  <Copy className="w-4 h-4" /> Duplicate
+                </button>
                 <button onClick={() => { window.print(); setShowMobileMenu(false); }} className="w-full text-left px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2">
                   <Printer className="w-4 h-4" /> Print
                 </button>
