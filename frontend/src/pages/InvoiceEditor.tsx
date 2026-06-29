@@ -290,10 +290,8 @@ export function InvoiceEditor() {
             </div>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center overflow-hidden shrink-0">
-                {org?.company_logo ? (
+                {org?.company_logo && (
                   <img src={org.company_logo.startsWith('http') ? org.company_logo : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${org.company_logo.startsWith('/') ? '' : '/'}${org.company_logo}`} alt="logo" className="w-full h-full object-contain" />
-                ) : (
-                  <FileText className="w-6 h-6 text-[var(--text-muted)]" />
                 )}
               </div>
               <div>
@@ -521,11 +519,7 @@ export function InvoiceEditor() {
               </div>
             )}
             
-            <div className="pt-6 mt-6 border-t border-[var(--border-soft)] text-center">
-              <span className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                Powered by NeoInventory
-              </span>
-            </div>
+
           </div>
         </div>
       </div>

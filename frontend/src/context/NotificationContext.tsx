@@ -146,10 +146,10 @@ const NotificationItem: React.FC<{ notification: Notification, onHide: (id: stri
   };
 
   const bgColors = {
-    success: 'bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/30',
-    error: 'bg-rose-50 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900/30',
-    info: 'bg-blue-50 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900/30',
-    warning: 'bg-amber-50 border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/30',
+    success: 'bg-[var(--bg-surface)] border-l-4 border-l-emerald-500 border-y border-r border-[var(--border-soft)]',
+    error: 'bg-[var(--bg-surface)] border-l-4 border-l-rose-500 border-y border-r border-[var(--border-soft)]',
+    info: 'bg-[var(--bg-surface)] border-l-4 border-l-blue-500 border-y border-r border-[var(--border-soft)]',
+    warning: 'bg-[var(--bg-surface)] border-l-4 border-l-amber-500 border-y border-r border-[var(--border-soft)]',
   };
 
   return (
@@ -161,7 +161,7 @@ const NotificationItem: React.FC<{ notification: Notification, onHide: (id: stri
       className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-sm ${bgColors[notification.type]}`}
     >
       <div className="mt-0.5">{icons[notification.type]}</div>
-      <div className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">
+      <div className="flex-1 text-sm font-medium text-[var(--text-main)]">
         {notification.message}
       </div>
       <button

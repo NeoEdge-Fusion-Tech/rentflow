@@ -188,13 +188,9 @@ export function InvoicePreview() {
                 <span className={`capitalize font-bold text-xs mt-0.5 ${invoice.status === 'paid' ? 'text-emerald-600' : invoice.status === 'issued' ? 'text-blue-600' : 'text-gray-500'}`}>{invoice.status}</span>
               </div>
             </div>
-            {org?.company_logo ? (
+            {org?.company_logo && (
               <div className="w-14 h-14 sm:w-24 sm:h-24 flex items-center justify-center overflow-hidden bg-gray-50 rounded-lg border border-gray-100 shrink-0">
                 <img src={org.company_logo.startsWith('http') ? org.company_logo : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${org.company_logo.startsWith('/') ? '' : '/'}${org.company_logo}`} alt="Company logo" className="max-w-full max-h-full object-contain" />
-              </div>
-            ) : (
-              <div className="w-14 h-14 sm:w-24 sm:h-24 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-100 text-gray-300 shrink-0">
-                <FileText className="w-6 h-6 sm:w-8 sm:h-8" />
               </div>
             )}
           </div>
@@ -300,11 +296,7 @@ export function InvoicePreview() {
             </div>
           </div>
 
-          <div className="mt-10 pt-5 border-t border-gray-200 flex justify-center">
-            <p className="text-xs text-gray-400 font-medium tracking-wider uppercase">
-              Powered By <span className="text-gray-700 font-bold">NeoInventory</span>
-            </p>
-          </div>
+
         </div>
       </div>
     </div>

@@ -71,6 +71,13 @@ export function Settings() {
   const handleLogoFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !org?.id) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+      showNotification("Logo file size must be less than 5MB.", "error");
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.addEventListener('load', () => {
       setLogoImageToCrop(reader.result?.toString() || null);
