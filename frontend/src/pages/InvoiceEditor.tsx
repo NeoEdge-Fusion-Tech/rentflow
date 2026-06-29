@@ -48,6 +48,7 @@ export function InvoiceEditor() {
     discount_percentage: 0,
     tax_percentage: 0,
     notes: '',
+    title: 'Invoice',
   });
   const [lineItems, setLineItems] = useState<LineItem[]>([{ name: '', description: '', quantity: 1, unit_price: 0 }]);
 
@@ -98,6 +99,7 @@ export function InvoiceEditor() {
       discount_percentage: parseFloat(inv.discount_percentage) || 0,
       tax_percentage: parseFloat(inv.tax_percentage) || 0,
       notes: inv.notes || '',
+      title: inv.title || 'Invoice',
     });
     setLineItems(
       (inv.line_items || []).map((li: any) => ({
@@ -192,6 +194,7 @@ export function InvoiceEditor() {
     discount_percentage: formData.discount_percentage,
     tax_percentage: formData.tax_percentage,
     notes: formData.notes,
+    title: formData.title,
     line_items: lineItems.map(li => ({
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
       name: li.name,
@@ -316,6 +319,18 @@ export function InvoiceEditor() {
           {/* Meta */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
             <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Invoice Details</h3>
+            
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Invoice Title</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Website Redesign Invoice"
+                className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Due Date</label>

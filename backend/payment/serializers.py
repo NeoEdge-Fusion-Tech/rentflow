@@ -34,7 +34,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = [
-            'invoice_id', 'booking', 'client', 'client_name', 'invoice_number', 'issue_date',
+            'invoice_id', 'booking', 'client', 'client_name', 'title', 'invoice_number', 'issue_date',
             'due_date', 'status', 'currency', 'currency_symbol', 'bank_account', 'subtotal',
             'discount_amount', 'discount_percentage', 'tax_percentage', 'tax_amount', 'total_amount',
             'notes', 'line_items', 'organization_name'

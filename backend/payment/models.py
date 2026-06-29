@@ -56,6 +56,7 @@ class Invoice(models.Model):
     invoice_number = models.CharField(max_length=50, unique=True)
     issue_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(null=True, blank=True)
+    title = models.CharField(max_length=255, blank=True, null=True, default='Invoice')
     status_choices = [
         ('draft', 'Draft'),
         ('issued', 'Issued'),

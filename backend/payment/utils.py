@@ -170,12 +170,6 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                 return Image(path, size, size)
     except Exception:
         pass
-    try:
-        fallback = os.path.join(settings.BASE_DIR, 'static/images/logo.png')
-        if os.path.exists(fallback):
-            return Image(fallback, size, size)
-    except Exception:
-        pass
     return None
 
 

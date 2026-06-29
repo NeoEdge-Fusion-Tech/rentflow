@@ -171,7 +171,7 @@ export function InvoicePreview() {
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
             <div>
               <h1 className="text-xl sm:text-3xl font-bold mb-3" style={{ color: primaryColor }}>
-                {org?.name || 'Your Company'} Invoice
+                {invoice.title || `${org?.name || 'Your Company'} Invoice`}
               </h1>
               <div className="grid grid-cols-[90px_1fr] sm:grid-cols-[110px_1fr] gap-y-1 text-sm font-medium">
                 <span className="text-gray-500">Invoice No #</span>
