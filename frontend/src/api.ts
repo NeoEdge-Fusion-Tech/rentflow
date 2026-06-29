@@ -28,6 +28,50 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Simple In-Memory Cache for GET requests
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const getCacheKey = (url: string, config?: any) => {
+  return url + JSON.stringify(config?.params || {});
+};
+
+const originalGet = api.get.bind(api);
+api.get = async (url: string, config?: any) => {
+  // Skip caching for blob requests (like downloads)
+  if (config?.responseType === 'blob') {
+    return originalGet(url, config);
+  }
+
+  const key = getCacheKey(url, config);
+  const cached = cache.get(key);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return Promise.resolve({ 
+      data: cached.data, 
+      status: 200, 
+      statusText: 'OK', 
+      headers: {} as any, 
+      config: config as any 
+    });
+  }
+  
+  const response = await originalGet(url, config);
+  cache.set(key, { data: response.data, timestamp: Date.now() });
+  return response;
+};
+
+// Clear cache on any mutation to ensure data consistency
+api.interceptors.response.use((response) => {
+  const method = response.config.method?.toLowerCase();
+  if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+    cache.clear();
+  }
+  return response;
+}, (error) => {
+  return Promise.reject(error);
+});
+
 export const CategoryService = {
   getAll: (params?: any) => api.get('/inventory/categories/', { params }),
   create: (data: any) => api.post('/inventory/categories/', data),
