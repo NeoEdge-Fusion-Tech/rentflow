@@ -190,7 +190,7 @@ export function InvoicePreview() {
             </div>
             {org?.company_logo ? (
               <div className="w-14 h-14 sm:w-24 sm:h-24 flex items-center justify-center overflow-hidden bg-gray-50 rounded-lg border border-gray-100 shrink-0">
-                <img src={org.company_logo} alt="Company logo" className="max-w-full max-h-full object-contain" />
+                <img src={org.company_logo.startsWith('http') ? org.company_logo : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${org.company_logo.startsWith('/') ? '' : '/'}${org.company_logo}`} alt="Company logo" className="max-w-full max-h-full object-contain" />
               </div>
             ) : (
               <div className="w-14 h-14 sm:w-24 sm:h-24 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-100 text-gray-300 shrink-0">

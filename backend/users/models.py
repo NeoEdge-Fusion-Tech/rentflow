@@ -103,6 +103,7 @@ class SubscriptionPlan(models.Model):
     )
     has_booking = models.BooleanField(default=True)
     has_invoice = models.BooleanField(default=True)
+    has_inventory = models.BooleanField(default=True)
     is_free = models.BooleanField(default=False)
     
     is_active = models.BooleanField(default=True)

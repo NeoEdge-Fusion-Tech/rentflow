@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../utils/cropImage';
 import { useNotification } from '../context/NotificationContext';
 import { Building, Upload, CreditCard, Shield, Check, Plus, X, Trash2, Landmark, Edit2 } from 'lucide-react';
 import { UserService, AuthService, OrganizationService, CurrencyService, BankAccountService, PaymentService } from '../api';
@@ -24,6 +26,12 @@ export function Settings() {
   const currencySymbol = localStorage.getItem('currencySymbol') || '$';
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [logoImageToCrop, setLogoImageToCrop] = useState<string | null>(null);
 
   const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
   const [subscriptionPayments, setSubscriptionPayments] = useState<any[]>([]);
@@ -60,20 +68,38 @@ export function Settings() {
     }
   };
 
-  const handleLogoFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !org?.id) return;
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setLogoImageToCrop(reader.result?.toString() || null);
+      setIsCropModalOpen(true);
+    });
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleConfirmCrop = async () => {
+    if (!logoImageToCrop || !croppedAreaPixels || !org?.id) return;
     try {
       setIsUploadingLogo(true);
-      const res = await OrganizationService.uploadLogo(org.id, file);
+      const croppedImage = await getCroppedImg(logoImageToCrop, croppedAreaPixels, 0);
+      if (!croppedImage) throw new Error("Failed to crop image");
+      const res = await OrganizationService.uploadLogo(org.id, croppedImage);
       setOrg(res.data);
       showNotification("Logo updated!", 'success');
+      setIsCropModalOpen(false);
+      setLogoImageToCrop(null);
     } catch (err) {
-      console.error("Failed to upload logo", err);
+      console.error("Failed to crop/upload logo", err);
       showNotification("Failed to upload logo.", 'error');
     } finally {
       setIsUploadingLogo(false);
-      e.target.value = '';
     }
   };
 
@@ -340,9 +366,9 @@ export function Settings() {
               <div className="flex items-center gap-6">
                 <div className="w-20 h-20 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center border-dashed overflow-hidden">
                   {org?.company_logo ? (
-                    <img src={org.company_logo} alt="Company logo" className="w-full h-full object-contain" />
+                    <img src={org.company_logo.startsWith('http') ? org.company_logo : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${org.company_logo.startsWith('/') ? '' : '/'}${org.company_logo}`} alt="Company logo" className="w-full h-full object-contain" />
                   ) : (
-                    <span className="text-xs text-[var(--text-muted)]">150x150</span>
+                    <span className="text-xs text-center text-[var(--text-muted)] px-1">Square Logo</span>
                   )}
                 </div>
                 <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoFileSelected} className="hidden" />
@@ -771,6 +797,46 @@ export function Settings() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Crop Modal */}
+      {isCropModalOpen && logoImageToCrop && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-[var(--border-soft)] flex flex-col">
+            <div className="p-4 border-b border-[var(--border-soft)] flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">Crop Logo</h2>
+              <button onClick={() => { setIsCropModalOpen(false); setLogoImageToCrop(null); }} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="relative w-full h-[300px] sm:h-[400px] bg-black">
+              <Cropper
+                image={logoImageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            <div className="p-4 flex justify-between items-center gap-4 bg-[var(--bg-surface)]">
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full"
+              />
+              <button onClick={handleConfirmCrop} disabled={isUploadingLogo} className="px-5 py-2 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap">
+                {isUploadingLogo ? 'Saving...' : 'Save Logo'}
+              </button>
+            </div>
           </div>
         </div>
       )}
