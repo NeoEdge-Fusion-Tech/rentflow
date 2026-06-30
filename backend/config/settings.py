@@ -159,7 +159,14 @@ if ENV_MODE == 'prod':
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
     
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
     
 else:
     # Cloudinary Storage for Dev
@@ -171,7 +178,14 @@ else:
         'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
     }
     
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = False
