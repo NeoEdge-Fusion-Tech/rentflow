@@ -87,6 +87,21 @@ export function Settings() {
     e.target.value = '';
   };
 
+  const handleDeleteLogo = async () => {
+    if (!org?.id) return;
+    try {
+      setIsUploadingLogo(true);
+      const res = await OrganizationService.patch(org.id, { company_logo: null });
+      setOrg(res.data);
+      showNotification("Logo removed!", 'success');
+    } catch (err) {
+      console.error("Failed to remove logo", err);
+      showNotification("Failed to remove logo.", 'error');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
@@ -387,6 +402,16 @@ export function Settings() {
                 >
                   <Upload className="w-4 h-4"/> {isUploadingLogo ? 'Uploading...' : 'Upload New'}
                 </button>
+                {org?.company_logo && (
+                  <button
+                    type="button"
+                    disabled={isUploadingLogo || !org?.id}
+                    onClick={handleDeleteLogo}
+                    className="flex items-center gap-2 px-4 py-2 border border-rose-500/20 text-rose-500 rounded-lg text-sm font-medium hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4"/> Remove
+                  </button>
+                )}
               </div>
             </div>
 
