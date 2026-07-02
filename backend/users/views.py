@@ -209,7 +209,10 @@ class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     search_fields = ['first_name', 'last_name', 'email', 'phone_number', 'company_name']
 
     def get_queryset(self):
-        return super().get_queryset().annotate(bookings_count=Count('bookings'))
+        return super().get_queryset().annotate(
+            bookings_count=Count('bookings', distinct=True),
+            standalone_invoices_count=Count('invoices', filter=Q(invoices__booking__isnull=True), distinct=True)
+        )
 
     def perform_create(self, serializer):
         user = self.request.user

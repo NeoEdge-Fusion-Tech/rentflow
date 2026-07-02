@@ -14,7 +14,7 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    first_name: '', last_name: '', email: '', phone_number: '', company_name: ''
+    first_name: '', last_name: '', email: '', phone_number: '', company_name: '', address: ''
   });
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -26,7 +26,7 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
       onClientCreated?.(res.data);
       onChange(res.data.client_id);
       setIsModalOpen(false);
-      setFormData({ first_name: '', last_name: '', email: '', phone_number: '', company_name: '' });
+      setFormData({ first_name: '', last_name: '', email: '', phone_number: '', company_name: '', address: '' });
     } catch (err: any) {
       setError(err.response?.data?.email?.[0] || 'Failed to create client.');
     } finally {
@@ -131,6 +131,16 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">Address</label>
+                <textarea
+                  rows={2}
+                  value={formData.address}
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                />
               </div>
 
               <div className="pt-2 flex gap-3">

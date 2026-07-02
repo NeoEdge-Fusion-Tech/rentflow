@@ -3,6 +3,7 @@ from users.mixins import TenantSerializerMixin
 from .models import Payment, Invoice, InvoiceLineItem, Receipt, SubscriptionPayment
 from .utils import compute_invoice_totals
 from users.models import Organization, Subscription
+from users.serializers import ClientSerializer, BankAccountSerializer
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,16 +29,18 @@ class InvoiceLineItemSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     line_items = InvoiceLineItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
+    client_details = ClientSerializer(source='client', read_only=True)
+    bank_account_details = BankAccountSerializer(source='bank_account', read_only=True)
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     currency_symbol = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
         fields = [
-            'invoice_id', 'booking', 'client', 'client_name', 'title', 'invoice_number', 'issue_date',
-            'due_date', 'status', 'currency', 'currency_symbol', 'bank_account', 'subtotal',
-            'discount_amount', 'discount_percentage', 'tax_percentage', 'tax_amount', 'total_amount',
-            'notes', 'line_items', 'organization_name'
+            'invoice_id', 'booking', 'client', 'client_name', 'client_details', 'title', 'invoice_number',
+            'issue_date', 'due_date', 'status', 'currency', 'currency_symbol', 'bank_account',
+            'bank_account_details', 'subtotal', 'discount_amount', 'discount_percentage', 'tax_percentage',
+            'tax_amount', 'total_amount', 'notes', 'line_items', 'organization_name'
         ]
         read_only_fields = ['invoice_number', 'issue_date', 'subtotal', 'tax_amount', 'total_amount']
 

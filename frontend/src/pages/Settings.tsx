@@ -49,7 +49,7 @@ export function Settings() {
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const [editingBankAccount, setEditingBankAccount] = useState<any>(null);
   const [bankFormData, setBankFormData] = useState({
-    bank_name: '', account_number: '', account_name: '', account_type: 'savings'
+    bank_name: '', account_number: '', account_name: '', account_type: 'savings', swift_code: '', notes: ''
   });
 
   useEffect(() => {
@@ -127,7 +127,7 @@ export function Settings() {
 
   const openAddBankModal = () => {
     setEditingBankAccount(null);
-    setBankFormData({ bank_name: '', account_number: '', account_name: '', account_type: 'savings' });
+    setBankFormData({ bank_name: '', account_number: '', account_name: '', account_type: 'savings', swift_code: '', notes: '' });
     setIsBankModalOpen(true);
   };
 
@@ -137,7 +137,9 @@ export function Settings() {
       bank_name: account.bank_name || '',
       account_number: account.account_number || '',
       account_name: account.account_name || '',
-      account_type: account.account_type || 'savings'
+      account_type: account.account_type || 'savings',
+      swift_code: account.swift_code || '',
+      notes: account.notes || ''
     });
     setIsBankModalOpen(true);
   };
@@ -820,6 +822,14 @@ export function Settings() {
                   <option value="savings" className="bg-[var(--bg-surface)]">Savings</option>
                   <option value="current" className="bg-[var(--bg-surface)]">Current</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">SWIFT Code</label>
+                <input type="text" value={bankFormData.swift_code} onChange={e => setBankFormData({...bankFormData, swift_code: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Note</label>
+                <textarea rows={2} value={bankFormData.notes} onChange={e => setBankFormData({...bankFormData, notes: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)] resize-none" />
               </div>
 
               <div className="pt-4 flex justify-end gap-3">

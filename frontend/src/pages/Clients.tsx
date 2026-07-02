@@ -14,7 +14,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  History
+  History,
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
@@ -39,6 +40,7 @@ export function Clients() {
     email: '',
     phone_number: '',
     company_name: '',
+    address: '',
     status: 'active'
   });
 
@@ -66,6 +68,7 @@ export function Clients() {
       email: '',
       phone_number: '',
       company_name: '',
+      address: '',
       status: 'active'
     });
     setIsModalOpen(true);
@@ -79,6 +82,7 @@ export function Clients() {
       email: client.email || '',
       phone_number: client.phone_number || '',
       company_name: client.company_name || '',
+      address: client.address || '',
       status: client.status || 'active'
     });
     setIsModalOpen(true);
@@ -229,13 +233,24 @@ export function Clients() {
                   <Phone className="w-4 h-4 text-[var(--text-muted)]" />
                   {client.phone_number || 'N/A'}
                 </div>
+                <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                  <MapPin className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                  <span className="truncate">{client.address || 'N/A'}</span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-6 border-t border-[var(--border-subtle)]">
-                <div className="flex items-center gap-1.5">
-                  <History className="w-4 h-4 text-[var(--text-muted)]" />
-                  <span className="text-xs font-bold text-[var(--text-main)]">{client.bookings_count || 0}</span>
-                  <span className="text-xs text-[var(--text-muted)]">Bookings</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <History className="w-4 h-4 text-[var(--text-muted)]" />
+                    <span className="text-xs font-bold text-[var(--text-main)]">{client.bookings_count || 0}</span>
+                    <span className="text-xs text-[var(--text-muted)]">Bookings</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Receipt className="w-4 h-4 text-[var(--text-muted)]" />
+                    <span className="text-xs font-bold text-[var(--text-main)]">{client.standalone_invoices_count || 0}</span>
+                    <span className="text-xs text-[var(--text-muted)]">Invoices</span>
+                  </div>
                 </div>
                 <button className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline">
                   View Profile
@@ -347,6 +362,16 @@ export function Clients() {
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">Address</label>
+                <textarea
+                  rows={2}
+                  value={formData.address}
+                  onChange={e => setFormData({...formData, address: e.target.value})}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                />
               </div>
 
               <div className="space-y-2">

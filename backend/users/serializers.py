@@ -35,7 +35,7 @@ from users.mixins import TenantSerializerMixin
 class BankAccountSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = BankAccount
-        fields = ['bank_account_id', 'bank_name', 'account_number', 'account_name', 'account_type', 'created_at', 'updated_at']
+        fields = ['bank_account_id', 'bank_name', 'account_number', 'account_name', 'account_type', 'swift_code', 'notes', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
 class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
@@ -165,6 +165,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
 class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     bookings_count = serializers.IntegerField(read_only=True)
+    standalone_invoices_count = serializers.IntegerField(read_only=True)
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
 
@@ -180,7 +181,7 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ['client_id', 'first_name', 'last_name', 'email', 'phone_number', 'company_name', 'address', 'country', 'state', 'status', 'bookings_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at']
+        fields = ['client_id', 'first_name', 'last_name', 'email', 'phone_number', 'company_name', 'address', 'country', 'state', 'status', 'bookings_count', 'standalone_invoices_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
 from django.db import transaction

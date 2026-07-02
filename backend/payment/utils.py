@@ -307,6 +307,10 @@ def generate_invoice_pdf(invoice):
         elements.append(Paragraph(f"Account Name: {bank_account.account_name}", header_style))
         elements.append(Paragraph(f"Account Number: {bank_account.account_number}", header_style))
         elements.append(Paragraph(f"Account Type: {bank_account.get_account_type_display()}", header_style))
+        if bank_account.swift_code:
+            elements.append(Paragraph(f"SWIFT Code: {bank_account.swift_code}", header_style))
+        if bank_account.notes:
+            elements.append(Paragraph(bank_account.notes.replace('\n', '<br/>'), header_style))
     else:
         account_details = getattr(organization, 'account_details', None)
         if account_details and (account_details.account_number or account_details.bank_name):

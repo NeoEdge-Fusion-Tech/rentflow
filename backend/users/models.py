@@ -73,6 +73,8 @@ class BankAccount(models.Model):
     account_type = models.CharField(
         max_length=20, choices=[('savings', 'Savings'), ('current', 'Current')], default='savings'
     )
+    swift_code = models.CharField(max_length=20, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(

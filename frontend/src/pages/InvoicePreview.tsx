@@ -213,6 +213,10 @@ export function InvoicePreview() {
             <div className="p-4 rounded-lg" style={{ backgroundColor: `${primaryColor}12` }}>
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Billed To</h3>
               <p className="font-bold text-gray-900">{invoice.client_name}</p>
+              {invoice.client_details?.company_name && <p className="text-sm text-gray-700 mt-0.5">{invoice.client_details.company_name}</p>}
+              {invoice.client_details?.address && <p className="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{invoice.client_details.address}</p>}
+              {invoice.client_details?.phone_number && <p className="text-sm text-gray-700">{invoice.client_details.phone_number}</p>}
+              {invoice.client_details?.email && <p className="text-sm text-gray-700">{invoice.client_details.email}</p>}
             </div>
           </div>
 
@@ -268,11 +272,22 @@ export function InvoicePreview() {
 
           {/* Totals + Notes */}
           <div className="flex flex-col sm:flex-row justify-between gap-6 mb-8">
-            <div className="flex-1">
+            <div className="flex-1 space-y-4">
               {invoice.notes && (
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
                   <h4 className="font-bold text-gray-900 mb-1">Notes</h4>
                   <p className="text-gray-600 whitespace-pre-wrap">{invoice.notes}</p>
+                </div>
+              )}
+              {invoice.bank_account_details && (
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                  <h4 className="font-bold text-gray-900 mb-1">Payment Info</h4>
+                  <p className="text-gray-600">Bank: {invoice.bank_account_details.bank_name}</p>
+                  <p className="text-gray-600">Account Name: {invoice.bank_account_details.account_name}</p>
+                  <p className="text-gray-600">Account Number: {invoice.bank_account_details.account_number}</p>
+                  <p className="text-gray-600 capitalize">Account Type: {invoice.bank_account_details.account_type}</p>
+                  {invoice.bank_account_details.swift_code && <p className="text-gray-600">SWIFT Code: {invoice.bank_account_details.swift_code}</p>}
+                  {invoice.bank_account_details.notes && <p className="text-gray-600 whitespace-pre-wrap">{invoice.bank_account_details.notes}</p>}
                 </div>
               )}
             </div>
