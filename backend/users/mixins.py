@@ -142,12 +142,12 @@ class TenantSerializerMixin:
 
         # Iterate over all fields and filter RelatedFields
         for field_name, field in self.fields.items():
-            if isinstance(field, serializers.PrimaryKeyRelatedField):
+            if isinstance(field, serializers.PrimaryKeyRelatedField) and field.queryset is not None:
                 if hasattr(field.queryset.model, 'organization'):
                     field.queryset = field.queryset.filter(organization_id=user.organization_id)
                 elif field.queryset.model == Organization:
                     field.queryset = field.queryset.filter(id=user.organization_id)
-            elif isinstance(field, serializers.ManyRelatedField) and isinstance(field.child_relation, serializers.PrimaryKeyRelatedField):
+            elif isinstance(field, serializers.ManyRelatedField) and isinstance(field.child_relation, serializers.PrimaryKeyRelatedField) and field.child_relation.queryset is not None:
                 if hasattr(field.child_relation.queryset.model, 'organization'):
                     field.child_relation.queryset = field.child_relation.queryset.filter(organization_id=user.organization_id)
                 elif field.child_relation.queryset.model == Organization:
