@@ -437,7 +437,7 @@ export function InvoiceEditor() {
                                 className="px-3 py-2.5 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
                                 onClick={() => {
                                   updateLineItem(i, 'name', p.name);
-                                  updateLineItem(i, 'unit_price', parseFloat(p.rental_price || p.total_cost_price || 0));
+                                  updateLineItem(i, 'unit_price', parseFloat(p.rental_price || 0));
                                   setActiveDropdown(null);
                                 }}
                               >
@@ -446,7 +446,7 @@ export function InvoiceEditor() {
                                   <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">{p.category?.name || 'Product'}</p>
                                 </div>
                                 <span className="text-xs font-bold text-[var(--text-main)]">
-                                  {currencySymbol}{parseFloat(p.rental_price || p.total_cost_price || 0).toLocaleString()}
+                                  {currencySymbol}{parseFloat(p.rental_price || 0).toLocaleString()}
                                 </span>
                               </div>
                             ))}
@@ -462,7 +462,7 @@ export function InvoiceEditor() {
                       <input
                         type="number"
                         placeholder="Qty"
-                        value={item.quantity}
+                        value={item.quantity === 0 ? '' : item.quantity}
                         onChange={e => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)}
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
                       />
@@ -473,7 +473,7 @@ export function InvoiceEditor() {
                         <input
                           type="number"
                           placeholder="Price"
-                          value={item.unit_price}
+                          value={item.unit_price === 0 ? '' : item.unit_price}
                           onChange={e => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)}
                           className="w-full h-10 pl-6 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
                         />
