@@ -231,10 +231,8 @@ def generate_invoice_pdf(invoice):
     elements.append(Paragraph("<b>Bill To:</b>", styles['Normal']))
     client = invoice.client
     if client:
-        client_name = f"{client.first_name} {client.last_name}".strip()
+        client_name = f"{client.business_name}".strip()
         elements.append(Paragraph(client_name, styles['Normal']))
-        if client.company_name:
-            elements.append(Paragraph(client.company_name, header_style))
         if client.email:
             elements.append(Paragraph(client.email, header_style))
         if client.phone_number:
@@ -367,7 +365,7 @@ def generate_receipt_pdf(receipt):
 
     # Client Info
     elements.append(Paragraph("<b>Received From:</b>", styles['Normal']))
-    client_name = f"{receipt.payment.booking.client.first_name} {receipt.payment.booking.client.last_name}"
+    client_name = f"{receipt.payment.booking.client.business_name}"
     elements.append(Paragraph(client_name, styles['Normal']))
     elements.append(Spacer(1, 0.3 * inch))
 

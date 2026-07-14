@@ -213,7 +213,7 @@ export function InvoicePreview() {
             <div className="p-4 rounded-lg" style={{ backgroundColor: `${primaryColor}12` }}>
               <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Billed To</h3>
               <p className="font-bold text-gray-900">{invoice.client_name}</p>
-              {invoice.client_details?.company_name && <p className="text-sm text-gray-700 mt-0.5">{invoice.client_details.company_name}</p>}
+              {invoice.client_details?.business_name && <p className="text-sm text-gray-700 mt-0.5">{invoice.client_details.business_name}</p>}
               {invoice.client_details?.address && <p className="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{invoice.client_details.address}</p>}
               {invoice.client_details?.phone_number && <p className="text-sm text-gray-700">{invoice.client_details.phone_number}</p>}
               {invoice.client_details?.email && <p className="text-sm text-gray-700">{invoice.client_details.email}</p>}

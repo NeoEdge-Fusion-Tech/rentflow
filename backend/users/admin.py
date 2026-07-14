@@ -14,8 +14,8 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'email', 'company_name', 'organization', 'status')
-    search_fields = ('first_name', 'last_name', 'email', 'company_name', 'organization__name')
+    list_display = ('business_name', 'email', 'organization', 'status')
+    search_fields = ('business_name', 'email', 'organization__name')
     list_filter = ('status',)
 
 admin.site.register(OrganizationAccountDetails)

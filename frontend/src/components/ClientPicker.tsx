@@ -14,7 +14,7 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    first_name: '', last_name: '', email: '', phone_number: '', company_name: '', address: ''
+    business_name: '', email: '', phone_number: ''
   });
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -26,7 +26,7 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
       onClientCreated?.(res.data);
       onChange(res.data.client_id);
       setIsModalOpen(false);
-      setFormData({ first_name: '', last_name: '', email: '', phone_number: '', company_name: '', address: '' });
+      setFormData({ business_name: '', email: '', phone_number: '' });
     } catch (err: any) {
       setError(err.response?.data?.email?.[0] || 'Failed to create client.');
     } finally {
@@ -45,7 +45,7 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
           <option value="">Choose a client...</option>
           {clients.map(c => (
             <option key={c.client_id} value={String(c.client_id)}>
-              {c.first_name} {c.last_name} {c.company_name ? `(${c.company_name})` : ''}
+              {c.business_name}
             </option>
           ))}
         </select>
@@ -78,33 +78,22 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
                   {error}
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">First Name <span className="text-rose-500">*</span></label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.first_name}
-                    onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Last Name <span className="text-rose-500">*</span></label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.last_name}
-                    onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">Business Name <span className="text-rose-500">*</span></label>
+                <input
+                  required
+                  type="text"
+                  value={formData.business_name}
+                  onChange={e => setFormData({ ...formData, business_name: e.target.value })}
+                  placeholder="Business Name"
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Email Address <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">Email Address</label>
                 <input
-                  required
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -112,34 +101,13 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone_number}
-                    onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Company</label>
-                  <input
-                    type="text"
-                    value={formData.company_name}
-                    onChange={e => setFormData({ ...formData, company_name: e.target.value })}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Address</label>
-                <textarea
-                  rows={2}
-                  value={formData.address}
-                  onChange={e => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                <label className="text-sm font-bold text-[var(--text-muted)]">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone_number}
+                  onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
 

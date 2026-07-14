@@ -35,12 +35,21 @@ export function Clients() {
   
   // Form State
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+    business_name: '',
     email: '',
     phone_number: '',
-    company_name: '',
+    contact_name: '',
+    contact_email: '',
+    contact_phone: '',
+    industry: '',
     address: '',
+    city: '',
+    state: '',
+    country: 'Nigeria', // default from screenshot
+    tax_information: '',
+    shipping_details: '',
+    additional_details: '',
+    account_details: '',
     status: 'active'
   });
 
@@ -63,12 +72,21 @@ export function Clients() {
   const openAddModal = () => {
     setEditingClient(null);
     setFormData({
-      first_name: '',
-      last_name: '',
+      business_name: '',
       email: '',
       phone_number: '',
-      company_name: '',
+      contact_name: '',
+      contact_email: '',
+      contact_phone: '',
+      industry: '',
       address: '',
+      city: '',
+      state: '',
+      country: 'Nigeria',
+      tax_information: '',
+      shipping_details: '',
+      additional_details: '',
+      account_details: '',
       status: 'active'
     });
     setIsModalOpen(true);
@@ -77,12 +95,21 @@ export function Clients() {
   const openEditModal = (client: any) => {
     setEditingClient(client);
     setFormData({
-      first_name: client.first_name || '',
-      last_name: client.last_name || '',
+      business_name: client.business_name || '',
       email: client.email || '',
       phone_number: client.phone_number || '',
-      company_name: client.company_name || '',
+      contact_name: client.contact_name || '',
+      contact_email: client.contact_email || '',
+      contact_phone: client.contact_phone || '',
+      industry: client.industry || '',
       address: client.address || '',
+      city: client.city || '',
+      state: client.state || '',
+      country: client.country || 'Nigeria',
+      tax_information: client.tax_information || '',
+      shipping_details: client.shipping_details || '',
+      additional_details: client.additional_details || '',
+      account_details: client.account_details || '',
       status: client.status || 'active'
     });
     setIsModalOpen(true);
@@ -125,7 +152,7 @@ export function Clients() {
   };
 
   const filteredClients = clients.filter(c => {
-    const searchString = `${c.first_name} ${c.last_name} ${c.email} ${c.company_name}`.toLowerCase();
+    const searchString = `${c.business_name} ${c.contact_name} ${c.email}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
@@ -200,7 +227,7 @@ export function Clients() {
             <div key={client.client_id} className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group">
               <div className="flex items-start justify-between mb-6">
                 <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors">
-                  {(client.first_name?.[0] || '') + (client.last_name?.[0] || '')}
+                  {(client.business_name?.[0] || 'C').toUpperCase()}
                 </div>
                 <div className="flex gap-2 items-center">
                   <span className={cn(
@@ -220,8 +247,8 @@ export function Clients() {
               </div>
 
               <div className="space-y-1 mb-6">
-                <h3 className="text-lg font-bold text-[var(--text-main)]">{client.first_name} {client.last_name}</h3>
-                <p className="text-sm text-[var(--text-muted)] font-medium">{client.company_name || 'No Company'}</p>
+                <h3 className="text-lg font-bold text-[var(--text-main)]">{client.business_name}</h3>
+                <p className="text-sm text-[var(--text-muted)] font-medium">{client.contact_name || 'No Contact Person'}</p>
               </div>
 
               <div className="space-y-3 mb-8">
@@ -311,31 +338,61 @@ export function Clients() {
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">First Name <span className="text-rose-500">*</span></label>
+                  <label className="text-sm font-bold text-[var(--text-muted)]">Business Name <span className="text-rose-500">*</span></label>
                   <input 
                     required
                     type="text" 
-                    value={formData.first_name}
-                    onChange={e => setFormData({...formData, first_name: e.target.value})}
+                    value={formData.business_name}
+                    onChange={e => setFormData({...formData, business_name: e.target.value})}
+                    placeholder="Business Name (Required)"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Last Name <span className="text-rose-500">*</span></label>
-                  <input 
+                  <label className="text-sm font-bold text-[var(--text-muted)]">Client Industry</label>
+                  <select 
+                    value={formData.industry}
+                    onChange={e => setFormData({...formData, industry: e.target.value})}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  >
+                    <option value="">-Select an Industry-</option>
+                    <option value="tech">Technology</option>
+                    <option value="retail">Retail</option>
+                    <option value="finance">Finance</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">Select Country <span className="text-rose-500">*</span></label>
+                  <select 
                     required
+                    value={formData.country}
+                    onChange={e => setFormData({...formData, country: e.target.value})}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  >
+                    <option value="Nigeria">Nigeria</option>
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">City/Town</label>
+                  <input 
                     type="text" 
-                    value={formData.last_name}
-                    onChange={e => setFormData({...formData, last_name: e.target.value})}
+                    value={formData.city}
+                    onChange={e => setFormData({...formData, city: e.target.value})}
+                    placeholder="City/Town Name"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Email Address <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">Email Address</label>
                 <input 
-                  required
                   type="email" 
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
@@ -343,36 +400,124 @@ export function Clients() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Phone</label>
-                  <input 
-                    type="tel" 
-                    value={formData.phone_number}
-                    onChange={e => setFormData({...formData, phone_number: e.target.value})}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Company</label>
-                  <input 
-                    type="text" 
-                    value={formData.company_name}
-                    onChange={e => setFormData({...formData, company_name: e.target.value})}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Address</label>
-                <textarea
-                  rows={2}
-                  value={formData.address}
-                  onChange={e => setFormData({...formData, address: e.target.value})}
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                <label className="text-sm font-bold text-[var(--text-muted)]">Phone</label>
+                <input 
+                  type="tel" 
+                  value={formData.phone_number}
+                  onChange={e => setFormData({...formData, phone_number: e.target.value})}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
+
+              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
+                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
+                  Tax Information <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="mt-4">
+                  <textarea
+                    rows={2}
+                    value={formData.tax_information}
+                    onChange={e => setFormData({...formData, tax_information: e.target.value})}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                    placeholder="Tax details..."
+                  />
+                </div>
+              </details>
+
+              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
+                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
+                  Address <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="mt-4 space-y-4">
+                  <input 
+                    type="text" 
+                    value={formData.state}
+                    onChange={e => setFormData({...formData, state: e.target.value})}
+                    placeholder="State/Province"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                  <textarea
+                    rows={2}
+                    value={formData.address}
+                    onChange={e => setFormData({...formData, address: e.target.value})}
+                    placeholder="Street Address"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                  />
+                </div>
+              </details>
+
+              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
+                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
+                  Linked Contacts <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="mt-4 space-y-4">
+                  <input 
+                    type="text" 
+                    value={formData.contact_name}
+                    onChange={e => setFormData({...formData, contact_name: e.target.value})}
+                    placeholder="Contact Name"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                  <input 
+                    type="email" 
+                    value={formData.contact_email}
+                    onChange={e => setFormData({...formData, contact_email: e.target.value})}
+                    placeholder="Contact Email"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                  <input 
+                    type="tel" 
+                    value={formData.contact_phone}
+                    onChange={e => setFormData({...formData, contact_phone: e.target.value})}
+                    placeholder="Contact Phone"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                </div>
+              </details>
+
+              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
+                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
+                  Additional Details <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="mt-4">
+                  <textarea
+                    rows={2}
+                    value={formData.additional_details}
+                    onChange={e => setFormData({...formData, additional_details: e.target.value})}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                  />
+                </div>
+              </details>
+              
+              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
+                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
+                  Account Details <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="mt-4">
+                  <textarea
+                    rows={2}
+                    value={formData.account_details}
+                    onChange={e => setFormData({...formData, account_details: e.target.value})}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
+                  />
+                </div>
+              </details>
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[var(--text-muted)]">Status</label>

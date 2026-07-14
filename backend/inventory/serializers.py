@@ -209,7 +209,7 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def get_client_name(self, obj):
         if obj.client:
-            return f"{obj.client.first_name} {obj.client.last_name}"
+            return f"{obj.client.business_name}"
         return "Unknown Client"
 
     def get_created_by_name(self, obj):

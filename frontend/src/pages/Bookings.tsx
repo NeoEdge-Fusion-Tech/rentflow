@@ -948,7 +948,7 @@ export function Bookings() {
                           <option value="">Choose a client...</option>
                           {clients.map(c => (
                             <option key={c.client_id} value={String(c.client_id)}>
-                              {c.first_name} {c.last_name} {c.company_name ? `(${c.company_name})` : ''}
+                              {c.business_name}
                             </option>
                           ))}
                         </select>

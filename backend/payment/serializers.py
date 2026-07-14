@@ -46,7 +46,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def get_client_name(self, obj):
         if obj.client:
-            return f"{obj.client.first_name} {obj.client.last_name}"
+            return f"{obj.client.business_name}"
         return None
 
     def get_currency_symbol(self, obj):
@@ -132,7 +132,7 @@ class ReceiptSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         read_only_fields = ['receipt_number', 'issue_date']
 
 class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    client_name = serializers.CharField(source='booking.client.first_name', read_only=True)
+    client_name = serializers.CharField(source='booking.client.business_name', read_only=True)
     booking_ref = serializers.CharField(source='booking.booking_id', read_only=True)
     receipt = ReceiptSerializer(read_only=True)
 
