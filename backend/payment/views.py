@@ -196,11 +196,27 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         serializer.save(**kwargs)
 
     def perform_destroy(self, instance):
-        from rest_framework.exceptions import ValidationError
+        from rest_framework.exceptions import ValidationError, PermissionDenied
         if instance.status == 'paid':
             raise ValidationError("Cannot delete an invoice that has already been paid.")
-        instance.status = 'cancelled'
-        instance.save()
+        
+        if instance.status == 'cancelled':
+            if self.request.user.role != 'admin':
+                raise PermissionDenied("Only organization admins can permanently delete invoices from the trash.")
+            super().perform_destroy(instance)
+        else:
+            instance.status = 'cancelled'
+            instance.save()
+
+    @action(detail=False, methods=['delete'])
+    def empty_trash(self, request):
+        from rest_framework.exceptions import PermissionDenied
+        if request.user.role != 'admin':
+            raise PermissionDenied("Only organization admins can empty the trash.")
+        
+        org = request.user.organization
+        count, _ = Invoice.objects.filter(organization=org, status='cancelled').delete()
+        return Response({"message": f"{count} invoices permanently deleted."}, status=200)
 
     @action(detail=False, methods=['get'])
     def prefill(self, request):

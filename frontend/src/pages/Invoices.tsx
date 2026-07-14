@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
-import { InvoiceService } from '../api';
+import { InvoiceService, AuthService } from '../api';
 
 export function Invoices() {
   const navigate = useNavigate();
@@ -26,8 +26,13 @@ export function Invoices() {
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const itemsPerPage = 8;
   const defaultCurrencySymbol = localStorage.getItem('currencySymbol') || '$';
+
+  useEffect(() => {
+    AuthService.getMe().then(res => setCurrentUser(res.data)).catch(console.error);
+  }, []);
 
   const formatCurrency = (amount: number | string) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -101,19 +106,41 @@ export function Invoices() {
   };
 
   const handleDelete = (id: number) => {
+    const isTrash = activeTab === 'Trash';
     showConfirm({
-      title: 'Move to Trash',
-      message: 'Are you sure you want to move this invoice to the trash? It will be marked as cancelled.',
+      title: isTrash ? 'Permanently Delete Invoice' : 'Move to Trash',
+      message: isTrash 
+        ? 'Are you sure you want to permanently delete this invoice? This action cannot be undone.'
+        : 'Are you sure you want to move this invoice to the trash? It will be marked as cancelled.',
       type: 'danger',
-      confirmText: 'Move to Trash',
+      confirmText: isTrash ? 'Permanently Delete' : 'Move to Trash',
       onConfirm: async () => {
         try {
           await InvoiceService.delete(id);
-          showNotification("Invoice deleted successfully", 'success');
+          showNotification(isTrash ? "Invoice permanently deleted" : "Invoice moved to trash", 'success');
           fetchInvoices();
-        } catch (err) {
+        } catch (err: any) {
           console.error("Failed to delete invoice", err);
-          showNotification("Failed to delete invoice", 'error');
+          showNotification(err.response?.data?.detail || "Failed to delete invoice", 'error');
+        }
+      }
+    });
+  };
+
+  const handleEmptyTrash = () => {
+    showConfirm({
+      title: 'Empty Trash',
+      message: 'Are you sure you want to permanently delete all invoices in the trash? This action cannot be undone.',
+      type: 'danger',
+      confirmText: 'Empty Trash',
+      onConfirm: async () => {
+        try {
+          await InvoiceService.emptyTrash();
+          showNotification("Trash emptied successfully", 'success');
+          fetchInvoices();
+        } catch (err: any) {
+          console.error("Failed to empty trash", err);
+          showNotification(err.response?.data?.detail || "Failed to empty trash", 'error');
         }
       }
     });
@@ -135,10 +162,18 @@ export function Invoices() {
           <h1 className="text-2xl font-bold text-[var(--text-main)]">Invoices</h1>
           <p className="text-[var(--text-muted)]">Create, manage, and send branded invoices to your clients.</p>
         </div>
-        <button onClick={() => navigate('/invoices/new')} className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20">
-          <Plus className="w-5 h-5" />
-          New Invoice
-        </button>
+        <div className="flex items-center gap-2">
+          {activeTab === 'Trash' && currentUser?.role === 'admin' && (
+            <button onClick={handleEmptyTrash} className="flex items-center justify-center gap-2 bg-rose-500/10 text-rose-600 px-4 py-2.5 rounded-xl font-bold hover:bg-rose-500/20 transition-colors shadow-sm">
+              <Trash2 className="w-5 h-5" />
+              Empty Trash
+            </button>
+          )}
+          <button onClick={() => navigate('/invoices/new')} className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20">
+            <Plus className="w-5 h-5" />
+            New Invoice
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -270,13 +305,15 @@ export function Invoices() {
                   <Download className="w-4 h-4" />
                 </button>
                 {invoice.status !== 'paid' && (
-                  <button
-                    onClick={() => handleDelete(invoice.invoice_id)}
-                    className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                    title="Delete Invoice"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  (invoice.status !== 'cancelled' || currentUser?.role === 'admin') && (
+                    <button
+                      onClick={() => handleDelete(invoice.invoice_id)}
+                      className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
+                      title={invoice.status === 'cancelled' ? "Permanently Delete" : "Delete Invoice"}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )
                 )}
               </div>
             </div>
