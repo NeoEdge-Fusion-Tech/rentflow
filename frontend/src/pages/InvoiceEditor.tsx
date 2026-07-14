@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Plus, Trash2, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Plus, Trash2, FileText, Eye, Edit2 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
 import { ClientPicker } from '../components/ClientPicker';
@@ -238,14 +238,14 @@ export function InvoiceEditor() {
     })),
   });
 
-  const handleSave = async (statusOverride?: string) => {
+  const handleSave = async (statusOverride?: string, skipNavigate = false) => {
     if (!formData.client) {
       showNotification("Please select a client.", 'warning');
-      return;
+      return null;
     }
     if (lineItems.length === 0 || lineItems.some(li => !li.name)) {
       showNotification("Every line item needs a name.", 'warning');
-      return;
+      return null;
     }
     try {
       setIsSaving(true);
@@ -254,15 +254,28 @@ export function InvoiceEditor() {
         ? await InvoiceService.patch(id, payload)
         : await InvoiceService.create(payload);
       showNotification(isEditMode ? "Invoice updated." : "Invoice created.", 'success');
-      navigate(`/invoices/${res.data.invoice_id}/edit`, { replace: true });
+      if (!skipNavigate) {
+        navigate(`/invoices/${res.data.invoice_id}/edit`, { replace: true });
+      }
       if (isEditMode) await loadInvoice(id!);
+      return res.data.invoice_id;
     } catch (err: any) {
       console.error("Failed to save invoice", err);
       const apiError = err.response?.data;
       const message = apiError?.client?.[0] || apiError?.line_items?.[0] || apiError?.detail || "Failed to save invoice.";
       showNotification(message, 'error');
+      return null;
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    if (!isEditMode) {
+      const newId = await handleSave('draft', true);
+      if (newId) navigate(`/invoices/${newId}/preview`);
+    } else {
+      navigate(`/invoices/${id}/preview`);
     }
   };
 
@@ -295,15 +308,18 @@ export function InvoiceEditor() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2 group">
               Invoice
-              <input
-                type="text"
-                value={formData.invoice_number}
-                onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
-                placeholder="e.g. INV-0001"
-                className="bg-transparent border-b border-dashed border-transparent hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
-              />
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={formData.invoice_number}
+                  onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
+                  placeholder="e.g. INV-0001"
+                  className="bg-transparent border-b border-dashed border-transparent group-hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
+                />
+                <Edit2 className="w-4 h-4 text-[var(--text-muted)] absolute -right-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              </div>
             </h1>
             <div className="flex items-center gap-3 mt-1">
               <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or issue it.</p>
@@ -316,6 +332,9 @@ export function InvoiceEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={handlePreview} disabled={isSaving} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
+            <Eye className="w-4 h-4" /> Preview
+          </button>
           {isEditMode && (
             <button onClick={handleDownload} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
               <Download className="w-4 h-4" /> PDF
@@ -466,7 +485,7 @@ export function InvoiceEditor() {
                                 className="px-3 py-2.5 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
                                 onClick={() => {
                                   updateLineItem(i, 'name', p.name);
-                                  updateLineItem(i, 'unit_price', parseFloat(p.rental_price || 0));
+                                  updateLineItem(i, 'unit_price', parseFloat(p.units?.[0]?.rental_price || 0));
                                   setActiveDropdown(null);
                                 }}
                               >
@@ -475,7 +494,7 @@ export function InvoiceEditor() {
                                   <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">{p.category?.name || 'Product'}</p>
                                 </div>
                                 <span className="text-xs font-bold text-[var(--text-main)]">
-                                  {currencySymbol}{parseFloat(p.rental_price || 0).toLocaleString()}
+                                  {currencySymbol}{parseFloat(p.units?.[0]?.rental_price || 0).toLocaleString()}
                                 </span>
                               </div>
                             ))}
