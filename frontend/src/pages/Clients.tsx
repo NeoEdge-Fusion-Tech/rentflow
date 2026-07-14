@@ -410,14 +410,17 @@ export function Clients() {
                 />
               </div>
 
-              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
-                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
-                  Tax Information <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
-                  <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              <details className="group cursor-pointer">
+                <summary className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none flex items-center justify-between hover:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold text-[var(--text-main)]">Tax Information</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)]">(optional)</span>
+                  </div>
+                  <span className="text-[var(--text-muted)] transition-transform group-open:rotate-180">
+                    <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20"><path d="m6 9 6 6 6-6"></path></svg>
                   </span>
                 </summary>
-                <div className="mt-4">
+                <div className="mt-3 pl-1 pr-1">
                   <textarea
                     rows={2}
                     value={formData.tax_information}
@@ -428,14 +431,17 @@ export function Clients() {
                 </div>
               </details>
 
-              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
-                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
-                  Address <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
-                  <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              <details className="group cursor-pointer">
+                <summary className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none flex items-center justify-between hover:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold text-[var(--text-main)]">Address</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)]">(optional)</span>
+                  </div>
+                  <span className="text-[var(--text-muted)] transition-transform group-open:rotate-180">
+                    <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20"><path d="m6 9 6 6 6-6"></path></svg>
                   </span>
                 </summary>
-                <div className="mt-4 space-y-4">
+                <div className="mt-3 pl-1 pr-1 space-y-4">
                   <input 
                     type="text" 
                     value={formData.state}
@@ -453,14 +459,17 @@ export function Clients() {
                 </div>
               </details>
 
-              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
-                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
-                  Linked Contacts <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
-                  <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              <details className="group cursor-pointer">
+                <summary className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none flex items-center justify-between hover:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold text-[var(--text-main)]">Linked Contacts</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)]">(optional)</span>
+                  </div>
+                  <span className="text-[var(--text-muted)] transition-transform group-open:rotate-180">
+                    <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20"><path d="m6 9 6 6 6-6"></path></svg>
                   </span>
                 </summary>
-                <div className="mt-4 space-y-4">
+                <div className="mt-3 pl-1 pr-1 space-y-4">
                   <input 
                     type="text" 
                     value={formData.contact_name}
@@ -485,14 +494,17 @@ export function Clients() {
                 </div>
               </details>
 
-              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
-                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
-                  Additional Details <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
-                  <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              <details className="group cursor-pointer">
+                <summary className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none flex items-center justify-between hover:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold text-[var(--text-main)]">Additional Details</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)]">(optional)</span>
+                  </div>
+                  <span className="text-[var(--text-muted)] transition-transform group-open:rotate-180">
+                    <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20"><path d="m6 9 6 6 6-6"></path></svg>
                   </span>
                 </summary>
-                <div className="mt-4">
+                <div className="mt-3 pl-1 pr-1">
                   <textarea
                     rows={2}
                     value={formData.additional_details}
@@ -502,14 +514,17 @@ export function Clients() {
                 </div>
               </details>
               
-              <details className="group border-b border-[var(--border-soft)] pb-4 cursor-pointer">
-                <summary className="font-bold text-[var(--text-main)] flex items-center justify-between">
-                  Account Details <span className="text-sm text-[var(--text-muted)] font-normal ml-2 mr-auto">(optional)</span>
-                  <span className="transition group-open:rotate-180">
-                    <svg fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+              <details className="group cursor-pointer">
+                <summary className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none flex items-center justify-between hover:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-bold text-[var(--text-main)]">Account Details</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)]">(optional)</span>
+                  </div>
+                  <span className="text-[var(--text-muted)] transition-transform group-open:rotate-180">
+                    <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20"><path d="m6 9 6 6 6-6"></path></svg>
                   </span>
                 </summary>
-                <div className="mt-4">
+                <div className="mt-3 pl-1 pr-1">
                   <textarea
                     rows={2}
                     value={formData.account_details}
