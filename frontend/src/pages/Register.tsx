@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { AuthService, CurrencyService } from '../api';
 import { ThemeToggle } from '../components/ThemeToggle';
 
@@ -9,6 +10,7 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currencies, setCurrencies] = useState<any[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -83,7 +85,12 @@ export function Register() {
 
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)]">Password</label>
-                <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" placeholder="••••••••" />
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm pr-10" placeholder="••••••••" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none">
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <div>

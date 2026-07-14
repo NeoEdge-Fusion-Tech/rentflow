@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { AuthService } from '../api';
 import { Logo } from '../components/Logo';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -11,6 +12,7 @@ export function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +94,12 @@ export function Login() {
 
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)]">Password</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" placeholder="••••••••" />
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm pr-10" placeholder="••••••••" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none">
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between">
