@@ -217,6 +217,42 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             "discount_percentage": booking.discount_percentage,
         })
 
+    @action(detail=False, methods=['get'])
+    def next_number(self, request):
+        user = request.user
+        if not hasattr(user, 'organization') or not user.organization:
+            return Response({"error": "No organization attached"}, status=400)
+            
+        last_invoice = Invoice.objects.filter(organization=user.organization).order_by('-created_at', '-invoice_id').first()
+        
+        if last_invoice and last_invoice.invoice_number:
+            import re
+            last_number_str = last_invoice.invoice_number
+            match = re.search(r'(\d+)(?!.*\d)', last_number_str)
+            if match:
+                number_str = match.group(1)
+                prefix = last_number_str[:match.start()]
+                suffix = last_number_str[match.end():]
+                next_number_int = int(number_str) + 1
+                next_number_padded = str(next_number_int).zfill(len(number_str))
+                next_invoice_number = f"{prefix}{next_number_padded}{suffix}"
+            else:
+                next_invoice_number = f"{last_number_str}-01"
+            
+            return Response({
+                "last_invoice_number": last_number_str,
+                "last_issue_date": last_invoice.issue_date,
+                "next_invoice_number": next_invoice_number
+            })
+        else:
+            import datetime
+            year = datetime.datetime.now().year
+            return Response({
+                "last_invoice_number": None,
+                "last_issue_date": None,
+                "next_invoice_number": f"INV-{user.organization.id:02d}-{year}-0001"
+            })
+
     @action(detail=True, methods=['post'])
     def generate_payment_link(self, request, pk=None):
         """

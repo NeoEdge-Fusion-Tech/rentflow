@@ -40,10 +40,12 @@ export function InvoiceEditor() {
   const [products, setProducts] = useState<any[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const [invoiceMeta, setInvoiceMeta] = useState<any>(null);
+  const [lastInvoiceMeta, setLastInvoiceMeta] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     client: '' as number | string,
     booking: bookingIdParam || '',
+    invoice_number: '',
     issue_date: new Date().toISOString().slice(0, 10),
     due_date: '',
     status: 'draft',
@@ -100,9 +102,11 @@ export function InvoiceEditor() {
   const loadInvoice = async (invoiceId: string, isDuplicate = false) => {
     const res = await InvoiceService.get(invoiceId);
     const inv = res.data;
-    setFormData({
+    setFormData(prev => ({
+      ...prev,
       client: inv.client || '',
       booking: inv.booking || '',
+      invoice_number: isDuplicate ? prev.invoice_number : (inv.invoice_number || ''),
       issue_date: inv.issue_date ? new Date(inv.issue_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
       due_date: inv.due_date ? new Date(inv.due_date).toISOString().slice(0, 10) : '',
       status: isDuplicate ? 'draft' : (inv.status || 'draft'),
@@ -113,7 +117,7 @@ export function InvoiceEditor() {
       tax_percentage: parseFloat(inv.tax_percentage) || 0,
       notes: inv.notes || '',
       title: isDuplicate ? `Copy of ${inv.title || 'Invoice'}` : (inv.title || 'Invoice'),
-    });
+    }));
     setLineItems(
       (inv.line_items || []).map((li: any) => ({
         ...(isDuplicate ? {} : { line_item_id: li.line_item_id }),
@@ -154,6 +158,14 @@ export function InvoiceEditor() {
       await Promise.all([fetchClients(), fetchCurrencies(), fetchBankAccounts(), fetchProducts()]);
       const orgData = await fetchOrg();
       try {
+        if (!id) {
+          const nextMeta = await InvoiceService.getNextNumber();
+          if (nextMeta.data) {
+            setLastInvoiceMeta(nextMeta.data);
+            setFormData(prev => ({ ...prev, invoice_number: nextMeta.data.next_invoice_number }));
+          }
+        }
+        
         if (id) {
           await loadInvoice(id);
         } else if (duplicateFromParam) {
@@ -216,6 +228,7 @@ export function InvoiceEditor() {
     tax_percentage: formData.tax_percentage,
     notes: formData.notes,
     title: formData.title,
+    invoice_number: formData.invoice_number || undefined,
     line_items: lineItems.map(li => ({
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
       name: li.name,
@@ -350,6 +363,21 @@ export function InvoiceEditor() {
                 placeholder="e.g. Website Redesign Invoice"
                 className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
               />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Invoice No*</label>
+              <input
+                type="text"
+                value={formData.invoice_number}
+                onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
+                className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+              />
+              {lastInvoiceMeta?.last_invoice_number && !isEditMode && (
+                <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+                  Last No: {lastInvoiceMeta.last_invoice_number} {lastInvoiceMeta.last_issue_date && `(${new Date(lastInvoiceMeta.last_issue_date).toLocaleDateString()})`}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

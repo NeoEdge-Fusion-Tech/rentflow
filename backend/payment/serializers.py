@@ -27,6 +27,7 @@ class InvoiceLineItemSerializer(serializers.ModelSerializer):
 
 
 class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    invoice_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     line_items = InvoiceLineItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
     client_details = ClientSerializer(source='client', read_only=True)
@@ -43,7 +44,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             'bank_account_details', 'subtotal', 'discount_amount', 'discount_percentage', 'tax_percentage',
             'tax_amount', 'total_amount', 'notes', 'line_items', 'organization_name', 'organization_logo'
         ]
-        read_only_fields = ['invoice_number', 'subtotal', 'tax_amount', 'total_amount']
+        read_only_fields = ['subtotal', 'tax_amount', 'total_amount']
 
     def get_organization_logo(self, obj):
         if obj.organization and obj.organization.company_logo:

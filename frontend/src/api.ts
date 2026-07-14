@@ -157,6 +157,7 @@ export const InvoiceService = {
   getAll: (params?: any) => api.get('/payment/invoices/', { params }),
   prefillFromBooking: (bookingId: number | string) =>
     api.get('/payment/invoices/prefill/', { params: { booking_id: bookingId } }),
+  getNextNumber: () => api.get('/payment/invoices/next_number/'),
   create: (data: any) => api.post('/payment/invoices/', data),
   update: (id: number | string, data: any) => api.put(`/payment/invoices/${id}/`, data),
   patch: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
