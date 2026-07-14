@@ -318,7 +318,7 @@ export function InvoiceEditor() {
                   placeholder="e.g. INV-0001"
                   className="bg-transparent border-b border-dashed border-transparent group-hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
                 />
-                <Edit2 className="w-4 h-4 text-[var(--text-muted)] absolute -right-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <Edit2 className="w-4 h-4 text-[var(--text-muted)] absolute -right-6 pointer-events-none" />
               </div>
             </h1>
             <div className="flex items-center gap-3 mt-1">
