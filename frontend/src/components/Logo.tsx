@@ -26,7 +26,7 @@ export function Logo({ className = "h-8", showText = true, dark = false }: LogoP
         </svg>
       </div>
       {showText && (
-        <div className="flex flex-col leading-[0.95] mt-1">
+        <div className="flex items-center">
           <span className={`text-xl font-bold tracking-tight ${textColor}`}>Neo</span>
           <span className={`text-xl font-bold tracking-tight ${subTextColor}`}>Ops</span>
         </div>
