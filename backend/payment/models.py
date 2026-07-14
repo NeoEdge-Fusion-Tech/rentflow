@@ -83,12 +83,12 @@ class Invoice(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
-            # Simple format: INV-YEAR-ID
             import datetime
             year = datetime.datetime.now().year
-            # This is a bit raceconfirmy but fine for now
-            last_id = Invoice.objects.filter(invoice_number__startswith=f"INV-{year}").count()
-            self.invoice_number = f"INV-{year}-{last_id + 1:04d}"
+            # Count invoices for this specific organization to ensure sequential numbers per org
+            last_id = Invoice.objects.filter(organization=self.organization).count()
+            # Include organization ID in prefix to guarantee global uniqueness
+            self.invoice_number = f"INV-{self.organization.id:02d}-{year}-{last_id + 1:04d}"
         super().save(*args, **kwargs)
 
 

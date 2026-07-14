@@ -188,7 +188,7 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             'additional_details', 'account_name', 'account_number', 'bank_name', 'bank_code', 'logo',
             'status', 'bookings_count', 'standalone_invoices_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'organization']
 
 from django.db import transaction
 
