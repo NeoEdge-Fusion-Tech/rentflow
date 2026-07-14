@@ -237,7 +237,7 @@ function AppLayout() {
               </div>
 
               <div className="text-right hidden sm:block border-l border-[var(--border-soft)] pl-4 ml-2">
-                <p className="text-sm font-bold text-[var(--text-main)]">{currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'NeoInventory User'}</p>
+                <p className="text-sm font-bold text-[var(--text-main)]">{currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : 'NeoOps User'}</p>
                 <p className="text-xs text-[var(--text-muted)] capitalize">{currentUser?.role || 'Operator'}</p>
               </div>
               

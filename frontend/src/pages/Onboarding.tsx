@@ -17,7 +17,7 @@ export function Onboarding() {
     <div className="min-h-screen bg-[var(--bg-app)] flex flex-col py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl w-full mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-extrabold text-[var(--text-main)]">Welcome to NeoInventory</h2>
+          <h2 className="text-3xl font-extrabold text-[var(--text-main)]">Welcome to NeoOps</h2>
           <p className="mt-2 text-[var(--text-muted)]">Let's get your workspace configured.</p>
         </div>
 

@@ -80,7 +80,7 @@ class EmailService:
                     },
                     'Subject': {'Charset': 'UTF-8', 'Data': subject},
                 },
-                Source=config('DEFAULT_FROM_EMAIL', default='noreply@neoinventory.com'),
+                Source=config('DEFAULT_FROM_EMAIL', default='noreply@neoops.com'),
             )
             logger.info(f"SES Success: Sent email to {to_email} - MessageId: {response['MessageId']}")
             return True
@@ -93,7 +93,7 @@ class EmailService:
         try:
             sg = SendGridAPIClient(config('SENDGRID_API_KEY', default=''))
             message = Mail(
-                from_email=config('DEFAULT_FROM_EMAIL', default='noreply@neoinventory.com'),
+                from_email=config('DEFAULT_FROM_EMAIL', default='noreply@neoops.com'),
                 to_emails=to_email,
                 subject=subject,
                 html_content=body_html or body_text)
@@ -133,7 +133,7 @@ def send_credit_alert_email(user, current_credits, topup_url):
     """
     Sends a low credit alert email using HTML templates.
     """
-    subject = "NeoInventory - Low Credit Alert"
+    subject = "NeoOps - Low Credit Alert"
     body_text = f"Hello {user.first_name},\n\nYour organization's credit balance is running low ({current_credits} credits).\nPlease top up your account at {topup_url}."
     body_html = render_to_string('emails/credit_alert.html', {
         'user': user,

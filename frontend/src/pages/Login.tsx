@@ -61,7 +61,7 @@ export function Login() {
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
           <Logo className="h-16 mb-8" dark={true} />
-          <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with NeoInventory</h1>
+          <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with NeoOps</h1>
           <p className="text-lg text-brand-accent/80">The premier rentals management suite for modern event businesses.</p>
         </div>
       </div>

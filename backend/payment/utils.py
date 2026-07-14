@@ -397,13 +397,13 @@ def generate_invoice_pdf(invoice):
         elements.append(Paragraph("<b>Notes:</b>", box_title_style))
         elements.append(Paragraph(invoice.notes.replace('\n', '<br/>'), box_text_style))
 
-    # Powered by NeoInventory footer
+    # Powered by NeoOps footer
     small_style = ParagraphStyle(
         'SmallStyle', parent=styles['Normal'], fontSize=8,
         textColor=colors.HexColor("#94a3b8"), alignment=TA_CENTER
     )
     elements.append(Spacer(1, 0.3 * inch))
-    elements.append(Paragraph("Powered by NeoInventory", small_style))
+    elements.append(Paragraph("Powered by NeoOps", small_style))
 
     doc.build(elements)
     buffer.seek(0)

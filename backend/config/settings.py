@@ -191,7 +191,7 @@ else:
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    "https://neoinventory.vercel.app",
+    "https://neoops.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
@@ -220,8 +220,8 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'NeoInventory API',
-    'DESCRIPTION': 'NeoInventory SaaS Inventory and Booking APIs',
+    'TITLE': 'NeoOps API',
+    'DESCRIPTION': 'NeoOps SaaS Inventory and Booking APIs',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
