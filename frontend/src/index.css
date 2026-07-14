@@ -14,6 +14,7 @@
   --input-border: #E2E8F0;
   --input-text: #0F172A;
   --brand-primary: #001C3D;
+  --text-on-brand: #FFFFFF;
 }
 
 .dark {
@@ -29,6 +30,7 @@
   --input-border: #2D3748;
   --input-text: #F1F5F9;
   --brand-primary: #F1F5F9;
+  --text-on-brand: #050810;
 }
 
 /* Force dark text on brand-primary backgrounds in dark mode for contrast */

@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { AuthService } from '../api';
 import { Logo } from '../components/Logo';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 export function Login() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const { theme } = useTheme();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,9 +64,9 @@ export function Login() {
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
-          <Logo className="h-16 mb-8" dark={true} />
+          <Logo className="h-16 mb-8" dark={theme !== 'dark'} />
           <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with NeoOps</h1>
-          <p className="text-lg text-brand-accent/80">The premier rentals management suite for modern event businesses.</p>
+          <p className="text-lg text-[var(--text-on-brand)] opacity-80">Manage inventory, bookings, invoices, and customers from one intuitive platform.</p>
         </div>
       </div>
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">

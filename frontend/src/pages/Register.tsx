@@ -110,7 +110,7 @@ export function Register() {
         <div className="absolute inset-0 bg-gradient-to-tr from-brand-primary via-brand-primary to-brand-primary/90 z-0"></div>
         <div className="z-10 max-w-lg text-right ml-auto">
           <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Join thousands of rental businesses</h1>
-          <p className="text-lg text-brand-accent/80">Start scaling your operations today.</p>
+          <p className="text-lg text-[var(--text-on-brand)] opacity-80">Start scaling your operations today.</p>
         </div>
       </div>
     </div>
