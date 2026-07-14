@@ -47,10 +47,10 @@ export function Register() {
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm">
           <h2 className="mt-6 text-3xl font-extrabold text-[var(--text-main)]">Create an account</h2>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">
-            Already have an account? {' '}
-            <button onClick={() => navigate('/login')} className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors">
-              Sign in
+          <p className="mt-2 text-sm text-[var(--text-muted)] flex items-center gap-1.5">
+            Or
+            <button onClick={() => navigate('/login')} className="font-bold text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors underline underline-offset-4 decoration-2 decoration-[var(--text-link)]/40 hover:decoration-[var(--text-link)]">
+              sign in to your account
             </button>
           </p>
 

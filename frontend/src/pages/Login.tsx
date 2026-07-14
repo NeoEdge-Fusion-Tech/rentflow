@@ -75,9 +75,9 @@ export function Login() {
             <Logo className="h-10" />
           </h2>
           <h3 className="mt-8 text-2xl font-bold text-[var(--text-main)]">Sign in to your account</h3>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">
-            Or {' '}
-            <button onClick={() => navigate('/register')} className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors">
+          <p className="mt-2 text-sm text-[var(--text-muted)] flex items-center gap-1.5">
+            Or
+            <button onClick={() => navigate('/register')} className="font-bold text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors underline underline-offset-4 decoration-2 decoration-[var(--text-link)]/40 hover:decoration-[var(--text-link)]">
               start your free trial
             </button>
           </p>
