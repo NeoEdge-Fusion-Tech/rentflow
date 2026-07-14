@@ -769,7 +769,7 @@ export function Inventory() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Unit Cost Price</label>
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Unit Purchase Price</label>
                         <div className="relative group/input text-[var(--text-main)]">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">{currencySymbol}</span>
                           <input 
