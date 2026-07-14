@@ -54,7 +54,10 @@ export function Clients() {
     tax_information: '',
     shipping_details: '',
     additional_details: '',
-    account_details: '',
+    account_name: '',
+    account_number: '',
+    bank_name: '',
+    bank_code: '',
     status: 'active',
     logo: null as File | string | null
   });
@@ -93,7 +96,10 @@ export function Clients() {
       tax_information: '',
       shipping_details: '',
       additional_details: '',
-      account_details: '',
+      account_name: '',
+      account_number: '',
+      bank_name: '',
+      bank_code: '',
       status: 'active',
       logo: null
     });
@@ -119,7 +125,10 @@ export function Clients() {
       tax_information: client.tax_information || '',
       shipping_details: client.shipping_details || '',
       additional_details: client.additional_details || '',
-      account_details: client.account_details || '',
+      account_name: client.account_name || '',
+      account_number: client.account_number || '',
+      bank_name: client.bank_name || '',
+      bank_code: client.bank_code || '',
       status: client.status || 'active',
       logo: client.logo || null
     });
@@ -591,12 +600,49 @@ export function Clients() {
                   </span>
                 </summary>
                 <div className="mt-3 pl-1 pr-1">
-                  <textarea
-                    rows={2}
-                    value={formData.account_details}
-                    onChange={e => setFormData({...formData, account_details: e.target.value})}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
-                  />
+                  <h4 className="font-bold text-[var(--text-main)] mb-3 text-sm">Account Details</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Account Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. John Doe"
+                        value={formData.account_name}
+                        onChange={e => setFormData({...formData, account_name: e.target.value})}
+                        className="w-full h-11 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Account Number</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 1234567890"
+                        value={formData.account_number}
+                        onChange={e => setFormData({...formData, account_number: e.target.value})}
+                        className="w-full h-11 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Bank Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Chase Bank"
+                        value={formData.bank_name}
+                        onChange={e => setFormData({...formData, bank_name: e.target.value})}
+                        className="w-full h-11 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Bank Code</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Routing / Sort Code"
+                        value={formData.bank_code}
+                        onChange={e => setFormData({...formData, bank_code: e.target.value})}
+                        className="w-full h-11 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </details>
 
@@ -690,6 +736,18 @@ export function Clients() {
                   <p className="text-sm font-medium text-[var(--text-main)]">{viewingClient.contact_name || 'N/A'}</p>
                 </div>
               </div>
+
+              {(viewingClient.account_name || viewingClient.bank_name || viewingClient.account_number) && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Account Details</h4>
+                  <p className="text-sm font-medium text-[var(--text-main)]">
+                    {viewingClient.bank_name && <span>{viewingClient.bank_name} </span>}
+                    {viewingClient.account_number && <span>- {viewingClient.account_number}</span>}
+                  </p>
+                  {viewingClient.account_name && <p className="text-sm text-[var(--text-muted)] mt-1">{viewingClient.account_name}</p>}
+                  {viewingClient.bank_code && <p className="text-xs text-[var(--text-muted)] mt-1">Code: {viewingClient.bank_code}</p>}
+                </div>
+              )}
 
               {viewingClient.address && (
                 <div className="space-y-1">

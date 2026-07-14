@@ -32,6 +32,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     client_details = ClientSerializer(source='client', read_only=True)
     bank_account_details = BankAccountSerializer(source='bank_account', read_only=True)
     organization_name = serializers.CharField(source='organization.name', read_only=True)
+    organization_logo = serializers.SerializerMethodField()
     currency_symbol = serializers.SerializerMethodField()
 
     class Meta:
@@ -40,9 +41,17 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             'invoice_id', 'booking', 'client', 'client_name', 'client_details', 'title', 'invoice_number',
             'issue_date', 'due_date', 'status', 'currency', 'currency_symbol', 'bank_account',
             'bank_account_details', 'subtotal', 'discount_amount', 'discount_percentage', 'tax_percentage',
-            'tax_amount', 'total_amount', 'notes', 'line_items', 'organization_name'
+            'tax_amount', 'total_amount', 'notes', 'line_items', 'organization_name', 'organization_logo'
         ]
-        read_only_fields = ['invoice_number', 'issue_date', 'subtotal', 'tax_amount', 'total_amount']
+        read_only_fields = ['invoice_number', 'subtotal', 'tax_amount', 'total_amount']
+
+    def get_organization_logo(self, obj):
+        if obj.organization and obj.organization.company_logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.organization.company_logo.url)
+            return obj.organization.company_logo.url
+        return None
 
     def get_client_name(self, obj):
         if obj.client:

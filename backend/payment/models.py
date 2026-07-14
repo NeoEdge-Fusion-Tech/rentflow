@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from inventory.models import Booking
 
 
@@ -54,7 +55,7 @@ class Invoice(models.Model):
         null=True, blank=True, related_name='invoices'
     )
     invoice_number = models.CharField(max_length=50, unique=True)
-    issue_date = models.DateTimeField(auto_now_add=True)
+    issue_date = models.DateTimeField(default=timezone.now)
     due_date = models.DateTimeField(null=True, blank=True)
     title = models.CharField(max_length=255, blank=True, null=True, default='Invoice')
     status_choices = [

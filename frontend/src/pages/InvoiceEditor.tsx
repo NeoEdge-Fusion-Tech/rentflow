@@ -10,7 +10,8 @@ import {
   CurrencyService,
   BankAccountService,
   AuthService,
-  OrganizationService
+  OrganizationService,
+  ProductService
 } from '../api';
 
 interface LineItem {
@@ -36,11 +37,14 @@ export function InvoiceEditor() {
   const [clients, setClients] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const [invoiceMeta, setInvoiceMeta] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     client: '' as number | string,
     booking: bookingIdParam || '',
+    issue_date: new Date().toISOString().slice(0, 10),
     due_date: '',
     status: 'draft',
     currency: '' as number | string,
@@ -74,6 +78,13 @@ export function InvoiceEditor() {
     } catch (e) { console.error(e); }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const res = await ProductService.getAll();
+      setProducts(res.data.results || res.data);
+    } catch (e) { console.error(e); }
+  };
+
   const fetchOrg = async () => {
     try {
       const me = await AuthService.getMe();
@@ -92,8 +103,9 @@ export function InvoiceEditor() {
     setFormData({
       client: inv.client || '',
       booking: inv.booking || '',
-      due_date: isDuplicate ? '' : (inv.due_date ? inv.due_date.split('T')[0] : ''),
-      status: isDuplicate ? 'draft' : inv.status,
+      issue_date: inv.issue_date ? new Date(inv.issue_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      due_date: inv.due_date ? new Date(inv.due_date).toISOString().slice(0, 10) : '',
+      status: isDuplicate ? 'draft' : (inv.status || 'draft'),
       currency: inv.currency || '',
       bank_account: inv.bank_account || '',
       discount_amount: parseFloat(inv.discount_amount) || 0,
@@ -139,7 +151,7 @@ export function InvoiceEditor() {
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      await Promise.all([fetchClients(), fetchCurrencies(), fetchBankAccounts()]);
+      await Promise.all([fetchClients(), fetchCurrencies(), fetchBankAccounts(), fetchProducts()]);
       const orgData = await fetchOrg();
       try {
         if (id) {
@@ -194,6 +206,7 @@ export function InvoiceEditor() {
   const buildPayload = (statusOverride?: string) => ({
     client: formData.client ? parseInt(String(formData.client)) : null,
     booking: formData.booking ? parseInt(String(formData.booking)) : null,
+    issue_date: formData.issue_date,
     due_date: formData.due_date || null,
     status: statusOverride || formData.status,
     currency: formData.currency ? parseInt(String(formData.currency)) : null,
@@ -341,6 +354,15 @@ export function InvoiceEditor() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Issue Date</label>
+                <input
+                  type="date"
+                  value={formData.issue_date}
+                  onChange={e => setFormData({ ...formData, issue_date: e.target.value })}
+                  className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Due Date</label>
                 <input
                   type="date"
@@ -392,14 +414,49 @@ export function InvoiceEditor() {
               {lineItems.map((item, i) => (
                 <div key={i} className="flex flex-col gap-3 bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]">
                   <div className="grid grid-cols-12 gap-3 items-start">
-                    <div className="col-span-12 md:col-span-5">
+                    <div className="relative col-span-12 md:col-span-5">
                       <input
                         type="text"
-                        placeholder="Item Name"
+                        placeholder="Item Name (Search Products...)"
                         value={item.name}
-                        onChange={e => updateLineItem(i, 'name', e.target.value)}
+                        onFocus={() => setActiveDropdown(i)}
+                        onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                        onChange={e => {
+                          updateLineItem(i, 'name', e.target.value);
+                          setActiveDropdown(i);
+                        }}
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)]"
                       />
+                      {activeDropdown === i && products.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                          {products
+                            .filter(p => p.name.toLowerCase().includes(item.name.toLowerCase()))
+                            .map(p => (
+                              <div
+                                key={p.product_id}
+                                className="px-3 py-2.5 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
+                                onClick={() => {
+                                  updateLineItem(i, 'name', p.name);
+                                  updateLineItem(i, 'unit_price', parseFloat(p.rental_price || p.total_cost_price || 0));
+                                  setActiveDropdown(null);
+                                }}
+                              >
+                                <div>
+                                  <p className="text-sm font-bold text-[var(--text-main)]">{p.name}</p>
+                                  <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">{p.category?.name || 'Product'}</p>
+                                </div>
+                                <span className="text-xs font-bold text-[var(--text-main)]">
+                                  {currencySymbol}{parseFloat(p.rental_price || p.total_cost_price || 0).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                          {products.filter(p => p.name.toLowerCase().includes(item.name.toLowerCase())).length === 0 && (
+                            <div className="px-3 py-4 text-center text-xs text-[var(--text-muted)] font-medium">
+                              No products found.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="col-span-4 md:col-span-2">
                       <input
@@ -473,7 +530,7 @@ export function InvoiceEditor() {
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">Discount ({currencySymbol})</label>
                 <input
                   type="number"
-                  value={formData.discount_amount}
+                  value={formData.discount_amount || ''}
                   onChange={e => setFormData({ ...formData, discount_amount: parseFloat(e.target.value) || 0, discount_percentage: 0 })}
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
                 />
@@ -482,7 +539,7 @@ export function InvoiceEditor() {
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">Discount (%)</label>
                 <input
                   type="number"
-                  value={formData.discount_percentage}
+                  value={formData.discount_percentage || ''}
                   onChange={e => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) || 0, discount_amount: 0 })}
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
                 />
@@ -495,11 +552,11 @@ export function InvoiceEditor() {
               </div>
             )}
 
-            <div>
+            <div className="pt-4 border-t border-[var(--border-soft)]">
               <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">Tax (%)</label>
               <input
                 type="number"
-                value={formData.tax_percentage}
+                value={formData.tax_percentage || ''}
                 onChange={e => setFormData({ ...formData, tax_percentage: parseFloat(e.target.value) || 0 })}
                 className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
               />

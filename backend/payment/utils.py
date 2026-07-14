@@ -179,150 +179,206 @@ def generate_invoice_pdf(invoice):
     items, client, and organization details (not the linked booking).
     """
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=0.5*inch, leftMargin=0.5*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
     styles = getSampleStyleSheet()
     organization = invoice.organization
     currency_symbol = _currency_label(invoice.currency or organization.currency)
 
+    # Styles
     title_style = ParagraphStyle(
-        'TitleStyle', parent=styles['Heading1'], fontSize=22,
-        textColor=colors.HexColor("#1e293b"), spaceAfter=6
+        'TitleStyle', parent=styles['Heading1'], fontSize=28,
+        textColor=colors.HexColor("#0f172a"), spaceAfter=15, fontName='Helvetica-Bold'
     )
-    title_style_right = ParagraphStyle('TitleStyleRight', parent=title_style, alignment=TA_RIGHT)
-    header_style = ParagraphStyle(
-        'HeaderStyle', parent=styles['Normal'], fontSize=10,
-        textColor=colors.HexColor("#64748b"), leading=14
+    meta_label_style = ParagraphStyle(
+        'MetaLabel', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#64748b")
     )
-    header_style_right = ParagraphStyle('HeaderStyleRight', parent=header_style, alignment=TA_RIGHT)
+    meta_val_style = ParagraphStyle(
+        'MetaVal', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#0f172a"), fontName='Helvetica-Bold'
+    )
+    
+    box_header_style = ParagraphStyle(
+        'BoxHeader', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor("#64748b"), fontName='Helvetica-Bold', spaceAfter=6, textTransform='uppercase'
+    )
+    box_text_style = ParagraphStyle(
+        'BoxText', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor("#334155"), leading=14
+    )
+    box_title_style = ParagraphStyle(
+        'BoxTitle', parent=styles['Normal'], fontSize=12, textColor=colors.HexColor("#0f172a"), fontName='Helvetica-Bold', spaceAfter=4
+    )
 
     elements = []
 
-    # ---- Header: "From" (organization) on the left, invoice meta on the right ----
-    left_col = []
-    logo = _load_logo_flowable(organization)
-    if logo:
-        left_col.append(logo)
-        left_col.append(Spacer(1, 0.1 * inch))
-    left_col.append(Paragraph(f"<b>{organization.name}</b>", styles['Normal']))
-    if organization.address:
-        left_col.append(Paragraph(organization.address.replace('\n', '<br/>'), header_style))
-    if organization.phone_number:
-        left_col.append(Paragraph(organization.phone_number, header_style))
-    if organization.email:
-        left_col.append(Paragraph(organization.email, header_style))
-    if organization.tax_id:
-        left_col.append(Paragraph(f"Tax ID: {organization.tax_id}", header_style))
-
-    right_col = [Paragraph("INVOICE", title_style_right)]
-    right_col.append(Paragraph(invoice.invoice_number, header_style_right))
-    right_col.append(Paragraph(f"Issue Date: {invoice.issue_date.strftime('%Y-%m-%d')}", header_style_right))
+    # ---- Top Header ----
+    left_meta = []
+    left_meta.append([Paragraph("Invoice No #", meta_label_style), Paragraph(invoice.invoice_number, meta_val_style)])
+    left_meta.append([Paragraph("Invoice Date", meta_label_style), Paragraph(invoice.issue_date.strftime('%b %d, %Y'), meta_val_style)])
     if invoice.due_date:
-        right_col.append(Paragraph(f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}", header_style_right))
-    right_col.append(Paragraph(f"Status: {invoice.get_status_display()}", header_style_right))
+        left_meta.append([Paragraph("Due Date", meta_label_style), Paragraph(invoice.due_date.strftime('%b %d, %Y'), meta_val_style)])
+    left_meta.append([Paragraph("Status", meta_label_style), Paragraph(f"<font color='#2563eb'>{invoice.get_status_display()}</font>", meta_val_style)])
 
-    header_table = Table([[left_col, right_col]], colWidths=[3.6 * inch, 3.4 * inch])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    meta_table = Table(left_meta, colWidths=[1.2 * inch, 2.5 * inch])
+    meta_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
-    elements.append(header_table)
+
+    header_left = [Paragraph(invoice.title or "Invoice", title_style), meta_table]
+
+    header_right = []
+    logo = _load_logo_flowable(organization, size=1.4 * inch)
+    if logo:
+        header_right.append(logo)
+
+    top_table = Table([[header_left, header_right]], colWidths=[5 * inch, 2.2 * inch])
+    top_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+    ]))
+    elements.append(top_table)
     elements.append(Spacer(1, 0.4 * inch))
 
-    # ---- Bill To ----
-    elements.append(Paragraph("<b>Bill To:</b>", styles['Normal']))
+    # ---- Billed By / Billed To Boxes ----
+    billed_by = [Paragraph("BILLED BY", box_header_style)]
+    billed_by.append(Paragraph(organization.name, box_title_style))
+    if organization.address:
+        billed_by.append(Paragraph(organization.address.replace('\n', '<br/>'), box_text_style))
+    if organization.phone_number:
+        billed_by.append(Paragraph(organization.phone_number, box_text_style))
+    if organization.email:
+        billed_by.append(Paragraph(organization.email, box_text_style))
+
+    billed_to = [Paragraph("BILLED TO", box_header_style)]
     client = invoice.client
     if client:
         client_name = f"{client.business_name}".strip()
-        elements.append(Paragraph(client_name, styles['Normal']))
+        billed_to.append(Paragraph(client_name, box_title_style))
         if client.email:
-            elements.append(Paragraph(client.email, header_style))
+            billed_to.append(Paragraph(client.email, box_text_style))
         if client.phone_number:
-            elements.append(Paragraph(client.phone_number, header_style))
+            billed_to.append(Paragraph(client.phone_number, box_text_style))
         if client.address:
-            elements.append(Paragraph(client.address.replace('\n', '<br/>'), header_style))
+            billed_to.append(Paragraph(client.address.replace('\n', '<br/>'), box_text_style))
     else:
-        elements.append(Paragraph("No client specified", header_style))
-    elements.append(Spacer(1, 0.35 * inch))
+        billed_to.append(Paragraph("No client specified", box_text_style))
+
+    # Wrap in tables for gray background
+    box_bg = colors.HexColor("#f1f5f9")
+    by_table = Table([[billed_by]], colWidths=[3.5 * inch])
+    by_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, 0), box_bg),
+        ('PADDING', (0, 0), (0, 0), 12),
+        ('ROUNDEDCORNERS', [8, 8, 8, 8]),
+    ]))
+
+    to_table = Table([[billed_to]], colWidths=[3.5 * inch])
+    to_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, 0), box_bg),
+        ('PADDING', (0, 0), (0, 0), 12),
+        ('ROUNDEDCORNERS', [8, 8, 8, 8]),
+    ]))
+
+    info_table = Table([[by_table, '', to_table]], colWidths=[3.5 * inch, 0.2 * inch, 3.5 * inch])
+    info_table.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP')]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.4 * inch))
 
     # ---- Line Items ----
-    data = [['Description', 'Qty', 'Unit Price', 'Total']]
-    for item in invoice.line_items.all():
+    data = [['Item', 'Qty', 'Rate', 'Total']]
+    for idx, item in enumerate(invoice.line_items.all()):
+        item_text = f"<b>{idx + 1}. {item.name}</b>"
+        if item.description:
+            item_text += f"<br/><font color='#64748b' size='9'>{item.description}</font>"
+        
         data.append([
-            item.name,
+            Paragraph(item_text, styles['Normal']),
             f"{float(item.quantity):g}",
             f"{currency_symbol}{item.unit_price:,.2f}",
             f"{currency_symbol}{item.total:,.2f}"
         ])
 
-    table = Table(data, colWidths=[3 * inch, 0.8 * inch, 1.3 * inch, 1.4 * inch])
+    table = Table(data, colWidths=[3.8 * inch, 0.8 * inch, 1.3 * inch, 1.3 * inch])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#0f172a")),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#0f172a")), # Dark blue header
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('LINEBELOW', (0, 1), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+        ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 1), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 12),
     ]))
     elements.append(table)
-    elements.append(Spacer(1, 0.2 * inch))
+    elements.append(Spacer(1, 0.3 * inch))
 
-    # ---- Totals ----
-    totals_rows = [['', 'Subtotal:', f"{currency_symbol}{invoice.subtotal:,.2f}"]]
+    # ---- Payment Info & Totals ----
+    bank_account = invoice.bank_account
+    payment_info = [Paragraph("Payment Info", box_title_style)]
+    if bank_account:
+        payment_info.append(Paragraph(f"<font color='#64748b'>Bank:</font> {bank_account.bank_name}", box_text_style))
+        payment_info.append(Paragraph(f"<font color='#64748b'>Account Name:</font> {bank_account.account_name}", box_text_style))
+        payment_info.append(Paragraph(f"<font color='#64748b'>Account Number:</font> {bank_account.account_number}", box_text_style))
+        if bank_account.account_type:
+            payment_info.append(Paragraph(f"<font color='#64748b'>Account Type:</font> {bank_account.get_account_type_display()}", box_text_style))
+        if bank_account.swift_code:
+            payment_info.append(Paragraph(f"<font color='#64748b'>SWIFT:</font> {bank_account.swift_code}", box_text_style))
+    else:
+        # Fallback to org generic info
+        acct_details = getattr(organization, 'account_details', None)
+        if acct_details and acct_details.bank_name:
+            payment_info.append(Paragraph(f"<font color='#64748b'>Bank:</font> {acct_details.bank_name}", box_text_style))
+            payment_info.append(Paragraph(f"<font color='#64748b'>Account Name:</font> {acct_details.account_name}", box_text_style))
+            payment_info.append(Paragraph(f"<font color='#64748b'>Account Number:</font> {acct_details.account_number}", box_text_style))
+        else:
+            payment_info.append(Paragraph("No payment details provided.", box_text_style))
+
+    payment_table = Table([[payment_info]], colWidths=[4 * inch])
+    payment_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, 0), colors.HexColor("#f8fafc")),
+        ('PADDING', (0, 0), (0, 0), 12),
+        ('ROUNDEDCORNERS', [8, 8, 8, 8]),
+        ('BORDER', (0, 0), (0, 0), 0.5, colors.HexColor("#e2e8f0")),
+    ]))
+
+    totals_rows = [
+        [Paragraph("Subtotal", meta_label_style), Paragraph(f"{currency_symbol}{invoice.subtotal:,.2f}", ParagraphStyle('R', alignment=TA_RIGHT, fontSize=10))]
+    ]
     if invoice.discount_percentage and invoice.discount_percentage > 0:
         discount_value = invoice.subtotal * (invoice.discount_percentage / Decimal('100'))
-        totals_rows.append(['', f"Discount ({invoice.discount_percentage:g}%):", f"-{currency_symbol}{discount_value:,.2f}"])
+        totals_rows.append([Paragraph(f"Discount ({invoice.discount_percentage:g}%)", meta_label_style), Paragraph(f"-{currency_symbol}{discount_value:,.2f}", ParagraphStyle('R', alignment=TA_RIGHT, fontSize=10))])
     elif invoice.discount_amount and invoice.discount_amount > 0:
-        totals_rows.append(['', 'Discount:', f"-{currency_symbol}{invoice.discount_amount:,.2f}"])
+        totals_rows.append([Paragraph("Discount", meta_label_style), Paragraph(f"-{currency_symbol}{invoice.discount_amount:,.2f}", ParagraphStyle('R', alignment=TA_RIGHT, fontSize=10))])
+    
     if invoice.tax_percentage and invoice.tax_percentage > 0:
-        totals_rows.append(['', f"Tax ({invoice.tax_percentage:g}%):", f"{currency_symbol}{invoice.tax_amount:,.2f}"])
-    totals_rows.append(['', 'Total Amount:', f"{currency_symbol}{invoice.total_amount:,.2f}"])
+        totals_rows.append([Paragraph(f"Tax ({invoice.tax_percentage:g}%)", meta_label_style), Paragraph(f"{currency_symbol}{invoice.tax_amount:,.2f}", ParagraphStyle('R', alignment=TA_RIGHT, fontSize=10))])
+    
+    totals_rows.append([Paragraph("Total (<b>" + (currency_symbol or '') + "</b>)", meta_val_style), Paragraph(f"<b>{currency_symbol}{invoice.total_amount:,.2f}</b>", ParagraphStyle('R', alignment=TA_RIGHT, fontSize=12))])
 
-    totals_table = Table(totals_rows, colWidths=[3.6 * inch, 1.5 * inch, 1.4 * inch])
-    last_row = len(totals_rows) - 1
+    totals_table = Table(totals_rows, colWidths=[1.5 * inch, 1.5 * inch])
     totals_table.setStyle(TableStyle([
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-        ('FONTNAME', (1, last_row), (-1, last_row), 'Helvetica-Bold'),
-        ('FONTSIZE', (1, last_row), (-1, last_row), 12),
-        ('LINEABOVE', (1, last_row), (-1, last_row), 0.75, colors.HexColor("#0f172a")),
-        ('TOPPADDING', (1, last_row), (-1, last_row), 8),
+        ('LINEABOVE', (0, -1), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+        ('TOPPADDING', (0, -1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
     ]))
-    elements.append(totals_table)
+
+    bottom_table = Table([[payment_table, totals_table]], colWidths=[4.2 * inch, 3.0 * inch])
+    bottom_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+    ]))
+    elements.append(bottom_table)
 
     # ---- Notes ----
     if invoice.notes:
         elements.append(Spacer(1, 0.4 * inch))
-        elements.append(Paragraph("<b>Notes:</b>", styles['Normal']))
-        elements.append(Paragraph(invoice.notes.replace('\n', '<br/>'), styles['Normal']))
-
-    # ---- Payment Info (bank details): prefer the invoice's selected bank
-    # account, falling back to the organization's legacy payout account ----
-    bank_account = invoice.bank_account
-    if bank_account:
-        elements.append(Spacer(1, 0.3 * inch))
-        elements.append(Paragraph("<b>Payment Info:</b>", styles['Normal']))
-        elements.append(Paragraph(f"Bank: {bank_account.bank_name}", header_style))
-        elements.append(Paragraph(f"Account Name: {bank_account.account_name}", header_style))
-        elements.append(Paragraph(f"Account Number: {bank_account.account_number}", header_style))
-        elements.append(Paragraph(f"Account Type: {bank_account.get_account_type_display()}", header_style))
-        if bank_account.swift_code:
-            elements.append(Paragraph(f"SWIFT Code: {bank_account.swift_code}", header_style))
-        if bank_account.notes:
-            elements.append(Paragraph(bank_account.notes.replace('\n', '<br/>'), header_style))
-    else:
-        account_details = getattr(organization, 'account_details', None)
-        if account_details and (account_details.account_number or account_details.bank_name):
-            elements.append(Spacer(1, 0.3 * inch))
-            elements.append(Paragraph("<b>Payment Info:</b>", styles['Normal']))
-            if account_details.bank_name:
-                elements.append(Paragraph(f"Bank: {account_details.bank_name}", header_style))
-            if account_details.account_name:
-                elements.append(Paragraph(f"Account Name: {account_details.account_name}", header_style))
-            if account_details.account_number:
-                elements.append(Paragraph(f"Account Number: {account_details.account_number}", header_style))
-
-    elements.append(Spacer(1, 0.5 * inch))
-    elements.append(Paragraph("Thank you for your business!", ParagraphStyle('CenterStyle', parent=styles['Normal'], alignment=TA_CENTER)))
+        elements.append(Paragraph("<b>Notes:</b>", box_title_style))
+        elements.append(Paragraph(invoice.notes.replace('\n', '<br/>'), box_text_style))
 
     # Powered by NeoInventory footer
     small_style = ParagraphStyle(
