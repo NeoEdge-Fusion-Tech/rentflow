@@ -123,8 +123,12 @@ export const BookingService = {
 
 export const ClientService = {
   getAll: (params?: any) => api.get('/users/clients/', { params }),
-  create: (data: any) => api.post('/users/clients/', data),
-  update: (id: number | string, data: any) => api.patch(`/users/clients/${id}/`, data),
+  create: (data: any) => api.post('/users/clients/', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  update: (id: number | string, data: any) => api.patch(`/users/clients/${id}/`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   delete: (id: number | string) => api.delete(`/users/clients/${id}/`),
 };
 
