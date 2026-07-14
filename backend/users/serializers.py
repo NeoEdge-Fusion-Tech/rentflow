@@ -182,7 +182,7 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Client
         fields = [
-            'client_id', 'business_name', 'email', 'phone_number', 'contact_name', 'contact_email', 'contact_phone',
+            'client_id', 'logo', 'business_name', 'email', 'phone_number', 'contact_name', 'contact_email', 'contact_phone',
             'industry', 'address', 'city', 'state', 'country', 'tax_information', 'shipping_details', 'additional_details', 'account_details',
             'status', 'bookings_count', 'standalone_invoices_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at'
         ]

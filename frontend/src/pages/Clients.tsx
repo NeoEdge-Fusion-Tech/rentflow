@@ -15,7 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
-  Receipt
+  Receipt,
+  Upload,
+  User
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
@@ -32,6 +34,9 @@ export function Clients() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<any>(null);
+  
+  const [viewingClient, setViewingClient] = useState<any>(null);
+  const [customIndustry, setCustomIndustry] = useState('');
   
   // Form State
   const [formData, setFormData] = useState({
@@ -50,7 +55,8 @@ export function Clients() {
     shipping_details: '',
     additional_details: '',
     account_details: '',
-    status: 'active'
+    status: 'active',
+    logo: null as File | string | null
   });
 
   const fetchClients = async () => {
@@ -71,6 +77,7 @@ export function Clients() {
 
   const openAddModal = () => {
     setEditingClient(null);
+    setCustomIndustry('');
     setFormData({
       business_name: '',
       email: '',
@@ -87,13 +94,16 @@ export function Clients() {
       shipping_details: '',
       additional_details: '',
       account_details: '',
-      status: 'active'
+      status: 'active',
+      logo: null
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (client: any) => {
+    const isStandardIndustry = ['tech', 'retail', 'finance', 'other', ''].includes(client.industry || '');
     setEditingClient(client);
+    setCustomIndustry(isStandardIndustry ? '' : (client.industry || ''));
     setFormData({
       business_name: client.business_name || '',
       email: client.email || '',
@@ -101,7 +111,7 @@ export function Clients() {
       contact_name: client.contact_name || '',
       contact_email: client.contact_email || '',
       contact_phone: client.contact_phone || '',
-      industry: client.industry || '',
+      industry: isStandardIndustry ? (client.industry || '') : 'other',
       address: client.address || '',
       city: client.city || '',
       state: client.state || '',
@@ -110,7 +120,8 @@ export function Clients() {
       shipping_details: client.shipping_details || '',
       additional_details: client.additional_details || '',
       account_details: client.account_details || '',
-      status: client.status || 'active'
+      status: client.status || 'active',
+      logo: client.logo || null
     });
     setIsModalOpen(true);
   };
@@ -136,11 +147,25 @@ export function Clients() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const payload = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'industry') {
+        payload.append('industry', formData.industry === 'other' && customIndustry ? customIndustry : formData.industry);
+      } else if (key === 'logo') {
+        if (value instanceof File) {
+          payload.append('logo', value);
+        }
+      } else if (value !== null && value !== '') {
+        payload.append(key, value as string);
+      }
+    });
+
     try {
       if (editingClient) {
-        await ClientService.update(editingClient.client_id, formData);
+        await ClientService.update(editingClient.client_id, payload);
       } else {
-        await ClientService.create(formData);
+        await ClientService.create(payload);
       }
       setIsModalOpen(false);
       showNotification(editingClient ? "Client updated!" : "Client created!", 'success');
@@ -279,7 +304,7 @@ export function Clients() {
                     <span className="text-xs text-[var(--text-muted)]">Invoices</span>
                   </div>
                 </div>
-                <button className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline">
+                <button onClick={() => setViewingClient(client)} className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline">
                   View Profile
                   <ExternalLink className="w-3 h-3" />
                 </button>
@@ -322,8 +347,8 @@ export function Clients() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-main)]">
                 {editingClient ? 'Edit Client' : 'Add New Client'}
               </h2>
@@ -335,7 +360,38 @@ export function Clients() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+              {/* Logo Upload */}
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <div className="relative group">
+                  <div className="w-24 h-24 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] flex items-center justify-center overflow-hidden">
+                    {formData.logo ? (
+                      <img 
+                        src={formData.logo instanceof File ? URL.createObjectURL(formData.logo) : formData.logo} 
+                        alt="Logo Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-[var(--text-muted)]" />
+                    )}
+                  </div>
+                  <label className="absolute bottom-0 right-0 p-1.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-full shadow-sm cursor-pointer hover:bg-[var(--bg-app)] transition-colors">
+                    <Upload className="w-4 h-4 text-[var(--text-main)]" />
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      className="hidden" 
+                      onChange={e => {
+                        if (e.target.files && e.target.files[0]) {
+                          setFormData({...formData, logo: e.target.files[0]});
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <span className="text-xs font-bold text-[var(--text-muted)]">Client Logo (Optional)</span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">Business Name <span className="text-rose-500">*</span></label>
@@ -361,6 +417,16 @@ export function Clients() {
                     <option value="finance">Finance</option>
                     <option value="other">Other</option>
                   </select>
+                  {formData.industry === 'other' && (
+                    <input
+                      type="text"
+                      placeholder="Specify Industry"
+                      value={customIndustry}
+                      onChange={e => setCustomIndustry(e.target.value)}
+                      className="w-full px-4 py-3 mt-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                      required
+                    />
+                  )}
                 </div>
               </div>
 
@@ -554,14 +620,110 @@ export function Clients() {
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
-                  className="flex-1 px-6 py-3 font-bold text-brand-accent bg-brand-primary hover:opacity-90 rounded-xl transition-all shadow-lg shadow-brand-primary/20 whitespace-nowrap"
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors"
                 >
                   {editingClient ? 'Save Changes' : 'Create Client'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Profile Modal */}
+      {viewingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Client Profile
+              </h2>
+              <button 
+                onClick={() => setViewingClient(null)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto">
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-16 h-16 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] flex items-center justify-center overflow-hidden shrink-0">
+                  {viewingClient.logo ? (
+                    <img src={viewingClient.logo} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-8 h-8 text-[var(--text-muted)]" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-[var(--text-main)]">{viewingClient.business_name}</h3>
+                  <div className="flex items-center text-sm text-[var(--text-muted)] mt-1">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-brand-primary/10 text-brand-primary uppercase">
+                      {viewingClient.status}
+                    </span>
+                    {viewingClient.industry && (
+                      <span className="ml-3 capitalize">{viewingClient.industry}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Contact Email</span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">{viewingClient.email || viewingClient.contact_email || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Contact Phone</span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">{viewingClient.phone_number || viewingClient.contact_phone || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Location</span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">
+                    {[viewingClient.city, viewingClient.state, viewingClient.country].filter(Boolean).join(', ') || 'N/A'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Contact Person</span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">{viewingClient.contact_name || 'N/A'}</p>
+                </div>
+              </div>
+
+              {viewingClient.address && (
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Address</span>
+                  <p className="text-sm font-medium text-[var(--text-main)] whitespace-pre-wrap">{viewingClient.address}</p>
+                </div>
+              )}
+
+              {viewingClient.tax_information && (
+                <div className="space-y-1 pt-4 border-t border-[var(--border-soft)]">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Tax Information</span>
+                  <p className="text-sm font-medium text-[var(--text-main)] whitespace-pre-wrap">{viewingClient.tax_information}</p>
+                </div>
+              )}
+
+              {viewingClient.account_details && (
+                <div className="space-y-1 pt-4 border-t border-[var(--border-soft)]">
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Account Details</span>
+                  <p className="text-sm font-medium text-[var(--text-main)] whitespace-pre-wrap">{viewingClient.account_details}</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end pt-6 border-t border-[var(--border-soft)]">
+                <button
+                  onClick={() => {
+                    setViewingClient(null);
+                    openEditModal(viewingClient);
+                  }}
+                  className="px-6 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-surface)] transition-colors flex items-center gap-2"
+                >
+                  <Edit2 className="w-4 h-4" /> Edit Client
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
