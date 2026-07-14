@@ -145,6 +145,13 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     filterset_fields = ['booking', 'client', 'status']
     search_fields = ['invoice_number']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        if not status_param:
+            qs = qs.exclude(status='cancelled')
+        return qs
+
     def perform_create(self, serializer):
         user = self.request.user
         if not user.is_superuser and hasattr(user, 'organization') and user.organization:
@@ -187,6 +194,13 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if not user.is_superuser:
             kwargs['organization'] = user.organization
         serializer.save(**kwargs)
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import ValidationError
+        if instance.status == 'paid':
+            raise ValidationError("Cannot delete an invoice that has already been paid.")
+        instance.status = 'cancelled'
+        instance.save()
 
     @action(detail=False, methods=['get'])
     def prefill(self, request):

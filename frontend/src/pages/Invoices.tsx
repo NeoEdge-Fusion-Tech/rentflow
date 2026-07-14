@@ -38,7 +38,13 @@ export function Invoices() {
     try {
       setIsLoading(true);
       const params: any = {};
-      if (activeTab !== 'All') params.status = activeTab;
+      if (activeTab !== 'All') {
+        if (activeTab === 'Trash') {
+          params.status = 'cancelled';
+        } else {
+          params.status = activeTab;
+        }
+      }
       if (searchQuery) params.search = searchQuery;
       const res = await InvoiceService.getAll(params);
       setInvoices(res.data.results || res.data);
@@ -96,10 +102,10 @@ export function Invoices() {
 
   const handleDelete = (id: number) => {
     showConfirm({
-      title: 'Delete Invoice',
-      message: 'Are you sure you want to delete this invoice? This action is permanent.',
+      title: 'Move to Trash',
+      message: 'Are you sure you want to move this invoice to the trash? It will be marked as cancelled.',
       type: 'danger',
-      confirmText: 'Delete',
+      confirmText: 'Move to Trash',
       onConfirm: async () => {
         try {
           await InvoiceService.delete(id);
@@ -152,7 +158,7 @@ export function Invoices() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px overflow-x-auto">
-        {['All', 'draft', 'issued', 'paid', 'cancelled'].map((tab) => (
+        {['All', 'draft', 'issued', 'paid', 'Trash'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -263,13 +269,15 @@ export function Invoices() {
                 >
                   <Download className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => handleDelete(invoice.invoice_id)}
-                  className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                  title="Delete Invoice"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {invoice.status !== 'paid' && (
+                  <button
+                    onClick={() => handleDelete(invoice.invoice_id)}
+                    className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
+                    title="Delete Invoice"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
