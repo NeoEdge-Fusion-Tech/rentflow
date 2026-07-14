@@ -162,14 +162,31 @@ def _currency_label(currency):
 
 
 def _load_logo_flowable(organization, size=1.1 * inch):
-    """Loads the organization's uploaded logo, falling back to the bundled default."""
+    """Loads the organization's uploaded logo from local path or URL."""
     try:
-        if organization.company_logo and hasattr(organization.company_logo, 'path'):
-            path = organization.company_logo.path
-            if os.path.exists(path):
-                return Image(path, size, size)
-    except Exception:
-        pass
+        if not organization.company_logo:
+            return None
+            
+        # Try local path first
+        try:
+            if hasattr(organization.company_logo, 'path'):
+                path = organization.company_logo.path
+                if os.path.exists(path):
+                    return Image(path, size, size)
+        except Exception:
+            pass
+            
+        # Fallback to URL (Cloudinary, S3, etc)
+        if hasattr(organization.company_logo, 'url'):
+            url = organization.company_logo.url
+            if url.startswith('http'):
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    image_stream = io.BytesIO(response.content)
+                    return Image(image_stream, size, size)
+    except Exception as e:
+        print(f"Error loading logo: {e}")
+        
     return None
 
 
