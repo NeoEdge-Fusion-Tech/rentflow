@@ -6,7 +6,7 @@ from .views import (
     UserViewSet, ClientViewSet, SuperAdminStatsAPIView, RegisterAPIView,
     VerifyEmailAPIView, TriggerPasswordResetAPIView, SetNewPasswordAPIView,
     SuperAdminOrganizationViewSet, SuperAdminUserViewSet, MeAPIView, CurrencyViewSet,
-    ResendVerificationEmailAPIView
+    ResendVerificationEmailAPIView, ChangePasswordAPIView
 )
 
 router = DefaultRouter()
@@ -31,6 +31,7 @@ urlpatterns = [
     path('resend-verification-email/', ResendVerificationEmailAPIView.as_view(), name='resend-verification-email'),
     path('password-reset/trigger/', TriggerPasswordResetAPIView.as_view(), name='trigger-password-reset'),
     path('password-reset/set/', SetNewPasswordAPIView.as_view(), name='set-password-reset'),
+    path('change-password/', ChangePasswordAPIView.as_view(), name='change-password'),
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('superadmin/stats/', SuperAdminStatsAPIView.as_view(), name='superadmin-stats'),

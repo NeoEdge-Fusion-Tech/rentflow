@@ -21,6 +21,24 @@ export function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [isSettingPassword, setIsSettingPassword] = useState(false);
 
+  const [myProfilePassword, setMyProfilePassword] = useState({ current_password: '', new_password: '' });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!myProfilePassword.current_password || !myProfilePassword.new_password) return;
+    try {
+      setIsChangingPassword(true);
+      await AuthService.changePassword(myProfilePassword);
+      showNotification("Password changed successfully.", "success");
+      setMyProfilePassword({ current_password: '', new_password: '' });
+    } catch (err: any) {
+      showNotification(err.response?.data?.error || "Failed to change password.", "error");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const [org, setOrg] = useState<any>(null);
   const [currencies, setCurrencies] = useState<any[]>([]);
   const currencySymbol = localStorage.getItem('currencySymbol') || '$';
@@ -367,7 +385,7 @@ export function Settings() {
       </div>
 
       <div className="flex gap-8 border-b border-[var(--border-soft)]">
-        {['Workspace', ...(currentUser?.role === 'admin' || currentUser?.is_superuser ? ['Billing & Plans', 'Team'] : [])].map(tab => (
+        {['My Profile', 'Workspace', ...(currentUser?.role === 'admin' || currentUser?.is_superuser ? ['Billing & Plans', 'Team'] : [])].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -377,6 +395,38 @@ export function Settings() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'My Profile' && (
+        <div className="space-y-6 max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-6">
+            <h2 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2"><Shield className="w-5 h-5"/> My Profile</h2>
+            <div className="mb-8">
+              <p className="text-sm text-[var(--text-muted)] font-medium mb-1">Name</p>
+              <p className="text-base font-bold text-[var(--text-main)]">{currentUser?.first_name} {currentUser?.last_name}</p>
+            </div>
+            <div className="mb-8">
+              <p className="text-sm text-[var(--text-muted)] font-medium mb-1">Email</p>
+              <p className="text-base font-bold text-[var(--text-main)]">{currentUser?.email}</p>
+            </div>
+            <div className="pt-6 border-t border-[var(--border-soft)]">
+              <h3 className="text-md font-bold text-[var(--text-main)] mb-4">Change Password</h3>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Current Password</label>
+                  <input type="password" value={myProfilePassword.current_password} onChange={e => setMyProfilePassword({...myProfilePassword, current_password: e.target.value})} required className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">New Password</label>
+                  <input type="password" value={myProfilePassword.new_password} onChange={e => setMyProfilePassword({...myProfilePassword, new_password: e.target.value})} required className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary" />
+                </div>
+                <button type="submit" disabled={isChangingPassword} className="px-4 py-2 bg-brand-primary text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-50">
+                  {isChangingPassword ? 'Updating...' : 'Update Password'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'Workspace' && (
         <div className="space-y-6 max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -648,18 +698,22 @@ export function Settings() {
                   </span>
                   
                   <div className="flex gap-2 ml-4">
-                    <button onClick={() => handleTriggerReset(u.id)} className="text-xs px-3 py-1.5 border border-[var(--border-soft)] rounded-lg hover:bg-[var(--bg-surface)] transition-colors shadow-sm text-[var(--text-muted)] font-medium">
-                      Send Reset
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setSelectedUser(u);
-                        setIsPasswordModalOpen(true);
-                      }}
-                      className="text-xs px-3 py-1.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg hover:bg-brand-primary/20 transition-colors shadow-sm font-medium"
-                    >
-                      Set Password
-                    </button>
+                    {u.id !== currentUser?.id && (
+                      <button onClick={() => handleTriggerReset(u.id)} className="text-xs px-3 py-1.5 border border-[var(--border-soft)] rounded-lg hover:bg-[var(--bg-surface)] transition-colors shadow-sm text-[var(--text-muted)] font-medium">
+                        Send Reset
+                      </button>
+                    )}
+                    {u.id !== currentUser?.id && (
+                      <button 
+                        onClick={() => {
+                          setSelectedUser(u);
+                          setIsPasswordModalOpen(true);
+                        }}
+                        className="text-xs px-3 py-1.5 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-lg hover:bg-brand-primary/20 transition-colors shadow-sm font-medium"
+                      >
+                        Set Password
+                      </button>
+                    )}
                     {u.id !== currentUser?.id && (
                       <button onClick={() => handleDeactivate(u.id)} className={`text-xs px-3 py-1.5 border rounded-lg transition-colors shadow-sm font-medium ${u.is_active ? 'border-amber-500/30 text-amber-500 hover:bg-amber-500/10' : 'border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10'}`}>
                         {u.is_active ? 'Deactivate' : 'Activate'}

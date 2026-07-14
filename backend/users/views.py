@@ -10,7 +10,7 @@ from django.db.models import Sum, Count, Q
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
 from .models import Organization, Subscription, SubscriptionPlan, OrganizationAccountDetails, BankAccount, User, Client, Currency
-from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, CurrencySerializer
+from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer
 from users.mixins import TenantIsolationMixin
 from .utils import send_verification_email, send_password_reset_email
 from rest_framework import status
@@ -131,6 +131,20 @@ class SetNewPasswordAPIView(APIView):
                 return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ChangePasswordAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            if not user.check_password(serializer.validated_data['current_password']):
+                return Response({"error": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
