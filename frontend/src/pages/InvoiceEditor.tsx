@@ -295,10 +295,24 @@ export function InvoiceEditor() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-main)]">
-              {isEditMode ? `Invoice ${invoiceMeta?.invoice_number || ''}` : 'New Invoice'}
+            <h1 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2">
+              Invoice
+              <input
+                type="text"
+                value={formData.invoice_number}
+                onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
+                placeholder="e.g. INV-0001"
+                className="bg-transparent border-b border-dashed border-transparent hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
+              />
             </h1>
-            <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or issue it.</p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or issue it.</p>
+              {lastInvoiceMeta?.last_invoice_number && !isEditMode && (
+                <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] px-2 py-0.5 rounded-full">
+                  Last: {lastInvoiceMeta.last_invoice_number}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -365,20 +379,7 @@ export function InvoiceEditor() {
               />
             </div>
 
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Invoice No*</label>
-              <input
-                type="text"
-                value={formData.invoice_number}
-                onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
-                className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
-              />
-              {lastInvoiceMeta?.last_invoice_number && !isEditMode && (
-                <p className="mt-1.5 text-xs text-[var(--text-muted)]">
-                  Last No: {lastInvoiceMeta.last_invoice_number} {lastInvoiceMeta.last_issue_date && `(${new Date(lastInvoiceMeta.last_issue_date).toLocaleDateString()})`}
-                </p>
-              )}
-            </div>
+
 
             <div className="grid grid-cols-2 gap-4">
               <div>
