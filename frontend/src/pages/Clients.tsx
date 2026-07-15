@@ -260,8 +260,12 @@ export function Clients() {
           {displayedClients.map((client) => (
             <div key={client.client_id} className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group">
               <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors">
-                  {(client.business_name?.[0] || 'C').toUpperCase()}
+                <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
+                  {client.logo ? (
+                    <img src={client.logo} alt={client.business_name} className="w-full h-full object-cover" />
+                  ) : (
+                    (client.business_name?.[0] || 'C').toUpperCase()
+                  )}
                 </div>
                 <div className="flex gap-2 items-center">
                   <span className={cn(
