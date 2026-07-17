@@ -163,7 +163,7 @@ export function Users() {
                       <div className="flex items-center gap-2">
                         {user.is_superuser && <Shield className="w-4 h-4 text-brand-primary" />}
                         <span className={`text-sm font-medium capitalize ${user.is_superuser ? 'text-brand-primary' : 'text-[var(--text-muted)]'}`}>
-                          {user.is_superuser ? 'Super Admin' : user.role}
+                          {user.is_superuser ? 'Super Admin' : user.role === 'staff' ? 'Staff' : user.role === 'validator' ? 'Validator' : user.role === 'admin' ? 'Admin' : user.role}
                         </span>
                       </div>
                     </td>

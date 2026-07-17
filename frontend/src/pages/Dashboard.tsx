@@ -165,6 +165,7 @@ export function Dashboard() {
               icon={Users} 
               trend="up" 
             />
+            {currentUser?.role !== 'staff' && (
             <StatCard 
               title="Gross Revenue" 
               value={`${currencySymbol}${formatCurrency(stats?.monthly_revenue || 0)}`} 
@@ -172,12 +173,14 @@ export function Dashboard() {
               icon={TrendingUp} 
               trend="up" 
             />
+            )}
           </>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
+        {currentUser?.role !== 'staff' && (
         <div className="lg:col-span-2 bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-[var(--text-main)]">Revenue & Bookings</h3>
@@ -231,6 +234,7 @@ export function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+        )}
 
         {/* Dynamic Activity / Clients Sidebar */}
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">

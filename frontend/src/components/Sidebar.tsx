@@ -103,6 +103,11 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
               if (item.label === 'Scanner' && currentUser?.has_booking === false) {
                 return false;
               }
+              if (currentUser?.role === 'staff') {
+                if (item.label === 'Settings' || item.label === 'Payments') {
+                  return false;
+                }
+              }
               if (item.label === 'Invoices' && currentUser?.has_invoice === false) {
                 return false;
               }

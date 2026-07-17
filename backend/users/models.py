@@ -143,13 +143,12 @@ class Subscription(models.Model):
 class User(AbstractUser):
     ROLE_CHOICES = (
         ('admin', 'Admin'),
-        ('operator_web', 'Operator (Web)'),
-        ('operator_mobile', 'Operator (Mobile)'),
+        ('staff', 'Staff'),
         ('validator', 'Validator'),
         ('customer', 'Customer'),
     )
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='operator_web')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff')
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email_verified = models.BooleanField(default=False)

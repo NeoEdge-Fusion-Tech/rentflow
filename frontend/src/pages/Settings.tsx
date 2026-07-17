@@ -13,7 +13,7 @@ export function Settings() {
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [newUser, setNewUser] = useState({ first_name: '', last_name: '', email: '', password: '', role: 'Admin' });
+  const [newUser, setNewUser] = useState({ first_name: '', last_name: '', email: '', password: '', role: 'admin' });
 
   // Password Reset Modal state
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -283,7 +283,7 @@ export function Settings() {
         role: newUser.role,
       });
       setShowAddUserModal(false);
-      setNewUser({ first_name: '', last_name: '', email: '', password: '', role: 'Admin' });
+      setNewUser({ first_name: '', last_name: '', email: '', password: '', role: 'admin' });
       fetchUsers();
       showNotification("Team member added!", 'success');
     } catch (e) {
@@ -693,8 +693,8 @@ export function Settings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium bg-[var(--bg-surface)] text-[var(--text-muted)] px-2.5 py-1 rounded-full border border-[var(--border-soft)]">
-                    {u.role || 'Member'}
+                  <span className="text-xs font-medium bg-[var(--bg-surface)] text-[var(--text-muted)] px-2.5 py-1 rounded-full border border-[var(--border-soft)] capitalize">
+                    {u.role === 'staff' ? 'Staff' : u.role === 'validator' ? 'Validator' : u.role === 'admin' ? 'Admin' : u.role || 'Member'}
                   </span>
                   
                   <div className="flex gap-2 ml-4">
@@ -775,9 +775,9 @@ export function Settings() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Role</label>
                 <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]">
-                  <option className="bg-[var(--bg-surface)]">Admin</option>
-                  <option className="bg-[var(--bg-surface)]">Staff</option>
-                  <option className="bg-[var(--bg-surface)]">Viewer</option>
+                  <option value="admin" className="bg-[var(--bg-surface)]">Admin</option>
+                  <option value="staff" className="bg-[var(--bg-surface)]">Staff</option>
+                  <option value="validator" className="bg-[var(--bg-surface)]">Validator</option>
                 </select>
               </div>
 
