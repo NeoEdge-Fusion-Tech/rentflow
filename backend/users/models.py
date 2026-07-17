@@ -145,6 +145,7 @@ class User(AbstractUser):
         ('admin', 'Admin'),
         ('operator_web', 'Operator (Web)'),
         ('operator_mobile', 'Operator (Mobile)'),
+        ('validator', 'Validator'),
         ('customer', 'Customer'),
     )
     email = models.EmailField(unique=True)

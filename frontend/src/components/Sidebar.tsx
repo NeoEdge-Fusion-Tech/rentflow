@@ -13,7 +13,8 @@ import {
   X,
   ChevronRight,
   Coins,
-  FileText
+  FileText,
+  ScanLine
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { cn } from '@/src/utils';
@@ -35,6 +36,7 @@ const navItems = [
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: QrCode, label: 'Scanner', path: '/scanner' },
+  { icon: ScanLine, label: 'Validation App', path: '/validation' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
@@ -86,6 +88,12 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navItems.filter(item => {
               if (isSuperuser) return true;
+              if (currentUser?.role === 'validator') {
+                return item.label === 'Validation App';
+              }
+              if (item.label === 'Validation App') {
+                return false;
+              }
               if (item.label === 'Inventory' && currentUser?.has_booking === false) {
                 return false;
               }

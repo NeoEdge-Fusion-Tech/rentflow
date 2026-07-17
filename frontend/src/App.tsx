@@ -16,6 +16,8 @@ import { InvoicePreview } from './pages/InvoicePreview';
 import { Payments } from './pages/Payments';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
+import { Validation } from './pages/Validation';
+import { BookingValidation } from './pages/Validation/BookingValidation';
 import { Organizations } from './pages/SuperAdmin/Organizations';
 import { OrganizationDetail } from './pages/SuperAdmin/OrganizationDetail';
 import { Users as SuperAdminUsers } from './pages/SuperAdmin/Users';
@@ -91,6 +93,10 @@ function AppLayout() {
         email: res.data.email || ''
       });
       localStorage.setItem('currencySymbol', res.data.currency_symbol || '$');
+      
+      if (res.data.role === 'validator' && (location.pathname === '/dashboard' || location.pathname === '/')) {
+        navigate('/validation');
+      }
     } catch(e) { console.error(e); }
   };
 
@@ -302,6 +308,8 @@ function AppLayout() {
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/validation" element={<Validation />} />
+                <Route path="/validation/:id" element={<BookingValidation />} />
 
                 {/* Super Admin Routes */}
                 <Route path="/superadmin" element={<SuperAdminDashboard />} />
