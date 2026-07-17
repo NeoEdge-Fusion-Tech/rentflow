@@ -23,7 +23,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { StatsService } from '../api';
+import { StatsService, AuthService } from '../api';
 
 
 
@@ -51,6 +51,7 @@ export function Dashboard() {
   const [orgs, setOrgs] = useState<any[]>([]);
   const [currencySymbol, setCurrencySymbol] = useState(localStorage.getItem('currencySymbol') || '$');
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const formatCurrency = (amount: number | string) => {
     return new Intl.NumberFormat('en-US', {
@@ -61,7 +62,15 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchStats();
+    fetchUser();
   }, []);
+
+  const fetchUser = async () => {
+    try {
+      const res = await AuthService.getMe();
+      setCurrentUser(res.data);
+    } catch(e) { console.error("Failed fetching user", e); }
+  };
 
   const fetchStats = async () => {
     try {
