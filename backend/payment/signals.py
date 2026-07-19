@@ -134,3 +134,30 @@ def update_invoice_on_booking_item_save(sender, instance, **kwargs):
 def update_invoice_on_booking_item_delete(sender, instance, **kwargs):
     if getattr(instance, 'booking', None):
         sync_booking_items_to_invoice(instance.booking)
+
+@receiver(post_save, sender=Invoice)
+def create_payment_on_invoice_paid(sender, instance, **kwargs):
+    """
+    Automatically create a completed Payment record when an invoice is marked as 'paid'
+    if no completed payment for the total amount exists yet.
+    """
+    if instance.status == 'paid':
+        # Check if we already have completed payments for this invoice
+        existing_paid_total = Payment.objects.filter(
+            invoice_record=instance, 
+            status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # If the total paid is less than the invoice amount, create a payment for the difference
+        if existing_paid_total < instance.total_amount:
+            remaining = instance.total_amount - existing_paid_total
+            Payment.objects.create(
+                booking=instance.booking,
+                invoice_record=instance,
+                organization=instance.organization,
+                amount=remaining,
+                status='completed',
+                invoice_id=instance.invoice_number,
+                receipt_id=f"AUTO-REC-INV-{instance.invoice_id}",
+                created_by=instance.created_by
+            )
