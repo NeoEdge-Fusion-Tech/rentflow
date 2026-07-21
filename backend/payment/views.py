@@ -4,13 +4,14 @@ from loguru import logger
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.http import FileResponse
-from .models import Payment, Invoice, Receipt, SubscriptionPayment
-from .serializers import PaymentSerializer, InvoiceSerializer, ReceiptSerializer, SubscriptionPaymentSerializer, SubscriptionSerializer
+from .models import Payment, Invoice, InvoiceLineItem, Quotation, Receipt, SubscriptionPayment
+from .serializers import PaymentSerializer, InvoiceSerializer, QuotationSerializer, ReceiptSerializer, SubscriptionPaymentSerializer, SubscriptionSerializer
 from django.db.models import Sum, Count
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from users.models import Organization, Subscription
-from .utils import generate_invoice_pdf, generate_receipt_pdf, initialize_paystack_transaction, initialize_paystack_transaction_for_invoice, initialize_paystack_transaction_for_subscription
+from .utils import generate_invoice_pdf, generate_quotation_pdf, generate_receipt_pdf, initialize_paystack_transaction, initialize_paystack_transaction_for_invoice, initialize_paystack_transaction_for_subscription, compute_invoice_totals
 from inventory.models import Booking
 from users.mixins import TenantIsolationMixin
 
@@ -332,6 +333,140 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         pdf_buffer = generate_invoice_pdf(invoice)
         filename = f"invoice_{invoice.invoice_number}.pdf"
         return FileResponse(pdf_buffer, as_attachment=True, filename=filename, content_type='application/pdf')
+
+
+class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    queryset = Quotation.objects.all()
+    serializer_class = QuotationSerializer
+    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['client', 'status']
+    search_fields = ['quotation_number']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        if not status_param:
+            qs = qs.exclude(status='cancelled')
+        return qs
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import ValidationError, PermissionDenied
+        if instance.status == 'converted':
+            raise ValidationError("Cannot delete a quotation that has already been converted to an invoice.")
+
+        if instance.status == 'cancelled':
+            if self.request.user.role != 'admin':
+                raise PermissionDenied("Only organization admins can permanently delete quotations from the trash.")
+            super().perform_destroy(instance)
+        else:
+            instance.status = 'cancelled'
+            instance.save()
+
+    @action(detail=False, methods=['delete'])
+    def empty_trash(self, request):
+        from rest_framework.exceptions import PermissionDenied
+        if request.user.role != 'admin':
+            raise PermissionDenied("Only organization admins can empty the trash.")
+
+        org = request.user.organization
+        count, _ = Quotation.objects.filter(organization=org, status='cancelled').delete()
+        return Response({"message": f"{count} quotations permanently deleted."}, status=200)
+
+    @action(detail=False, methods=['get'])
+    def next_number(self, request):
+        user = request.user
+        if not hasattr(user, 'organization') or not user.organization:
+            return Response({"error": "No organization attached"}, status=400)
+
+        last_quotation = Quotation.objects.filter(organization=user.organization).order_by('-created_at', '-quotation_id').first()
+
+        if last_quotation and last_quotation.quotation_number:
+            import re
+            last_number_str = last_quotation.quotation_number
+            match = re.search(r'(\d+)(?!.*\d)', last_number_str)
+            if match:
+                number_str = match.group(1)
+                prefix = last_number_str[:match.start()]
+                suffix = last_number_str[match.end():]
+                next_number_int = int(number_str) + 1
+                next_number_padded = str(next_number_int).zfill(len(number_str))
+                next_quotation_number = f"{prefix}{next_number_padded}{suffix}"
+            else:
+                next_quotation_number = f"{last_number_str}-01"
+
+            return Response({
+                "last_quotation_number": last_number_str,
+                "last_issue_date": last_quotation.issue_date,
+                "next_quotation_number": next_quotation_number
+            })
+        else:
+            import datetime
+            year = datetime.datetime.now().year
+            return Response({
+                "last_quotation_number": None,
+                "last_issue_date": None,
+                "next_quotation_number": f"QUO-{user.organization.id:02d}-{year}-0001"
+            })
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        quotation = self.get_object()
+        pdf_buffer = generate_quotation_pdf(quotation)
+        filename = f"quotation_{quotation.quotation_number}.pdf"
+        return FileResponse(pdf_buffer, as_attachment=True, filename=filename, content_type='application/pdf')
+
+    @action(detail=True, methods=['post'])
+    def convert_to_invoice(self, request, pk=None):
+        quotation = self.get_object()
+
+        if quotation.status == 'converted' and quotation.converted_invoice_id:
+            return Response({"error": "This quotation has already been converted to an invoice."}, status=400)
+
+        invoice = Invoice(
+            client=quotation.client,
+            organization=quotation.organization,
+            currency=quotation.currency,
+            bank_account=quotation.bank_account,
+            show_bank_details=quotation.show_bank_details,
+            title=quotation.title,
+            discount_amount=quotation.discount_amount,
+            discount_percentage=quotation.discount_percentage,
+            tax_percentage=quotation.tax_percentage,
+            notes=quotation.notes,
+            created_by=request.user,
+        )
+        line_items = list(quotation.line_items.all())
+        subtotal, discount_value, tax_amount, total_amount = compute_invoice_totals(
+            line_items,
+            discount_amount=invoice.discount_amount,
+            discount_percentage=invoice.discount_percentage,
+            tax_percentage=invoice.tax_percentage,
+        )
+        invoice.subtotal = subtotal
+        invoice.tax_amount = tax_amount
+        invoice.total_amount = total_amount
+        invoice.save()
+
+        for idx, item in enumerate(line_items):
+            InvoiceLineItem.objects.create(
+                invoice=invoice, position=idx, name=item.name, description=item.description,
+                quantity=item.quantity, unit_price=item.unit_price,
+            )
+
+        quotation.status = 'converted'
+        quotation.converted_invoice = invoice
+        quotation.converted_at = timezone.now()
+        quotation.save(update_fields=['status', 'converted_invoice', 'converted_at'])
+
+        return Response(InvoiceSerializer(invoice, context={'request': request}).data, status=201)
+
 
 class ReceiptViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Receipt.objects.all()

@@ -4,6 +4,30 @@ from django.utils import timezone
 from inventory.models import Booking
 
 
+def _next_document_number(model, organization, number_field, prefix):
+    """
+    Returns the next sequential document number for `model` scoped to
+    `organization`, incrementing the trailing numeric run of the last
+    document's number (e.g. INV-01-2026-0001 -> INV-01-2026-0002), or
+    minting a fresh `{prefix}-{org_id:02d}-{year}-0001` if none exist yet.
+    """
+    import re
+    last = model.objects.filter(organization=organization).order_by('-created_at', '-pk').first()
+    last_number_str = getattr(last, number_field) if last else None
+    if last_number_str:
+        match = re.search(r'(\d+)(?!.*\d)', last_number_str)
+        if match:
+            number_str = match.group(1)
+            head = last_number_str[:match.start()]
+            tail = last_number_str[match.end():]
+            next_number_int = int(number_str) + 1
+            next_number_padded = str(next_number_int).zfill(len(number_str))
+            return f"{head}{next_number_padded}{tail}"
+        return f"{last_number_str}-01"
+    year = timezone.now().year
+    return f"{prefix}-{organization.id:02d}-{year}-0001"
+
+
 class Payment(models.Model):
     payment_id = models.AutoField(primary_key=True)
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
@@ -57,6 +81,7 @@ class Invoice(models.Model):
         'users.BankAccount', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='invoices'
     )
+    show_bank_details = models.BooleanField(default=True)
     invoice_number = models.CharField(max_length=50, unique=True)
     issue_date = models.DateTimeField(default=timezone.now)
     due_date = models.DateTimeField(null=True, blank=True)
@@ -86,30 +111,89 @@ class Invoice(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
-            last_invoice = Invoice.objects.filter(organization=self.organization).order_by('-created_at', '-invoice_id').first()
-            if last_invoice and last_invoice.invoice_number:
-                import re
-                last_number_str = last_invoice.invoice_number
-                match = re.search(r'(\d+)(?!.*\d)', last_number_str)
-                if match:
-                    number_str = match.group(1)
-                    prefix = last_number_str[:match.start()]
-                    suffix = last_number_str[match.end():]
-                    next_number_int = int(number_str) + 1
-                    next_number_padded = str(next_number_int).zfill(len(number_str))
-                    self.invoice_number = f"{prefix}{next_number_padded}{suffix}"
-                else:
-                    self.invoice_number = f"{last_number_str}-01"
-            else:
-                import datetime
-                year = datetime.datetime.now().year
-                self.invoice_number = f"INV-{self.organization.id:02d}-{year}-0001"
+            self.invoice_number = _next_document_number(Invoice, self.organization, 'invoice_number', 'INV')
         super().save(*args, **kwargs)
 
 
 class InvoiceLineItem(models.Model):
     line_item_id = models.AutoField(primary_key=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='line_items')
+    name = models.CharField(max_length=500)
+    description = models.TextField(blank=True, null=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position', 'line_item_id']
+
+    def save(self, *args, **kwargs):
+        self.total = (self.quantity or 0) * (self.unit_price or 0)
+        super().save(*args, **kwargs)
+
+
+class Quotation(models.Model):
+    quotation_id = models.AutoField(primary_key=True)
+    client = models.ForeignKey(
+        'users.Client', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='quotations'
+    )
+    organization = models.ForeignKey(
+        'users.Organization', on_delete=models.CASCADE,
+        related_name='quotations'
+    )
+    currency = models.ForeignKey(
+        'users.Currency', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='quotations'
+    )
+    bank_account = models.ForeignKey(
+        'users.BankAccount', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='quotations'
+    )
+    show_bank_details = models.BooleanField(default=True)
+    quotation_number = models.CharField(max_length=50, unique=True)
+    issue_date = models.DateTimeField(default=timezone.now)
+    expiry_date = models.DateTimeField(null=True, blank=True)
+    title = models.CharField(max_length=255, blank=True, null=True, default='Quotation')
+    status_choices = [
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired'),
+        ('converted', 'Converted'),
+    ]
+    status = models.CharField(max_length=20, choices=status_choices, default='draft')
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField(blank=True, null=True)
+    converted_invoice = models.ForeignKey(
+        Invoice, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='source_quotation'
+    )
+    converted_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_quotations'
+    )
+
+    def save(self, *args, **kwargs):
+        if not self.quotation_number:
+            self.quotation_number = _next_document_number(Quotation, self.organization, 'quotation_number', 'QUO')
+        super().save(*args, **kwargs)
+
+
+class QuotationLineItem(models.Model):
+    line_item_id = models.AutoField(primary_key=True)
+    quotation = models.ForeignKey(Quotation, on_delete=models.CASCADE, related_name='line_items')
     name = models.CharField(max_length=500)
     description = models.TextField(blank=True, null=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)

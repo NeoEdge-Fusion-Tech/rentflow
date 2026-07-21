@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Plus, Trash2, FileText, Eye, Edit2 } from 'lucide-react';
+import { ArrowLeft, Download, Plus, Trash2, Eye, Edit2, ArrowRightCircle } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
 import { ClientPicker } from '../components/ClientPicker';
 import {
-  InvoiceService,
+  QuotationService,
   ClientService,
   CurrencyService,
   BankAccountService,
@@ -22,14 +22,13 @@ interface LineItem {
   unit_price: number;
 }
 
-export function InvoiceEditor() {
+export function QuotationEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const bookingIdParam = searchParams.get('booking_id');
   const duplicateFromParam = searchParams.get('duplicate_from');
   const isEditMode = !!id;
-  const { showNotification } = useNotification();
+  const { showNotification, showConfirm } = useNotification();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,15 +38,14 @@ export function InvoiceEditor() {
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
-  const [invoiceMeta, setInvoiceMeta] = useState<any>(null);
-  const [lastInvoiceMeta, setLastInvoiceMeta] = useState<any>(null);
+  const [quotationMeta, setQuotationMeta] = useState<any>(null);
+  const [lastQuotationMeta, setLastQuotationMeta] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     client: '' as number | string,
-    booking: bookingIdParam || '',
-    invoice_number: '',
+    quotation_number: '',
     issue_date: new Date().toISOString().slice(0, 10),
-    due_date: '',
+    expiry_date: '',
     status: 'draft',
     currency: '' as number | string,
     bank_account: '' as number | string,
@@ -56,7 +54,7 @@ export function InvoiceEditor() {
     discount_percentage: 0,
     tax_percentage: 0,
     notes: '',
-    title: 'Invoice',
+    title: 'Quotation',
   });
   const [lineItems, setLineItems] = useState<LineItem[]>([{ name: '', description: '', quantity: 1, unit_price: 0 }]);
 
@@ -100,28 +98,27 @@ export function InvoiceEditor() {
     return null;
   };
 
-  const loadInvoice = async (invoiceId: string, isDuplicate = false) => {
-    const res = await InvoiceService.get(invoiceId);
-    const inv = res.data;
+  const loadQuotation = async (quotationId: string, isDuplicate = false) => {
+    const res = await QuotationService.get(quotationId);
+    const q = res.data;
     setFormData(prev => ({
       ...prev,
-      client: inv.client || '',
-      booking: inv.booking || '',
-      invoice_number: isDuplicate ? prev.invoice_number : (inv.invoice_number || ''),
-      issue_date: inv.issue_date ? new Date(inv.issue_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
-      due_date: inv.due_date ? new Date(inv.due_date).toISOString().slice(0, 10) : '',
-      status: isDuplicate ? 'draft' : (inv.status || 'draft'),
-      currency: inv.currency || '',
-      bank_account: inv.bank_account || '',
-      show_bank_details: inv.show_bank_details !== false,
-      discount_amount: parseFloat(inv.discount_amount) || 0,
-      discount_percentage: parseFloat(inv.discount_percentage) || 0,
-      tax_percentage: parseFloat(inv.tax_percentage) || 0,
-      notes: inv.notes || '',
-      title: isDuplicate ? `Copy of ${inv.title || 'Invoice'}` : (inv.title || 'Invoice'),
+      client: q.client || '',
+      quotation_number: isDuplicate ? prev.quotation_number : (q.quotation_number || ''),
+      issue_date: q.issue_date ? new Date(q.issue_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      expiry_date: q.expiry_date ? new Date(q.expiry_date).toISOString().slice(0, 10) : '',
+      status: isDuplicate ? 'draft' : (q.status || 'draft'),
+      currency: q.currency || '',
+      bank_account: q.bank_account || '',
+      show_bank_details: q.show_bank_details !== false,
+      discount_amount: parseFloat(q.discount_amount) || 0,
+      discount_percentage: parseFloat(q.discount_percentage) || 0,
+      tax_percentage: parseFloat(q.tax_percentage) || 0,
+      notes: q.notes || '',
+      title: isDuplicate ? `Copy of ${q.title || 'Quotation'}` : (q.title || 'Quotation'),
     }));
     setLineItems(
-      (inv.line_items || []).map((li: any) => ({
+      (q.line_items || []).map((li: any) => ({
         ...(isDuplicate ? {} : { line_item_id: li.line_item_id }),
         name: li.name,
         description: li.description || '',
@@ -130,27 +127,7 @@ export function InvoiceEditor() {
       }))
     );
     if (!isDuplicate) {
-      setInvoiceMeta(inv);
-    }
-  };
-
-  const loadPrefill = async (bookingId: string) => {
-    const res = await InvoiceService.prefillFromBooking(bookingId);
-    const data = res.data;
-    setFormData(prev => ({
-      ...prev,
-      client: data.client || '',
-      booking: data.booking || '',
-      discount_amount: parseFloat(data.discount_amount) || 0,
-      discount_percentage: parseFloat(data.discount_percentage) || 0,
-    }));
-    if (data.line_items?.length) {
-      setLineItems(data.line_items.map((li: any) => ({
-        name: li.name,
-        description: li.description || '',
-        quantity: parseFloat(li.quantity),
-        unit_price: parseFloat(li.unit_price),
-      })));
+      setQuotationMeta(q);
     }
   };
 
@@ -161,22 +138,17 @@ export function InvoiceEditor() {
       const orgData = await fetchOrg();
       try {
         if (!id) {
-          const nextMeta = await InvoiceService.getNextNumber();
+          const nextMeta = await QuotationService.getNextNumber();
           if (nextMeta.data) {
-            setLastInvoiceMeta(nextMeta.data);
-            setFormData(prev => ({ ...prev, invoice_number: nextMeta.data.next_invoice_number }));
+            setLastQuotationMeta(nextMeta.data);
+            setFormData(prev => ({ ...prev, quotation_number: nextMeta.data.next_quotation_number }));
           }
         }
-        
+
         if (id) {
-          await loadInvoice(id);
+          await loadQuotation(id);
         } else if (duplicateFromParam) {
-          await loadInvoice(duplicateFromParam, true);
-          if (orgData?.currency?.id) {
-            setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
-          }
-        } else if (bookingIdParam) {
-          await loadPrefill(bookingIdParam);
+          await loadQuotation(duplicateFromParam, true);
           if (orgData?.currency?.id) {
             setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
           }
@@ -184,8 +156,8 @@ export function InvoiceEditor() {
           setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
         }
       } catch (err) {
-        console.error("Failed to initialize invoice editor", err);
-        showNotification("Failed to load invoice data.", 'error');
+        console.error("Failed to initialize quotation editor", err);
+        showNotification("Failed to load quotation data.", 'error');
       } finally {
         setIsLoading(false);
       }
@@ -219,9 +191,8 @@ export function InvoiceEditor() {
 
   const buildPayload = (statusOverride?: string) => ({
     client: formData.client ? parseInt(String(formData.client)) : null,
-    booking: formData.booking ? parseInt(String(formData.booking)) : null,
     issue_date: formData.issue_date,
-    due_date: formData.due_date || null,
+    expiry_date: formData.expiry_date || null,
     status: statusOverride || formData.status,
     currency: formData.currency ? parseInt(String(formData.currency)) : null,
     bank_account: formData.show_bank_details ? (formData.bank_account ? parseInt(String(formData.bank_account)) : null) : null,
@@ -231,7 +202,7 @@ export function InvoiceEditor() {
     tax_percentage: formData.tax_percentage,
     notes: formData.notes,
     title: formData.title,
-    invoice_number: formData.invoice_number || undefined,
+    quotation_number: formData.quotation_number || undefined,
     line_items: lineItems.map(li => ({
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
       name: li.name,
@@ -254,18 +225,18 @@ export function InvoiceEditor() {
       setIsSaving(true);
       const payload = buildPayload(statusOverride);
       const res = isEditMode
-        ? await InvoiceService.patch(id, payload)
-        : await InvoiceService.create(payload);
-      showNotification(isEditMode ? "Invoice updated." : "Invoice created.", 'success');
+        ? await QuotationService.patch(id, payload)
+        : await QuotationService.create(payload);
+      showNotification(isEditMode ? "Quotation updated." : "Quotation created.", 'success');
       if (!skipNavigate) {
-        navigate(`/invoices/${res.data.invoice_id}/edit`, { replace: true });
+        navigate(`/quotations/${res.data.quotation_id}/edit`, { replace: true });
       }
-      if (isEditMode) await loadInvoice(id!);
-      return res.data.invoice_id;
+      if (isEditMode) await loadQuotation(id!);
+      return res.data.quotation_id;
     } catch (err: any) {
-      console.error("Failed to save invoice", err);
+      console.error("Failed to save quotation", err);
       const apiError = err.response?.data;
-      const message = apiError?.client?.[0] || apiError?.line_items?.[0] || apiError?.detail || "Failed to save invoice.";
+      const message = apiError?.client?.[0] || apiError?.line_items?.[0] || apiError?.detail || "Failed to save quotation.";
       showNotification(message, 'error');
       return null;
     } finally {
@@ -276,59 +247,80 @@ export function InvoiceEditor() {
   const handlePreview = async () => {
     if (!isEditMode) {
       const newId = await handleSave('draft', true);
-      if (newId) navigate(`/invoices/${newId}/preview`);
+      if (newId) navigate(`/quotations/${newId}/preview`);
     } else {
-      navigate(`/invoices/${id}/preview`);
+      navigate(`/quotations/${id}/preview`);
     }
   };
 
   const handleDownload = async () => {
     if (!id) return;
     try {
-      const response = await InvoiceService.download(id);
+      const response = await QuotationService.download(id);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `invoice_${invoiceMeta?.invoice_number || id}.pdf`);
+      link.setAttribute('download', `quotation_${quotationMeta?.quotation_number || id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
-      console.error("Failed to download invoice", err);
-      showNotification("Failed to download invoice", 'error');
+      console.error("Failed to download quotation", err);
+      showNotification("Failed to download quotation", 'error');
     }
   };
 
+  const handleConvert = () => {
+    if (!id) return;
+    showConfirm({
+      title: 'Convert to Invoice',
+      message: 'Convert this quotation into a real invoice? This will create a new invoice with the same line items.',
+      confirmText: 'Convert',
+      onConfirm: async () => {
+        try {
+          const res = await QuotationService.convertToInvoice(id);
+          showNotification('Quotation converted to invoice!', 'success');
+          navigate(`/invoices/${res.data.invoice_id}/edit`);
+        } catch (err: any) {
+          console.error('Failed to convert quotation', err);
+          showNotification(err.response?.data?.error || 'Failed to convert quotation.', 'error');
+        }
+      }
+    });
+  };
+
   if (isLoading) {
-    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading invoice editor...</div>;
+    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading quotation editor...</div>;
   }
+
+  const isConverted = formData.status === 'converted';
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/invoices')} className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors">
+          <button onClick={() => navigate('/quotations')} className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2 group">
-              Invoice
+              Quotation
               <div className="relative flex items-center">
                 <input
                   type="text"
-                  value={formData.invoice_number}
-                  onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
-                  placeholder="e.g. INV-0001"
+                  value={formData.quotation_number}
+                  onChange={e => setFormData({ ...formData, quotation_number: e.target.value })}
+                  placeholder="e.g. QUO-0001"
                   className="bg-transparent border-b border-dashed border-transparent group-hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
                 />
                 <Edit2 className="w-4 h-4 text-[var(--text-muted)] absolute -right-6 pointer-events-none" />
               </div>
             </h1>
             <div className="flex items-center gap-3 mt-1">
-              <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or issue it.</p>
-              {lastInvoiceMeta?.last_invoice_number && !isEditMode && (
+              <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or send it.</p>
+              {lastQuotationMeta?.last_quotation_number && !isEditMode && (
                 <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] px-2 py-0.5 rounded-full">
-                  Last: {lastInvoiceMeta.last_invoice_number}
+                  Last: {lastQuotationMeta.last_quotation_number}
                 </span>
               )}
             </div>
@@ -343,12 +335,21 @@ export function InvoiceEditor() {
               <Download className="w-4 h-4" /> PDF
             </button>
           )}
-          <button onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
-            Save Draft
-          </button>
-          <button onClick={() => handleSave('issued')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
-            {isSaving ? 'Saving...' : 'Save & Issue'}
-          </button>
+          {isEditMode && !isConverted && (
+            <button onClick={handleConvert} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 text-emerald-600 font-bold rounded-xl hover:bg-emerald-500/20 transition-colors text-sm">
+              <ArrowRightCircle className="w-4 h-4" /> Convert to Invoice
+            </button>
+          )}
+          {!isConverted && (
+            <>
+              <button onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
+                Save Draft
+              </button>
+              <button onClick={() => handleSave('sent')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
+                {isSaving ? 'Saving...' : 'Save & Mark Sent'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -375,9 +376,9 @@ export function InvoiceEditor() {
             </div>
           </section>
 
-          {/* Bill To */}
+          {/* Quote To */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Bill To</h3>
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Quote To</h3>
             <ClientPicker
               clients={clients}
               value={formData.client}
@@ -388,20 +389,18 @@ export function InvoiceEditor() {
 
           {/* Meta */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Invoice Details</h3>
-            
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Quotation Details</h3>
+
             <div className="mb-4">
-              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Invoice Title</label>
+              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Quotation Title</label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g. Website Redesign Invoice"
+                placeholder="e.g. Website Redesign Quotation"
                 className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
               />
             </div>
-
-
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -414,11 +413,11 @@ export function InvoiceEditor() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Due Date</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Valid Until</label>
                 <input
                   type="date"
-                  value={formData.due_date}
-                  onChange={e => setFormData({ ...formData, due_date: e.target.value })}
+                  value={formData.expiry_date}
+                  onChange={e => setFormData({ ...formData, expiry_date: e.target.value })}
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 />
               </div>
@@ -437,7 +436,7 @@ export function InvoiceEditor() {
               </div>
               <div className="col-span-2 flex items-center justify-between bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-3 h-11">
                 <label htmlFor="show-bank-details" className="text-xs font-bold text-[var(--text-muted)] uppercase cursor-pointer">
-                  Include Bank Details on Invoice
+                  Include Bank Details on Quotation
                 </label>
                 <button
                   id="show-bank-details"
@@ -584,7 +583,7 @@ export function InvoiceEditor() {
             <textarea
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Payment terms, thank-you note, or any extra instructions for the client..."
+              placeholder="Terms, thank-you note, or any extra instructions for the client..."
               rows={4}
               className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] resize-none"
             />
@@ -655,27 +654,30 @@ export function InvoiceEditor() {
                 <select
                   value={formData.status}
                   onChange={e => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2.5 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)] cursor-pointer"
+                  disabled={isConverted}
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2.5 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)] cursor-pointer disabled:opacity-50"
                 >
                   <option value="draft">Draft</option>
-                  <option value="issued">Issued</option>
-                  <option value="paid">Paid</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="sent">Sent</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="expired">Expired</option>
+                  {isConverted && <option value="converted">Converted</option>}
                 </select>
-                <button
-                  onClick={() => handleSave()}
-                  disabled={isSaving}
-                  className={cn(
-                    "w-full mt-2 py-2.5 rounded-lg font-bold text-sm transition-colors disabled:opacity-50",
-                    "bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--border-soft)]"
-                  )}
-                >
-                  Save Status & Changes
-                </button>
+                {!isConverted && (
+                  <button
+                    onClick={() => handleSave()}
+                    disabled={isSaving}
+                    className={cn(
+                      "w-full mt-2 py-2.5 rounded-lg font-bold text-sm transition-colors disabled:opacity-50",
+                      "bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                    )}
+                  >
+                    Save Status & Changes
+                  </button>
+                )}
               </div>
             )}
-            
-
           </div>
         </div>
       </div>

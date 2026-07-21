@@ -9,10 +9,16 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import { Inventory } from './pages/Inventory';
 import { Clients } from './pages/Clients';
+import { Vendors } from './pages/Vendors';
 import { Bookings } from './pages/Bookings';
 import { Invoices } from './pages/Invoices';
 import { InvoiceEditor } from './pages/InvoiceEditor';
 import { InvoicePreview } from './pages/InvoicePreview';
+import { Quotations } from './pages/Quotations';
+import { QuotationEditor } from './pages/QuotationEditor';
+import { QuotationPreview } from './pages/QuotationPreview';
+import { Events } from './pages/Events';
+import { EventDetail } from './pages/EventDetail';
 import { Payments } from './pages/Payments';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
@@ -300,11 +306,18 @@ function AppLayout() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/clients" element={<Clients />} />
+                <Route path="/vendors" element={<Vendors />} />
                 <Route path="/bookings" element={<Bookings />} />
                 <Route path="/invoices" element={<Invoices />} />
                 <Route path="/invoices/new" element={<InvoiceEditor />} />
                 <Route path="/invoices/:id/edit" element={<InvoiceEditor />} />
                 <Route path="/invoices/:id/preview" element={<InvoicePreview />} />
+                <Route path="/quotations" element={<Quotations />} />
+                <Route path="/quotations/new" element={<QuotationEditor />} />
+                <Route path="/quotations/:id/edit" element={<QuotationEditor />} />
+                <Route path="/quotations/:id/preview" element={<QuotationPreview />} />
+                <Route path="/events" element={<Events />} />
+                <Route path="/events/:id" element={<EventDetail />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/settings" element={<Settings />} />

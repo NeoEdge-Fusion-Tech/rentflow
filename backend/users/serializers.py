@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Currency
+from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Vendor, Currency
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -187,6 +187,30 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             'address', 'city', 'state', 'country', 'tax_information', 'shipping_details',
             'additional_details', 'account_name', 'account_number', 'bank_name', 'bank_code', 'logo',
             'status', 'bookings_count', 'standalone_invoices_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'organization']
+
+
+class VendorSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+    updated_by_name = serializers.SerializerMethodField()
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return None
+
+    def get_updated_by_name(self, obj):
+        if obj.updated_by:
+            return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip() or obj.updated_by.email
+        return None
+
+    class Meta:
+        model = Vendor
+        fields = [
+            'vendor_id', 'organization', 'business_name', 'contact_name', 'contact_email',
+            'contact_phone', 'service', 'description', 'logo', 'status',
+            'created_by_name', 'updated_by_name', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'organization']
 

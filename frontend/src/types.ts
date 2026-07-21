@@ -68,6 +68,54 @@ export interface User {
   is_superuser?: boolean;
 }
 
+export interface Vendor {
+  id: string;
+  business_name: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  service: string;
+  description?: string;
+  status: 'active' | 'inactive';
+}
+
+export interface EventProject {
+  event_id: number;
+  name: string;
+  description?: string;
+  status: 'planned' | 'ongoing' | 'completed' | 'cancelled';
+  start_date?: string;
+  end_date?: string;
+  invoice?: number | null;
+  invoice_number?: string;
+  revenue: number;
+  total_expenses: number;
+  profit: number;
+}
+
+export interface ExpenseLineItem {
+  expense_id: number;
+  event: number;
+  expense_type: 'vendor' | 'item';
+  vendor?: number | null;
+  name: string;
+  amount: number;
+  description?: string;
+}
+
+export interface ChecklistTask {
+  task_id: number;
+  event: number;
+  checklist_type: 'pre_event' | 'during_event' | 'post_event';
+  parent_task?: number | null;
+  name: string;
+  description?: string;
+  due_date?: string;
+  is_done: boolean;
+  position: number;
+  subtasks?: ChecklistTask[];
+}
+
 export interface Invoice {
   id: string;
   invoice_number: string;

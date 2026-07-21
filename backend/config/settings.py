@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'users',
     'inventory',
     'payment',
+    'events',
     'notification',
     'django_filters',
     'cloudinary_storage',

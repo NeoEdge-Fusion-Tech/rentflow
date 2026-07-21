@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
-from .models import Organization, Subscription, SubscriptionPlan, OrganizationAccountDetails, BankAccount, User, Client, Currency
-from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer
+from .models import Organization, Subscription, SubscriptionPlan, OrganizationAccountDetails, BankAccount, User, Client, Vendor, Currency
+from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, VendorSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer
 from users.mixins import TenantIsolationMixin
 from .utils import send_verification_email, send_password_reset_email
 from rest_framework import status
@@ -227,6 +227,23 @@ class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             bookings_count=Count('bookings', distinct=True),
             standalone_invoices_count=Count('invoices', filter=Q(invoices__booking__isnull=True), distinct=True)
         )
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user, 'updated_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
+class VendorViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['status']
+    search_fields = ['business_name', 'contact_name', 'contact_email', 'service']
 
     def perform_create(self, serializer):
         user = self.request.user

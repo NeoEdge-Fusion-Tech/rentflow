@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     OrganizationViewSet, SubscriptionViewSet, SubscriptionPlanViewSet, OrganizationAccountDetailsViewSet, BankAccountViewSet,
-    UserViewSet, ClientViewSet, SuperAdminStatsAPIView, RegisterAPIView,
+    UserViewSet, ClientViewSet, VendorViewSet, SuperAdminStatsAPIView, RegisterAPIView,
     VerifyEmailAPIView, TriggerPasswordResetAPIView, SetNewPasswordAPIView,
     SuperAdminOrganizationViewSet, SuperAdminUserViewSet, MeAPIView, CurrencyViewSet,
     ResendVerificationEmailAPIView, ChangePasswordAPIView
@@ -18,6 +18,7 @@ router.register(r'organization-account-details', OrganizationAccountDetailsViewS
 router.register(r'bank-accounts', BankAccountViewSet, basename='bankaccount')
 router.register(r'team', UserViewSet, basename='team')
 router.register(r'clients', ClientViewSet, basename='client')
+router.register(r'vendors', VendorViewSet, basename='vendor')
 router.register(r'superadmin/organizations', SuperAdminOrganizationViewSet, basename='superadmin-organizations')
 router.register(r'superadmin/users', SuperAdminUserViewSet, basename='superadmin-users')
 

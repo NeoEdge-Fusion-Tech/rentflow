@@ -132,6 +132,17 @@ export const ClientService = {
   delete: (id: number | string) => api.delete(`/users/clients/${id}/`),
 };
 
+export const VendorService = {
+  getAll: (params?: any) => api.get('/users/vendors/', { params }),
+  create: (data: any) => api.post('/users/vendors/', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  update: (id: number | string, data: any) => api.patch(`/users/vendors/${id}/`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  delete: (id: number | string) => api.delete(`/users/vendors/${id}/`),
+};
+
 export const AuthService = {
   login: (data: { username: string; password: string }) => api.post('/users/token/', data),
   register: (data: any) => api.post('/users/register/', data),
@@ -171,6 +182,19 @@ export const InvoiceService = {
   emptyTrash: () => api.delete('/payment/invoices/empty_trash/'),
 };
 
+export const QuotationService = {
+  get: (id: number | string) => api.get(`/payment/quotations/${id}/`),
+  getAll: (params?: any) => api.get('/payment/quotations/', { params }),
+  getNextNumber: () => api.get('/payment/quotations/next_number/'),
+  create: (data: any) => api.post('/payment/quotations/', data),
+  update: (id: number | string, data: any) => api.put(`/payment/quotations/${id}/`, data),
+  patch: (id: number | string, data: any) => api.patch(`/payment/quotations/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/payment/quotations/${id}/`),
+  download: (id: number | string) => api.get(`/payment/quotations/${id}/download/`, { responseType: 'blob' }),
+  convertToInvoice: (id: number | string) => api.post(`/payment/quotations/${id}/convert_to_invoice/`),
+  emptyTrash: () => api.delete('/payment/quotations/empty_trash/'),
+};
+
 export const ReceiptService = {
   get: (id: number | string) => api.get(`/payment/receipts/${id}/`),
   getAll: (params?: any) => api.get('/payment/receipts/', { params }),
@@ -178,6 +202,33 @@ export const ReceiptService = {
     api.post('/payment/receipts/generate/', { payment_id: paymentId }),
   update: (id: number | string, data: any) => api.patch(`/payment/receipts/${id}/`, data),
   download: (id: number | string) => api.get(`/payment/receipts/${id}/download/`, { responseType: 'blob' }),
+};
+
+export const EventService = {
+  getAll: (params?: any) => api.get('/events/events/', { params }),
+  get: (id: number | string) => api.get(`/events/events/${id}/`),
+  create: (data: any) => api.post('/events/events/', data),
+  update: (id: number | string, data: any) => api.put(`/events/events/${id}/`, data),
+  patch: (id: number | string, data: any) => api.patch(`/events/events/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/events/events/${id}/`),
+};
+
+export const ExpenseService = {
+  getAll: (params?: any) => api.get('/events/expenses/', { params }),
+  create: (data: any) => api.post('/events/expenses/', data),
+  update: (id: number | string, data: any) => api.patch(`/events/expenses/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/events/expenses/${id}/`),
+};
+
+export const ChecklistTaskService = {
+  getAll: (params?: any) => api.get('/events/checklist-tasks/', { params }),
+  create: (data: any) => api.post('/events/checklist-tasks/', data),
+  update: (id: number | string, data: any) => api.patch(`/events/checklist-tasks/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/events/checklist-tasks/${id}/`),
+  duplicate: (sourceEvent: number | string, targetEvent: number | string) =>
+    api.post('/events/checklist-tasks/duplicate/', { source_event: sourceEvent, target_event: targetEvent }),
+  download: (eventId: number | string) =>
+    api.get('/events/checklist-tasks/download/', { params: { event_id: eventId }, responseType: 'blob' }),
 };
 
 export const StatsService = {

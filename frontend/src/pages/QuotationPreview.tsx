@@ -1,29 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, FileText, Share2, Printer, Edit2, ChevronDown, Link, Copy, Check, ExternalLink } from 'lucide-react';
-import { InvoiceService, AuthService, OrganizationService } from '../api';
+import { ArrowLeft, Download, Printer, Edit2, ChevronDown, Copy, ArrowRightCircle } from 'lucide-react';
+import { QuotationService, AuthService, OrganizationService } from '../api';
 import { useNotification } from '../context/NotificationContext';
 
-export function InvoicePreview() {
+export function QuotationPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { showNotification } = useNotification();
-  
-  const [invoice, setInvoice] = useState<any>(null);
+  const { showNotification, showConfirm } = useNotification();
+
+  const [quotation, setQuotation] = useState<any>(null);
   const [org, setOrg] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [paymentLink, setPaymentLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
       setIsLoading(true);
       try {
         if (!id) return;
-        const invRes = await InvoiceService.get(id);
-        setInvoice(invRes.data);
+        const qRes = await QuotationService.get(id);
+        setQuotation(qRes.data);
         const meRes = await AuthService.getMe();
         if (meRes.data.organization_id) {
           const orgRes = await OrganizationService.get(meRes.data.organization_id);
@@ -31,7 +28,7 @@ export function InvoicePreview() {
         }
       } catch (err) {
         console.error("Failed to load preview", err);
-        showNotification("Failed to load invoice preview.", 'error');
+        showNotification("Failed to load quotation preview.", 'error');
       } finally {
         setIsLoading(false);
       }
@@ -41,40 +38,37 @@ export function InvoicePreview() {
   const handleDownload = async () => {
     if (!id) return;
     try {
-      const response = await InvoiceService.download(id);
+      const response = await QuotationService.download(id);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `invoice_${invoice?.invoice_number || id}.pdf`);
+      link.setAttribute('download', `quotation_${quotation?.quotation_number || id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
-      console.error("Failed to download invoice", err);
-      showNotification("Failed to download invoice", 'error');
+      console.error("Failed to download quotation", err);
+      showNotification("Failed to download quotation", 'error');
     }
   };
 
-  const handleGeneratePaymentLink = async () => {
+  const handleConvert = () => {
     if (!id) return;
-    setIsGeneratingLink(true);
-    try {
-      const res = await InvoiceService.generatePaymentLink(id);
-      setPaymentLink(res.data.payment_url);
-      setShowMobileMenu(false);
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || 'Failed to generate payment link';
-      showNotification(msg, 'error');
-    } finally {
-      setIsGeneratingLink(false);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (!paymentLink) return;
-    navigator.clipboard.writeText(paymentLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    showConfirm({
+      title: 'Convert to Invoice',
+      message: 'Convert this quotation into a real invoice? This will create a new invoice with the same line items.',
+      confirmText: 'Convert',
+      onConfirm: async () => {
+        try {
+          const res = await QuotationService.convertToInvoice(id);
+          showNotification('Quotation converted to invoice!', 'success');
+          navigate(`/invoices/${res.data.invoice_id}/edit`);
+        } catch (err: any) {
+          console.error('Failed to convert quotation', err);
+          showNotification(err.response?.data?.error || 'Failed to convert quotation.', 'error');
+        }
+      }
+    });
   };
 
   const formatCurrency = (amount: number | string) => {
@@ -83,15 +77,16 @@ export function InvoicePreview() {
   };
 
   if (isLoading) {
-    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading invoice preview...</div>;
+    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading quotation preview...</div>;
   }
 
-  if (!invoice) {
-    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Invoice not found.</div>;
+  if (!quotation) {
+    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Quotation not found.</div>;
   }
 
   const primaryColor = org?.primary_color || '#7c3aed';
-  const currencySymbol = invoice.currency_symbol || org?.currency?.symbol || '$';
+  const currencySymbol = quotation.currency_symbol || org?.currency?.symbol || '$';
+  const isConverted = quotation.status === 'converted';
 
   return (
     <>
@@ -99,20 +94,22 @@ export function InvoicePreview() {
       {/* Top Action Bar */}
       <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-4">
         <button
-          onClick={() => navigate('/invoices')}
+          onClick={() => navigate('/quotations')}
           className="flex items-center gap-2 text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors shrink-0"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Back to Invoices</span>
+          <span className="hidden sm:inline">Back to Quotations</span>
           <span className="sm:hidden">Back</span>
         </button>
 
         {/* Desktop actions */}
         <div className="hidden sm:flex items-center gap-2 flex-wrap justify-end">
-          <button onClick={() => navigate(`/invoices/${invoice.invoice_id}/edit`)} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
-            <Edit2 className="w-4 h-4" /> Edit
-          </button>
-          <button onClick={() => navigate(`/invoices/new?duplicate_from=${invoice.invoice_id}`)} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
+          {!isConverted && (
+            <button onClick={() => navigate(`/quotations/${quotation.quotation_id}/edit`)} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
+              <Edit2 className="w-4 h-4" /> Edit
+            </button>
+          )}
+          <button onClick={() => navigate(`/quotations/new?duplicate_from=${quotation.quotation_id}`)} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
             <Copy className="w-4 h-4" /> Duplicate
           </button>
           <button onClick={() => window.print()} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
@@ -121,14 +118,12 @@ export function InvoicePreview() {
           <button onClick={handleDownload} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
             <Download className="w-4 h-4" /> Download
           </button>
-          {invoice.status !== 'paid' && (
+          {!isConverted && (
             <button
-              onClick={handleGeneratePaymentLink}
-              disabled={isGeneratingLink}
-              className="px-3 py-2 bg-brand-primary text-brand-accent font-bold rounded-lg hover:opacity-90 transition-all text-sm flex items-center gap-1.5 shadow-md shadow-brand-primary/20 disabled:opacity-60"
+              onClick={handleConvert}
+              className="px-3 py-2 bg-brand-primary text-brand-accent font-bold rounded-lg hover:opacity-90 transition-all text-sm flex items-center gap-1.5 shadow-md shadow-brand-primary/20"
             >
-              <Link className="w-4 h-4" />
-              {isGeneratingLink ? 'Generating...' : 'Get Payment Link'}
+              <ArrowRightCircle className="w-4 h-4" /> Convert to Invoice
             </button>
           )}
         </div>
@@ -138,17 +133,18 @@ export function InvoicePreview() {
           <button onClick={handleDownload} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-lg" title="Download">
             <Download className="w-4 h-4" />
           </button>
-          <button onClick={() => navigate(`/invoices/${invoice.invoice_id}/edit`)} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-lg" title="Edit">
-            <Edit2 className="w-4 h-4" />
-          </button>
-          {invoice.status !== 'paid' && (
+          {!isConverted && (
+            <button onClick={() => navigate(`/quotations/${quotation.quotation_id}/edit`)} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-lg" title="Edit">
+              <Edit2 className="w-4 h-4" />
+            </button>
+          )}
+          {!isConverted && (
             <button
-              onClick={handleGeneratePaymentLink}
-              disabled={isGeneratingLink}
-              className="p-2 bg-brand-primary text-brand-accent rounded-lg disabled:opacity-60"
-              title="Get Payment Link"
+              onClick={handleConvert}
+              className="p-2 bg-brand-primary text-brand-accent rounded-lg"
+              title="Convert to Invoice"
             >
-              <Link className="w-4 h-4" />
+              <ArrowRightCircle className="w-4 h-4" />
             </button>
           )}
           <div className="relative">
@@ -157,7 +153,7 @@ export function InvoicePreview() {
             </button>
             {showMobileMenu && (
               <div className="absolute right-0 top-10 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl shadow-xl z-50 w-40 py-1">
-                <button onClick={() => navigate(`/invoices/new?duplicate_from=${invoice.invoice_id}`)} className="w-full text-left px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2">
+                <button onClick={() => navigate(`/quotations/new?duplicate_from=${quotation.quotation_id}`)} className="w-full text-left px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2">
                   <Copy className="w-4 h-4" /> Duplicate
                 </button>
                 <button onClick={() => { window.print(); setShowMobileMenu(false); }} className="w-full text-left px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2">
@@ -169,7 +165,7 @@ export function InvoicePreview() {
         </div>
       </div>
 
-      {/* Invoice Document */}
+      {/* Quotation Document */}
       <div className="bg-white text-gray-900 rounded-lg shadow-sm border border-gray-200 overflow-hidden print:shadow-none print:border-none">
         <div className="p-4 sm:p-8 lg:p-10">
 
@@ -177,21 +173,21 @@ export function InvoicePreview() {
           <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
             <div>
               <h1 className="text-xl sm:text-3xl font-bold mb-3" style={{ color: primaryColor }}>
-                {invoice.title || `${org?.name || 'Your Company'} Invoice`}
+                {quotation.title || `${org?.name || 'Your Company'} Quotation`}
               </h1>
               <div className="grid grid-cols-[90px_1fr] sm:grid-cols-[110px_1fr] gap-y-1 text-sm font-medium">
-                <span className="text-gray-500">Invoice No #</span>
-                <span className="text-gray-900 font-bold">{invoice.invoice_number}</span>
-                <span className="text-gray-500">Invoice Date</span>
-                <span className="text-gray-900">{new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                {invoice.due_date && (
+                <span className="text-gray-500">Quotation No #</span>
+                <span className="text-gray-900 font-bold">{quotation.quotation_number}</span>
+                <span className="text-gray-500">Issue Date</span>
+                <span className="text-gray-900">{new Date(quotation.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                {quotation.expiry_date && (
                   <>
-                    <span className="text-gray-500">Due Date</span>
-                    <span className="text-gray-900">{new Date(invoice.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span className="text-gray-500">Valid Until</span>
+                    <span className="text-gray-900">{new Date(quotation.expiry_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </>
                 )}
                 <span className="text-gray-500">Status</span>
-                <span className={`capitalize font-bold text-xs mt-0.5 ${invoice.status === 'paid' ? 'text-emerald-600' : invoice.status === 'issued' ? 'text-blue-600' : 'text-gray-500'}`}>{invoice.status}</span>
+                <span className={`capitalize font-bold text-xs mt-0.5 ${quotation.status === 'accepted' || quotation.status === 'converted' ? 'text-emerald-600' : quotation.status === 'sent' ? 'text-blue-600' : 'text-gray-500'}`}>{quotation.status}</span>
               </div>
             </div>
             {org?.company_logo && (
@@ -204,19 +200,19 @@ export function InvoicePreview() {
           {/* Billing Info — 1 col mobile, 2 col tablet+ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
             <div className="p-4 rounded-lg" style={{ backgroundColor: `${primaryColor}12` }}>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Billed By</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">From</h3>
               <p className="font-bold text-gray-900">{org?.name}</p>
               {org?.address && <p className="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{org.address}</p>}
               {org?.phone_number && <p className="text-sm text-gray-700">{org.phone_number}</p>}
               {org?.email && <p className="text-sm text-gray-700">{org.email}</p>}
             </div>
             <div className="p-4 rounded-lg" style={{ backgroundColor: `${primaryColor}12` }}>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Billed To</h3>
-              <p className="font-bold text-gray-900">{invoice.client_name}</p>
-              {invoice.client_details?.business_name && <p className="text-sm text-gray-700 mt-0.5">{invoice.client_details.business_name}</p>}
-              {invoice.client_details?.address && <p className="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{invoice.client_details.address}</p>}
-              {invoice.client_details?.phone_number && <p className="text-sm text-gray-700">{invoice.client_details.phone_number}</p>}
-              {invoice.client_details?.email && <p className="text-sm text-gray-700">{invoice.client_details.email}</p>}
+              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Quote To</h3>
+              <p className="font-bold text-gray-900">{quotation.client_name}</p>
+              {quotation.client_details?.business_name && <p className="text-sm text-gray-700 mt-0.5">{quotation.client_details.business_name}</p>}
+              {quotation.client_details?.address && <p className="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{quotation.client_details.address}</p>}
+              {quotation.client_details?.phone_number && <p className="text-sm text-gray-700">{quotation.client_details.phone_number}</p>}
+              {quotation.client_details?.email && <p className="text-sm text-gray-700">{quotation.client_details.email}</p>}
             </div>
           </div>
 
@@ -234,7 +230,7 @@ export function InvoicePreview() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200" style={{ backgroundColor: `${primaryColor}05` }}>
-                  {invoice.line_items?.map((item: any, idx: number) => (
+                  {quotation.line_items?.map((item: any, idx: number) => (
                     <tr key={item.line_item_id || idx}>
                       <td className="py-4 px-4 align-top">
                         <p className="font-bold text-gray-900">{idx + 1}. {item.name}</p>
@@ -254,7 +250,7 @@ export function InvoicePreview() {
               <div className="pb-2 border-b border-gray-200">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Items</h3>
               </div>
-              {invoice.line_items?.map((item: any, idx: number) => (
+              {quotation.line_items?.map((item: any, idx: number) => (
                 <div key={item.line_item_id || idx} className="p-3 rounded-lg border border-gray-200" style={{ backgroundColor: `${primaryColor}05` }}>
                   <div className="flex justify-between items-start gap-2 mb-1">
                     <p className="font-bold text-gray-900 text-sm">{idx + 1}. {item.name}</p>
@@ -273,21 +269,21 @@ export function InvoicePreview() {
           {/* Totals + Notes */}
           <div className="flex flex-col sm:flex-row justify-between gap-6 mb-8">
             <div className="flex-1 space-y-4">
-              {invoice.notes && (
+              {quotation.notes && (
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
                   <h4 className="font-bold text-gray-900 mb-1">Notes</h4>
-                  <p className="text-gray-600 whitespace-pre-wrap">{invoice.notes}</p>
+                  <p className="text-gray-600 whitespace-pre-wrap">{quotation.notes}</p>
                 </div>
               )}
-              {invoice.show_bank_details !== false && invoice.bank_account_details && (
+              {quotation.show_bank_details !== false && quotation.bank_account_details && (
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
                   <h4 className="font-bold text-gray-900 mb-1">Payment Info</h4>
-                  <p className="text-gray-600">Bank: {invoice.bank_account_details.bank_name}</p>
-                  <p className="text-gray-600">Account Name: {invoice.bank_account_details.account_name}</p>
-                  <p className="text-gray-600">Account Number: {invoice.bank_account_details.account_number}</p>
-                  <p className="text-gray-600 capitalize">Account Type: {invoice.bank_account_details.account_type}</p>
-                  {invoice.bank_account_details.swift_code && <p className="text-gray-600">SWIFT Code: {invoice.bank_account_details.swift_code}</p>}
-                  {invoice.bank_account_details.notes && <p className="text-gray-600 whitespace-pre-wrap">{invoice.bank_account_details.notes}</p>}
+                  <p className="text-gray-600">Bank: {quotation.bank_account_details.bank_name}</p>
+                  <p className="text-gray-600">Account Name: {quotation.bank_account_details.account_name}</p>
+                  <p className="text-gray-600">Account Number: {quotation.bank_account_details.account_number}</p>
+                  <p className="text-gray-600 capitalize">Account Type: {quotation.bank_account_details.account_type}</p>
+                  {quotation.bank_account_details.swift_code && <p className="text-gray-600">SWIFT Code: {quotation.bank_account_details.swift_code}</p>}
+                  {quotation.bank_account_details.notes && <p className="text-gray-600 whitespace-pre-wrap">{quotation.bank_account_details.notes}</p>}
                 </div>
               )}
             </div>
@@ -295,98 +291,31 @@ export function InvoicePreview() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>{currencySymbol}{formatCurrency(invoice.subtotal)}</span>
+                  <span>{currencySymbol}{formatCurrency(quotation.subtotal)}</span>
                 </div>
-                {parseFloat(invoice.discount_amount) > 0 && (
+                {parseFloat(quotation.discount_amount) > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>Discount</span>
-                    <span>-{currencySymbol}{formatCurrency(invoice.discount_amount)}</span>
+                    <span>-{currencySymbol}{formatCurrency(quotation.discount_amount)}</span>
                   </div>
                 )}
-                {parseFloat(invoice.tax_amount) > 0 && (
+                {parseFloat(quotation.tax_amount) > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>Tax</span>
-                    <span>{currencySymbol}{formatCurrency(invoice.tax_amount)}</span>
+                    <span>{currencySymbol}{formatCurrency(quotation.tax_amount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-300 pt-2.5 mt-1">
                   <span>Total ({currencySymbol})</span>
-                  <span>{currencySymbol}{formatCurrency(invoice.total_amount)}</span>
+                  <span>{currencySymbol}{formatCurrency(quotation.total_amount)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-
         </div>
       </div>
     </div>
-
-      {/* Payment Link Modal */}
-      {paymentLink && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setPaymentLink(null)}>
-          <div
-            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] w-full max-w-md p-6 space-y-5"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${org?.primary_color || '#7c3aed'}18` }}>
-                <Link className="w-5 h-5" style={{ color: org?.primary_color || '#7c3aed' }} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--text-main)]">Payment Link Ready</h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                  Share this link with <strong>{invoice.client_name}</strong> to collect payment via Paystack.
-                </p>
-              </div>
-            </div>
-
-            {/* Amount callout */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-app)]">
-              <span className="text-sm text-[var(--text-muted)] font-medium">Amount Due</span>
-              <span className="text-lg font-black text-[var(--text-main)]">
-                {invoice.currency_symbol || '$'}{(parseFloat(invoice.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            {/* Link input + copy */}
-            <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2.5 text-xs font-mono bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-[var(--text-muted)] truncate select-all">
-                {paymentLink}
-              </div>
-              <button
-                onClick={handleCopyLink}
-                className="px-3 py-2.5 rounded-xl border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors shrink-0 flex items-center gap-1.5 text-sm font-bold"
-              >
-                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => window.open(paymentLink, '_blank')}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-xl border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" /> Open Link
-              </button>
-              <button
-                onClick={() => setPaymentLink(null)}
-                className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: org?.primary_color || '#7c3aed' }}
-              >
-                Done
-              </button>
-            </div>
-
-            <p className="text-xs text-[var(--text-muted)] text-center">
-              Once paid, this invoice will automatically be marked as <strong>Paid</strong>.
-            </p>
-          </div>
-        </div>
-      )}
     </>
   );
 }

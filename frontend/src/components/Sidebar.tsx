@@ -14,6 +14,9 @@ import {
   ChevronRight,
   Coins,
   FileText,
+  FileSpreadsheet,
+  Truck,
+  Briefcase,
   ScanLine
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -32,8 +35,11 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Package, label: 'Inventory', path: '/inventory' },
   { icon: Users, label: 'Clients', path: '/clients' },
+  { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: Calendar, label: 'Bookings', path: '/bookings' },
   { icon: FileText, label: 'Invoices', path: '/invoices' },
+  { icon: FileSpreadsheet, label: 'Quotations', path: '/quotations' },
+  { icon: Briefcase, label: 'Projects', path: '/events' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: QrCode, label: 'Scanner', path: '/scanner' },
   { icon: ScanLine, label: 'Validation App', path: '/validation' },
