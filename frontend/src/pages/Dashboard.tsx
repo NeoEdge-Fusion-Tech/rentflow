@@ -1,29 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  TrendingUp, 
-  Package, 
-  Users, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Package,
+  Users,
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Wallet
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   LineChart,
   Line,
   AreaChart,
   Area
 } from 'recharts';
-import { StatsService, AuthService } from '../api';
+import { StatsService, AuthService, EventService } from '../api';
 
 
 
@@ -53,6 +56,14 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  const currentYear = new Date().getFullYear();
+  const [plPeriod, setPlPeriod] = useState<'today' | 'month' | 'year'>('month');
+  const [plYear, setPlYear] = useState(currentYear);
+  const [plStats, setPlStats] = useState<any>(null);
+  const [plMonthly, setPlMonthly] = useState<any[]>([]);
+  const [plLoading, setPlLoading] = useState(false);
+  const showPl = !isAdmin && currentUser?.role !== 'staff';
+
   const formatCurrency = (amount: number | string) => {
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
@@ -64,6 +75,32 @@ export function Dashboard() {
     fetchStats();
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (!showPl) return;
+    (async () => {
+      try {
+        setPlLoading(true);
+        const params: any = { period: plPeriod };
+        if (plPeriod === 'year') params.year = plYear;
+        const res = await EventService.getDashboardStats(params);
+        setPlStats(res.data);
+      } catch (e) {
+        console.error("Failed fetching P&L stats", e);
+      } finally {
+        setPlLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plPeriod, plYear, showPl]);
+
+  useEffect(() => {
+    if (!showPl) return;
+    EventService.getMonthlyBreakdown({ year: plYear })
+      .then(res => setPlMonthly(res.data))
+      .catch(e => console.error("Failed fetching monthly P&L breakdown", e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plYear, showPl]);
 
   const fetchUser = async () => {
     try {
@@ -186,6 +223,91 @@ export function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Profit & Loss */}
+      {showPl && (
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h3 className="font-bold text-[var(--text-main)]">Profit & Loss</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-1">
+                {[
+                  { key: 'today', label: 'Today' },
+                  { key: 'month', label: 'This Month' },
+                  { key: 'year', label: 'This Year' },
+                ].map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setPlPeriod(opt.key as any)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                      plPeriod === opt.key ? 'bg-brand-primary text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={plYear}
+                onChange={e => setPlYear(parseInt(e.target.value))}
+                className="text-xs font-bold border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] text-[var(--text-main)] px-3 py-2 outline-none"
+              >
+                {Array.from({ length: 6 }, (_, i) => currentYear - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-soft)]">
+              <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Revenue</p>
+              <p className="text-lg font-black text-[var(--text-main)]">{plLoading ? '…' : `${currencySymbol}${formatCurrency(plStats?.total_revenue || 0)}`}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-soft)]">
+              <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Expenses</p>
+              <p className="text-lg font-black text-[var(--text-main)]">{plLoading ? '…' : `${currencySymbol}${formatCurrency(plStats?.total_expenses || 0)}`}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+              <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Total Profit</p>
+              <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{plLoading ? '…' : `${currencySymbol}${formatCurrency(plStats?.total_profit || 0)}`}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/10">
+              <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1 flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Total Loss</p>
+              <p className="text-lg font-black text-rose-600 dark:text-rose-400">{plLoading ? '…' : `${currencySymbol}${formatCurrency(plStats?.total_loss || 0)}`}</p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-3">Monthly Revenue, Expenses & Profit/Loss — {plYear}</h4>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={plMonthly}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--bg-surface)',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border-soft)',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      color: 'var(--text-main)'
+                    }}
+                    itemStyle={{ color: 'var(--text-main)' }}
+                    labelStyle={{ color: 'var(--text-muted)' }}
+                    formatter={(value: any) => `${currencySymbol}${formatCurrency(value)}`}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="revenue" name="Revenue" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="profit" name="Profit / Loss" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}

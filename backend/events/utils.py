@@ -1,12 +1,57 @@
 import io
 import os
+from decimal import Decimal
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.units import inch
+from django.db.models import Sum
 import requests
+
+
+def compute_period_totals(organization, start, end):
+    """
+    Returns (total_revenue, total_expenses, total_profit, total_loss) across all of
+    an organization's Events within [start, end).
+
+    Revenue is attributed by each linked invoice's issue_date; expenses by when they
+    were logged (created_at) — i.e. "when recorded", not the event's own dates.
+    total_profit/total_loss are summed per-event: a project in the black contributes
+    its net to total_profit, a project in the red contributes its magnitude to
+    total_loss (so both are always >= 0, unlike a single net figure).
+    """
+    from .models import Event, ExpenseLineItem
+
+    revenue_by_event = dict(
+        Event.objects.filter(
+            organization=organization,
+            invoice__issue_date__gte=start,
+            invoice__issue_date__lt=end,
+        ).values_list('event_id', 'invoice__total_amount')
+    )
+    expenses_by_event = dict(
+        ExpenseLineItem.objects.filter(
+            event__organization=organization,
+            created_at__gte=start,
+            created_at__lt=end,
+        ).values('event_id').annotate(total=Sum('amount')).values_list('event_id', 'total')
+    )
+
+    total_revenue = sum(revenue_by_event.values(), Decimal('0'))
+    total_expenses = sum(expenses_by_event.values(), Decimal('0'))
+
+    total_profit = Decimal('0')
+    total_loss = Decimal('0')
+    for event_id in set(revenue_by_event) | set(expenses_by_event):
+        net = (revenue_by_event.get(event_id) or Decimal('0')) - (expenses_by_event.get(event_id) or Decimal('0'))
+        if net > 0:
+            total_profit += net
+        elif net < 0:
+            total_loss += -net
+
+    return total_revenue, total_expenses, total_profit, total_loss
 
 
 def _load_logo_flowable(organization, size=1.1 * inch):

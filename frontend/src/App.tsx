@@ -19,6 +19,7 @@ import { QuotationEditor } from './pages/QuotationEditor';
 import { QuotationPreview } from './pages/QuotationPreview';
 import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
+import { TaskChecklist } from './pages/TaskChecklist';
 import { Payments } from './pages/Payments';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
@@ -318,6 +319,7 @@ function AppLayout() {
                 <Route path="/quotations/:id/preview" element={<QuotationPreview />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/:id" element={<EventDetail />} />
+                <Route path="/task-checklist" element={<TaskChecklist />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/settings" element={<Settings />} />

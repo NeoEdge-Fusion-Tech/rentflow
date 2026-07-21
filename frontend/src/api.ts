@@ -211,6 +211,8 @@ export const EventService = {
   update: (id: number | string, data: any) => api.put(`/events/events/${id}/`, data),
   patch: (id: number | string, data: any) => api.patch(`/events/events/${id}/`, data),
   delete: (id: number | string) => api.delete(`/events/events/${id}/`),
+  getDashboardStats: (params?: any) => api.get('/events/dashboard-stats/', { params }),
+  getMonthlyBreakdown: (params?: any) => api.get('/events/monthly-breakdown/', { params }),
 };
 
 export const ExpenseService = {

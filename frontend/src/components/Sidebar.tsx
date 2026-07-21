@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   Truck,
   Briefcase,
+  ListChecks,
   ScanLine
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -40,6 +41,7 @@ const navItems = [
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: FileSpreadsheet, label: 'Quotations', path: '/quotations' },
   { icon: Briefcase, label: 'Projects', path: '/events' },
+  { icon: ListChecks, label: 'Task Checklist', path: '/task-checklist' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: QrCode, label: 'Scanner', path: '/scanner' },
   { icon: ScanLine, label: 'Validation App', path: '/validation' },

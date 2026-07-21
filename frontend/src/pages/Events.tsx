@@ -186,7 +186,7 @@ export function Events() {
                     <p className="text-sm font-bold text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(ev.total_expenses)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Profit</p>
+                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">{profit >= 0 ? 'Profit' : 'Loss'}</p>
                     <p className={cn("text-sm font-bold flex items-center justify-center gap-1", profit >= 0 ? "text-emerald-500" : "text-rose-500")}>
                       {profit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                       {defaultCurrencySymbol}{formatCurrency(Math.abs(profit))}
