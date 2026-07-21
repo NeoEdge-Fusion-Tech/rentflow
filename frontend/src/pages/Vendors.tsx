@@ -29,6 +29,7 @@ export function Vendors() {
   const itemsPerPage = 9;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingVendor, setEditingVendor] = useState<any>(null);
   const [viewingVendor, setViewingVendor] = useState<any>(null);
 
@@ -110,6 +111,7 @@ export function Vendors() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
 
     const payload = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
@@ -123,6 +125,7 @@ export function Vendors() {
     });
 
     try {
+      setIsSaving(true);
       if (editingVendor) {
         await VendorService.update(editingVendor.vendor_id, payload);
       } else {
@@ -134,6 +137,8 @@ export function Vendors() {
     } catch (error) {
       console.error("Failed to save vendor", error);
       showNotification("Failed to save vendor", 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -424,9 +429,10 @@ export function Vendors() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingVendor ? 'Save Changes' : 'Create Vendor'}
+                  {isSaving ? 'Saving...' : (editingVendor ? 'Save Changes' : 'Create Vendor')}
                 </button>
               </div>
             </form>

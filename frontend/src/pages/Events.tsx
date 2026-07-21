@@ -29,6 +29,7 @@ export function Events() {
   const defaultCurrencySymbol = localStorage.getItem('currencySymbol') || '$';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -93,7 +94,9 @@ export function Events() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     try {
+      setIsSaving(true);
       const payload = {
         ...formData,
         start_date: formData.start_date || null,
@@ -107,6 +110,8 @@ export function Events() {
     } catch (error) {
       console.error("Failed to save project", error);
       showNotification("Failed to save project", 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -313,8 +318,8 @@ export function Events() {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">
                   Cancel
                 </button>
-                <button type="submit" className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors">
-                  Create Project
+                <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSaving ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </form>

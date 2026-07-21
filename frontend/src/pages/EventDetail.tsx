@@ -26,6 +26,7 @@ export function EventDetail() {
 
   // Edit event modal
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditSaving, setIsEditSaving] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
 
@@ -33,6 +34,8 @@ export function EventDetail() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isExpenseSaving, setIsExpenseSaving] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
   const [expenseForm, setExpenseForm] = useState({
     expense_type: 'item',
     vendor: '' as number | string,
@@ -89,8 +92,9 @@ export function EventDetail() {
   // --- Event edit ---
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) return;
+    if (!id || isEditSaving) return;
     try {
+      setIsEditSaving(true);
       await EventService.patch(id, {
         ...editForm,
         start_date: editForm.start_date || null,
@@ -103,34 +107,58 @@ export function EventDetail() {
     } catch (err) {
       console.error("Failed to update project", err);
       showNotification("Failed to update project", 'error');
+    } finally {
+      setIsEditSaving(false);
     }
   };
 
   // --- Expenses ---
   const openAddExpense = () => {
+    setEditingExpense(null);
     setExpenseForm({ expense_type: 'item', vendor: '', name: '', amount: 0, description: '' });
+    setIsAddExpenseOpen(true);
+  };
+
+  const openEditExpense = (expense: any) => {
+    setEditingExpense(expense);
+    setExpenseForm({
+      expense_type: expense.expense_type,
+      vendor: expense.vendor || '',
+      name: expense.expense_type === 'item' ? expense.name : '',
+      amount: parseFloat(expense.amount) || 0,
+      description: expense.description || '',
+    });
     setIsAddExpenseOpen(true);
   };
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) return;
+    if (!id || isExpenseSaving) return;
     try {
-      await ExpenseService.create({
+      setIsExpenseSaving(true);
+      const payload = {
         event: parseInt(id),
         expense_type: expenseForm.expense_type,
         vendor: expenseForm.expense_type === 'vendor' ? parseInt(String(expenseForm.vendor)) : null,
         name: expenseForm.expense_type === 'item' ? expenseForm.name : undefined,
         amount: expenseForm.amount,
         description: expenseForm.description,
-      });
+      };
+      if (editingExpense) {
+        await ExpenseService.update(editingExpense.expense_id, payload);
+      } else {
+        await ExpenseService.create(payload);
+      }
       setIsAddExpenseOpen(false);
-      showNotification("Expense added!", 'success');
+      setEditingExpense(null);
+      showNotification(editingExpense ? "Expense updated!" : "Expense added!", 'success');
       fetchExpenses();
       fetchEvent();
     } catch (err: any) {
-      console.error("Failed to add expense", err);
-      showNotification(err.response?.data?.vendor?.[0] || err.response?.data?.name?.[0] || "Failed to add expense", 'error');
+      console.error("Failed to save expense", err);
+      showNotification(err.response?.data?.vendor?.[0] || err.response?.data?.name?.[0] || "Failed to save expense", 'error');
+    } finally {
+      setIsExpenseSaving(false);
     }
   };
 
@@ -242,9 +270,14 @@ export function EventDetail() {
                     <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">{exp.description || '—'}</td>
                     <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(exp.amount)}</td>
                     <td className="py-3 pr-0 text-right">
-                      <button onClick={() => handleDeleteExpense(exp.expense_id)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => openEditExpense(exp)} className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors" title="Edit">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteExpense(exp.expense_id)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -303,7 +336,7 @@ export function EventDetail() {
               </div>
               <div className="pt-2 flex gap-3">
                 <button type="button" onClick={() => setIsEditOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button type="submit" className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors">Save Changes</button>
+                <button type="submit" disabled={isEditSaving} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{isEditSaving ? 'Saving...' : 'Save Changes'}</button>
               </div>
             </form>
           </div>
@@ -315,8 +348,8 @@ export function EventDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Add Expense</h2>
-              <button onClick={() => setIsAddExpenseOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">{editingExpense ? 'Edit Expense' : 'Add Expense'}</h2>
+              <button onClick={() => { setIsAddExpenseOpen(false); setEditingExpense(null); }} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -358,8 +391,10 @@ export function EventDetail() {
               </div>
 
               <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setIsAddExpenseOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button type="submit" className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors">Add Expense</button>
+                <button type="button" onClick={() => { setIsAddExpenseOpen(false); setEditingExpense(null); }} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
+                <button type="submit" disabled={isExpenseSaving} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isExpenseSaving ? 'Saving...' : (editingExpense ? 'Save Changes' : 'Add Expense')}
+                </button>
               </div>
             </form>
           </div>

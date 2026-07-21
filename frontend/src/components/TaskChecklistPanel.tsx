@@ -4,6 +4,7 @@ import {
   Trash2,
   Download,
   Copy,
+  Edit2,
   X,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
@@ -38,6 +39,22 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
   const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
   const [duplicateTarget, setDuplicateTarget] = useState<number | string>('');
   const [allEvents, setAllEvents] = useState<any[]>([]);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editTaskForm, setEditTaskForm] = useState({ name: '', description: '', due_date: '' });
+  const [isSavingTaskEdit, setIsSavingTaskEdit] = useState(false);
+  const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
+  const [editSubtaskName, setEditSubtaskName] = useState('');
+  const [isSavingSubtaskEdit, setIsSavingSubtaskEdit] = useState(false);
+
+  const toDatetimeLocal = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
   const fetchTasks = async () => {
     try {
@@ -83,7 +100,9 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
       showNotification("Task name is required.", 'warning');
       return;
     }
+    if (isAddingTask) return;
     try {
+      setIsAddingTask(true);
       await ChecklistTaskService.create({
         event: parseInt(String(eventId)),
         checklist_type: checklistType,
@@ -96,12 +115,15 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
     } catch (err) {
       console.error("Failed to add task", err);
       showNotification("Failed to add task", 'error');
+    } finally {
+      setIsAddingTask(false);
     }
   };
 
   const handleAddSubtask = async (parentTask: any) => {
-    if (!newSubtaskName.trim()) return;
+    if (!newSubtaskName.trim() || isAddingSubtask) return;
     try {
+      setIsAddingSubtask(true);
       await ChecklistTaskService.create({
         event: parseInt(String(eventId)),
         checklist_type: parentTask.checklist_type,
@@ -114,6 +136,60 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
     } catch (err) {
       console.error("Failed to add subtask", err);
       showNotification("Failed to add subtask", 'error');
+    } finally {
+      setIsAddingSubtask(false);
+    }
+  };
+
+  const openEditTask = (task: any) => {
+    setEditingTaskId(task.task_id);
+    setEditTaskForm({
+      name: task.name || '',
+      description: task.description || '',
+      due_date: toDatetimeLocal(task.due_date),
+    });
+  };
+
+  const handleSaveTaskEdit = async (taskId: number) => {
+    if (!editTaskForm.name.trim()) {
+      showNotification("Task name is required.", 'warning');
+      return;
+    }
+    if (isSavingTaskEdit) return;
+    try {
+      setIsSavingTaskEdit(true);
+      await ChecklistTaskService.update(taskId, {
+        name: editTaskForm.name,
+        description: editTaskForm.description,
+        due_date: editTaskForm.due_date || null,
+      });
+      setEditingTaskId(null);
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to update task", err);
+      showNotification("Failed to update task", 'error');
+    } finally {
+      setIsSavingTaskEdit(false);
+    }
+  };
+
+  const openEditSubtask = (sub: any) => {
+    setEditingSubtaskId(sub.task_id);
+    setEditSubtaskName(sub.name || '');
+  };
+
+  const handleSaveSubtaskEdit = async (subtaskId: number) => {
+    if (!editSubtaskName.trim() || isSavingSubtaskEdit) return;
+    try {
+      setIsSavingSubtaskEdit(true);
+      await ChecklistTaskService.update(subtaskId, { name: editSubtaskName });
+      setEditingSubtaskId(null);
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to update subtask", err);
+      showNotification("Failed to update subtask", 'error');
+    } finally {
+      setIsSavingSubtaskEdit(false);
     }
   };
 
@@ -136,8 +212,9 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
   };
 
   const handleDuplicate = async () => {
-    if (!duplicateTarget) return;
+    if (!duplicateTarget || isDuplicating) return;
     try {
+      setIsDuplicating(true);
       await ChecklistTaskService.duplicate(eventId, duplicateTarget);
       showNotification("Checklist duplicated to target project!", 'success');
       setIsDuplicateOpen(false);
@@ -145,6 +222,8 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
     } catch (err) {
       console.error("Failed to duplicate checklist", err);
       showNotification("Failed to duplicate checklist", 'error');
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -190,54 +269,106 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
 
             {tasksByType[section.key].map((task: any) => (
               <div key={task.task_id} className="bg-[var(--bg-app)] rounded-xl border border-[var(--border-subtle)] p-3">
-                <div className="flex items-start gap-2">
-                  <button
-                    onClick={() => handleToggleDone(task)}
-                    className={cn(
-                      "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
-                      task.is_done ? "bg-emerald-500 border-emerald-500" : "border-[var(--border-soft)]"
-                    )}
-                  >
-                    {task.is_done && <Check className="w-3.5 h-3.5 text-white" />}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-sm font-bold text-[var(--text-main)]", task.is_done && "line-through text-[var(--text-muted)]")}>{task.name}</p>
-                    {task.description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{task.description}</p>}
-                    {task.due_date && (
-                      <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] mt-1">
-                        <Calendar className="w-3 h-3" /> {new Date(task.due_date).toLocaleString()}
-                      </div>
-                    )}
+                {editingTaskId === task.task_id ? (
+                  <div className="space-y-2">
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Task name"
+                      value={editTaskForm.name}
+                      onChange={e => setEditTaskForm({ ...editTaskForm, name: e.target.value })}
+                      className="w-full h-8 px-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md outline-none text-xs font-bold text-[var(--text-main)]"
+                    />
+                    <textarea
+                      placeholder="Description (optional)"
+                      rows={2}
+                      value={editTaskForm.description}
+                      onChange={e => setEditTaskForm({ ...editTaskForm, description: e.target.value })}
+                      className="w-full px-2 py-1.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md outline-none text-xs text-[var(--text-main)] resize-none"
+                    />
+                    <input
+                      type="datetime-local"
+                      value={editTaskForm.due_date}
+                      onChange={e => setEditTaskForm({ ...editTaskForm, due_date: e.target.value })}
+                      className="w-full h-8 px-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md outline-none text-xs text-[var(--text-main)]"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingTaskId(null)} className="flex-1 py-1.5 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md">Cancel</button>
+                      <button onClick={() => handleSaveTaskEdit(task.task_id)} disabled={isSavingTaskEdit} className="flex-1 py-1.5 text-xs font-bold text-white bg-brand-primary rounded-md disabled:opacity-50">{isSavingTaskEdit ? 'Saving...' : 'Save'}</button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {task.subtasks?.length > 0 && (
-                      <button onClick={() => setExpandedTasks(prev => ({ ...prev, [task.task_id]: !prev[task.task_id] }))} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)]">
-                        {expandedTasks[task.task_id] ? <ChevronDown className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
-                      </button>
-                    )}
-                    <button onClick={() => handleDeleteTask(task.task_id)} className="p-1 text-[var(--text-muted)] hover:text-rose-500">
-                      <Trash2 className="w-3.5 h-3.5" />
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <button
+                      onClick={() => handleToggleDone(task)}
+                      className={cn(
+                        "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
+                        task.is_done ? "bg-emerald-500 border-emerald-500" : "border-[var(--border-soft)]"
+                      )}
+                    >
+                      {task.is_done && <Check className="w-3.5 h-3.5 text-white" />}
                     </button>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("text-sm font-bold text-[var(--text-main)]", task.is_done && "line-through text-[var(--text-muted)]")}>{task.name}</p>
+                      {task.description && <p className="text-xs text-[var(--text-muted)] mt-0.5">{task.description}</p>}
+                      {task.due_date && (
+                        <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] mt-1">
+                          <Calendar className="w-3 h-3" /> {new Date(task.due_date).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {task.subtasks?.length > 0 && (
+                        <button onClick={() => setExpandedTasks(prev => ({ ...prev, [task.task_id]: !prev[task.task_id] }))} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                          {expandedTasks[task.task_id] ? <ChevronDown className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
+                        </button>
+                      )}
+                      <button onClick={() => openEditTask(task)} className="p-1 text-[var(--text-muted)] hover:text-brand-primary">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteTask(task.task_id)} className="p-1 text-[var(--text-muted)] hover:text-rose-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {(expandedTasks[task.task_id] || task.subtasks?.length > 0) && (
                   <div className="ml-7 mt-2 space-y-1.5 border-l border-[var(--border-subtle)] pl-3">
                     {task.subtasks?.map((sub: any) => (
                       <div key={sub.task_id} className="flex items-start gap-2">
-                        <button
-                          onClick={() => handleToggleDone(sub)}
-                          className={cn(
-                            "mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-                            sub.is_done ? "bg-emerald-500 border-emerald-500" : "border-[var(--border-soft)]"
-                          )}
-                        >
-                          {sub.is_done && <Check className="w-3 h-3 text-white" />}
-                        </button>
-                        <p className={cn("text-xs font-medium text-[var(--text-main)] flex-1", sub.is_done && "line-through text-[var(--text-muted)]")}>{sub.name}</p>
-                        <button onClick={() => handleDeleteTask(sub.task_id)} className="p-0.5 text-[var(--text-muted)] hover:text-rose-500">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {editingSubtaskId === sub.task_id ? (
+                          <>
+                            <input
+                              autoFocus
+                              type="text"
+                              value={editSubtaskName}
+                              onChange={e => setEditSubtaskName(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleSaveSubtaskEdit(sub.task_id); if (e.key === 'Escape') setEditingSubtaskId(null); }}
+                              className="flex-1 h-6 px-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md outline-none text-xs text-[var(--text-main)]"
+                            />
+                            <button onClick={() => handleSaveSubtaskEdit(sub.task_id)} disabled={isSavingSubtaskEdit} className="text-xs font-bold text-brand-primary disabled:opacity-50">Save</button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleToggleDone(sub)}
+                              className={cn(
+                                "mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                                sub.is_done ? "bg-emerald-500 border-emerald-500" : "border-[var(--border-soft)]"
+                              )}
+                            >
+                              {sub.is_done && <Check className="w-3 h-3 text-white" />}
+                            </button>
+                            <p className={cn("text-xs font-medium text-[var(--text-main)] flex-1", sub.is_done && "line-through text-[var(--text-muted)]")}>{sub.name}</p>
+                            <button onClick={() => openEditSubtask(sub)} className="p-0.5 text-[var(--text-muted)] hover:text-brand-primary">
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => handleDeleteTask(sub.task_id)} className="p-0.5 text-[var(--text-muted)] hover:text-rose-500">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     ))}
                     {addingSubtaskFor === task.task_id ? (
@@ -251,7 +382,7 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
                           placeholder="Subtask name..."
                           className="flex-1 h-7 px-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md outline-none text-xs text-[var(--text-main)]"
                         />
-                        <button onClick={() => handleAddSubtask(task)} className="text-xs font-bold text-brand-primary">Add</button>
+                        <button onClick={() => handleAddSubtask(task)} disabled={isAddingSubtask} className="text-xs font-bold text-brand-primary disabled:opacity-50">Add</button>
                       </div>
                     ) : (
                       <button onClick={() => { setAddingSubtaskFor(task.task_id); setNewSubtaskName(''); }} className="text-[11px] font-bold text-brand-primary hover:underline pt-1">
@@ -288,7 +419,7 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
                 />
                 <div className="flex gap-2">
                   <button onClick={() => setAddingTaskFor(null)} className="flex-1 py-1.5 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-md">Cancel</button>
-                  <button onClick={() => handleAddTask(section.key)} className="flex-1 py-1.5 text-xs font-bold text-white bg-brand-primary rounded-md">Add Task</button>
+                  <button onClick={() => handleAddTask(section.key)} disabled={isAddingTask} className="flex-1 py-1.5 text-xs font-bold text-white bg-brand-primary rounded-md disabled:opacity-50">{isAddingTask ? 'Adding...' : 'Add Task'}</button>
                 </div>
               </div>
             ) : (
@@ -323,7 +454,7 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
               </div>
               <div className="pt-2 flex gap-3">
                 <button onClick={() => setIsDuplicateOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button onClick={handleDuplicate} disabled={!duplicateTarget} className="flex-1 px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50">Duplicate</button>
+                <button onClick={handleDuplicate} disabled={!duplicateTarget || isDuplicating} className="flex-1 px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50">{isDuplicating ? 'Duplicating...' : 'Duplicate'}</button>
               </div>
             </div>
           </div>
