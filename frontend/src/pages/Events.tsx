@@ -181,21 +181,21 @@ export function Events() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-2 pt-4 border-t border-[var(--border-subtle)] text-center">
-                  <div>
-                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Revenue</p>
-                    <p className="text-sm font-bold text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(ev.revenue)}</p>
+                <div className="space-y-2 pt-4 border-t border-[var(--border-subtle)]">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider shrink-0">Revenue</span>
+                    <span className="text-sm font-bold text-[var(--text-main)] text-right truncate">{defaultCurrencySymbol}{formatCurrency(ev.revenue)}</span>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Expenses</p>
-                    <p className="text-sm font-bold text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(ev.total_expenses)}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider shrink-0">Expenses</span>
+                    <span className="text-sm font-bold text-[var(--text-main)] text-right truncate">{defaultCurrencySymbol}{formatCurrency(ev.total_expenses)}</span>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">{profit >= 0 ? 'Profit' : 'Loss'}</p>
-                    <p className={cn("text-sm font-bold flex items-center justify-center gap-1", profit >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                      {profit >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider shrink-0">{profit >= 0 ? 'Profit' : 'Loss'}</span>
+                    <span className={cn("text-sm font-bold flex items-center justify-end gap-1 truncate", profit >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                      {profit >= 0 ? <TrendingUp className="w-3 h-3 shrink-0" /> : <TrendingDown className="w-3 h-3 shrink-0" />}
                       {defaultCurrencySymbol}{formatCurrency(Math.abs(profit))}
-                    </p>
+                    </span>
                   </div>
                 </div>
 

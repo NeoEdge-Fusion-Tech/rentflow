@@ -100,7 +100,7 @@ export function Sidebar({ isOpen, toggle, isSuperuser, currentUser }: SidebarPro
                 return item.label === 'Validation App';
               }
               if (item.label === 'Validation App') {
-                return false;
+                return currentUser?.role === 'staff' && currentUser?.has_booking !== false;
               }
               if (item.label === 'Inventory' && currentUser?.has_booking === false) {
                 return false;
