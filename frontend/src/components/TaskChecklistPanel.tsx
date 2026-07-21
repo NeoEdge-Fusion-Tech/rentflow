@@ -8,9 +8,28 @@ import {
   X,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
+  ArrowUp,
+  ArrowDown,
+  GripVertical,
   Check,
   Calendar
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
 import { ChecklistTaskService, EventService } from '../api';
@@ -26,8 +45,28 @@ interface TaskChecklistPanelProps {
   eventName?: string;
 }
 
+function SortableTaskWrapper({ id, disabled, children }: any) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: 'relative',
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ ...attributes, ...listeners })}
+    </div>
+  );
+}
+
 export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelProps) {
   const { showNotification, showConfirm } = useNotification();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +87,7 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
   const [editSubtaskName, setEditSubtaskName] = useState('');
   const [isSavingSubtaskEdit, setIsSavingSubtaskEdit] = useState(false);
+  const [reorderingIds, setReorderingIds] = useState<Set<number>>(new Set());
 
   const toDatetimeLocal = (iso?: string) => {
     if (!iso) return '';
@@ -211,6 +251,51 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
     });
   };
 
+  const reorderSiblings = async (siblings: any[], fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= siblings.length) return;
+
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+
+    const movedIds = new Set([siblings[fromIndex].task_id, siblings[toIndex].task_id]);
+    setReorderingIds(prev => new Set([...prev, ...movedIds]));
+    try {
+      await Promise.all(
+        reordered.map((t, idx) =>
+          t.position === idx ? Promise.resolve() : ChecklistTaskService.update(t.task_id, { position: idx })
+        )
+      );
+      fetchTasks();
+    } catch (err) {
+      console.error("Failed to reorder tasks", err);
+      showNotification("Failed to reorder tasks", 'error');
+    } finally {
+      setReorderingIds(prev => {
+        const next = new Set(prev);
+        movedIds.forEach(id => next.delete(id));
+        return next;
+      });
+    }
+  };
+
+  const handleTaskDragEnd = (checklistType: string, event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const siblings = tasksByType[checklistType];
+    const oldIndex = siblings.findIndex((t: any) => t.task_id === active.id);
+    const newIndex = siblings.findIndex((t: any) => t.task_id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    reorderSiblings(siblings, oldIndex, newIndex);
+  };
+
+  const handleMoveSubtask = (parentTask: any, subtask: any, direction: 'up' | 'down') => {
+    const siblings = parentTask.subtasks || [];
+    const index = siblings.findIndex((t: any) => t.task_id === subtask.task_id);
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    reorderSiblings(siblings, index, targetIndex);
+  };
+
   const handleDuplicate = async () => {
     if (!duplicateTarget || isDuplicating) return;
     try {
@@ -267,8 +352,12 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
               <p className="text-xs text-[var(--text-muted)]">No tasks yet.</p>
             )}
 
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={e => handleTaskDragEnd(section.key, e)}>
+            <SortableContext items={tasksByType[section.key].map((t: any) => t.task_id)} strategy={verticalListSortingStrategy}>
             {tasksByType[section.key].map((task: any) => (
-              <div key={task.task_id} className="bg-[var(--bg-app)] rounded-xl border border-[var(--border-subtle)] p-3">
+              <SortableTaskWrapper key={task.task_id} id={task.task_id} disabled={editingTaskId === task.task_id}>
+                {(dragHandleProps) => (
+              <div className="bg-[var(--bg-app)] rounded-xl border border-[var(--border-subtle)] p-3">
                 {editingTaskId === task.task_id ? (
                   <div className="space-y-2">
                     <input
@@ -299,6 +388,13 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
                   </div>
                 ) : (
                   <div className="flex items-start gap-2">
+                    <button
+                      {...dragHandleProps}
+                      className="mt-0.5 p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-grab active:cursor-grabbing shrink-0 touch-none"
+                      title="Drag to reorder"
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => handleToggleDone(task)}
                       className={cn(
@@ -335,7 +431,7 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
 
                 {(expandedTasks[task.task_id] || task.subtasks?.length > 0) && (
                   <div className="ml-7 mt-2 space-y-1.5 border-l border-[var(--border-subtle)] pl-3">
-                    {task.subtasks?.map((sub: any) => (
+                    {task.subtasks?.map((sub: any, subIndex: number) => (
                       <div key={sub.task_id} className="flex items-start gap-2">
                         {editingSubtaskId === sub.task_id ? (
                           <>
@@ -351,6 +447,24 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
                           </>
                         ) : (
                           <>
+                            <div className="flex flex-col shrink-0 -my-0.5">
+                              <button
+                                onClick={() => handleMoveSubtask(task, sub, 'up')}
+                                disabled={subIndex === 0 || reorderingIds.has(sub.task_id)}
+                                className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Move up"
+                              >
+                                <ArrowUp className="w-2.5 h-2.5" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveSubtask(task, sub, 'down')}
+                                disabled={subIndex === (task.subtasks?.length || 0) - 1 || reorderingIds.has(sub.task_id)}
+                                className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Move down"
+                              >
+                                <ArrowDown className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
                             <button
                               onClick={() => handleToggleDone(sub)}
                               className={cn(
@@ -392,7 +506,11 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
                   </div>
                 )}
               </div>
+                )}
+              </SortableTaskWrapper>
             ))}
+            </SortableContext>
+            </DndContext>
 
             {addingTaskFor === section.key ? (
               <div className="bg-[var(--bg-app)] rounded-xl border border-[var(--border-subtle)] p-3 space-y-2">
