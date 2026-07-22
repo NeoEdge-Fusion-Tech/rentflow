@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Sum
 from users.mixins import TenantSerializerMixin
-from users.serializers import VendorSerializer
+from users.serializers import VendorSerializer, ClientSerializer
 from .models import Event, ExpenseLineItem, ChecklistTask
 
 
@@ -30,6 +30,7 @@ class ExpenseLineItemSerializer(TenantSerializerMixin, serializers.ModelSerializ
 
 class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     invoice_number = serializers.CharField(source='invoice.invoice_number', read_only=True)
+    client_details = ClientSerializer(source='invoice.client', read_only=True)
     revenue = serializers.SerializerMethodField()
     total_expenses = serializers.SerializerMethodField()
     profit = serializers.SerializerMethodField()
@@ -38,7 +39,7 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         model = Event
         fields = [
             'event_id', 'organization', 'name', 'description', 'status',
-            'start_date', 'end_date', 'invoice', 'invoice_number',
+            'start_date', 'end_date', 'invoice', 'invoice_number', 'client_details',
             'revenue', 'total_expenses', 'profit', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'organization']

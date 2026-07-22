@@ -88,6 +88,15 @@ export interface EventProject {
   end_date?: string;
   invoice?: number | null;
   invoice_number?: string;
+  client_details?: {
+    client_id: number;
+    business_name: string;
+    email?: string;
+    phone_number?: string;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+  } | null;
   revenue: number;
   total_expenses: number;
   profit: number;

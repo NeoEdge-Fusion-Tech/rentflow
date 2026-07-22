@@ -7,6 +7,7 @@ import {
   Calendar,
   TrendingUp,
   TrendingDown,
+  User,
   X,
   Trash2,
   ChevronLeft,
@@ -174,6 +175,12 @@ export function Events() {
                 </div>
 
                 <h3 className="text-lg font-bold text-[var(--text-main)] mb-1">{ev.name}</h3>
+                {ev.client_details?.business_name && (
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    {ev.client_details.business_name}
+                  </div>
+                )}
                 {(ev.start_date || ev.end_date) && (
                   <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mb-4">
                     <Calendar className="w-3.5 h-3.5" />

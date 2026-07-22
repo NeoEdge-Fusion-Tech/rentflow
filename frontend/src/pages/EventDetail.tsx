@@ -9,7 +9,11 @@ import {
   Edit2,
   X,
   ListChecks,
-  ArrowUpRight
+  ArrowUpRight,
+  Building2,
+  Mail,
+  Phone,
+  User
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
@@ -210,6 +214,37 @@ export function EventDetail() {
           </button>
         </div>
       </div>
+
+      {/* Client details (from the linked invoice) */}
+      {event.client_details && (
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-5">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Client</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="font-bold text-[var(--text-main)]">{event.client_details.business_name}</span>
+            </div>
+            {event.client_details.contact_name && (
+              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <User className="w-4 h-4" />
+                {event.client_details.contact_name}
+              </div>
+            )}
+            {(event.client_details.email || event.client_details.contact_email) && (
+              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <Mail className="w-4 h-4" />
+                {event.client_details.email || event.client_details.contact_email}
+              </div>
+            )}
+            {(event.client_details.phone_number || event.client_details.contact_phone) && (
+              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <Phone className="w-4 h-4" />
+                {event.client_details.phone_number || event.client_details.contact_phone}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
