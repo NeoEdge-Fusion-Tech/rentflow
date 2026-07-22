@@ -204,22 +204,13 @@ export function Dashboard() {
               icon={Calendar} 
               trend="up" 
             />
-            <StatCard 
-              title="Total Clients" 
-              value={stats?.total_clients || 0} 
-              change={0} 
-              icon={Users} 
-              trend="up" 
+            <StatCard
+              title="Total Clients"
+              value={stats?.total_clients || 0}
+              change={0}
+              icon={Users}
+              trend="up"
             />
-            {currentUser?.role !== 'staff' && (
-            <StatCard 
-              title="Gross Revenue" 
-              value={`${currencySymbol}${formatCurrency(stats?.monthly_revenue || 0)}`} 
-              change={0} 
-              icon={TrendingUp} 
-              trend="up" 
-            />
-            )}
           </>
         )}
       </div>
@@ -310,11 +301,10 @@ export function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
-        {currentUser?.role !== 'staff' && (
+        {/* Bookings Chart */}
         <div className="lg:col-span-2 bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-[var(--text-main)]">Revenue & Bookings</h3>
+            <h3 className="font-bold text-[var(--text-main)]">Bookings</h3>
             <select className="text-sm border border-[var(--border-soft)] rounded-lg bg-[var(--bg-app)] text-[var(--text-main)] px-2 py-1 outline-none">
               <option>Last 7 days</option>
               <option>Last 30 days</option>
@@ -324,28 +314,29 @@ export function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats?.chart_data || []}>
                 <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
                     <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                  allowDecimals={false}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'var(--bg-surface)', 
-                    borderRadius: '12px', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--bg-surface)',
+                    borderRadius: '12px',
                     border: '1px solid var(--border-soft)',
                     boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
                     color: 'var(--text-main)'
@@ -353,19 +344,18 @@ export function Dashboard() {
                   itemStyle={{ color: 'var(--text-main)' }}
                   labelStyle={{ color: 'var(--text-muted)' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="var(--color-brand-accent)" 
+                <Area
+                  type="monotone"
+                  dataKey="bookings"
+                  stroke="var(--color-brand-accent)"
                   strokeWidth={3}
-                  fillOpacity={0.2} 
-                  fill="var(--color-brand-accent)" 
+                  fillOpacity={0.2}
+                  fill="var(--color-brand-accent)"
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
-        )}
 
         {/* Dynamic Activity / Clients Sidebar */}
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">

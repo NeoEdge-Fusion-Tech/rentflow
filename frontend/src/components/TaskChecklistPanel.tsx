@@ -296,12 +296,22 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
     reorderSiblings(siblings, index, targetIndex);
   };
 
+  const isChecklistEmpty = tasks.length === 0;
+
   const handleDuplicate = async () => {
     if (!duplicateTarget || isDuplicating) return;
     try {
       setIsDuplicating(true);
-      await ChecklistTaskService.duplicate(eventId, duplicateTarget);
-      showNotification("Checklist duplicated to target project!", 'success');
+      if (isChecklistEmpty) {
+        // Pull an existing project's checklist into this (empty) one.
+        await ChecklistTaskService.duplicate(duplicateTarget, eventId);
+        showNotification("Checklist duplicated into this project!", 'success');
+        fetchTasks();
+      } else {
+        // Push this project's checklist out to another project.
+        await ChecklistTaskService.duplicate(eventId, duplicateTarget);
+        showNotification("Checklist duplicated to target project!", 'success');
+      }
       setIsDuplicateOpen(false);
       setDuplicateTarget('');
     } catch (err) {
@@ -336,7 +346,7 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
     <div className="space-y-6">
       <div className="flex items-center justify-end gap-2">
         <button onClick={() => setIsDuplicateOpen(true)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl hover:bg-[var(--bg-app)] transition-colors">
-          <Copy className="w-4 h-4" /> Duplicate to Another Project
+          <Copy className="w-4 h-4" /> {isChecklistEmpty ? 'Duplicate from Project' : 'Duplicate to Another Project'}
         </button>
         <button onClick={handleDownloadChecklist} className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl hover:bg-[var(--bg-app)] transition-colors">
           <Download className="w-4 h-4" /> Download PDF
@@ -554,15 +564,19 @@ export function TaskChecklistPanel({ eventId, eventName }: TaskChecklistPanelPro
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Duplicate Checklist</h2>
+              <h2 className="text-lg font-bold text-[var(--text-main)]">{isChecklistEmpty ? 'Duplicate Checklist From Project' : 'Duplicate Checklist'}</h2>
               <button onClick={() => setIsDuplicateOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-sm text-[var(--text-muted)]">Copy every task and subtask from this checklist into another project. Due dates are cleared on the copy.</p>
+              <p className="text-sm text-[var(--text-muted)]">
+                {isChecklistEmpty
+                  ? "Copy every task and subtask from another project's checklist into this one. Due dates are cleared on the copy."
+                  : "Copy every task and subtask from this checklist into another project. Due dates are cleared on the copy."}
+              </p>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Target Project</label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">{isChecklistEmpty ? 'Source Project' : 'Target Project'}</label>
                 <select value={duplicateTarget} onChange={e => setDuplicateTarget(e.target.value)} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
                   <option value="">Select a project...</option>
                   {allEvents.filter((e: any) => String(e.event_id) !== String(eventId)).map((e: any) => (
