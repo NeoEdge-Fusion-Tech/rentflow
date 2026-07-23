@@ -380,7 +380,8 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'name']
 
     def get_queryset(self):
-        from django.db.models import Sum, Q, Count
+        from django.db import models
+        from django.db.models import Sum, Q, Count, Value
         from django.db.models.functions import Coalesce
         # Exclude deleted organizations by default unless specifically requested
         qs = super().get_queryset()
@@ -390,8 +391,8 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
         qs = qs.annotate(
             total_bookings=Count('bookings', distinct=True),
             total_invoices=Count('invoices', distinct=True),
-            revenue=Coalesce(Sum('payments__amount', filter=Q(payments__status='completed')), 0.0),
-            expenses=Coalesce(Sum('expense_items__amount'), 0.0)
+            revenue=Coalesce(Sum('payments__amount', filter=Q(payments__status='completed')), Value(0), output_field=models.DecimalField()),
+            expenses=Coalesce(Sum('expense_items__amount'), Value(0), output_field=models.DecimalField())
         )
         return qs
 
