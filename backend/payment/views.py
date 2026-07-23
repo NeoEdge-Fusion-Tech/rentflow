@@ -224,9 +224,10 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         invoice = self.get_object()
         amount = request.data.get('amount')
         
+        from decimal import Decimal, InvalidOperation
         try:
-            amount = float(amount)
-        except (TypeError, ValueError):
+            amount = Decimal(str(amount))
+        except (TypeError, ValueError, InvalidOperation):
             return Response({"error": "Invalid amount."}, status=400)
             
         if amount <= 0:
@@ -242,7 +243,7 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             created_by=request.user
         )
         
-        invoice.amount_paid = float(invoice.amount_paid) + amount
+        invoice.amount_paid = invoice.amount_paid + amount
         if invoice.amount_paid >= invoice.total_amount:
             invoice.status = 'paid'
         elif invoice.amount_paid > 0:
@@ -252,7 +253,7 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         # update linked booking
         if invoice.booking:
             booking = invoice.booking
-            booking.amount_paid = float(booking.amount_paid) + amount
+            booking.amount_paid = booking.amount_paid + amount
             if booking.amount_paid >= booking.total_amount:
                 booking.payment_status = 'paid'
             booking.save(update_fields=['amount_paid', 'payment_status'])
