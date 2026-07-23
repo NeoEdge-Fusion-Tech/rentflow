@@ -659,6 +659,7 @@ export function InvoiceEditor() {
                 >
                   <option value="draft">Draft</option>
                   <option value="issued">Issued</option>
+                  <option value="partially_paid">Partially Paid</option>
                   <option value="paid">Paid</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
