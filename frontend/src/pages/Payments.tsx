@@ -111,7 +111,7 @@ export function Payments() {
             <thead>
               <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
                 <th className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Transaction</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Booking</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Ref (Booking/Invoice)</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Client</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
@@ -131,8 +131,20 @@ export function Payments() {
                       <span className="text-sm font-semibold text-[var(--text-main)]">{payment.payment_id}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4"><span className="text-sm text-[var(--text-muted)] font-medium">{payment.booking_ref}</span></td>
-                  <td className="px-6 py-4"><span className="text-sm text-[var(--text-main)] font-medium">{payment.client_name || 'System Generated'}</span></td>
+                  <td className="px-6 py-4">
+                    {payment.booking_ref && (
+                      <span className="text-sm text-[var(--text-muted)] font-medium block">
+                        Booking: {payment.booking_ref}
+                      </span>
+                    )}
+                    {payment.invoice_number && (
+                      <Link to={`/invoices/${payment.invoice_record}`} className="text-sm text-brand-primary hover:text-brand-primary/80 font-medium flex items-center gap-1 group">
+                        Invoice: {payment.invoice_number}
+                        <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    )}
+                  </td>
+                  <td className="px-6 py-4"><span className="text-sm text-[var(--text-main)] font-medium">{payment.client_name}</span></td>
                   <td className="px-6 py-4"><span className="text-sm font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(payment.amount)}</span></td>
                   <td className="px-6 py-4">
                     <span className={cn(

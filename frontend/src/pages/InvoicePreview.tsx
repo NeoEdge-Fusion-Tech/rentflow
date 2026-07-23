@@ -227,7 +227,7 @@ export function InvoicePreview() {
                   </>
                 )}
                 <span className="text-gray-500">Status</span>
-                <span className={`capitalize font-bold text-xs mt-0.5 ${invoice.status === 'paid' ? 'text-emerald-600' : invoice.status === 'issued' ? 'text-blue-600' : 'text-gray-500'}`}>{invoice.status}</span>
+                <span className={`capitalize font-bold text-xs mt-0.5 ${invoice.status === 'paid' ? 'text-emerald-600' : invoice.status === 'partially_paid' ? 'text-amber-600' : invoice.status === 'issued' ? 'text-blue-600' : 'text-gray-500'}`}>{invoice.status.replace('_', ' ')}</span>
               </div>
             </div>
             {org?.company_logo && (
@@ -327,6 +327,7 @@ export function InvoicePreview() {
                 </div>
               )}
             </div>
+            
             <div className="w-full sm:w-72">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">

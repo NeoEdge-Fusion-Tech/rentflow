@@ -270,15 +270,24 @@ class ReceiptSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         read_only_fields = ['receipt_number', 'issue_date']
 
 class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    client_name = serializers.CharField(source='booking.client.business_name', read_only=True)
+    client_name = serializers.SerializerMethodField()
     booking_ref = serializers.CharField(source='booking.booking_id', read_only=True)
+    invoice_number = serializers.CharField(source='invoice_record.invoice_number', read_only=True)
     receipt = ReceiptSerializer(read_only=True)
+
+    def get_client_name(self, obj):
+        if obj.booking and obj.booking.client:
+            return obj.booking.client.business_name
+        if obj.invoice_record and obj.invoice_record.client:
+            return obj.invoice_record.client.business_name
+        return "System Generated"
 
     class Meta:
         model = Payment
         fields = [
             'payment_id', 'booking', 'booking_ref', 'client_name', 
             'amount', 'status', 'payment_date', 'invoice_id', 
+            'invoice_record', 'invoice_number',
             'receipt_id', 'receipt'
         ]
         read_only_fields = ['payment_date', 'invoice_id', 'receipt_id']

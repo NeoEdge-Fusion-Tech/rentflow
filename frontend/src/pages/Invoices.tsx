@@ -27,6 +27,12 @@ export function Invoices() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // Payment Modal State
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+
   const itemsPerPage = 8;
   const defaultCurrencySymbol = localStorage.getItem('currencySymbol') || '$';
 
@@ -103,6 +109,23 @@ export function Invoices() {
         }
       }
     });
+  };
+
+  const submitPayment = async () => {
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      showNotification('Please enter a valid amount', 'error');
+      return;
+    }
+    try {
+      await InvoiceService.recordPayment(selectedInvoice.invoice_id, { amount });
+      showNotification('Payment recorded successfully', 'success');
+      setPaymentModalOpen(false);
+      fetchInvoices();
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err.response?.data?.error || 'Failed to record payment', 'error');
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -239,11 +262,12 @@ export function Invoices() {
                     <span className={cn(
                       "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border",
                       invoice.status === 'issued' ? "bg-blue-50 text-blue-700 border-blue-100" :
+                      invoice.status === 'partially_paid' ? "bg-amber-50 text-amber-700 border-amber-100" :
                       invoice.status === 'paid' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
                       invoice.status === 'cancelled' ? "bg-rose-50 text-rose-700 border-rose-100" :
                       "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]"
                     )}>
-                      {invoice.status}
+                      {invoice.status.replace('_', ' ')}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-[var(--text-main)] mt-0.5">{invoice.client_name || 'No client'}</h3>
@@ -265,7 +289,10 @@ export function Invoices() {
                 <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Total</p>
                 <p className="text-xl font-black text-[var(--text-main)]">{invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.total_amount)}</p>
                 {parseFloat(invoice.amount_paid) > 0 && invoice.status !== 'paid' && (
-                  <p className="text-xs text-emerald-600 font-bold mt-1">Paid: {invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.amount_paid)}</p>
+                  <div className="mt-1 flex flex-col items-end">
+                    <p className="text-xs text-emerald-600 font-bold">Paid: {invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.amount_paid)}</p>
+                    <p className="text-xs text-amber-600 font-bold">Left: {invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.total_amount - parseFloat(invoice.amount_paid))}</p>
+                  </div>
                 )}
               </div>
 
@@ -292,13 +319,26 @@ export function Invoices() {
                   <Copy className="w-4 h-4" />
                 </button>
                 {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                  <button
-                    onClick={() => handleMarkPaid(invoice)}
-                    className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition-colors"
-                    title="Mark as Paid"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setSelectedInvoice(invoice);
+                        setPaymentAmount('');
+                        setPaymentModalOpen(true);
+                      }}
+                      className="p-2.5 bg-brand-primary/10 text-brand-primary rounded-xl hover:bg-brand-primary/20 transition-colors whitespace-nowrap text-sm font-bold flex items-center gap-1"
+                      title="Record Payment"
+                    >
+                      <CreditCard className="w-4 h-4" /> Pay
+                    </button>
+                    <button
+                      onClick={() => handleMarkPaid(invoice)}
+                      className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition-colors"
+                      title="Mark as Paid"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => handleDownload(invoice)}
@@ -337,6 +377,49 @@ export function Invoices() {
             <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(invoices.length / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(invoices.length / itemsPerPage)}>
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {paymentModalOpen && selectedInvoice && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-[var(--bg-app)] rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-[var(--border-soft)]">
+            <div className="p-6 md:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-black text-[var(--text-main)] font-display">Record Payment</h3>
+                <button onClick={() => setPaymentModalOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)] rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mb-6 space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
+                  <span className="text-[var(--text-muted)]">Invoice</span>
+                  <span className="font-bold text-[var(--text-main)]">{selectedInvoice.invoice_number}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
+                  <span className="text-[var(--text-muted)]">Amount Left</span>
+                  <span className="font-bold text-[var(--text-main)]">
+                    {selectedInvoice.currency_symbol || defaultCurrencySymbol}
+                    {formatCurrency(selectedInvoice.total_amount - parseFloat(selectedInvoice.amount_paid))}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[var(--text-main)] mb-2">Payment Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all"
+                    placeholder="Enter amount..."
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setPaymentModalOpen(false)} className="flex-1 px-4 py-3 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] font-bold hover:bg-[var(--bg-surface)] transition-all">Cancel</button>
+                <button onClick={submitPayment} className="flex-1 px-4 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-primary/90 transition-all">Record Payment</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

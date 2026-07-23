@@ -245,6 +245,8 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         invoice.amount_paid = float(invoice.amount_paid) + amount
         if invoice.amount_paid >= invoice.total_amount:
             invoice.status = 'paid'
+        elif invoice.amount_paid > 0:
+            invoice.status = 'partially_paid'
         invoice.save(update_fields=['amount_paid', 'status'])
         
         # update linked booking
