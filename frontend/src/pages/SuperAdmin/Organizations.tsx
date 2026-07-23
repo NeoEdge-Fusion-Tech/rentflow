@@ -47,11 +47,13 @@ export function Organizations() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number, symbol: string) => {
+    const isNegative = amount < 0;
+    const formattedAmount = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount);
+    }).format(Math.abs(amount));
+    return `${isNegative ? '-' : ''}${symbol}${formattedAmount}`;
   };
 
   const filteredOrgs = orgs.filter(org => 
@@ -191,16 +193,16 @@ export function Organizations() {
                       <div className="flex flex-col gap-0.5">
                         <p className="font-bold text-[var(--text-main)] text-sm">
                           <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">Revenue</span>
-                          {org.currency?.symbol || currencySymbol}{formatCurrency(org.revenue || 0)}
+                          {formatCurrency(org.revenue || 0, org.currency?.symbol || currencySymbol)}
                         </p>
                         {(org.expenses || 0) > 0 && (
                           <p className="text-xs text-[var(--text-muted)] mt-1">
-                            Exp: {org.currency?.symbol || currencySymbol}{formatCurrency(org.expenses)}
+                            Exp: {formatCurrency(org.expenses, org.currency?.symbol || currencySymbol)}
                           </p>
                         )}
                         {((org.revenue || 0) > 0 || (org.expenses || 0) > 0) && (
                           <p className={`text-xs font-medium ${((org.revenue || 0) - (org.expenses || 0)) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            P/L: {org.currency?.symbol || currencySymbol}{formatCurrency((org.revenue || 0) - (org.expenses || 0))}
+                            P/L: {formatCurrency((org.revenue || 0) - (org.expenses || 0), org.currency?.symbol || currencySymbol)}
                           </p>
                         )}
                       </div>

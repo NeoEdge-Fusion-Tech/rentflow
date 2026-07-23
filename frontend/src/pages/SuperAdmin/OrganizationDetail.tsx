@@ -43,6 +43,15 @@ export function OrganizationDetail() {
   const [newPassword, setNewPassword] = useState('');
   const [isSettingPassword, setIsSettingPassword] = useState(false);
 
+  const formatCurrency = (amount: number, symbol: string) => {
+    const isNegative = amount < 0;
+    const formattedAmount = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Math.abs(amount));
+    return `${isNegative ? '-' : ''}${symbol}${formattedAmount}`;
+  };
+
   useEffect(() => {
     fetchCurrentUser();
   }, []);
@@ -273,17 +282,21 @@ export function OrganizationDetail() {
               <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Revenue</p>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <span className="font-bold text-[var(--text-main)]">{org.currency?.symbol || currencySymbol}{Number(org.revenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="font-bold text-[var(--text-main)]">
+                  {formatCurrency(Number(org.revenue || 0), org.currency?.symbol || currencySymbol)}
+                </span>
               </div>
             </div>
             <div>
               <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Expenses</p>
-              <span className="font-bold text-[var(--text-main)]">{org.currency?.symbol || currencySymbol}{Number(org.expenses || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+              <span className="font-bold text-[var(--text-main)]">
+                {formatCurrency(Number(org.expenses || 0), org.currency?.symbol || currencySymbol)}
+              </span>
             </div>
             <div>
               <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Profit / Loss</p>
               <span className={`font-bold ${((org.revenue || 0) - (org.expenses || 0)) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {org.currency?.symbol || currencySymbol}{Number((org.revenue || 0) - (org.expenses || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                {formatCurrency(Number((org.revenue || 0) - (org.expenses || 0)), org.currency?.symbol || currencySymbol)}
               </span>
             </div>
           </div>
