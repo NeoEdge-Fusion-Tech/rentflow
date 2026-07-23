@@ -139,7 +139,7 @@ export function Payments() {
                       </span>
                     )}
                     {payment.invoice_number && (
-                      <Link to={`/invoices/${payment.invoice_record}`} className="text-sm text-brand-primary hover:text-brand-primary/80 font-medium flex items-center gap-1 group">
+                      <Link to={`/invoices/${payment.invoice_record}/preview`} className="text-sm text-brand-primary hover:text-brand-primary/80 font-medium flex items-center gap-1 group">
                         Invoice: {payment.invoice_number}
                         <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Link>
