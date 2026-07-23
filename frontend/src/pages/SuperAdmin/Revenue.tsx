@@ -45,7 +45,7 @@ export function Revenue() {
           </div>
           <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">Total SaaS Revenue</h3>
           <p className="text-2xl font-bold text-[var(--text-main)]">
-            ₦{metrics?.total_saas_revenue?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}
+            ₦{metrics?.total_revenue?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export function Revenue() {
           </div>
           <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">Estimated MRR</h3>
           <p className="text-2xl font-bold text-[var(--text-main)]">
-            ₦{metrics?.mrr?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}
+            ₦{metrics?.total_revenue?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}
           </p>
         </div>
       </div>
@@ -91,9 +91,9 @@ export function Revenue() {
             </thead>
             <tbody className="divide-y divide-[var(--border-soft)]">
               {metrics?.recent_payments?.map((payment: any) => (
-                <tr key={payment.id} className="hover:bg-[var(--bg-app)]">
-                  <td className="px-4 py-3 text-[var(--text-muted)]">{payment.id}</td>
-                  <td className="px-4 py-3 font-medium text-[var(--text-main)]">{payment.organization}</td>
+                <tr key={payment.subscription_payment_id || payment.id} className="hover:bg-[var(--bg-app)]">
+                  <td className="px-4 py-3 text-[var(--text-muted)]">{payment.subscription_payment_id || payment.id}</td>
+                  <td className="px-4 py-3 font-medium text-[var(--text-main)]">{payment.organization_name || payment.organization}</td>
                   <td className="px-4 py-3 font-medium text-[var(--text-main)]">{payment.amount}</td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">
@@ -101,7 +101,7 @@ export function Revenue() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[var(--text-muted)]">
-                    {payment.created_at ? format(new Date(payment.created_at), 'MMM d, yyyy') : '-'}
+                    {payment.payment_date || payment.created_at ? format(new Date(payment.payment_date || payment.created_at), 'MMM d, yyyy') : '-'}
                   </td>
                 </tr>
               ))}

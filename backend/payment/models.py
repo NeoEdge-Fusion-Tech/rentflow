@@ -99,6 +99,7 @@ class Invoice(models.Model):
     tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     notes = models.TextField(blank=True, null=True)
     paystack_reference = models.CharField(max_length=100, blank=True, null=True, unique=True)
 
@@ -113,6 +114,10 @@ class Invoice(models.Model):
         if not self.invoice_number:
             self.invoice_number = _next_document_number(Invoice, self.organization, 'invoice_number', 'INV')
         super().save(*args, **kwargs)
+
+    @property
+    def amount_left(self):
+        return max(0, self.total_amount - self.amount_paid)
 
 
 class InvoiceLineItem(models.Model):

@@ -219,6 +219,44 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         count, _ = Invoice.objects.filter(organization=org, status='cancelled').delete()
         return Response({"message": f"{count} invoices permanently deleted."}, status=200)
 
+    @action(detail=True, methods=['post'])
+    def record_payment(self, request, pk=None):
+        invoice = self.get_object()
+        amount = request.data.get('amount')
+        
+        try:
+            amount = float(amount)
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid amount."}, status=400)
+            
+        if amount <= 0:
+            return Response({"error": "Amount must be greater than zero."}, status=400)
+            
+        payment = Payment.objects.create(
+            invoice_record=invoice,
+            booking=invoice.booking,
+            organization=invoice.organization,
+            amount=amount,
+            status='completed',
+            payment_date=timezone.now(),
+            created_by=request.user
+        )
+        
+        invoice.amount_paid = float(invoice.amount_paid) + amount
+        if invoice.amount_paid >= invoice.total_amount:
+            invoice.status = 'paid'
+        invoice.save(update_fields=['amount_paid', 'status'])
+        
+        # update linked booking
+        if invoice.booking:
+            booking = invoice.booking
+            booking.amount_paid = float(booking.amount_paid) + amount
+            if booking.amount_paid >= booking.total_amount:
+                booking.payment_status = 'paid'
+            booking.save(update_fields=['amount_paid', 'payment_status'])
+            
+        return Response(InvoiceSerializer(invoice, context={'request': request}).data)
+
     @action(detail=False, methods=['get'])
     def prefill(self, request):
         """
@@ -577,16 +615,29 @@ class PaystackWebhookView(APIView):
             # 2. Try to resolve as an invoice payment link reference
             invoice = Invoice.objects.filter(paystack_reference=reference).first()
             if invoice and invoice.status != 'paid':
-                invoice.status = 'paid'
-                invoice.save(update_fields=['status'])
+                Payment.objects.create(
+                    invoice_record=invoice,
+                    booking=invoice.booking,
+                    organization=invoice.organization,
+                    amount=amount_paid,
+                    status='completed',
+                    payment_date=timezone.now(),
+                    invoice_id=reference
+                )
+                
+                invoice.amount_paid = float(invoice.amount_paid) + float(amount_paid)
+                if invoice.amount_paid >= invoice.total_amount:
+                    invoice.status = 'paid'
+                invoice.save(update_fields=['amount_paid', 'status'])
+                
                 # Also update the linked booking if present
                 if invoice.booking:
                     booking = invoice.booking
-                    if booking.payment_status != 'paid':
+                    booking.amount_paid = float(booking.amount_paid) + float(amount_paid)
+                    if booking.amount_paid >= booking.total_amount:
                         booking.payment_status = 'paid'
-                        booking.amount_paid = booking.total_amount
-                        booking.save(update_fields=['payment_status', 'amount_paid'])
-                logger.info(f"Invoice {invoice.invoice_number} marked paid via Paystack ref {reference}")
+                    booking.save(update_fields=['payment_status', 'amount_paid'])
+                logger.info(f"Invoice {invoice.invoice_number} received payment via Paystack ref {reference}")
                 return Response({"status": "success", "source": "invoice"}, status=200)
 
             # 2. Fall back to booking-based payment

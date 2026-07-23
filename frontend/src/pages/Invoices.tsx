@@ -264,6 +264,9 @@ export function Invoices() {
               <div className="text-right lg:min-w-[140px]">
                 <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">Total</p>
                 <p className="text-xl font-black text-[var(--text-main)]">{invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.total_amount)}</p>
+                {parseFloat(invoice.amount_paid) > 0 && invoice.status !== 'paid' && (
+                  <p className="text-xs text-emerald-600 font-bold mt-1">Paid: {invoice.currency_symbol || defaultCurrencySymbol}{formatCurrency(invoice.amount_paid)}</p>
+                )}
               </div>
 
               <div className="flex items-center gap-2 flex-wrap border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">

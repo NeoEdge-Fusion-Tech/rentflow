@@ -20,6 +20,7 @@ import { QuotationPreview } from './pages/QuotationPreview';
 import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
 import { TaskChecklist } from './pages/TaskChecklist';
+import { Support } from './pages/Support';
 import { Payments } from './pages/Payments';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
@@ -320,6 +321,7 @@ function AppLayout() {
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/:id" element={<EventDetail />} />
                 <Route path="/task-checklist" element={<TaskChecklist />} />
+                <Route path="/support" element={<Support />} />
                 <Route path="/payments" element={<Payments />} />
                 <Route path="/scanner" element={<Scanner />} />
                 <Route path="/settings" element={<Settings />} />

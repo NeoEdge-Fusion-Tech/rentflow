@@ -4,17 +4,17 @@ from rest_framework import permissions
 from rest_framework.decorators import action
 from django.utils import timezone
 from .models import OTP
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
-from .models import Organization, Subscription, SubscriptionPlan, OrganizationAccountDetails, BankAccount, User, Client, Vendor, Currency
-from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, VendorSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer
+from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Vendor, Currency, Feedback
+from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, VendorSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer, FeedbackSerializer
 from users.mixins import TenantIsolationMixin
 from .utils import send_verification_email, send_password_reset_email
 from rest_framework import status
-from payment.models import Payment
+from payment.models import Payment, Invoice
 
 class MeAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -145,6 +145,19 @@ class ChangePasswordAPIView(APIView):
             user.set_password(serializer.validated_data['new_password'])
             user.save()
             return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FeedbackAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(
+                user=request.user,
+                organization=request.user.organization if hasattr(request.user, 'organization') else None
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
@@ -278,7 +291,15 @@ class SuperAdminStatsAPIView(APIView):
         
         # Total Platform Revenue (global sum of amount_paid)
         platform_revenue_agg = Booking.objects.aggregate(total=Sum('amount_paid'))
-        platform_revenue = platform_revenue_agg['total'] or 0
+        booking_revenue = platform_revenue_agg['total'] or 0
+        
+        invoice_revenue_agg = Invoice.objects.filter(
+            status='paid',
+            booking__isnull=True
+        ).aggregate(total=Sum('total_amount'))
+        invoice_revenue = invoice_revenue_agg['total'] or 0
+        
+        platform_revenue = float(booking_revenue) + float(invoice_revenue)
         
         # Global booking volume
         active_bookings = Booking.objects.exclude(status__in=['returned', 'cancelled']).count()
@@ -299,9 +320,18 @@ class SuperAdminStatsAPIView(APIView):
             b_count = bookings_qs.count()
             p_agg = bookings_qs.aggregate(total_rev=Sum('amount_paid'))
             
+            inv_agg = Invoice.objects.filter(
+                created_at__gte=start,
+                created_at__lt=end,
+                status='paid',
+                booking__isnull=True
+            ).aggregate(total_rev=Sum('total_amount'))
+            
+            total_rev = float(p_agg['total_rev'] or 0) + float(inv_agg['total_rev'] or 0)
+            
             chart_data.append({
                 'name': start.strftime('%b'),
-                'revenue': float(p_agg['total_rev'] or 0),
+                'revenue': total_rev,
                 'bookings': b_count
             })
 

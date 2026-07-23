@@ -16,6 +16,9 @@ export function InvoicePreview() {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -77,6 +80,23 @@ export function InvoicePreview() {
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleRecordPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !paymentAmount) return;
+    setIsRecordingPayment(true);
+    try {
+      const res = await InvoiceService.recordPayment(id, { amount: parseFloat(paymentAmount) });
+      setInvoice(res.data);
+      setShowPaymentModal(false);
+      setPaymentAmount('');
+      showNotification('Payment recorded successfully', 'success');
+    } catch (err: any) {
+      showNotification(err.response?.data?.error || 'Failed to record payment', 'error');
+    } finally {
+      setIsRecordingPayment(false);
+    }
+  };
+
   const formatCurrency = (amount: number | string) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
     return (num || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -121,6 +141,17 @@ export function InvoicePreview() {
           <button onClick={handleDownload} className="px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg hover:bg-[var(--bg-app)] transition-colors text-sm flex items-center gap-1.5">
             <Download className="w-4 h-4" /> Download
           </button>
+          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+            <button
+              onClick={() => {
+                setPaymentAmount(invoice.amount_left || invoice.total_amount);
+                setShowPaymentModal(true);
+              }}
+              className="px-3 py-2 bg-emerald-500/10 text-emerald-600 font-bold rounded-lg hover:bg-emerald-500/20 transition-colors text-sm flex items-center gap-1.5"
+            >
+              <Check className="w-4 h-4" /> Record Payment
+            </button>
+          )}
           {invoice.status !== 'paid' && (
             <button
               onClick={handleGeneratePaymentLink}
@@ -157,6 +188,11 @@ export function InvoicePreview() {
             </button>
             {showMobileMenu && (
               <div className="absolute right-0 top-10 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl shadow-xl z-50 w-40 py-1">
+                {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                  <button onClick={() => { setShowMobileMenu(false); setPaymentAmount(invoice.amount_left || invoice.total_amount); setShowPaymentModal(true); }} className="w-full text-left px-4 py-2.5 text-sm text-emerald-600 hover:bg-[var(--bg-app)] flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4" /> Record Payment
+                  </button>
+                )}
                 <button onClick={() => navigate(`/invoices/new?duplicate_from=${invoice.invoice_id}`)} className="w-full text-left px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-app)] flex items-center gap-2">
                   <Copy className="w-4 h-4" /> Duplicate
                 </button>
@@ -310,13 +346,57 @@ export function InvoicePreview() {
                   </div>
                 )}
                 <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-300 pt-2.5 mt-1">
-                  <span>Total ({currencySymbol})</span>
+                  <span>Total</span>
                   <span>{currencySymbol}{formatCurrency(invoice.total_amount)}</span>
                 </div>
+                {parseFloat(invoice.amount_paid) > 0 && (
+                  <>
+                    <div className="flex justify-between text-emerald-600 font-medium pt-1">
+                      <span>Amount Paid</span>
+                      <span>-{currencySymbol}{formatCurrency(invoice.amount_paid)}</span>
+                    </div>
+                    <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-300 pt-2.5 mt-1">
+                      <span>Balance Due</span>
+                      <span>{currencySymbol}{formatCurrency(invoice.amount_left)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
+          {/* Payment History */}
+          {invoice.recorded_payments && invoice.recorded_payments.length > 0 && (
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <h3 className="font-bold text-gray-900 mb-4">Payment History</h3>
+              <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-gray-100 text-gray-600">
+                    <tr>
+                      <th className="py-2 px-4 font-medium">Date</th>
+                      <th className="py-2 px-4 font-medium">Amount</th>
+                      <th className="py-2 px-4 font-medium">Recorded By</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {invoice.recorded_payments.map((p: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="py-2 px-4 text-gray-800">
+                          {new Date(p.payment_date).toLocaleDateString()}
+                        </td>
+                        <td className="py-2 px-4 font-bold text-emerald-600">
+                          {currencySymbol}{formatCurrency(p.amount)}
+                        </td>
+                        <td className="py-2 px-4 text-gray-600">
+                          {p.created_by || 'System'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
@@ -384,6 +464,50 @@ export function InvoicePreview() {
             <p className="text-xs text-[var(--text-muted)] text-center">
               Once paid, this invoice will automatically be marked as <strong>Paid</strong>.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Record Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowPaymentModal(false)}>
+          <div
+            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] w-full max-w-sm p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-4">Record Payment</h3>
+            <form onSubmit={handleRecordPayment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-[var(--text-muted)] mb-1.5">Amount ({currencySymbol})</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={invoice.amount_left || invoice.total_amount}
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary"
+                  required
+                />
+                <p className="text-xs text-[var(--text-muted)] mt-1.5">Balance due: {currencySymbol}{formatCurrency(invoice.amount_left || invoice.total_amount)}</p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRecordingPayment}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                >
+                  {isRecordingPayment ? 'Saving...' : 'Record Payment'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

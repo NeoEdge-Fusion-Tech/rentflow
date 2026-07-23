@@ -121,6 +121,24 @@ class SubscriptionPlan(models.Model):
         return f"{self.name} (${self.price}/{self.billing_cycle})"
 
 
+class Feedback(models.Model):
+    TYPE_CHOICES = [
+        ('feedback', 'Product Feedback'),
+        ('contact', 'Contact Support'),
+        ('rating', 'App Rating'),
+    ]
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='feedbacks')
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='feedbacks', null=True, blank=True)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='feedback')
+    rating = models.PositiveIntegerField(null=True, blank=True)
+    subject = models.CharField(max_length=255, null=True, blank=True)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.type} by {self.user.email}"
+
+
 class Subscription(models.Model):
     organization = models.OneToOneField(Organization, on_delete=models.CASCADE, related_name='subscription')
     subscription_id = models.CharField(max_length=255, blank=True, null=True)

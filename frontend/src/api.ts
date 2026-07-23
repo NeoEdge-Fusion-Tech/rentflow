@@ -177,6 +177,8 @@ export const InvoiceService = {
   update: (id: number | string, data: any) => api.put(`/payment/invoices/${id}/`, data),
   patch: (id: number | string, data: any) => api.patch(`/payment/invoices/${id}/`, data),
   delete: (id: number | string) => api.delete(`/payment/invoices/${id}/`),
+  recordPayment: (id: number | string, data: { amount: number, notes?: string }) => 
+    api.post(`/payment/invoices/${id}/record_payment/`, data),
   download: (id: number | string) => api.get(`/payment/invoices/${id}/download/`, { responseType: 'blob' }),
   generatePaymentLink: (id: number | string) => api.post(`/payment/invoices/${id}/generate_payment_link/`),
   emptyTrash: () => api.delete('/payment/invoices/empty_trash/'),
@@ -290,4 +292,9 @@ export const SuperAdminService = {
   deleteUser: (id: number | string) => api.delete(`/users/superadmin/users/${id}/`),
   setPassword: (id: number | string, data: { new_password: string }) => api.post(`/users/superadmin/users/${id}/set_password/`, data),
   deactivateUser: (id: number | string) => api.post(`/users/superadmin/users/${id}/deactivate/`),
+};
+
+export const SupportService = {
+  submitFeedback: (data: { type: 'feedback' | 'contact' | 'rating'; rating?: number; subject?: string; message: string }) => 
+    api.post('/users/feedback/', data),
 };

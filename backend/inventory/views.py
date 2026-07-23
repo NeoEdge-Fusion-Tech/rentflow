@@ -17,9 +17,9 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import Sum, Q, Count, F
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from users.models import Client
+from users.models import Client, Vendor
 from users.mixins import TenantIsolationMixin
-from payment.models import Payment
+from payment.models import Payment, Invoice
 
 class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ProductCategory.objects.all()
@@ -262,10 +262,7 @@ class TenantStatsAPIView(APIView):
         # Active Bookings (Confirmed + Picked Up)
         active_bookings = booking_stats['confirmed'] + booking_stats['picked_up']
         
-        # Total Clients
-        total_clients = Client.objects.filter(organization_id=organization.id).count()
-        
-        # Monthly Revenue (sum of amount_paid for bookings created this month)
+        # Monthly Revenue (sum of amount_paid for bookings created this month + standalone paid invoices)
         today = timezone.now()
         start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
@@ -273,7 +270,21 @@ class TenantStatsAPIView(APIView):
             organization_id=organization.id,
             created_at__gte=start_of_month
         ).aggregate(total=Sum('amount_paid'))
-        monthly_revenue = revenue_agg['total'] or 0
+        booking_revenue = revenue_agg['total'] or 0
+        
+        invoice_revenue_agg = Invoice.objects.filter(
+            organization_id=organization.id,
+            created_at__gte=start_of_month,
+            status='paid',
+            booking__isnull=True
+        ).aggregate(total=Sum('total_amount'))
+        invoice_revenue = invoice_revenue_agg['total'] or 0
+        
+        monthly_revenue = float(booking_revenue) + float(invoice_revenue)
+        
+        # Total Clients and Vendors
+        total_clients = Client.objects.filter(organization_id=organization.id).count()
+        total_vendors = Vendor.objects.filter(organization_id=organization.id).count()
         
         # Chart Data
         chart_data = []
@@ -289,9 +300,19 @@ class TenantStatsAPIView(APIView):
             b_count = bookings_qs.count()
             p_agg = bookings_qs.aggregate(total_rev=Sum('amount_paid'))
             
+            inv_agg = Invoice.objects.filter(
+                organization_id=organization.id,
+                created_at__gte=start,
+                created_at__lt=end,
+                status='paid',
+                booking__isnull=True
+            ).aggregate(total_rev=Sum('total_amount'))
+            
+            total_rev = float(p_agg['total_rev'] or 0) + float(inv_agg['total_rev'] or 0)
+            
             chart_data.append({
                 'name': start.strftime('%b'),
-                'revenue': float(p_agg['total_rev'] or 0),
+                'revenue': total_rev,
                 'bookings': b_count
             })
             
@@ -309,6 +330,7 @@ class TenantStatsAPIView(APIView):
             'total_products': total_products,
             'active_bookings': active_bookings,
             'total_clients': total_clients,
+            'total_vendors': total_vendors,
             'monthly_revenue': float(monthly_revenue),
             'currency_symbol': organization.currency.symbol if organization.currency else '$',
             'chart_data': chart_data,

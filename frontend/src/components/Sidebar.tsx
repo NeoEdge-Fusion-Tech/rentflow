@@ -18,7 +18,8 @@ import {
   Truck,
   Briefcase,
   ListChecks,
-  ScanLine
+  ScanLine,
+  HelpCircle
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { cn } from '@/src/utils';
@@ -45,6 +46,7 @@ const navItems = [
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: QrCode, label: 'Scanner', path: '/scanner' },
   { icon: ScanLine, label: 'Validation App', path: '/validation' },
+  { icon: HelpCircle, label: 'Help & Support', path: '/support' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 

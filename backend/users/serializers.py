@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Vendor, Currency
+from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Vendor, Currency, Feedback
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -18,6 +18,11 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
         model = SubscriptionPlan
         fields = ['id', 'name', 'description', 'price', 'billing_cycle', 'max_invoices_per_month', 'max_inventory_booking_per_month', 'has_booking', 'has_invoice', 'is_free', 'is_active', 'created_at']
 
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ['id', 'user', 'organization', 'type', 'rating', 'subject', 'message', 'created_at']
+        read_only_fields = ['id', 'user', 'organization', 'created_at']
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -35,6 +35,8 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     organization_logo = serializers.SerializerMethodField()
     currency_symbol = serializers.SerializerMethodField()
+    amount_left = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    recorded_payments = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -42,10 +44,10 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             'invoice_id', 'booking', 'client', 'client_name', 'client_details', 'title', 'invoice_number',
             'issue_date', 'due_date', 'status', 'currency', 'currency_symbol', 'bank_account',
             'bank_account_details', 'show_bank_details', 'subtotal', 'discount_amount', 'discount_percentage',
-            'tax_percentage', 'tax_amount', 'total_amount', 'notes', 'line_items', 'organization_name',
-            'organization_logo'
+            'tax_percentage', 'tax_amount', 'total_amount', 'amount_paid', 'amount_left', 'notes', 'line_items', 'organization_name',
+            'organization_logo', 'recorded_payments'
         ]
-        read_only_fields = ['subtotal', 'tax_amount', 'total_amount']
+        read_only_fields = ['subtotal', 'tax_amount', 'total_amount', 'amount_paid', 'amount_left']
 
     def get_organization_logo(self, obj):
         if obj.organization and obj.organization.company_logo:
@@ -63,6 +65,16 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     def get_currency_symbol(self, obj):
         currency = obj.currency or (obj.organization.currency if obj.organization_id else None)
         return currency.symbol if currency else None
+
+    def get_recorded_payments(self, obj):
+        payments = obj.recorded_payments.filter(status='completed')
+        return [{
+            'payment_id': p.payment_id,
+            'amount': p.amount,
+            'payment_date': p.payment_date,
+            'receipt_id': p.receipt.receipt_number if hasattr(p, 'receipt') else None,
+            'created_by': p.created_by.get_full_name() if p.created_by else None
+        } for p in payments]
 
     def validate(self, data):
         client = data.get('client') or (self.instance.client if self.instance else None)

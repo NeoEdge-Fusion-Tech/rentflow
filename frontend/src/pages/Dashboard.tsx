@@ -205,8 +205,8 @@ export function Dashboard() {
               trend="up" 
             />
             <StatCard
-              title="Total Clients"
-              value={stats?.total_clients || 0}
+              title="Clients / Vendors"
+              value={`${stats?.total_clients || 0} / ${stats?.total_vendors || 0}`}
               change={0}
               icon={Users}
               trend="up"
