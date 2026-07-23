@@ -10,7 +10,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Wallet
+  Wallet,
+  Building2
 } from 'lucide-react';
 import {
   BarChart,
@@ -204,11 +205,18 @@ export function Dashboard() {
               icon={Calendar} 
               trend="up" 
             />
+            <StatCard 
+              title="Total Clients" 
+              value={stats?.total_clients || 0} 
+              change={0} 
+              icon={Users} 
+              trend="up" 
+            />
             <StatCard
-              title="Clients / Vendors"
-              value={`${stats?.total_clients || 0} / ${stats?.total_vendors || 0}`}
+              title="Total Vendors"
+              value={stats?.total_vendors || 0}
               change={0}
-              icon={Users}
+              icon={Building2}
               trend="up"
             />
           </>

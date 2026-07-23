@@ -381,18 +381,33 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         from django.db import models
-        from django.db.models import Sum, Q, Count, Value
+        from django.db.models import Sum, Q, Count, Value, Subquery, OuterRef
         from django.db.models.functions import Coalesce
+        from payment.models import Invoice
+        from events.models import ExpenseLineItem
+
         # Exclude deleted organizations by default unless specifically requested
         qs = super().get_queryset()
         if self.request.query_params.get('include_deleted') != 'true':
             qs = qs.filter(is_deleted=False)
             
+        revenue_subquery = Invoice.objects.filter(
+            organization=OuterRef('pk')
+        ).values('organization').annotate(
+            total=Sum('total_amount')
+        ).values('total')
+
+        expenses_subquery = ExpenseLineItem.objects.filter(
+            organization=OuterRef('pk')
+        ).values('organization').annotate(
+            total=Sum('amount')
+        ).values('total')
+
         qs = qs.annotate(
             total_bookings=Count('bookings', distinct=True),
             total_invoices=Count('invoices', distinct=True),
-            revenue=Coalesce(Sum('payments__amount', filter=Q(payments__status='completed')), Value(0), output_field=models.DecimalField()),
-            expenses=Coalesce(Sum('expense_items__amount'), Value(0), output_field=models.DecimalField())
+            revenue=Coalesce(Subquery(revenue_subquery), Value(0), output_field=models.DecimalField()),
+            expenses=Coalesce(Subquery(expenses_subquery), Value(0), output_field=models.DecimalField())
         )
         return qs
 
