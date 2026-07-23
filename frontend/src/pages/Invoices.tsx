@@ -175,6 +175,7 @@ export function Invoices() {
     total: invoices.length,
     draft: invoices.filter(i => i.status === 'draft').length,
     issued: invoices.filter(i => i.status === 'issued').length,
+    partially_paid: invoices.filter(i => i.status === 'partially_paid').length,
     paid: invoices.filter(i => i.status === 'paid').length,
   };
 
@@ -202,11 +203,12 @@ export function Invoices() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 mb-2">
         {[
           { label: 'Total', value: counts.total, color: 'slate' },
           { label: 'Draft', value: counts.draft, color: 'amber' },
           { label: 'Issued', value: counts.issued, color: 'blue' },
+          { label: 'Partial', value: counts.partially_paid, color: 'amber' },
           { label: 'Paid', value: counts.paid, color: 'emerald' },
         ].map((s, idx) => (
           <div key={idx} className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-soft)] shadow-sm hover:shadow-md transition-all">
@@ -218,7 +220,7 @@ export function Invoices() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px overflow-x-auto">
-        {['All', 'draft', 'issued', 'paid', 'Trash'].map((tab) => (
+        {['All', 'draft', 'issued', 'partially_paid', 'paid', 'Trash'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -227,7 +229,7 @@ export function Invoices() {
               activeTab === tab ? "text-[var(--text-link)]" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
             )}
           >
-            {tab}
+            {tab.replace('_', ' ')}
             {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--text-link)] rounded-full" />}
           </button>
         ))}
