@@ -12,7 +12,9 @@ import {
   Calendar,
   CheckCircle,
   Eye,
-  Copy
+  Copy,
+  CreditCard,
+  X
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
