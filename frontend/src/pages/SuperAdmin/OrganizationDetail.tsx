@@ -236,34 +236,56 @@ export function OrganizationDetail() {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Status</p>
-          <div className="flex items-center gap-2">
-            {org.is_active ? (
-              <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> <span className="font-bold text-emerald-500">Active</span></>
-            ) : (
-              <><XCircle className="w-4 h-4 text-rose-500" /> <span className="font-bold text-rose-500">Deactivated</span></>
-            )}
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Status & Plan</p>
+          <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex items-center gap-2">
+              {org.is_active ? (
+                <><CheckCircle2 className="w-4 h-4 text-emerald-500" /> <span className="text-sm font-bold text-emerald-500">Active</span></>
+              ) : (
+                <><XCircle className="w-4 h-4 text-rose-500" /> <span className="text-sm font-bold text-rose-500">Deactivated</span></>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-brand-primary" />
+              <span className="text-sm font-bold text-[var(--text-main)]">{org.subscription?.plan_name || 'Free Plan'}</span>
+            </div>
           </div>
         </div>
+        
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Plan</p>
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-brand-primary" />
-            <span className="font-bold text-[var(--text-main)]">{org.subscription?.plan_name || 'Free'}</span>
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Activity (All Time)</p>
+          <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-500" />
+              <span className="text-sm font-bold text-[var(--text-main)]">{org.total_bookings || 0} Bookings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-emerald-500" />
+              <span className="text-sm font-bold text-[var(--text-main)]">{org.total_invoices || 0} Invoices</span>
+            </div>
           </div>
         </div>
-        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Total Bookings</p>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-indigo-500" />
-            <span className="font-bold text-[var(--text-main)]">{stats?.total_bookings || 0}</span>
-          </div>
-        </div>
-        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Revenue</p>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
-            <span className="font-bold text-[var(--text-main)]">{currencySymbol}{stats?.monthly_revenue?.toLocaleString() || '0.00'}</span>
+
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm md:col-span-2">
+          <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Financials (All Time)</p>
+          <div className="flex items-center justify-between mt-2">
+            <div>
+              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Revenue</p>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <span className="font-bold text-[var(--text-main)]">{org.currency?.symbol || currencySymbol}{Number(org.revenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Expenses</p>
+              <span className="font-bold text-[var(--text-main)]">{org.currency?.symbol || currencySymbol}{Number(org.expenses || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+            </div>
+            <div>
+              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Profit / Loss</p>
+              <span className={`font-bold ${((org.revenue || 0) - (org.expenses || 0)) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {org.currency?.symbol || currencySymbol}{Number((org.revenue || 0) - (org.expenses || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
+              </span>
+            </div>
           </div>
         </div>
       </div>

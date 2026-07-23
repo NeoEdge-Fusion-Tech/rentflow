@@ -52,10 +52,12 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     )
     revenue = serializers.SerializerMethodField()
     total_bookings = serializers.SerializerMethodField()
+    total_invoices = serializers.SerializerMethodField()
+    expenses = serializers.SerializerMethodField()
     
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'company_logo', 'address', 'phone_number', 'email', 'tax_id', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'primary_color', 'is_active', 'created_at', 'revenue', 'total_bookings']
+        fields = ['id', 'name', 'company_logo', 'address', 'phone_number', 'email', 'tax_id', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'primary_color', 'is_active', 'created_at', 'revenue', 'total_bookings', 'total_invoices', 'expenses']
         read_only_fields = ['created_at']
 
     def get_revenue(self, obj):
@@ -63,6 +65,12 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
 
     def get_total_bookings(self, obj):
         return getattr(obj, 'total_bookings', 0)
+
+    def get_total_invoices(self, obj):
+        return getattr(obj, 'total_invoices', 0)
+
+    def get_expenses(self, obj):
+        return getattr(obj, 'expenses', 0.00)
 
 class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_id = serializers.IntegerField(source='organization.id', read_only=True)

@@ -9,7 +9,8 @@ import {
   Calendar,
   Users,
   ShieldCheck,
-  Filter
+  Filter,
+  FileText
 } from 'lucide-react';
 import { SuperAdminService } from '../../api';
 
@@ -132,7 +133,7 @@ export function Organizations() {
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Organization</th>
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan</th>
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Activity</th>
-                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Revenue</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Financials</th>
                 <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Joined</th>
                 <th className="px-6 py-4"></th>
               </tr>
@@ -181,13 +182,28 @@ export function Organizations() {
                           <span>{org.total_bookings || 0} Bookings</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                          <Users className="w-3 h-3" />
-                          <span>Active Clients</span>
+                          <FileText className="w-3 h-3" />
+                          <span>{org.total_invoices || 0} Invoices</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-[var(--text-main)]">{org.currency?.symbol || currencySymbol}{formatCurrency(org.revenue || 0)}</p>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="font-bold text-[var(--text-main)] text-sm">
+                          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">Revenue</span>
+                          {org.currency?.symbol || currencySymbol}{formatCurrency(org.revenue || 0)}
+                        </p>
+                        {(org.expenses || 0) > 0 && (
+                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                            Exp: {org.currency?.symbol || currencySymbol}{formatCurrency(org.expenses)}
+                          </p>
+                        )}
+                        {((org.revenue || 0) > 0 || (org.expenses || 0) > 0) && (
+                          <p className={`text-xs font-medium ${((org.revenue || 0) - (org.expenses || 0)) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            P/L: {org.currency?.symbol || currencySymbol}{formatCurrency((org.revenue || 0) - (org.expenses || 0))}
+                          </p>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-sm text-[var(--text-muted)]">
