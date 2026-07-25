@@ -125,11 +125,12 @@ export function PublicFeedback() {
     <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center py-12 px-4">
       <div className="w-full max-w-2xl">
         <div className="bg-[var(--bg-surface)] p-8 rounded-t-3xl border-b-[8px] border-brand-primary shadow-sm mb-6 text-center">
-          {projectFeedback.event_details?.organization_logo ? (
-            <img src={projectFeedback.event_details.organization_logo} alt={projectFeedback.event_details.organization_name} className="h-16 mx-auto mb-6 object-contain" />
-          ) : (
-            <div className="text-xl font-black text-[var(--text-main)] mb-6 opacity-80">{projectFeedback.event_details?.organization_name}</div>
-          )}
+          <div className="flex flex-col items-center justify-center mb-6">
+            {projectFeedback.event_details?.organization_logo && (
+              <img src={projectFeedback.event_details.organization_logo} alt={projectFeedback.event_details.organization_name} className="h-16 mb-3 object-contain" />
+            )}
+            <div className="text-xl font-black text-[var(--text-main)] opacity-90">{projectFeedback.event_details?.organization_name}</div>
+          </div>
           
           <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">{projectFeedback.form.title}</h1>
           
