@@ -211,13 +211,26 @@ export function EventDetail() {
     e.preventDefault();
     if (!id || !selectedForm) return;
     try {
-      await ProjectFeedbackService.create({ event_id: parseInt(id), form_id: parseInt(selectedForm) });
+      const res = await ProjectFeedbackService.create({ event_id: parseInt(id), form_id: parseInt(selectedForm) });
+      setProjectFeedbacks(prev => [...prev, res.data]);
       setIsAttachFeedbackOpen(false);
       showNotification("Feedback form attached", 'success');
       fetchProjectFeedbacks();
     } catch (err) {
       console.error(err);
       showNotification("Failed to attach feedback form", 'error');
+    }
+  };
+
+  const handleRemoveFeedback = async (pfId: number) => {
+    if (!window.confirm("Are you sure you want to remove this feedback form from the project?")) return;
+    try {
+      await ProjectFeedbackService.delete(pfId);
+      setProjectFeedbacks(prev => prev.filter(pf => pf.id !== pfId));
+      showNotification("Feedback form removed.", "success");
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to remove feedback form.", "error");
     }
   };
 
@@ -403,8 +416,11 @@ export function EventDetail() {
                     <button onClick={() => handleViewResponses(pf)} className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary mr-4 transition-colors">
                       View Responses
                     </button>
-                    <button onClick={() => copyPublicLink(pf.public_id)} className="text-sm font-bold text-brand-primary hover:underline">
+                    <button onClick={() => copyPublicLink(pf.public_id)} className="text-sm font-bold text-brand-primary hover:underline mr-4">
                       Copy Link
+                    </button>
+                    <button onClick={() => handleRemoveFeedback(pf.id)} className="text-sm font-bold text-rose-500 hover:underline">
+                      Remove
                     </button>
                   </div>
                 </div>
