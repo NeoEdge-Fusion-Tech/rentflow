@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, IntegrityError, transaction
 from django.conf import settings
 from django.utils import timezone
 from inventory.models import Booking
@@ -114,8 +114,20 @@ class Invoice(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
-            self.invoice_number = _next_document_number(Invoice, self.organization, 'invoice_number', 'INV')
-        super().save(*args, **kwargs)
+            max_retries = 3
+            for attempt in range(max_retries):
+                self.invoice_number = _next_document_number(Invoice, self.organization, 'invoice_number', 'INV')
+                try:
+                    with transaction.atomic():
+                        super().save(*args, **kwargs)
+                    break
+                except IntegrityError as e:
+                    if 'invoice_number' in str(e) and attempt < max_retries - 1:
+                        self.invoice_number = None
+                        continue
+                    raise
+        else:
+            super().save(*args, **kwargs)
 
     @property
     def amount_left(self):
