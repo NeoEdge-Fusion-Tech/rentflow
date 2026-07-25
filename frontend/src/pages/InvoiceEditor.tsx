@@ -346,12 +346,20 @@ export function InvoiceEditor() {
               <Download className="w-4 h-4" /> PDF
             </button>
           )}
-          <button onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
-            Save Draft
-          </button>
-          <button onClick={() => handleSave('issued')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
-            {isSaving ? 'Saving...' : 'Save & Issue'}
-          </button>
+          {!isEditMode ? (
+            <>
+              <button onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
+                Save Draft
+              </button>
+              <button onClick={() => handleSave('issued')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
+                {isSaving ? 'Saving...' : 'Save & Issue'}
+              </button>
+            </>
+          ) : (
+            <button onClick={() => handleSave()} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          )}
         </div>
       </div>
 
