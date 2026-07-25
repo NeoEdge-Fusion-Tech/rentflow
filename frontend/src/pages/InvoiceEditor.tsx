@@ -407,12 +407,31 @@ export function InvoiceEditor() {
 
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Event / Job Date</label>
                 <input
                   type="date"
-                  value={formData.event_date}
+                  value={formData.event_date || ''}
                   onChange={e => setFormData({ ...formData, event_date: e.target.value })}
+                  className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                />
+              </div>
+              <div className="hidden sm:block"></div>
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Issue Date</label>
+                <input
+                  type="date"
+                  value={formData.issue_date || ''}
+                  onChange={e => setFormData({ ...formData, issue_date: e.target.value })}
+                  className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Due Date</label>
+                <input
+                  type="date"
+                  value={formData.due_date || ''}
+                  onChange={e => setFormData({ ...formData, due_date: e.target.value })}
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 />
               </div>
