@@ -133,3 +133,44 @@ export interface Invoice {
   issue_date: string;
   organization_name?: string;
 }
+
+export interface FeedbackQuestion {
+  id?: number;
+  question_text: string;
+  question_type: 'TEXT' | 'RATING' | 'BOOLEAN';
+  position: number;
+}
+
+export interface FeedbackForm {
+  id: number;
+  title: string;
+  description?: string;
+  questions?: FeedbackQuestion[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProjectFeedback {
+  id: number;
+  event_id: number;
+  form: FeedbackForm;
+  public_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface FeedbackAnswer {
+  question: number;
+  answer_text?: string;
+  answer_rating?: number;
+  answer_boolean?: boolean;
+}
+
+export interface FeedbackResponse {
+  id?: number;
+  project_feedback: number;
+  client_name?: string;
+  client_email?: string;
+  submitted_at?: string;
+  answers: FeedbackAnswer[];
+}

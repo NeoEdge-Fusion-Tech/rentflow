@@ -50,6 +50,8 @@ import { NotificationService, AuthService } from './api';
 import { useTheme } from './context/ThemeContext';
 import { useNotification } from './context/NotificationContext';
 
+import { FeedbackForms } from './pages/FeedbackForms';
+import { PublicFeedback } from './pages/PublicFeedback';
 import { Landing } from './pages/Landing';
 import { Footer } from './components/Footer';
 
@@ -67,7 +69,7 @@ function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isAuthRoute = ['/', '/login', '/register', '/onboarding', '/verify-email', '/forgot-password', '/reset-password'].includes(location.pathname);
+  const isAuthRoute = ['/', '/login', '/register', '/onboarding', '/verify-email', '/forgot-password', '/reset-password'].includes(location.pathname) || location.pathname.startsWith('/f/');
 
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -164,6 +166,7 @@ function AppLayout() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/f/:uuid" element={<PublicFeedback />} />
           </Routes>
         </div>
         {location.pathname !== '/' && <Footer />}
@@ -320,6 +323,7 @@ function AppLayout() {
                 <Route path="/quotations/:id/preview" element={<QuotationPreview />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/:id" element={<EventDetail />} />
+                <Route path="/feedback-forms" element={<FeedbackForms />} />
                 <Route path="/task-checklist" element={<TaskChecklist />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/payments" element={<Payments />} />

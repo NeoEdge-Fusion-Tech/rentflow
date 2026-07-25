@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
-import { EventService, ExpenseService, VendorService, InvoiceService } from '../api';
+import { EventService, ExpenseService, VendorService, InvoiceService, ProjectFeedbackService, FeedbackService } from '../api';
 
 export function EventDetail() {
   const { id } = useParams();
@@ -48,6 +48,12 @@ export function EventDetail() {
     description: '',
   });
 
+  // Feedback
+  const [projectFeedbacks, setProjectFeedbacks] = useState<any[]>([]);
+  const [availableForms, setAvailableForms] = useState<any[]>([]);
+  const [isAttachFeedbackOpen, setIsAttachFeedbackOpen] = useState(false);
+  const [selectedForm, setSelectedForm] = useState<string>('');
+
   const fetchEvent = async () => {
     if (!id) return;
     try {
@@ -74,14 +80,24 @@ export function EventDetail() {
     } catch (e) { console.error(e); }
   };
 
+  const fetchProjectFeedbacks = async () => {
+    if (!id) return;
+    try {
+      const res = await ProjectFeedbackService.getAll({ event: id });
+      setProjectFeedbacks(res.data.results || res.data);
+    } catch (e) { console.error(e); }
+  };
+
   useEffect(() => {
     (async () => {
       setIsLoading(true);
       await Promise.all([
         fetchEvent(),
         fetchExpenses(),
+        fetchProjectFeedbacks(),
         VendorService.getAll().then(res => setVendors(res.data.results || res.data)).catch(console.error),
         InvoiceService.getAll().then(res => setInvoices(res.data.results || res.data)).catch(console.error),
+        FeedbackService.getForms().then(res => setAvailableForms(res.data.results || res.data)).catch(console.error),
       ]);
       setIsLoading(false);
     })();
@@ -184,6 +200,27 @@ export function EventDetail() {
         }
       }
     });
+  };
+
+  // --- Feedback ---
+  const handleAttachFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !selectedForm) return;
+    try {
+      await ProjectFeedbackService.create({ event_id: parseInt(id), form_id: parseInt(selectedForm) });
+      setIsAttachFeedbackOpen(false);
+      showNotification("Feedback form attached", 'success');
+      fetchProjectFeedbacks();
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to attach feedback form", 'error');
+    }
+  };
+
+  const copyPublicLink = (publicId: string) => {
+    const url = `${window.location.origin}/f/${publicId}`;
+    navigator.clipboard.writeText(url);
+    showNotification("Public link copied to clipboard", "success");
   };
 
   if (isLoading || !event) {
@@ -322,6 +359,39 @@ export function EventDetail() {
         )}
       </div>
 
+      {/* Feedback Section */}
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">Client Feedback Forms</h3>
+          <button onClick={() => setIsAttachFeedbackOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary">
+            <Plus className="w-3 h-3" /> Attach Form
+          </button>
+        </div>
+
+        {projectFeedbacks.length === 0 ? (
+          <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
+            No feedback forms attached to this project.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {projectFeedbacks.map((pf: any) => (
+              <div key={pf.id} className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm">
+                <h4 className="font-bold text-[var(--text-main)] mb-1 truncate">{pf.form?.title || 'Unknown Form'}</h4>
+                <p className="text-xs text-[var(--text-muted)] mb-3">Created: {new Date(pf.created_at).toLocaleDateString()}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md">
+                    Active Link
+                  </span>
+                  <button onClick={() => copyPublicLink(pf.public_id)} className="text-sm font-bold text-brand-primary hover:underline">
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Edit Project Modal */}
       {isEditOpen && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
@@ -429,6 +499,38 @@ export function EventDetail() {
                 <button type="button" onClick={() => { setIsAddExpenseOpen(false); setEditingExpense(null); }} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
                 <button type="submit" disabled={isExpenseSaving} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   {isExpenseSaving ? 'Saving...' : (editingExpense ? 'Save Changes' : 'Add Expense')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Attach Feedback Modal */}
+      {isAttachFeedbackOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">Attach Feedback Form</h2>
+              <button onClick={() => setIsAttachFeedbackOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAttachFeedback} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">Select Template <span className="text-rose-500">*</span></label>
+                <select required value={selectedForm} onChange={e => setSelectedForm(e.target.value)} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
+                  <option value="">Select a form...</option>
+                  {availableForms.map((f: any) => (
+                    <option key={f.id} value={f.id}>{f.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsAttachFeedbackOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
+                <button type="submit" disabled={!selectedForm} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  Attach
                 </button>
               </div>
             </form>

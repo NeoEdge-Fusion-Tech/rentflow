@@ -298,3 +298,24 @@ export const SupportService = {
   submitFeedback: (data: { type: 'feedback' | 'contact' | 'rating'; rating?: number; subject?: string; message: string }) => 
     api.post('/users/feedback/', data),
 };
+
+export const FeedbackService = {
+  getForms: (params?: any) => api.get('/feedback/forms/', { params }),
+  getForm: (id: number | string) => api.get(`/feedback/forms/${id}/`),
+  createForm: (data: any) => api.post('/feedback/forms/', data),
+  updateForm: (id: number | string, data: any) => api.put(`/feedback/forms/${id}/`, data),
+  deleteForm: (id: number | string) => api.delete(`/feedback/forms/${id}/`),
+};
+
+export const ProjectFeedbackService = {
+  getAll: (params?: any) => api.get('/feedback/project-feedbacks/', { params }),
+  get: (id: number | string) => api.get(`/feedback/project-feedbacks/${id}/`),
+  create: (data: any) => api.post('/feedback/project-feedbacks/', data),
+  delete: (id: number | string) => api.delete(`/feedback/project-feedbacks/${id}/`),
+  getResponses: (id: number | string) => api.get(`/feedback/project-feedbacks/${id}/responses/`),
+};
+
+export const PublicFeedbackService = {
+  getForm: (uuid: string) => api.get(`/feedback/public/${uuid}/`),
+  submitResponse: (data: any) => api.post('/feedback/public/', data),
+};

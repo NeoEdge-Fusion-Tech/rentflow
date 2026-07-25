@@ -1,0 +1,225 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { PublicFeedbackService } from '../api';
+import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ProjectFeedback, FeedbackQuestion } from '../types';
+
+export function PublicFeedback() {
+  const { uuid } = useParams<{ uuid: string }>();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [projectFeedback, setProjectFeedback] = useState<ProjectFeedback | null>(null);
+  
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  
+  // Mapping of question ID to answer
+  const [answers, setAnswers] = useState<Record<number, any>>({});
+
+  useEffect(() => {
+    if (uuid) {
+      fetchForm(uuid);
+    }
+  }, [uuid]);
+
+  const fetchForm = async (id: string) => {
+    try {
+      setLoading(true);
+      const res = await PublicFeedbackService.getForm(id);
+      setProjectFeedback(res.data);
+      
+      // Initialize answers
+      const initialAnswers: Record<number, any> = {};
+      res.data.form.questions?.forEach((q: FeedbackQuestion) => {
+        if (q.id) {
+          if (q.question_type === 'TEXT') initialAnswers[q.id] = '';
+          else if (q.question_type === 'RATING') initialAnswers[q.id] = 0;
+          else if (q.question_type === 'BOOLEAN') initialAnswers[q.id] = null;
+        }
+      });
+      setAnswers(initialAnswers);
+    } catch (e) {
+      setError('Form not found or is no longer active.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswerChange = (questionId: number, value: any) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectFeedback) return;
+    
+    // Format answers array
+    const formattedAnswers = Object.entries(answers).map(([qId, val]) => {
+      const q = projectFeedback.form.questions?.find(question => question.id === parseInt(qId));
+      if (!q) return null;
+      
+      return {
+        question: parseInt(qId),
+        answer_text: q.question_type === 'TEXT' ? val : null,
+        answer_rating: q.question_type === 'RATING' ? val : null,
+        answer_boolean: q.question_type === 'BOOLEAN' ? val : null,
+      };
+    }).filter(Boolean);
+
+    try {
+      setSubmitting(true);
+      await PublicFeedbackService.submitResponse({
+        project_feedback: projectFeedback.id,
+        client_name: clientName,
+        client_email: clientEmail,
+        answers: formattedAnswers
+      });
+      setSuccess(true);
+    } catch (e) {
+      setError('An error occurred while submitting your feedback. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+      </div>
+    );
+  }
+
+  if (error || !projectFeedback) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center p-4">
+        <div className="bg-[var(--bg-surface)] p-8 rounded-2xl max-w-md w-full text-center border border-[var(--border-soft)] shadow-xl">
+          <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-rose-500" />
+          </div>
+          <h1 className="text-xl font-bold text-[var(--text-main)] mb-2">Oops!</h1>
+          <p className="text-[var(--text-muted)]">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center p-4">
+        <div className="bg-[var(--bg-surface)] p-8 rounded-2xl max-w-md w-full text-center border border-[var(--border-soft)] shadow-xl">
+          <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-[var(--text-main)] mb-2">Thank You!</h1>
+          <p className="text-[var(--text-muted)]">Your feedback has been successfully submitted and helps us improve our services.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center py-12 px-4">
+      <div className="w-full max-w-2xl">
+        <div className="bg-[var(--bg-surface)] p-8 rounded-t-3xl border-b-[8px] border-brand-primary shadow-sm mb-6 text-center">
+          <h1 className="text-3xl font-bold text-[var(--text-main)] mb-4">{projectFeedback.form.title}</h1>
+          {projectFeedback.form.description && (
+            <p className="text-[var(--text-muted)]">{projectFeedback.form.description}</p>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-[var(--bg-surface)] p-6 md:p-8 rounded-2xl shadow-sm border border-[var(--border-soft)]">
+            <h2 className="text-lg font-bold mb-4">Your Information (Optional)</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Name</label>
+                <input 
+                  type="text" 
+                  value={clientName} 
+                  onChange={e => setClientName(e.target.value)}
+                  className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)]"
+                  placeholder="Your Name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Email</label>
+                <input 
+                  type="email" 
+                  value={clientEmail} 
+                  onChange={e => setClientEmail(e.target.value)}
+                  className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)]"
+                  placeholder="your.email@example.com"
+                />
+              </div>
+            </div>
+          </div>
+
+          {projectFeedback.form.questions?.map((q, idx) => (
+            <div key={q.id} className="bg-[var(--bg-surface)] p-6 md:p-8 rounded-2xl shadow-sm border border-[var(--border-soft)]">
+              <label className="block font-medium text-[var(--text-main)] mb-4 text-lg">
+                <span className="text-brand-primary font-bold mr-2">{idx + 1}.</span> 
+                {q.question_text}
+              </label>
+              
+              {q.question_type === 'TEXT' && (
+                <textarea 
+                  value={answers[q.id!] || ''}
+                  onChange={e => handleAnswerChange(q.id!, e.target.value)}
+                  required
+                  className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] min-h-[120px]"
+                  placeholder="Type your answer here..."
+                />
+              )}
+
+              {q.question_type === 'RATING' && (
+                <div className="flex gap-2 text-2xl">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => handleAnswerChange(q.id!, star)}
+                      className={`transition-colors ${answers[q.id!] >= star ? 'text-amber-400' : 'text-[var(--border-soft)] hover:text-amber-400/50'}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {q.question_type === 'BOOLEAN' && (
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleAnswerChange(q.id!, true)}
+                    className={`flex-1 py-3 px-4 rounded-xl border font-medium transition-colors ${answers[q.id!] === true ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-[var(--border-soft)] text-[var(--text-muted)] hover:bg-[var(--bg-app)]'}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAnswerChange(q.id!, false)}
+                    className={`flex-1 py-3 px-4 rounded-xl border font-medium transition-colors ${answers[q.id!] === false ? 'border-rose-500 bg-rose-500/10 text-rose-500' : 'border-[var(--border-soft)] text-[var(--text-muted)] hover:bg-[var(--bg-app)]'}`}
+                  >
+                    No
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button 
+            type="submit" 
+            disabled={submitting}
+            className="w-full py-4 bg-brand-primary text-white font-bold rounded-2xl hover:opacity-90 shadow-xl shadow-brand-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Feedback'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

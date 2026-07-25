@@ -19,7 +19,8 @@ import {
   Briefcase,
   ListChecks,
   ScanLine,
-  HelpCircle
+  HelpCircle,
+  MessageSquare
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { cn } from '@/src/utils';
@@ -42,6 +43,7 @@ const navItems = [
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: FileSpreadsheet, label: 'Quotations', path: '/quotations' },
   { icon: Briefcase, label: 'Projects', path: '/events' },
+  { icon: MessageSquare, label: 'Feedback Forms', path: '/feedback-forms' },
   { icon: ListChecks, label: 'Task Checklist', path: '/task-checklist' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: QrCode, label: 'Scanner', path: '/scanner' },

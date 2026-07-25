@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'payment',
     'events',
     'notification',
+    'feedback',
     'django_filters',
     'cloudinary_storage',
     'cloudinary',
