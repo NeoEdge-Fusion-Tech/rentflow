@@ -125,9 +125,29 @@ export function PublicFeedback() {
     <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center py-12 px-4">
       <div className="w-full max-w-2xl">
         <div className="bg-[var(--bg-surface)] p-8 rounded-t-3xl border-b-[8px] border-brand-primary shadow-sm mb-6 text-center">
-          <h1 className="text-3xl font-bold text-[var(--text-main)] mb-4">{projectFeedback.form.title}</h1>
+          {projectFeedback.event_details?.organization_logo ? (
+            <img src={projectFeedback.event_details.organization_logo} alt={projectFeedback.event_details.organization_name} className="h-16 mx-auto mb-6 object-contain" />
+          ) : (
+            <div className="text-xl font-black text-[var(--text-main)] mb-6 opacity-80">{projectFeedback.event_details?.organization_name}</div>
+          )}
+          
+          <h1 className="text-3xl font-bold text-[var(--text-main)] mb-2">{projectFeedback.form.title}</h1>
+          
+          {projectFeedback.event_details && (
+            <div className="text-sm font-medium text-[var(--text-muted)] mb-4 bg-[var(--bg-app)] inline-block px-4 py-2 rounded-xl">
+              <span className="font-bold text-[var(--text-main)]">{projectFeedback.event_details.name}</span>
+              {(projectFeedback.event_details.start_date || projectFeedback.event_details.end_date) && (
+                <span className="ml-2 border-l border-[var(--border-soft)] pl-2">
+                  {projectFeedback.event_details.start_date && new Date(projectFeedback.event_details.start_date).toLocaleDateString()}
+                  {projectFeedback.event_details.start_date && projectFeedback.event_details.end_date && ' - '}
+                  {projectFeedback.event_details.end_date && new Date(projectFeedback.event_details.end_date).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          )}
+
           {projectFeedback.form.description && (
-            <p className="text-[var(--text-muted)]">{projectFeedback.form.description}</p>
+            <p className="text-[var(--text-muted)] mt-2">{projectFeedback.form.description}</p>
           )}
         </div>
 

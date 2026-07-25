@@ -45,9 +45,29 @@ class ProjectFeedbackSerializer(serializers.ModelSerializer):
         queryset=Event.objects.all(), source='event', write_only=True
     )
     
+    event_details = serializers.SerializerMethodField()
+
     class Meta:
         model = ProjectFeedback
-        fields = ['id', 'event_id', 'form', 'form_id', 'public_id', 'is_active', 'created_at']
+        fields = ['id', 'event_id', 'form', 'form_id', 'public_id', 'is_active', 'created_at', 'event_details']
+
+    def get_event_details(self, obj):
+        logo = obj.event.organization.company_logo
+        logo_url = logo.url if logo else None
+        
+        # If local development, we might need absolute URL, but usually front-end can prepend backend URL if it's relative.
+        # But if it's cloudinary/S3, it will be absolute. Let's just return the URL.
+        request = self.context.get('request')
+        if logo_url and not logo_url.startswith('http') and request:
+            logo_url = request.build_absolute_uri(logo_url)
+
+        return {
+            'name': obj.event.name,
+            'start_date': obj.event.start_date,
+            'end_date': obj.event.end_date,
+            'organization_logo': logo_url,
+            'organization_name': obj.event.organization.name,
+        }
 
 class FeedbackAnswerSerializer(serializers.ModelSerializer):
     class Meta:

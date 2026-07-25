@@ -157,6 +157,13 @@ export interface ProjectFeedback {
   public_id: string;
   is_active: boolean;
   created_at: string;
+  event_details?: {
+    name: string;
+    start_date?: string;
+    end_date?: string;
+    organization_logo?: string;
+    organization_name: string;
+  };
 }
 
 export interface FeedbackAnswer {
