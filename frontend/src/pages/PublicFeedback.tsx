@@ -137,11 +137,9 @@ export function PublicFeedback() {
           {projectFeedback.event_details && (
             <div className="text-sm font-medium text-[var(--text-muted)] mb-4 bg-[var(--bg-app)] inline-block px-4 py-2 rounded-xl">
               <span className="font-bold text-[var(--text-main)]">{projectFeedback.event_details.name}</span>
-              {(projectFeedback.event_details.start_date || projectFeedback.event_details.end_date) && (
+              {(projectFeedback.event_details.start_date) && (
                 <span className="ml-2 border-l border-[var(--border-soft)] pl-2">
-                  {projectFeedback.event_details.start_date && new Date(projectFeedback.event_details.start_date).toLocaleDateString()}
-                  {projectFeedback.event_details.start_date && projectFeedback.event_details.end_date && ' - '}
-                  {projectFeedback.event_details.end_date && new Date(projectFeedback.event_details.end_date).toLocaleDateString()}
+                  {new Date(projectFeedback.event_details.start_date).toLocaleDateString()}
                 </span>
               )}
             </div>
