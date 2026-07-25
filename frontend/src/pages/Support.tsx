@@ -145,7 +145,7 @@ export function Support() {
               <>
                 <div className="text-center py-6">
                   <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">How are we doing?</h2>
-                  <p className="text-sm text-[var(--text-muted)] mb-8">Tap a star to rate your experience with Rentflow.</p>
+                  <p className="text-sm text-[var(--text-muted)] mb-8">Tap a star to rate your experience with NeoOps.</p>
                   
                   <div className="flex justify-center gap-2 mb-8">
                     {[1, 2, 3, 4, 5].map((star) => (
