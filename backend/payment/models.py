@@ -85,6 +85,7 @@ class Invoice(models.Model):
     invoice_number = models.CharField(max_length=50, unique=True)
     issue_date = models.DateTimeField(default=timezone.now)
     due_date = models.DateTimeField(null=True, blank=True)
+    event_date = models.DateTimeField(null=True, blank=True, help_text="The date of the event/job")
     title = models.CharField(max_length=255, blank=True, null=True, default='Invoice')
     status_choices = [
         ('draft', 'Draft'),

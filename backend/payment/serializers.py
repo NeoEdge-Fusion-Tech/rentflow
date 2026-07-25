@@ -42,7 +42,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         model = Invoice
         fields = [
             'invoice_id', 'booking', 'client', 'client_name', 'client_details', 'title', 'invoice_number',
-            'issue_date', 'due_date', 'status', 'currency', 'currency_symbol', 'bank_account',
+            'issue_date', 'due_date', 'event_date', 'status', 'currency', 'currency_symbol', 'bank_account',
             'bank_account_details', 'show_bank_details', 'subtotal', 'discount_amount', 'discount_percentage',
             'tax_percentage', 'tax_amount', 'total_amount', 'amount_paid', 'amount_left', 'notes', 'line_items', 'organization_name',
             'organization_logo', 'recorded_payments'

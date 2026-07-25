@@ -48,6 +48,7 @@ export function InvoiceEditor() {
     invoice_number: '',
     issue_date: new Date().toISOString().slice(0, 10),
     due_date: '',
+    event_date: '',
     status: 'draft',
     currency: '' as number | string,
     bank_account: '' as number | string,
@@ -110,6 +111,7 @@ export function InvoiceEditor() {
       invoice_number: isDuplicate ? prev.invoice_number : (inv.invoice_number || ''),
       issue_date: inv.issue_date ? new Date(inv.issue_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
       due_date: inv.due_date ? new Date(inv.due_date).toISOString().slice(0, 10) : '',
+      event_date: inv.event_date ? new Date(inv.event_date).toISOString().slice(0, 10) : '',
       status: isDuplicate ? 'draft' : (inv.status || 'draft'),
       currency: inv.currency || '',
       bank_account: inv.bank_account || '',
@@ -222,6 +224,7 @@ export function InvoiceEditor() {
     booking: formData.booking ? parseInt(String(formData.booking)) : null,
     issue_date: formData.issue_date,
     due_date: formData.due_date || null,
+    event_date: formData.event_date || null,
     status: statusOverride || formData.status,
     currency: formData.currency ? parseInt(String(formData.currency)) : null,
     bank_account: formData.show_bank_details ? (formData.bank_account ? parseInt(String(formData.bank_account)) : null) : null,
@@ -405,20 +408,11 @@ export function InvoiceEditor() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Issue Date</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Event / Job Date</label>
                 <input
                   type="date"
-                  value={formData.issue_date}
-                  onChange={e => setFormData({ ...formData, issue_date: e.target.value })}
-                  className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Due Date</label>
-                <input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={e => setFormData({ ...formData, due_date: e.target.value })}
+                  value={formData.event_date}
+                  onChange={e => setFormData({ ...formData, event_date: e.target.value })}
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 />
               </div>

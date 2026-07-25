@@ -218,12 +218,10 @@ export function InvoicePreview() {
               <div className="grid grid-cols-[90px_1fr] sm:grid-cols-[110px_1fr] gap-y-1 text-sm font-medium">
                 <span className="text-gray-500">Invoice No #</span>
                 <span className="text-gray-900 font-bold">{invoice.invoice_number}</span>
-                <span className="text-gray-500">Invoice Date</span>
-                <span className="text-gray-900">{new Date(invoice.issue_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                {invoice.due_date && (
+                {invoice.event_date && (
                   <>
-                    <span className="text-gray-500">Due Date</span>
-                    <span className="text-gray-900">{new Date(invoice.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span className="text-gray-500">Event / Job Date</span>
+                    <span className="text-gray-900">{new Date(invoice.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </>
                 )}
                 <span className="text-gray-500">Status</span>
