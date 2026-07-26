@@ -175,7 +175,7 @@ function AppLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden transition-colors duration-300">
+    <div className="fixed inset-0 flex bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden transition-colors duration-300">
       <Sidebar 
         isOpen={isSidebarOpen} 
         toggle={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -185,7 +185,7 @@ function AppLayout() {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
-          <header className="h-16 bg-[var(--bg-surface)] border-b border-[var(--border-soft)] flex items-center px-4 lg:px-8 shrink-0 transition-colors duration-300">
+          <header className="z-40 h-16 bg-[var(--bg-surface)] border-b border-[var(--border-soft)] flex items-center px-4 lg:px-8 shrink-0 transition-colors duration-300">
             <button 
               onClick={() => setIsSidebarOpen(true)}
               className="p-2 text-[var(--text-muted)] hover:bg-[var(--border-subtle)] rounded-lg lg:hidden"

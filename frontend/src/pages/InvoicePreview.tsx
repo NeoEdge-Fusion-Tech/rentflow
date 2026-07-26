@@ -147,7 +147,7 @@ export function InvoicePreview() {
                 setPaymentAmount(invoice.amount_left || invoice.total_amount);
                 setShowPaymentModal(true);
               }}
-              className="px-3 py-2 bg-emerald-500/10 text-emerald-600 font-bold rounded-lg hover:bg-emerald-500/20 transition-colors text-sm flex items-center gap-1.5"
+              className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all text-sm flex items-center gap-1.5 shadow-md shadow-emerald-500/20"
             >
               <Check className="w-4 h-4" /> Record Payment
             </button>

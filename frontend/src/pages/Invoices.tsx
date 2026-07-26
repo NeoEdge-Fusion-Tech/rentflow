@@ -333,7 +333,7 @@ export function Invoices() {
                       className="p-2.5 bg-brand-primary/10 text-brand-primary rounded-xl hover:bg-brand-primary/20 transition-colors whitespace-nowrap text-sm font-bold flex items-center gap-1"
                       title="Record Payment"
                     >
-                      <CreditCard className="w-4 h-4" /> Pay
+                      <CreditCard className="w-4 h-4" /> Record Payment
                     </button>
                     <button
                       onClick={() => handleMarkPaid(invoice)}

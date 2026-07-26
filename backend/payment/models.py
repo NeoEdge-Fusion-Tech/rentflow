@@ -64,7 +64,7 @@ class Payment(models.Model):
 
 class Invoice(models.Model):
     invoice_id = models.AutoField(primary_key=True)
-    booking = models.ForeignKey(Booking, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, null=True, blank=True, related_name='invoices')
     client = models.ForeignKey(
         'users.Client', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='invoices'

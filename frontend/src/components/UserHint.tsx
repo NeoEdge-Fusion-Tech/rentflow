@@ -20,8 +20,16 @@ export function UserHint() {
       content: "Use the Bookings section to see upcoming rentals, approve requests, and monitor returns."
     },
     {
+      title: "Invoices & Payments",
+      content: "Easily generate invoices from bookings and keep track of all your client payments."
+    },
+    {
+      title: "Client Feedback",
+      content: "Gather reviews using the Feedback Forms module to improve your services."
+    },
+    {
       title: "Get Started",
-      content: "You're all set! Start by adding your first item to the inventory."
+      content: "You're all set! Start by adding your first item to the inventory or creating a booking."
     }
   ];
 
