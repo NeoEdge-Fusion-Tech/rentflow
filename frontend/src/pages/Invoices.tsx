@@ -51,13 +51,6 @@ export function Invoices() {
     try {
       setIsLoading(true);
       const params: any = {};
-      if (activeTab !== 'All') {
-        if (activeTab === 'Trash') {
-          params.status = 'cancelled';
-        } else {
-          params.status = activeTab;
-        }
-      }
       if (searchQuery) params.search = searchQuery;
       const res = await InvoiceService.getAll(params);
       setInvoices(res.data.results || res.data);
@@ -71,7 +64,7 @@ export function Invoices() {
 
   useEffect(() => {
     fetchInvoices();
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     const handler = setTimeout(() => fetchInvoices(), 400);
@@ -172,14 +165,20 @@ export function Invoices() {
   };
 
   const counts = {
-    total: invoices.length,
+    total: invoices.filter(i => i.status !== 'cancelled').length,
     draft: invoices.filter(i => i.status === 'draft').length,
     issued: invoices.filter(i => i.status === 'issued').length,
     partially_paid: invoices.filter(i => i.status === 'partially_paid').length,
     paid: invoices.filter(i => i.status === 'paid').length,
   };
 
-  const displayedInvoices = invoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const filteredInvoices = invoices.filter(i => {
+    if (activeTab === 'All') return i.status !== 'cancelled';
+    if (activeTab === 'Trash') return i.status === 'cancelled';
+    return i.status === activeTab;
+  });
+
+  const displayedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -369,16 +368,16 @@ export function Invoices() {
       </div>
 
       {/* Pagination */}
-      {invoices.length > itemsPerPage && (
+      {filteredInvoices.length > itemsPerPage && (
         <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
           <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, invoices.length)} of {invoices.length}
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length}
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === 1}>
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(invoices.length / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(invoices.length / itemsPerPage)}>
+            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredInvoices.length / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(filteredInvoices.length / itemsPerPage)}>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
