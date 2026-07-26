@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { Footer } from '../components/Footer';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Package, Calendar, FileText, ChevronRight } from 'lucide-react';
+import { Package, Calendar, FileText, ChevronRight, CheckSquare, MessageSquare } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export function Landing() {
@@ -95,6 +95,25 @@ export function Landing() {
             <h3 className="text-xl font-bold text-[var(--text-main)] mb-3">Invoicing & Payments</h3>
             <p className="text-[var(--text-muted)] leading-relaxed">
               Generate branded invoices instantly. Track payments, deposits, and outstanding balances effortlessly.
+            </p>
+          </div>
+          <div className="p-8 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-soft)] shadow-sm text-left group hover:border-brand-primary/30 transition-colors">
+            <div className="w-12 h-12 bg-purple-500/10 text-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <CheckSquare className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--text-main)] mb-3">Project Tracking</h3>
+            <p className="text-[var(--text-muted)] leading-relaxed">
+              Organize projects with tasklists. Assign tasks, track progress, and ensure deadlines are met efficiently.
+            </p>
+          </div>
+
+          <div className="p-8 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-soft)] shadow-sm text-left group hover:border-brand-primary/30 transition-colors">
+            <div className="w-12 h-12 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <MessageSquare className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--text-main)] mb-3">Client Feedback</h3>
+            <p className="text-[var(--text-muted)] leading-relaxed">
+              Collect and manage client feedback seamlessly. Improve your services and build stronger relationships.
             </p>
           </div>
         </div>
