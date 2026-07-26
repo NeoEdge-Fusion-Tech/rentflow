@@ -113,6 +113,14 @@ class Invoice(models.Model):
     )
 
     def save(self, *args, **kwargs):
+        if self.status not in ['draft', 'cancelled']:
+            if self.total_amount > 0 and self.amount_paid >= self.total_amount:
+                self.status = 'paid'
+            elif self.amount_paid > 0 and self.amount_paid < self.total_amount:
+                self.status = 'partially_paid'
+            elif self.amount_paid == 0 and self.status in ['paid', 'partially_paid']:
+                self.status = 'issued'
+
         if not self.invoice_number:
             max_retries = 3
             for attempt in range(max_retries):
