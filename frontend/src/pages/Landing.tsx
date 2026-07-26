@@ -38,7 +38,7 @@ export function Landing() {
           <h1 className="text-5xl md:text-7xl font-black tracking-tight text-[var(--text-main)] leading-tight">
             Streamline your <br />
             <span className="text-brand-accent relative">
-              rental business
+              business operations
               <svg className="absolute -bottom-2 left-0 w-full h-3 text-brand-primary/30" viewBox="0 0 100 10" preserveAspectRatio="none">
                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="4" fill="transparent" />
               </svg>
