@@ -4,8 +4,8 @@ from loguru import logger
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.http import FileResponse
-from .models import Payment, Invoice, InvoiceLineItem, Quotation, Receipt, SubscriptionPayment
-from .serializers import PaymentSerializer, InvoiceSerializer, QuotationSerializer, ReceiptSerializer, SubscriptionPaymentSerializer, SubscriptionSerializer
+from .models import Payment, Invoice, InvoiceLineItem, Quotation, Receipt, SubscriptionPayment, GeneralExpense
+from .serializers import PaymentSerializer, InvoiceSerializer, QuotationSerializer, ReceiptSerializer, SubscriptionPaymentSerializer, SubscriptionSerializer, GeneralExpenseSerializer
 from django.db.models import Sum, Count
 from django.utils import timezone
 from rest_framework.views import APIView
@@ -14,6 +14,7 @@ from users.models import Organization, Subscription
 from .utils import generate_invoice_pdf, generate_quotation_pdf, generate_receipt_pdf, initialize_paystack_transaction, initialize_paystack_transaction_for_invoice, initialize_paystack_transaction_for_subscription, compute_invoice_totals
 from inventory.models import Booking
 from users.mixins import TenantIsolationMixin
+from config.pagination import StandardResultsSetPagination
 
 class PaymentViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Payment.objects.all()
@@ -142,6 +143,7 @@ class OrganizationSubscriptionAPIView(APIView):
 class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
+    pagination_class = StandardResultsSetPagination
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['booking', 'client', 'status']
     search_fields = ['invoice_number']
@@ -656,3 +658,17 @@ class PaystackWebhookView(APIView):
             return Response({"status": "reference not found"}, status=404)
 
         return Response({"status": "event ignored"}, status=200)
+
+class GeneralExpenseViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    queryset = GeneralExpense.objects.all()
+    serializer_class = GeneralExpenseSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [django_filters.DjangoFilterBackend]
+    filterset_fields = ['expense_type']
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {'created_by': user}
+        if not user.is_superuser:
+            kwargs['organization'] = user.organization
+        serializer.save(**kwargs)

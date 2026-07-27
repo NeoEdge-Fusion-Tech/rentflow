@@ -110,6 +110,19 @@ export interface ExpenseLineItem {
   name: string;
   amount: number;
   description?: string;
+  date?: string | null;
+}
+
+export interface GeneralExpense {
+  general_expense_id: number;
+  organization: number;
+  expense_type: 'vendor' | 'item';
+  vendor?: number | null;
+  vendor_name?: string;
+  name: string;
+  amount: number;
+  description?: string;
+  date?: string | null;
 }
 
 export interface ChecklistTask {

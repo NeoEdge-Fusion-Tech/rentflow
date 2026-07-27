@@ -26,16 +26,19 @@ export function Invoices() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   
   // Payment Modal State
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  
+  const [activeTab, setActiveTab] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 20;
 
-  const itemsPerPage = 8;
   const defaultCurrencySymbol = localStorage.getItem('currencySymbol') || '$';
 
   useEffect(() => {
@@ -47,14 +50,15 @@ export function Invoices() {
     return (num || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = async (page = 1) => {
     try {
       setIsLoading(true);
-      const params: any = {};
+      const params: any = { page };
       if (searchQuery) params.search = searchQuery;
+      if (activeTab !== 'All') params.status = activeTab.toLowerCase();
       const res = await InvoiceService.getAll(params);
       setInvoices(res.data.results || res.data);
-      setCurrentPage(1);
+      setTotalCount(res.data.count || (res.data.results || res.data).length);
     } catch (err) {
       console.error("Failed to fetch invoices", err);
     } finally {
@@ -63,13 +67,8 @@ export function Invoices() {
   };
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  useEffect(() => {
-    const handler = setTimeout(() => fetchInvoices(), 400);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+    fetchInvoices(currentPage);
+  }, [currentPage, searchQuery, activeTab]);
 
   const handleDownload = async (invoice: any) => {
     try {
@@ -164,22 +163,6 @@ export function Invoices() {
     });
   };
 
-  const counts = {
-    total: invoices.filter(i => i.status !== 'cancelled').length,
-    draft: invoices.filter(i => i.status === 'draft').length,
-    issued: invoices.filter(i => i.status === 'issued').length,
-    partially_paid: invoices.filter(i => i.status === 'partially_paid').length,
-    paid: invoices.filter(i => i.status === 'paid').length,
-  };
-
-  const filteredInvoices = invoices.filter(i => {
-    if (activeTab === 'All') return i.status !== 'cancelled';
-    if (activeTab === 'Trash') return i.status === 'cancelled';
-    return i.status === activeTab;
-  });
-
-  const displayedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -201,28 +184,12 @@ export function Invoices() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 mb-2">
-        {[
-          { label: 'Total', value: counts.total, color: 'slate' },
-          { label: 'Draft', value: counts.draft, color: 'amber' },
-          { label: 'Issued', value: counts.issued, color: 'blue' },
-          { label: 'Partial', value: counts.partially_paid, color: 'amber' },
-          { label: 'Paid', value: counts.paid, color: 'emerald' },
-        ].map((s, idx) => (
-          <div key={idx} className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-soft)] shadow-sm hover:shadow-md transition-all">
-            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{s.label}</p>
-            <p className={`text-xl font-black text-${s.color}-600 dark:text-${s.color}-400`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px overflow-x-auto">
         {['All', 'draft', 'issued', 'partially_paid', 'paid', 'Trash'].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => { setActiveTab(tab); setCurrentPage(1); }}
             className={cn(
               "px-4 py-2 text-sm font-medium transition-all relative capitalize whitespace-nowrap",
               activeTab === tab ? "text-[var(--text-link)]" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
@@ -240,7 +207,7 @@ export function Invoices() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
           placeholder="Search by invoice number..."
           className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
         />
@@ -250,9 +217,9 @@ export function Invoices() {
       <div className="grid grid-cols-1 gap-4">
         {isLoading ? (
           <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading invoices...</div>
-        ) : displayedInvoices.length === 0 ? (
+        ) : invoices.length === 0 ? (
           <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">No invoices found.</div>
-        ) : displayedInvoices.map((invoice) => (
+        ) : invoices.map((invoice) => (
           <div key={invoice.invoice_id} className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group">
             <div className="flex flex-col lg:flex-row lg:items-center gap-6">
               <div className="flex-1 flex items-start gap-4">
@@ -368,16 +335,16 @@ export function Invoices() {
       </div>
 
       {/* Pagination */}
-      {filteredInvoices.length > itemsPerPage && (
+      {!isLoading && totalCount > itemsPerPage && (
         <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
           <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length}
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} results
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === 1}>
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredInvoices.length / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(filteredInvoices.length / itemsPerPage)}>
+            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalCount / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(totalCount / itemsPerPage)}>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

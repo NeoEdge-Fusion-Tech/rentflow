@@ -46,6 +46,7 @@ export function EventDetail() {
     name: '',
     amount: 0,
     description: '',
+    date: '',
   });
 
   // Feedback
@@ -139,7 +140,7 @@ export function EventDetail() {
   // --- Expenses ---
   const openAddExpense = () => {
     setEditingExpense(null);
-    setExpenseForm({ expense_type: 'item', vendor: '', name: '', amount: 0, description: '' });
+    setExpenseForm({ expense_type: 'item', vendor: '', name: '', amount: 0, description: '', date: '' });
     setIsAddExpenseOpen(true);
   };
 
@@ -151,6 +152,7 @@ export function EventDetail() {
       name: expense.expense_type === 'item' ? expense.name : '',
       amount: parseFloat(expense.amount) || 0,
       description: expense.description || '',
+      date: expense.date || '',
     });
     setIsAddExpenseOpen(true);
   };
@@ -167,6 +169,7 @@ export function EventDetail() {
         name: expenseForm.expense_type === 'item' ? expenseForm.name : undefined,
         amount: expenseForm.amount,
         description: expenseForm.description,
+        date: expenseForm.date || null,
       };
       if (editingExpense) {
         await ExpenseService.update(editingExpense.expense_id, payload);
@@ -352,6 +355,7 @@ export function EventDetail() {
                 <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
                   <th className="py-2 pr-4 font-bold">Expense</th>
                   <th className="py-2 pr-4 font-bold">Type</th>
+                  <th className="py-2 pr-4 font-bold">Date</th>
                   <th className="py-2 pr-4 font-bold">Description</th>
                   <th className="py-2 pr-4 font-bold text-right">Amount</th>
                   <th className="py-2 pr-0 font-bold text-right">Actions</th>
@@ -369,6 +373,7 @@ export function EventDetail() {
                         {exp.expense_type}
                       </span>
                     </td>
+                    <td className="py-3 pr-4 text-[var(--text-muted)]">{exp.date ? new Date(exp.date).toLocaleDateString() : '—'}</td>
                     <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">{exp.description || '—'}</td>
                     <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(exp.amount)}</td>
                     <td className="py-3 pr-0 text-right">
@@ -531,6 +536,11 @@ export function EventDetail() {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[var(--text-muted)]">Description</label>
                 <textarea rows={2} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">Date (Optional)</label>
+                <input type="date" value={expenseForm.date || ''} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
               </div>
 
               <div className="pt-2 flex gap-3">

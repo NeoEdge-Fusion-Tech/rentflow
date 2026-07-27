@@ -43,6 +43,7 @@ const navItems = [
   { icon: FileText, label: 'Invoices', path: '/invoices' },
   { icon: FileSpreadsheet, label: 'Quotations', path: '/quotations' },
   { icon: Briefcase, label: 'Projects', path: '/events' },
+  { icon: Coins, label: 'General Expenses', path: '/general-expenses' },
   { icon: MessageSquare, label: 'Feedback Forms', path: '/feedback-forms' },
   { icon: ListChecks, label: 'Task Checklist', path: '/task-checklist' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },

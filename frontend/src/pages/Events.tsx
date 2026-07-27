@@ -26,7 +26,8 @@ export function Events() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 20; // Match DRF backend page size
+  const [totalCount, setTotalCount] = useState(0);
   const defaultCurrencySymbol = localStorage.getItem('currencySymbol') || '$';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,11 +41,12 @@ export function Events() {
     invoice: '' as number | string,
   });
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await EventService.getAll();
+      const response = await EventService.getAll({ page, search: searchTerm });
       setEvents(response.data.results || response.data);
+      setTotalCount(response.data.count || (response.data.results || response.data).length);
     } catch (e) {
       console.error("Failed to fetch events", e);
     } finally {
@@ -60,7 +62,10 @@ export function Events() {
   };
 
   useEffect(() => {
-    fetchEvents();
+    fetchEvents(currentPage);
+  }, [currentPage, searchTerm]);
+
+  useEffect(() => {
     fetchInvoices();
   }, []);
 
@@ -116,9 +121,6 @@ export function Events() {
     }
   };
 
-  const filteredEvents = events.filter(ev => ev.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  const displayedEvents = filteredEvents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -152,7 +154,7 @@ export function Events() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {displayedEvents.map((ev) => {
+          {events.map((ev) => {
             const profit = parseFloat(ev.profit) || 0;
             return (
               <div key={ev.event_id} onClick={() => navigate(`/events/${ev.event_id}`)} className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group cursor-pointer">
@@ -214,7 +216,7 @@ export function Events() {
               </div>
             );
           })}
-          {filteredEvents.length === 0 && (
+          {events.length === 0 && (
             <div className="col-span-full text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
               No projects found.
             </div>
@@ -222,16 +224,16 @@ export function Events() {
         </div>
       )}
 
-      {!isLoading && filteredEvents.length > itemsPerPage && (
+      {!isLoading && totalCount > itemsPerPage && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredEvents.length)} of {filteredEvents.length} results
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} results
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === 1}>
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredEvents.length / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(filteredEvents.length / itemsPerPage)}>
+            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalCount / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(totalCount / itemsPerPage)}>
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

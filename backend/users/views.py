@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
+from dateutil.relativedelta import relativedelta
+from config.pagination import StandardResultsSetPagination
 from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Vendor, Currency, Feedback
 from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, VendorSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer, FeedbackSerializer
 from users.mixins import TenantIsolationMixin
@@ -185,6 +187,7 @@ class OrganizationAccountDetailsViewSet(TenantIsolationMixin, viewsets.ModelView
 class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = StandardResultsSetPagination
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def admin_change_password(self, request, pk=None):
@@ -431,6 +434,7 @@ class SuperAdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = StandardResultsSetPagination
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['organization', 'role', 'is_active']
     search_fields = ['username', 'email', 'first_name', 'last_name']

@@ -12,7 +12,7 @@ class ExpenseLineItemSerializer(TenantSerializerMixin, serializers.ModelSerializ
         model = ExpenseLineItem
         fields = [
             'expense_id', 'event', 'expense_type', 'vendor', 'vendor_details',
-            'name', 'amount', 'description', 'created_at', 'updated_at'
+            'name', 'amount', 'description', 'date', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
         extra_kwargs = {'name': {'required': False, 'allow_blank': True}}

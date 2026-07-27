@@ -23,6 +23,7 @@ def compute_period_totals(organization, start, end):
     total_loss (so both are always >= 0, unlike a single net figure).
     """
     from .models import Event, ExpenseLineItem
+    from payment.models import GeneralExpense
 
     revenue_by_event = dict(
         Event.objects.filter(
@@ -39,8 +40,14 @@ def compute_period_totals(organization, start, end):
         ).values('event_id').annotate(total=Sum('amount')).values_list('event_id', 'total')
     )
 
+    general_expenses_total = GeneralExpense.objects.filter(
+        organization=organization,
+        created_at__gte=start,
+        created_at__lt=end,
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
     total_revenue = sum(revenue_by_event.values(), Decimal('0'))
-    total_expenses = sum(expenses_by_event.values(), Decimal('0'))
+    total_project_expenses = sum(expenses_by_event.values(), Decimal('0'))
 
     total_profit = Decimal('0')
     total_loss = Decimal('0')
@@ -50,8 +57,17 @@ def compute_period_totals(organization, start, end):
             total_profit += net
         elif net < 0:
             total_loss += -net
+    
+    # Subtract general expenses from overall profit/loss
+    net_overall = total_profit - total_loss - general_expenses_total
+    if net_overall > 0:
+        total_profit = net_overall
+        total_loss = Decimal('0')
+    else:
+        total_profit = Decimal('0')
+        total_loss = -net_overall
 
-    return total_revenue, total_expenses, total_profit, total_loss
+    return total_revenue, total_project_expenses, general_expenses_total, total_profit, total_loss
 
 
 def _load_logo_flowable(organization, size=1.1 * inch):

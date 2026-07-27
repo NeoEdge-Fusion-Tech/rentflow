@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from users.mixins import TenantSerializerMixin
-from .models import Payment, Invoice, InvoiceLineItem, Quotation, QuotationLineItem, Receipt, SubscriptionPayment
+from .models import Payment, Invoice, InvoiceLineItem, Quotation, QuotationLineItem, Receipt, SubscriptionPayment, GeneralExpense
 from .utils import compute_invoice_totals
 from users.models import Organization, Subscription
 from users.serializers import ClientSerializer, BankAccountSerializer
@@ -292,3 +292,15 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         ]
         read_only_fields = ['payment_date', 'invoice_id', 'receipt_id']
 
+
+class GeneralExpenseSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source='vendor.service', read_only=True)
+
+    class Meta:
+        model = GeneralExpense
+        fields = [
+            'general_expense_id', 'organization', 'expense_type', 'vendor',
+            'vendor_name', 'name', 'amount', 'description', 'date',
+            'created_at', 'updated_at', 'created_by'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'created_by', 'organization']

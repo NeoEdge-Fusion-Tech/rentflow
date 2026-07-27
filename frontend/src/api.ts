@@ -224,6 +224,13 @@ export const ExpenseService = {
   delete: (id: number | string) => api.delete(`/events/expenses/${id}/`),
 };
 
+export const GeneralExpenseService = {
+  getAll: (params?: any) => api.get('/payment/general-expenses/', { params }),
+  create: (data: any) => api.post('/payment/general-expenses/', data),
+  update: (id: number | string, data: any) => api.patch(`/payment/general-expenses/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/payment/general-expenses/${id}/`),
+};
+
 export const ChecklistTaskService = {
   getAll: (params?: any) => api.get('/events/checklist-tasks/', { params }),
   create: (data: any) => api.post('/events/checklist-tasks/', data),

@@ -266,6 +266,18 @@ export function Dashboard() {
             <div className="p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-soft)]">
               <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Expenses</p>
               <p className="text-lg font-black text-[var(--text-main)]">{plLoading ? '…' : `${currencySymbol}${formatCurrency(plStats?.total_expenses || 0)}`}</p>
+              {!plLoading && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
+                    <span>Projects:</span>
+                    <span className="font-bold">{currencySymbol}{formatCurrency(plStats?.total_project_expenses || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
+                    <span>General:</span>
+                    <span className="font-bold">{currencySymbol}{formatCurrency(plStats?.total_general_expenses || 0)}</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
               <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Total Profit</p>

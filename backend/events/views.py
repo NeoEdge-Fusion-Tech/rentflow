@@ -13,6 +13,7 @@ from users.mixins import TenantIsolationMixin
 from .models import Event, ExpenseLineItem, ChecklistTask
 from .serializers import EventSerializer, ExpenseLineItemSerializer, ChecklistTaskSerializer
 from .utils import generate_checklist_pdf, compute_period_totals
+from config.pagination import StandardResultsSetPagination
 
 
 def _resolve_organization(request):
@@ -63,12 +64,14 @@ class EventDashboardStatsAPIView(APIView):
             start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end = start + relativedelta(months=1)
 
-        total_revenue, total_expenses, total_profit, total_loss = compute_period_totals(organization, start, end)
+        total_revenue, total_project_expenses, total_general_expenses, total_profit, total_loss = compute_period_totals(organization, start, end)
 
         return Response({
             'period': period,
             'total_revenue': total_revenue,
-            'total_expenses': total_expenses,
+            'total_project_expenses': total_project_expenses,
+            'total_general_expenses': total_general_expenses,
+            'total_expenses': total_project_expenses + total_general_expenses,
             'total_profit': total_profit,
             'total_loss': total_loss,
         })
@@ -92,13 +95,14 @@ class EventMonthlyBreakdownAPIView(APIView):
         for month in range(1, 13):
             start = datetime.datetime(year, month, 1, tzinfo=datetime.timezone.utc)
             end = start + relativedelta(months=1)
-            revenue, expenses, _, _ = compute_period_totals(organization, start, end)
+            revenue, project_expenses, general_expenses, _, _ = compute_period_totals(organization, start, end)
+            total_expenses = project_expenses + general_expenses
             results.append({
                 'month': month,
                 'label': start.strftime('%b'),
                 'revenue': revenue,
-                'expenses': expenses,
-                'profit': revenue - expenses,
+                'expenses': total_expenses,
+                'profit': revenue - total_expenses,
             })
 
         return Response(results)
@@ -107,6 +111,7 @@ class EventMonthlyBreakdownAPIView(APIView):
 class EventViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    pagination_class = StandardResultsSetPagination
     filter_backends = [django_filters.DjangoFilterBackend]
     filterset_fields = ['status']
 
@@ -124,6 +129,7 @@ class EventViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class ExpenseLineItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ExpenseLineItem.objects.all()
     serializer_class = ExpenseLineItemSerializer
+    pagination_class = StandardResultsSetPagination
     filter_backends = [django_filters.DjangoFilterBackend]
     filterset_fields = ['event', 'expense_type']
 

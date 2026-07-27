@@ -8,7 +8,9 @@ import {
   Building2,
   Filter,
   UserCheck,
-  UserMinus
+  UserMinus,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { SuperAdminService } from '../../api';
 
@@ -29,16 +31,18 @@ export function Users() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 20;
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1) => {
     try {
       setIsLoading(true);
-      const res = await SuperAdminService.getUsers();
+      const params: any = { page };
+      if (searchQuery) params.search = searchQuery;
+      const res = await SuperAdminService.getUsers(params);
       setUsers(res.data.results || res.data);
+      setTotalCount(res.data.count || (res.data.results || res.data).length);
     } catch (error) {
       console.error("Failed to fetch users", error);
     } finally {
@@ -46,10 +50,11 @@ export function Users() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    fetchUsers(currentPage);
+  }, [currentPage, searchQuery]);
+
+  // Backend handles search, no need to filter on frontend
 
   return (
     <div className="space-y-6">
@@ -110,8 +115,8 @@ export function Users() {
               type="text"
               placeholder="Search users..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-sm outline-none focus:border-brand-primary placeholder-[var(--text-muted)] transition-all"
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all text-sm w-full md:w-64"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -138,12 +143,12 @@ export function Users() {
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading platform users...</td>
                 </tr>
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No users found.</td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                users.map((user) => (
                   <tr key={user.id} className="hover:bg-[var(--bg-app)]/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -217,6 +222,22 @@ export function Users() {
           </table>
         </div>
       </div>
+
+      {!isLoading && totalCount > itemsPerPage && (
+        <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
+          <p className="text-sm text-[var(--text-muted)]">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} results
+          </p>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === 1}>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalCount / itemsPerPage), p + 1))} className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50" disabled={currentPage === Math.ceil(totalCount / itemsPerPage)}>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
