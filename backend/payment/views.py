@@ -664,7 +664,10 @@ class GeneralExpenseViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     serializer_class = GeneralExpenseSerializer
     pagination_class = StandardResultsSetPagination
     filter_backends = [django_filters.DjangoFilterBackend]
-    filterset_fields = ['expense_type']
+    filterset_fields = {
+        'expense_type': ['exact'],
+        'date': ['exact', 'gte', 'lte'],
+    }
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -672,3 +675,22 @@ class GeneralExpenseViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if not user.is_superuser:
             kwargs['organization'] = user.organization
         serializer.save(**kwargs)
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        from django.db.models import Sum
+        from django.utils import timezone
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        total_amount = queryset.aggregate(total=Sum('amount'))['total'] or 0
+        total_count = queryset.count()
+        
+        current_month = timezone.now().date().replace(day=1)
+        current_month_amount = queryset.filter(date__gte=current_month).aggregate(total=Sum('amount'))['total'] or 0
+        
+        return Response({
+            'total_amount': total_amount,
+            'current_month_amount': current_month_amount,
+            'total_count': total_count
+        })

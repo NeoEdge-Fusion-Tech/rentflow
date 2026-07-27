@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, ChevronLeft, ChevronRight, X, TrendingUp, TrendingDown, Calendar, Wallet } from 'lucide-react';
 import { GeneralExpenseService } from '@/src/api';
 import { useNotification } from '../context/NotificationContext';
 import { cn } from '@/src/utils';
@@ -12,6 +12,11 @@ export function GeneralExpenses() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 20;
+
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  
+  const [stats, setStats] = useState<any>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,6 +38,8 @@ export function GeneralExpenses() {
       setIsLoading(true);
       const params: any = { page };
       if (searchQuery) params.search = searchQuery;
+      if (startDate) params.date__gte = startDate;
+      if (endDate) params.date__lte = endDate;
       const res = await GeneralExpenseService.getAll(params);
       setExpenses(res.data.results || res.data);
       setTotalCount(res.data.count || (res.data.results || res.data).length);
@@ -43,9 +50,22 @@ export function GeneralExpenses() {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await GeneralExpenseService.getStats();
+      setStats(res.data);
+    } catch (e) {
+      console.error("Failed to fetch stats", e);
+    }
+  };
+
   useEffect(() => {
     fetchExpenses(currentPage);
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, startDate, endDate]);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   const openAddModal = () => {
     setEditingId(null);
@@ -77,6 +97,7 @@ export function GeneralExpenses() {
           await GeneralExpenseService.delete(id);
           showNotification('Expense deleted', 'success');
           fetchExpenses(currentPage);
+          fetchStats();
         } catch (err) {
           console.error(err);
           showNotification('Failed to delete expense', 'error');
@@ -105,6 +126,7 @@ export function GeneralExpenses() {
       }
       setIsModalOpen(false);
       fetchExpenses(currentPage);
+      fetchStats();
     } catch (err) {
       console.error(err);
       showNotification('Failed to save expense', 'error');
@@ -131,15 +153,72 @@ export function GeneralExpenses() {
         </button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-          placeholder="Search expenses..."
-          className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-brand-primary/10 rounded-xl">
+              <Wallet className="w-5 h-5 text-brand-primary" />
+            </div>
+          </div>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total General Expenses</p>
+          <p className="text-2xl font-bold text-[var(--text-main)]">
+            {stats ? `${defaultCurrencySymbol}${formatCurrency(stats.total_amount)}` : '…'}
+          </p>
+        </div>
+        
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-amber-500/10 rounded-xl">
+              <Calendar className="w-5 h-5 text-amber-500" />
+            </div>
+          </div>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">This Month</p>
+          <p className="text-2xl font-bold text-[var(--text-main)]">
+            {stats ? `${defaultCurrencySymbol}${formatCurrency(stats.current_month_amount)}` : '…'}
+          </p>
+        </div>
+        
+        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-emerald-500/10 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
+            </div>
+          </div>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Transactions</p>
+          <p className="text-2xl font-bold text-[var(--text-main)]">
+            {stats ? stats.total_count : '…'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            placeholder="Search expenses..."
+            className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => { setStartDate(e.target.value); setCurrentPage(1); }}
+            className="px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 transition-all shadow-sm text-sm"
+            placeholder="Start Date"
+          />
+          <span className="text-[var(--text-muted)]">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={e => { setEndDate(e.target.value); setCurrentPage(1); }}
+            className="px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 transition-all shadow-sm text-sm"
+            placeholder="End Date"
+          />
+        </div>
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] overflow-hidden">
