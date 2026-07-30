@@ -521,7 +521,7 @@ export function QuotationEditor() {
                                   <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">{p.category?.name || 'Product'}</p>
                                 </div>
                                 <span className="text-xs font-bold text-[var(--text-main)]">
-                                  {currencySymbol}{parseFloat(p.units?.[0]?.rental_price || 0).toLocaleString()}
+                                  {currencySymbol} {parseFloat(p.units?.[0]?.rental_price || 0).toLocaleString()}
                                 </span>
                               </div>
                             ))}
@@ -550,12 +550,12 @@ export function QuotationEditor() {
                           placeholder="Price"
                           value={item.unit_price === 0 ? '' : item.unit_price}
                           onChange={e => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)}
-                          className="w-full h-10 pl-6 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
+                          className="w-full h-10 pl-12 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
                         />
                       </div>
                     </div>
                     <div className="col-span-3 md:col-span-2 flex items-center justify-end h-10 text-sm font-bold text-[var(--text-main)]">
-                      {currencySymbol}{formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
+                      {currencySymbol} {formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
                     </div>
                     <div className="col-span-1 flex items-center justify-end h-10">
                       <button onClick={() => removeLineItem(i)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors">
@@ -597,7 +597,7 @@ export function QuotationEditor() {
 
             <div className="flex justify-between text-sm">
               <span className="text-[var(--text-muted)] font-medium">Subtotal</span>
-              <span className="font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(subtotal)}</span>
+              <span className="font-bold text-[var(--text-main)]">{currencySymbol} {formatCurrency(subtotal)}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -623,7 +623,7 @@ export function QuotationEditor() {
             {discountValue > 0 && (
               <div className="flex justify-between text-xs font-bold text-brand-accent uppercase tracking-wide">
                 <span>Discount</span>
-                <span>-{currencySymbol}{formatCurrency(discountValue)}</span>
+                <span>-{currencySymbol} {formatCurrency(discountValue)}</span>
               </div>
             )}
 
@@ -639,13 +639,13 @@ export function QuotationEditor() {
             {taxValue > 0 && (
               <div className="flex justify-between text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">
                 <span>Tax</span>
-                <span>{currencySymbol}{formatCurrency(taxValue)}</span>
+                <span>{currencySymbol} {formatCurrency(taxValue)}</span>
               </div>
             )}
 
             <div className="pt-4 border-t border-[var(--border-soft)] flex justify-between items-baseline">
               <span className="text-sm font-black uppercase tracking-wide text-[var(--text-muted)]">Total</span>
-              <span className="text-2xl font-black text-[var(--text-main)] tracking-tight">{currencySymbol}{formatCurrency(grandTotal)}</span>
+              <span className="text-2xl font-black text-[var(--text-main)] tracking-tight">{currencySymbol} {formatCurrency(grandTotal)}</span>
             </div>
 
             {isEditMode && (
