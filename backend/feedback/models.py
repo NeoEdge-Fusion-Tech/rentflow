@@ -36,11 +36,17 @@ class FeedbackQuestion(models.Model):
     def __str__(self):
         return self.question_text
 
+import string
+import random
+
+def generate_short_id():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+
 class ProjectFeedback(models.Model):
     id = models.AutoField(primary_key=True)
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='feedbacks')
     form = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='project_links')
-    public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    public_id = models.CharField(max_length=50, default=generate_short_id, editable=False, unique=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
