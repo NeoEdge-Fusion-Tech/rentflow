@@ -27,6 +27,7 @@ class FeedbackQuestion(models.Model):
     question_text = models.CharField(max_length=500)
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='TEXT')
     options = models.JSONField(blank=True, null=True, help_text="List of choices for RADIO and CHECKBOX types")
+    is_required = models.BooleanField(default=True)
     position = models.PositiveIntegerField(default=0)
     
     class Meta:

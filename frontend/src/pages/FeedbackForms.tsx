@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Eye, GripVertical } from 'lucide-react';
 import { FeedbackService } from '../api';
 import { FeedbackForm, FeedbackQuestion } from '../types';
 import { useNotification } from '../context/NotificationContext';
@@ -12,6 +12,7 @@ export function FeedbackForms() {
   // Editor state
   const [isEditing, setIsEditing] = useState(false);
   const [currentForm, setCurrentForm] = useState<Partial<FeedbackForm>>({ title: '', description: '', questions: [] });
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   
   useEffect(() => {
     fetchForms();
@@ -79,6 +80,7 @@ export function FeedbackForms() {
     newQuestions.push({
       question_text: '',
       question_type: 'TEXT',
+      is_required: true,
       position: newQuestions.length
     });
     setCurrentForm({ ...currentForm, questions: newQuestions });
@@ -96,6 +98,31 @@ export function FeedbackForms() {
     // update positions
     newQuestions.forEach((q, i) => q.position = i);
     setCurrentForm({ ...currentForm, questions: newQuestions });
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newQuestions = [...(currentForm.questions || [])];
+    const draggedItem = newQuestions[draggedIndex];
+    
+    newQuestions.splice(draggedIndex, 1);
+    newQuestions.splice(index, 0, draggedItem);
+    
+    newQuestions.forEach((q, i) => q.position = i);
+    
+    setCurrentForm({ ...currentForm, questions: newQuestions });
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   if (loading && forms.length === 0) return <div className="p-8 text-center text-[var(--text-muted)]">Loading...</div>;
@@ -152,7 +179,17 @@ export function FeedbackForms() {
           ) : (
             <div className="space-y-4">
               {currentForm.questions?.map((q, idx) => (
-                <div key={idx} className="flex gap-4 items-start p-4 bg-[var(--bg-app)] rounded-xl border border-[var(--border-subtle)] relative group">
+                <div 
+                  key={idx} 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex gap-4 items-start p-4 bg-[var(--bg-app)] rounded-xl border relative group transition-all ${draggedIndex === idx ? 'opacity-50 border-brand-primary' : 'border-[var(--border-subtle)] hover:border-[var(--border-soft)]'}`}
+                >
+                  <div className="mt-2 cursor-grab active:cursor-grabbing text-[var(--border-soft)] group-hover:text-[var(--text-muted)]">
+                    <GripVertical className="w-5 h-5" />
+                  </div>
                   <div className="flex-1 space-y-3">
                     <input 
                       type="text" 
@@ -172,6 +209,16 @@ export function FeedbackForms() {
                         <option value="RADIO">Single Choice (Radio)</option>
                         <option value="CHECKBOX">Multiple Choice (Checkbox)</option>
                       </select>
+                      <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer select-none">
+                        <input 
+                          type="checkbox" 
+                          checked={q.is_required !== false} 
+                          onChange={(e) => updateQuestion(idx, { is_required: e.target.checked })} 
+                          className="rounded border-[var(--border-soft)] text-brand-primary focus:ring-brand-primary"
+                        />
+                        Required
+                      </label>
+                    </div>
                       {(q.question_type === 'RADIO' || q.question_type === 'CHECKBOX') && (
                         <div className="mt-4 space-y-2 pl-2 border-l-2 border-[var(--border-soft)]">
                           <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Options</label>

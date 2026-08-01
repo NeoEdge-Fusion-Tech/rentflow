@@ -57,6 +57,25 @@ export function PublicFeedback() {
     e.preventDefault();
     if (!projectFeedback) return;
     
+    setError('');
+    
+    // Validate required questions
+    for (const q of projectFeedback.form.questions || []) {
+      if (q.is_required !== false && q.id) {
+        const val = answers[q.id];
+        if (
+          (q.question_type === 'TEXT' && !val) ||
+          (q.question_type === 'RADIO' && !val) ||
+          (q.question_type === 'RATING' && (!val || val === 0)) ||
+          (q.question_type === 'BOOLEAN' && val === null) ||
+          (q.question_type === 'CHECKBOX' && (!val || val.length === 0))
+        ) {
+          setError('Please answer all required questions before submitting.');
+          return;
+        }
+      }
+    }
+
     // Format answers array
     const formattedAnswers = Object.entries(answers).map(([qId, val]) => {
       const q = projectFeedback.form.questions?.find(question => question.id === parseInt(qId));
@@ -185,13 +204,14 @@ export function PublicFeedback() {
               <label className="block font-medium text-[var(--text-main)] mb-4 text-lg">
                 <span className="text-brand-primary font-bold mr-2">{idx + 1}.</span> 
                 {q.question_text}
+                {q.is_required !== false && <span className="text-rose-500 ml-1">*</span>}
               </label>
               
               {q.question_type === 'TEXT' && (
                 <textarea 
                   value={answers[q.id!] || ''}
                   onChange={e => handleAnswerChange(q.id!, e.target.value)}
-                  required
+                  required={q.is_required !== false}
                   className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] min-h-[120px]"
                   placeholder="Type your answer here..."
                 />

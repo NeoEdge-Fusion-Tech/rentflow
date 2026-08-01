@@ -152,6 +152,7 @@ export interface FeedbackQuestion {
   question_text: string;
   question_type: 'TEXT' | 'RATING' | 'BOOLEAN' | 'RADIO' | 'CHECKBOX';
   options?: string[];
+  is_required?: boolean;
   position: number;
 }
 
