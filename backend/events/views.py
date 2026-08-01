@@ -140,6 +140,52 @@ class ExpenseLineItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             kwargs['organization'] = user.organization
         serializer.save(**kwargs)
 
+    @action(detail=False, methods=['post'])
+    def duplicate(self, request):
+        user = request.user
+        org = user.organization
+        target_event_id = request.data.get('target_event')
+        source_event_id = request.data.get('source_event')
+        source_expense_id = request.data.get('source_expense')
+
+        if not target_event_id:
+            return Response({"error": "target_event is required."}, status=400)
+
+        if not Event.objects.filter(pk=target_event_id, organization=org).exists():
+            return Response({"error": "Target event not found."}, status=404)
+
+        expenses_to_copy = []
+
+        if source_expense_id:
+            expense = ExpenseLineItem.objects.filter(pk=source_expense_id, organization=org).first()
+            if not expense:
+                return Response({"error": "Source expense not found."}, status=404)
+            expenses_to_copy = [expense]
+        elif source_event_id:
+            if not Event.objects.filter(pk=source_event_id, organization=org).exists():
+                return Response({"error": "Source event not found."}, status=404)
+            expenses_to_copy = list(ExpenseLineItem.objects.filter(event_id=source_event_id))
+        else:
+            return Response({"error": "Either source_event or source_expense is required."}, status=400)
+
+        created = []
+        for expense in expenses_to_copy:
+            new_expense = ExpenseLineItem.objects.create(
+                event_id=target_event_id,
+                organization=org,
+                expense_type=expense.expense_type,
+                vendor=expense.vendor,
+                name=expense.name,
+                amount=expense.amount,
+                description=expense.description,
+                date=expense.date,
+                created_by=user,
+            )
+            created.append(new_expense)
+
+        serializer = ExpenseLineItemSerializer(created, many=True, context={'request': request})
+        return Response(serializer.data, status=201)
+
 
 class ChecklistTaskViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ChecklistTask.objects.all()

@@ -222,6 +222,7 @@ export const ExpenseService = {
   create: (data: any) => api.post('/events/expenses/', data),
   update: (id: number | string, data: any) => api.patch(`/events/expenses/${id}/`, data),
   delete: (id: number | string) => api.delete(`/events/expenses/${id}/`),
+  duplicate: (data: { target_event: number | string; source_event?: number | string; source_expense?: number | string }) => api.post('/events/expenses/duplicate/', data),
 };
 
 export const GeneralExpenseService = {
