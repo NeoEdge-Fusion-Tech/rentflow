@@ -161,15 +161,57 @@ export function FeedbackForms() {
                       className="w-full bg-transparent border-b border-[var(--border-soft)] pb-2 outline-none focus:border-brand-primary font-medium text-[var(--text-main)]"
                       placeholder={`Question ${idx + 1}`}
                     />
-                    <select 
-                      value={q.question_type}
-                      onChange={e => updateQuestion(idx, { question_type: e.target.value as any })}
-                      className="text-sm border border-[var(--border-soft)] rounded-lg p-2 bg-[var(--bg-surface)] outline-none"
-                    >
-                      <option value="TEXT">Text Answer</option>
-                      <option value="RATING">5-Star Rating</option>
-                      <option value="BOOLEAN">Yes / No</option>
-                    </select>
+                      <select 
+                        value={q.question_type}
+                        onChange={e => updateQuestion(idx, { question_type: e.target.value as any, options: (e.target.value === 'RADIO' || e.target.value === 'CHECKBOX') ? ['Option 1'] : undefined })}
+                        className="text-sm border border-[var(--border-soft)] rounded-lg p-2 bg-[var(--bg-surface)] outline-none"
+                      >
+                        <option value="TEXT">Text Answer</option>
+                        <option value="RATING">5-Star Rating</option>
+                        <option value="BOOLEAN">Yes / No</option>
+                        <option value="RADIO">Single Choice (Radio)</option>
+                        <option value="CHECKBOX">Multiple Choice (Checkbox)</option>
+                      </select>
+                      {(q.question_type === 'RADIO' || q.question_type === 'CHECKBOX') && (
+                        <div className="mt-4 space-y-2 pl-2 border-l-2 border-[var(--border-soft)]">
+                          <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Options</label>
+                          {(q.options || []).map((opt, optIdx) => (
+                            <div key={optIdx} className="flex gap-2 items-center">
+                              <input 
+                                type="text"
+                                value={opt}
+                                onChange={e => {
+                                  const newOpts = [...(q.options || [])];
+                                  newOpts[optIdx] = e.target.value;
+                                  updateQuestion(idx, { options: newOpts });
+                                }}
+                                className="flex-1 text-sm bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg p-2 outline-none focus:border-brand-primary"
+                                placeholder={`Option ${optIdx + 1}`}
+                              />
+                              <button
+                                onClick={() => {
+                                  const newOpts = [...(q.options || [])];
+                                  newOpts.splice(optIdx, 1);
+                                  updateQuestion(idx, { options: newOpts });
+                                }}
+                                className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => {
+                              const newOpts = [...(q.options || [])];
+                              newOpts.push(`Option ${newOpts.length + 1}`);
+                              updateQuestion(idx, { options: newOpts });
+                            }}
+                            className="text-xs font-medium text-brand-primary hover:underline mt-1"
+                          >
+                            + Add Option
+                          </button>
+                        </div>
+                      )}
                   </div>
                   <button 
                     onClick={() => removeQuestion(idx)}

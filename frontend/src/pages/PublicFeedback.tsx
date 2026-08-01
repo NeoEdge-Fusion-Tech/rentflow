@@ -35,9 +35,10 @@ export function PublicFeedback() {
       const initialAnswers: Record<number, any> = {};
       res.data.form.questions?.forEach((q: FeedbackQuestion) => {
         if (q.id) {
-          if (q.question_type === 'TEXT') initialAnswers[q.id] = '';
+          if (q.question_type === 'TEXT' || q.question_type === 'RADIO') initialAnswers[q.id] = '';
           else if (q.question_type === 'RATING') initialAnswers[q.id] = 0;
           else if (q.question_type === 'BOOLEAN') initialAnswers[q.id] = null;
+          else if (q.question_type === 'CHECKBOX') initialAnswers[q.id] = [];
         }
       });
       setAnswers(initialAnswers);
@@ -63,9 +64,10 @@ export function PublicFeedback() {
       
       return {
         question: parseInt(qId),
-        answer_text: q.question_type === 'TEXT' ? val : null,
+        answer_text: (q.question_type === 'TEXT' || q.question_type === 'RADIO') ? val : null,
         answer_rating: q.question_type === 'RATING' ? val : null,
         answer_boolean: q.question_type === 'BOOLEAN' ? val : null,
+        answer_choices: q.question_type === 'CHECKBOX' ? val : null,
       };
     }).filter(Boolean);
 
@@ -226,6 +228,54 @@ export function PublicFeedback() {
                   >
                     No
                   </button>
+                </div>
+              )}
+
+              {q.question_type === 'RADIO' && q.options && (
+                <div className="space-y-3 mt-2">
+                  {q.options.map((opt, optIdx) => (
+                    <label key={optIdx} className="flex items-center gap-3 cursor-pointer group">
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${answers[q.id!] === opt ? 'border-brand-primary' : 'border-[var(--border-soft)] group-hover:border-[var(--text-muted)]'}`}>
+                        {answers[q.id!] === opt && <div className="w-2.5 h-2.5 rounded-full bg-brand-primary" />}
+                      </div>
+                      <span className="text-[var(--text-main)]">{opt}</span>
+                      <input 
+                        type="radio" 
+                        className="hidden" 
+                        checked={answers[q.id!] === opt}
+                        onChange={() => handleAnswerChange(q.id!, opt)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {q.question_type === 'CHECKBOX' && q.options && (
+                <div className="space-y-3 mt-2">
+                  {q.options.map((opt, optIdx) => {
+                    const isChecked = (answers[q.id!] || []).includes(opt);
+                    return (
+                      <label key={optIdx} className="flex items-center gap-3 cursor-pointer group">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-brand-primary border-brand-primary text-white' : 'border-[var(--border-soft)] group-hover:border-[var(--text-muted)]'}`}>
+                          {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        </div>
+                        <span className="text-[var(--text-main)]">{opt}</span>
+                        <input 
+                          type="checkbox" 
+                          className="hidden" 
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const currentAnswers = answers[q.id!] || [];
+                            if (e.target.checked) {
+                              handleAnswerChange(q.id!, [...currentAnswers, opt]);
+                            } else {
+                              handleAnswerChange(q.id!, currentAnswers.filter((a: string) => a !== opt));
+                            }
+                          }}
+                        />
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>

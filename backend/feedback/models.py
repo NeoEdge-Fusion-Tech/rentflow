@@ -19,11 +19,14 @@ class FeedbackQuestion(models.Model):
         ('TEXT', 'Text'),
         ('RATING', 'Rating'),
         ('BOOLEAN', 'Yes/No'),
+        ('RADIO', 'Single Choice (Radio)'),
+        ('CHECKBOX', 'Multiple Choice (Checkbox)'),
     )
     id = models.AutoField(primary_key=True)
     form = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='questions')
     question_text = models.CharField(max_length=500)
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='TEXT')
+    options = models.JSONField(blank=True, null=True, help_text="List of choices for RADIO and CHECKBOX types")
     position = models.PositiveIntegerField(default=0)
     
     class Meta:
@@ -60,6 +63,7 @@ class FeedbackAnswer(models.Model):
     answer_text = models.TextField(blank=True, null=True)
     answer_rating = models.IntegerField(blank=True, null=True)
     answer_boolean = models.BooleanField(blank=True, null=True)
+    answer_choices = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return f"Answer to {self.question.question_text}"

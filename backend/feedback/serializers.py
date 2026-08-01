@@ -5,7 +5,7 @@ from events.models import Event
 class FeedbackQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeedbackQuestion
-        fields = ['id', 'question_text', 'question_type', 'position']
+        fields = ['id', 'question_text', 'question_type', 'options', 'position']
 
 class FeedbackFormSerializer(serializers.ModelSerializer):
     questions = FeedbackQuestionSerializer(many=True, required=False)
@@ -79,7 +79,7 @@ class ProjectFeedbackSerializer(serializers.ModelSerializer):
 class FeedbackAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeedbackAnswer
-        fields = ['question', 'answer_text', 'answer_rating', 'answer_boolean']
+        fields = ['question', 'answer_text', 'answer_rating', 'answer_boolean', 'answer_choices']
 
 class FeedbackResponseSerializer(serializers.ModelSerializer):
     answers = FeedbackAnswerSerializer(many=True)

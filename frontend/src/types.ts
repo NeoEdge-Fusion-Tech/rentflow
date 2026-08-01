@@ -150,7 +150,8 @@ export interface Invoice {
 export interface FeedbackQuestion {
   id?: number;
   question_text: string;
-  question_type: 'TEXT' | 'RATING' | 'BOOLEAN';
+  question_type: 'TEXT' | 'RATING' | 'BOOLEAN' | 'RADIO' | 'CHECKBOX';
+  options?: string[];
   position: number;
 }
 
