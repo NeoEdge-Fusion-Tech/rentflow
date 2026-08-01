@@ -218,7 +218,6 @@ export function FeedbackForms() {
                         />
                         Required
                       </label>
-                    </div>
                       {(q.question_type === 'RADIO' || q.question_type === 'CHECKBOX') && (
                         <div className="mt-4 space-y-2 pl-2 border-l-2 border-[var(--border-soft)]">
                           <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Options</label>
