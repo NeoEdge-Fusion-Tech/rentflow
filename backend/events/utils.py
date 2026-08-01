@@ -24,6 +24,11 @@ def compute_period_totals(organization, start, end):
     """
     from .models import Event, ExpenseLineItem
     from payment.models import GeneralExpense
+    from django.db.models.functions import Coalesce, Cast
+    from django.db.models import DateField
+
+    start_date = start.date() if hasattr(start, 'date') else start
+    end_date = end.date() if hasattr(end, 'date') else end
 
     revenue_by_event = dict(
         Event.objects.filter(
@@ -33,17 +38,21 @@ def compute_period_totals(organization, start, end):
         ).values_list('event_id', 'invoice__total_amount')
     )
     expenses_by_event = dict(
-        ExpenseLineItem.objects.filter(
+        ExpenseLineItem.objects.annotate(
+            effective_date=Coalesce('date', Cast('created_at', DateField()))
+        ).filter(
             event__organization=organization,
-            created_at__gte=start,
-            created_at__lt=end,
+            effective_date__gte=start_date,
+            effective_date__lt=end_date,
         ).values('event_id').annotate(total=Sum('amount')).values_list('event_id', 'total')
     )
 
-    general_expenses_total = GeneralExpense.objects.filter(
+    general_expenses_total = GeneralExpense.objects.annotate(
+        effective_date=Coalesce('date', Cast('created_at', DateField()))
+    ).filter(
         organization=organization,
-        created_at__gte=start,
-        created_at__lt=end,
+        effective_date__gte=start_date,
+        effective_date__lt=end_date,
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
     total_revenue = sum(revenue_by_event.values(), Decimal('0'))
