@@ -262,11 +262,20 @@ class Receipt(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.receipt_number:
-            import datetime
-            year = datetime.datetime.now().year
-            last_id = Receipt.objects.filter(receipt_number__startswith=f"REC-{year}").count()
-            self.receipt_number = f"REC-{year}-{last_id + 1:04d}"
-        super().save(*args, **kwargs)
+            max_retries = 3
+            for attempt in range(max_retries):
+                self.receipt_number = _next_document_number(Receipt, self.organization, 'receipt_number', 'REC')
+                try:
+                    with transaction.atomic():
+                        super().save(*args, **kwargs)
+                    break
+                except IntegrityError as e:
+                    if 'receipt_number' in str(e) and attempt < max_retries - 1:
+                        self.receipt_number = None
+                        continue
+                    raise
+        else:
+            super().save(*args, **kwargs)
 
 
 class SubscriptionPayment(models.Model):

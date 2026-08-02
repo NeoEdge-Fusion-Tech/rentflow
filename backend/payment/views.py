@@ -235,30 +235,38 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if amount <= 0:
             return Response({"error": "Amount must be greater than zero."}, status=400)
             
-        payment = Payment.objects.create(
-            invoice_record=invoice,
-            booking=invoice.booking,
-            organization=invoice.organization,
-            amount=amount,
-            status='completed',
-            payment_date=timezone.now(),
-            created_by=request.user
-        )
-        
-        invoice.amount_paid = invoice.amount_paid + amount
-        if invoice.amount_paid >= invoice.total_amount:
-            invoice.status = 'paid'
-        elif invoice.amount_paid > 0:
-            invoice.status = 'partially_paid'
-        invoice.save(update_fields=['amount_paid', 'status'])
-        
-        # update linked booking
-        if invoice.booking:
-            booking = invoice.booking
-            booking.amount_paid = booking.amount_paid + amount
-            if booking.amount_paid >= booking.total_amount:
-                booking.payment_status = 'paid'
-            booking.save(update_fields=['amount_paid', 'payment_status'])
+        if invoice.amount_left <= 0 or invoice.status == 'paid':
+            return Response({"error": "Invoice is already fully paid."}, status=400)
+            
+        if amount > invoice.amount_left:
+            return Response({"error": f"Amount exceeds remaining balance of {invoice.amount_left}."}, status=400)
+            
+        from django.db import transaction
+        with transaction.atomic():
+            payment = Payment.objects.create(
+                invoice_record=invoice,
+                booking=invoice.booking,
+                organization=invoice.organization,
+                amount=amount,
+                status='completed',
+                payment_date=timezone.now(),
+                created_by=request.user
+            )
+            
+            invoice.amount_paid = invoice.amount_paid + amount
+            if invoice.amount_paid >= invoice.total_amount:
+                invoice.status = 'paid'
+            elif invoice.amount_paid > 0:
+                invoice.status = 'partially_paid'
+            invoice.save(update_fields=['amount_paid', 'status'])
+            
+            # update linked booking
+            if invoice.booking:
+                booking = invoice.booking
+                booking.amount_paid = booking.amount_paid + amount
+                if booking.amount_paid >= booking.total_amount:
+                    booking.payment_status = 'paid'
+                booking.save(update_fields=['amount_paid', 'payment_status'])
             
         return Response(InvoiceSerializer(invoice, context={'request': request}).data)
 
