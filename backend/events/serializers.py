@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.db.models import Sum
 from users.mixins import TenantSerializerMixin
 from users.serializers import VendorSerializer, ClientSerializer
+from feedback.models import FeedbackForm, ProjectFeedback
 from .models import Event, ExpenseLineItem, ChecklistTask
 
 
@@ -34,13 +35,15 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     revenue = serializers.SerializerMethodField()
     total_expenses = serializers.SerializerMethodField()
     profit = serializers.SerializerMethodField()
+    feedback_template_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Event
         fields = [
             'event_id', 'organization', 'name', 'description', 'status',
             'start_date', 'end_date', 'invoice', 'invoice_number', 'client_details',
-            'revenue', 'total_expenses', 'profit', 'created_at', 'updated_at'
+            'revenue', 'total_expenses', 'profit', 'created_at', 'updated_at',
+            'feedback_template_id'
         ]
         read_only_fields = ['created_at', 'updated_at', 'organization']
 
@@ -54,6 +57,17 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         revenue = self.get_revenue(obj)
         expenses = self.get_total_expenses(obj)
         return revenue - expenses
+
+    def create(self, validated_data):
+        feedback_template_id = validated_data.pop('feedback_template_id', None)
+        event = super().create(validated_data)
+        if feedback_template_id:
+            try:
+                form = FeedbackForm.objects.get(id=feedback_template_id, organization=event.organization)
+                ProjectFeedback.objects.create(event=event, form=form)
+            except FeedbackForm.DoesNotExist:
+                pass
+        return event
 
 
 class ChecklistTaskSerializer(TenantSerializerMixin, serializers.ModelSerializer):

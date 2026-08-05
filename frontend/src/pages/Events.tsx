@@ -16,13 +16,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/utils';
 import { useNotification } from '../context/NotificationContext';
-import { EventService, InvoiceService } from '@/src/api';
+import { EventService, InvoiceService, FeedbackService } from '@/src/api';
 
 export function Events() {
   const navigate = useNavigate();
   const { showNotification, showConfirm } = useNotification();
   const [events, setEvents] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [feedbackForms, setFeedbackForms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,6 +40,7 @@ export function Events() {
     start_date: '',
     end_date: '',
     invoice: '' as number | string,
+    feedback_template_id: '' as number | string,
   });
 
   const fetchEvents = async (page = 1) => {
@@ -61,12 +63,20 @@ export function Events() {
     } catch (e) { console.error(e); }
   };
 
+  const fetchForms = async () => {
+    try {
+      const response = await FeedbackService.getForms();
+      setFeedbackForms(response.data.results || response.data);
+    } catch (e) { console.error(e); }
+  };
+
   useEffect(() => {
     fetchEvents(currentPage);
   }, [currentPage, searchTerm]);
 
   useEffect(() => {
     fetchInvoices();
+    fetchForms();
   }, []);
 
   const formatCurrency = (amount: number | string) => {
@@ -75,7 +85,7 @@ export function Events() {
   };
 
   const openAddModal = () => {
-    setFormData({ name: '', description: '', status: 'planned', start_date: '', end_date: '', invoice: '' });
+    setFormData({ name: '', description: '', status: 'planned', start_date: '', end_date: '', invoice: '', feedback_template_id: '' });
     setIsModalOpen(true);
   };
 
@@ -108,6 +118,7 @@ export function Events() {
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         invoice: formData.invoice ? parseInt(String(formData.invoice)) : null,
+        feedback_template_id: formData.feedback_template_id ? parseInt(String(formData.feedback_template_id)) : null,
       };
       const res = await EventService.create(payload);
       setIsModalOpen(false);
@@ -319,6 +330,20 @@ export function Events() {
                   <option value="">No invoice linked</option>
                   {invoices.map((inv: any) => (
                     <option key={inv.invoice_id} value={inv.invoice_id}>{inv.invoice_number} — {inv.client_name || 'No client'}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">Feedback Template (optional)</label>
+                <select
+                  value={formData.feedback_template_id}
+                  onChange={e => setFormData({...formData, feedback_template_id: e.target.value})}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                >
+                  <option value="">No feedback template selected</option>
+                  {feedbackForms.map((form: any) => (
+                    <option key={form.id} value={form.id}>{form.title}</option>
                   ))}
                 </select>
               </div>
