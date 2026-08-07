@@ -13,47 +13,32 @@ import requests
 
 def compute_period_totals(organization, start, end):
     """
-    Returns (total_revenue, total_expenses, general_expenses_total, total_profit, total_loss) across all of
+    Returns (total_revenue, total_project_expenses, general_expenses_total, total_profit, total_loss) across all of
     an organization's Events and standalone invoices within [start, end).
 
-    Revenue is attributed by each invoice's issue_date; expenses by when they
-    were logged (created_at).
+    Revenue and expenses for events are attributed to the month the event actually took place 
+    (using end_date, or start_date if no end_date). Standalone revenue and general expenses 
+    are attributed by their recorded dates.
     """
     from .models import Event, ExpenseLineItem
     from payment.models import GeneralExpense, Invoice
     from django.db.models.functions import Coalesce, Cast
     from django.db.models import DateField
     from django.db.models import Sum
+    from decimal import Decimal
 
     start_date = start.date() if hasattr(start, 'date') else start
     end_date = end.date() if hasattr(end, 'date') else end
 
-    # Total revenue from ALL valid invoices in the period
-    total_revenue = Invoice.objects.filter(
+    # 1. Standalone Revenue (Invoices not tied to any Event)
+    standalone_revenue = Invoice.objects.filter(
         organization=organization,
         issue_date__gte=start,
         issue_date__lt=end,
+        pl_events__isnull=True
     ).exclude(status='cancelled').aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
 
-    # Revenue attributed to specific events
-    revenue_by_event = dict(
-        Event.objects.filter(
-            organization=organization,
-            invoice__issue_date__gte=start,
-            invoice__issue_date__lt=end,
-        ).exclude(invoice__status='cancelled').values_list('event_id', 'invoice__total_amount')
-    )
-
-    expenses_by_event = dict(
-        ExpenseLineItem.objects.annotate(
-            effective_date=Coalesce('date', Cast('created_at', DateField()))
-        ).filter(
-            event__organization=organization,
-            effective_date__gte=start_date,
-            effective_date__lt=end_date,
-        ).values('event_id').annotate(total=Sum('amount')).values_list('event_id', 'total')
-    )
-
+    # 2. General Expenses (Not tied to any Event)
     general_expenses_total = GeneralExpense.objects.annotate(
         effective_date=Coalesce('date', Cast('created_at', DateField()))
     ).filter(
@@ -62,26 +47,43 @@ def compute_period_totals(organization, start, end):
         effective_date__lt=end_date,
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-    total_project_expenses = sum(expenses_by_event.values(), Decimal('0'))
+    # 3. Project Revenue & Expenses
+    # Find events that "occurred" in this period
+    events_in_period = Event.objects.annotate(
+        effective_event_date=Coalesce('end_date', 'start_date', Cast('created_at', DateField()))
+    ).filter(
+        organization=organization,
+        effective_event_date__gte=start_date,
+        effective_event_date__lt=end_date,
+    )
+
+    revenue_by_event = dict(
+        events_in_period.exclude(invoice__status='cancelled').values_list('event_id', 'invoice__total_amount')
+    )
+
+    expenses_by_event = dict(
+        ExpenseLineItem.objects.filter(
+            event__in=events_in_period
+        ).values('event_id').annotate(total=Sum('amount')).values_list('event_id', 'total')
+    )
+
+    total_project_revenue = sum([v for v in revenue_by_event.values() if v is not None], Decimal('0'))
+    total_project_expenses = sum([v for v in expenses_by_event.values() if v is not None], Decimal('0'))
+
+    total_revenue = standalone_revenue + total_project_revenue
 
     total_profit = Decimal('0')
     total_loss = Decimal('0')
     
     for event_id in set(revenue_by_event) | set(expenses_by_event):
-        net = (revenue_by_event.get(event_id) or Decimal('0')) - (expenses_by_event.get(event_id) or Decimal('0'))
+        rev = revenue_by_event.get(event_id) or Decimal('0')
+        exp = expenses_by_event.get(event_id) or Decimal('0')
+        net = rev - exp
         if net > 0:
             total_profit += net
         elif net < 0:
             total_loss += -net
 
-    # Add standalone revenue to total profit
-    standalone_revenue = Invoice.objects.filter(
-        organization=organization,
-        issue_date__gte=start,
-        issue_date__lt=end,
-        pl_events__isnull=True
-    ).exclude(status='cancelled').aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
-    
     total_profit += standalone_revenue
 
     # Subtract general expenses from overall profit/loss
