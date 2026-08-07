@@ -526,12 +526,6 @@ export function Settings() {
               <p className="text-xs text-[var(--text-muted)] mt-1">Used for invoices and receipts to match your brand.</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Payout Account (Stripe Connect ID)</label>
-              <input type="text" value={org?.payout_account_id || ''} onChange={e => setOrg({...org, payout_account_id: e.target.value})} placeholder="acct_1Ou..." className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary" />
-              <p className="text-xs text-[var(--text-muted)] mt-1">This account will receive all directly routed payouts from your customer bookings.</p>
-            </div>
-
             <button onClick={handleUpdateWorkspace} className="bg-brand-primary text-brand-accent px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity">Save Changes</button>
           </div>
         </div>
