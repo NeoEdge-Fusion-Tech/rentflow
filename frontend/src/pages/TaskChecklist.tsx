@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ListChecks, ArrowUpRight } from 'lucide-react';
-import { EventService } from '../api';
-import { TaskChecklistPanel } from '../components/TaskChecklistPanel';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ListChecks, ArrowUpRight } from "lucide-react";
+import { EventService } from "../api";
+import { TaskChecklistPanel } from "../components/TaskChecklistPanel";
 
 export function TaskChecklist() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const eventIdParam = searchParams.get('event');
+  const eventIdParam = searchParams.get("event");
 
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedEventId, setSelectedEventId] = useState<string>(eventIdParam || '');
+  const [selectedEventId, setSelectedEventId] = useState<string>(
+    eventIdParam || "",
+  );
 
   useEffect(() => {
     (async () => {
@@ -41,26 +43,39 @@ export function TaskChecklist() {
     }
   };
 
-  const selectedEvent = events.find((e: any) => String(e.event_id) === String(selectedEventId));
+  const selectedEvent = events.find(
+    (e: any) => String(e.event_id) === String(selectedEventId),
+  );
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--text-main)]">Task Checklist</h1>
-        <p className="text-[var(--text-muted)]">Pick a project to manage its pre-event, during-event, and post-event tasks.</p>
+        <h1 className="text-2xl font-bold text-[var(--text-main)]">
+          Task Checklist
+        </h1>
+        <p className="text-[var(--text-muted)]">
+          Pick a project to manage its pre-event, during-event, and post-event
+          tasks.
+        </p>
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-        <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Project / Event</label>
+        <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+          Project / Event
+        </label>
         <div className="flex flex-col sm:flex-row gap-3">
           <select
             value={selectedEventId}
-            onChange={e => handleSelect(e.target.value)}
+            onChange={(e) => handleSelect(e.target.value)}
             className="flex-1 h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
           >
-            <option value="">{isLoading ? 'Loading projects...' : 'Select a project...'}</option>
+            <option value="">
+              {isLoading ? "Loading projects..." : "Select a project..."}
+            </option>
             {events.map((ev: any) => (
-              <option key={ev.event_id} value={ev.event_id}>{ev.name}</option>
+              <option key={ev.event_id} value={ev.event_id}>
+                {ev.name}
+              </option>
             ))}
           </select>
           {selectedEventId && (
@@ -73,12 +88,17 @@ export function TaskChecklist() {
           )}
         </div>
         {!isLoading && events.length === 0 && (
-          <p className="text-xs text-[var(--text-muted)] mt-3">No projects yet. Create one from the Projects page first.</p>
+          <p className="text-xs text-[var(--text-muted)] mt-3">
+            No projects yet. Create one from the Projects page first.
+          </p>
         )}
       </div>
 
       {selectedEventId ? (
-        <TaskChecklistPanel eventId={selectedEventId} eventName={selectedEvent?.name} />
+        <TaskChecklistPanel
+          eventId={selectedEventId}
+          eventName={selectedEvent?.name}
+        />
       ) : (
         <div className="bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)] p-12 text-center text-[var(--text-muted)] flex flex-col items-center gap-3">
           <ListChecks className="w-8 h-8" />

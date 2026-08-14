@@ -10,64 +10,196 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('payment', '0014_invoice_show_bank_details_quotation_and_more'),
-        ('users', '0023_vendor'),
+        ("payment", "0014_invoice_show_bank_details_quotation_and_more"),
+        ("users", "0023_vendor"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Event',
+            name="Event",
             fields=[
-                ('event_id', models.AutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('status', models.CharField(choices=[('planned', 'Planned'), ('ongoing', 'Ongoing'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='planned', max_length=20)),
-                ('start_date', models.DateField(blank=True, null=True)),
-                ('end_date', models.DateField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_events', to=settings.AUTH_USER_MODEL)),
-                ('invoice', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pl_events', to='payment.invoice')),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='events', to='users.organization')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='updated_events', to=settings.AUTH_USER_MODEL)),
+                ("event_id", models.AutoField(primary_key=True, serialize=False)),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True, null=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("planned", "Planned"),
+                            ("ongoing", "Ongoing"),
+                            ("completed", "Completed"),
+                            ("cancelled", "Cancelled"),
+                        ],
+                        default="planned",
+                        max_length=20,
+                    ),
+                ),
+                ("start_date", models.DateField(blank=True, null=True)),
+                ("end_date", models.DateField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_events",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "invoice",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="pl_events",
+                        to="payment.invoice",
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="events",
+                        to="users.organization",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="updated_events",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ChecklistTask',
+            name="ChecklistTask",
             fields=[
-                ('task_id', models.AutoField(primary_key=True, serialize=False)),
-                ('checklist_type', models.CharField(choices=[('pre_event', 'Pre-Event'), ('during_event', 'During Event'), ('post_event', 'Post-Event')], max_length=20)),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('due_date', models.DateTimeField(blank=True, null=True)),
-                ('is_done', models.BooleanField(default=False)),
-                ('position', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_checklist_tasks', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='checklist_tasks', to='users.organization')),
-                ('parent_task', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='subtasks', to='events.checklisttask')),
-                ('event', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tasks', to='events.event')),
+                ("task_id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "checklist_type",
+                    models.CharField(
+                        choices=[
+                            ("pre_event", "Pre-Event"),
+                            ("during_event", "During Event"),
+                            ("post_event", "Post-Event"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("due_date", models.DateTimeField(blank=True, null=True)),
+                ("is_done", models.BooleanField(default=False)),
+                ("position", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_checklist_tasks",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="checklist_tasks",
+                        to="users.organization",
+                    ),
+                ),
+                (
+                    "parent_task",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subtasks",
+                        to="events.checklisttask",
+                    ),
+                ),
+                (
+                    "event",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="tasks",
+                        to="events.event",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['checklist_type', 'position', 'task_id'],
+                "ordering": ["checklist_type", "position", "task_id"],
             },
         ),
         migrations.CreateModel(
-            name='ExpenseLineItem',
+            name="ExpenseLineItem",
             fields=[
-                ('expense_id', models.AutoField(primary_key=True, serialize=False)),
-                ('expense_type', models.CharField(choices=[('vendor', 'Vendor'), ('item', 'Item')], max_length=10)),
-                ('name', models.CharField(max_length=255)),
-                ('amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_expense_items', to=settings.AUTH_USER_MODEL)),
-                ('event', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='expenses', to='events.event')),
-                ('organization', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='expense_items', to='users.organization')),
-                ('vendor', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='expenses', to='users.vendor')),
+                ("expense_id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "expense_type",
+                    models.CharField(
+                        choices=[("vendor", "Vendor"), ("item", "Item")], max_length=10
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                (
+                    "amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                ("description", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_expense_items",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "event",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="expenses",
+                        to="events.event",
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="expense_items",
+                        to="users.organization",
+                    ),
+                ),
+                (
+                    "vendor",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="expenses",
+                        to="users.vendor",
+                    ),
+                ),
             ],
         ),
     ]

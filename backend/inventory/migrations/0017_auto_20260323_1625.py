@@ -4,27 +4,31 @@ from django.db import migrations
 
 
 def migrate_return_quantities(apps, schema_editor):
-    BookingItemUnit = apps.get_model('inventory', 'BookingItemUnit')
+    BookingItemUnit = apps.get_model("inventory", "BookingItemUnit")
     for unit in BookingItemUnit.objects.all():
         # Copy data to new fields
         unit.quantity_returned_good = unit.quantity_returned_in_good_condition
         unit.quantity_returned_damaged = unit.quantity_returned_in_damaged_condition
         unit.save()
 
+
 def reverse_migrate_return_quantities(apps, schema_editor):
-    BookingItemUnit = apps.get_model('inventory', 'BookingItemUnit')
+    BookingItemUnit = apps.get_model("inventory", "BookingItemUnit")
     for unit in BookingItemUnit.objects.all():
         # Copy data back to old fields
         unit.quantity_returned_in_good_condition = unit.quantity_returned_good
         unit.quantity_returned_in_damaged_condition = unit.quantity_returned_damaged
         unit.save()
 
+
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0016_remove_bookingitemunit_quantity_returned'),
+        ("inventory", "0016_remove_bookingitemunit_quantity_returned"),
     ]
 
     operations = [
-        migrations.RunPython(migrate_return_quantities, reverse_migrate_return_quantities),
+        migrations.RunPython(
+            migrate_return_quantities, reverse_migrate_return_quantities
+        ),
     ]

@@ -1,31 +1,46 @@
 from rest_framework import serializers
-from .models import FeedbackForm, FeedbackQuestion, ProjectFeedback, FeedbackResponse, FeedbackAnswer
+from .models import (
+    FeedbackForm,
+    FeedbackQuestion,
+    ProjectFeedback,
+    FeedbackResponse,
+    FeedbackAnswer,
+)
 from events.models import Event
+
 
 class FeedbackQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeedbackQuestion
-        fields = ['id', 'question_text', 'question_type', 'options', 'is_required', 'position']
+        fields = [
+            "id",
+            "question_text",
+            "question_type",
+            "options",
+            "is_required",
+            "position",
+        ]
+
 
 class FeedbackFormSerializer(serializers.ModelSerializer):
     questions = FeedbackQuestionSerializer(many=True, required=False)
 
     class Meta:
         model = FeedbackForm
-        fields = ['id', 'title', 'description', 'questions', 'created_at', 'updated_at']
+        fields = ["id", "title", "description", "questions", "created_at", "updated_at"]
 
     def create(self, validated_data):
-        questions_data = validated_data.pop('questions', [])
-        validated_data['organization'] = self.context['request'].user.organization
+        questions_data = validated_data.pop("questions", [])
+        validated_data["organization"] = self.context["request"].user.organization
         form = FeedbackForm.objects.create(**validated_data)
         for q_data in questions_data:
             FeedbackQuestion.objects.create(form=form, **q_data)
         return form
 
     def update(self, instance, validated_data):
-        questions_data = validated_data.pop('questions', None)
-        instance.title = validated_data.get('title', instance.title)
-        instance.description = validated_data.get('description', instance.description)
+        questions_data = validated_data.pop("questions", None)
+        instance.title = validated_data.get("title", instance.title)
+        instance.description = validated_data.get("description", instance.description)
         instance.save()
 
         if questions_data is not None:
@@ -36,29 +51,39 @@ class FeedbackFormSerializer(serializers.ModelSerializer):
 
         return instance
 
+
 class ProjectFeedbackSerializer(serializers.ModelSerializer):
     form = FeedbackFormSerializer(read_only=True)
     form_id = serializers.PrimaryKeyRelatedField(
-        queryset=FeedbackForm.objects.all(), source='form', write_only=True
+        queryset=FeedbackForm.objects.all(), source="form", write_only=True
     )
     event_id = serializers.PrimaryKeyRelatedField(
-        queryset=Event.objects.all(), source='event', write_only=True
+        queryset=Event.objects.all(), source="event", write_only=True
     )
-    
+
     event_details = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectFeedback
-        fields = ['id', 'event_id', 'form', 'form_id', 'public_id', 'is_active', 'created_at', 'event_details']
+        fields = [
+            "id",
+            "event_id",
+            "form",
+            "form_id",
+            "public_id",
+            "is_active",
+            "created_at",
+            "event_details",
+        ]
 
     def get_event_details(self, obj):
         logo = obj.event.organization.company_logo
         logo_url = logo.url if logo else None
-        
-        request = self.context.get('request')
-        if logo_url and not logo_url.startswith('http') and request:
+
+        request = self.context.get("request")
+        if logo_url and not logo_url.startswith("http") and request:
             logo_url = request.build_absolute_uri(logo_url)
-            
+
         event_date = None
         if obj.event.invoice and obj.event.invoice.event_date:
             event_date = obj.event.invoice.event_date
@@ -68,29 +93,44 @@ class ProjectFeedbackSerializer(serializers.ModelSerializer):
             event_date = obj.event.start_date
 
         return {
-            'name': obj.event.name,
-            'start_date': obj.event.start_date,
-            'end_date': obj.event.end_date,
-            'event_date': event_date,
-            'organization_logo': logo_url,
-            'organization_name': obj.event.organization.name,
+            "name": obj.event.name,
+            "start_date": obj.event.start_date,
+            "end_date": obj.event.end_date,
+            "event_date": event_date,
+            "organization_logo": logo_url,
+            "organization_name": obj.event.organization.name,
         }
+
 
 class FeedbackAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeedbackAnswer
-        fields = ['question', 'answer_text', 'answer_rating', 'answer_boolean', 'answer_choices']
+        fields = [
+            "question",
+            "answer_text",
+            "answer_rating",
+            "answer_boolean",
+            "answer_choices",
+        ]
+
 
 class FeedbackResponseSerializer(serializers.ModelSerializer):
     answers = FeedbackAnswerSerializer(many=True)
 
     class Meta:
         model = FeedbackResponse
-        fields = ['id', 'project_feedback', 'client_name', 'client_email', 'submitted_at', 'answers']
-        read_only_fields = ['id', 'submitted_at']
+        fields = [
+            "id",
+            "project_feedback",
+            "client_name",
+            "client_email",
+            "submitted_at",
+            "answers",
+        ]
+        read_only_fields = ["id", "submitted_at"]
 
     def create(self, validated_data):
-        answers_data = validated_data.pop('answers', [])
+        answers_data = validated_data.pop("answers", [])
         response = FeedbackResponse.objects.create(**validated_data)
         for answer_data in answers_data:
             FeedbackAnswer.objects.create(response=response, **answer_data)

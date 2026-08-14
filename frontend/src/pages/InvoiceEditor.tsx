@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Plus, Trash2, FileText, Eye, Edit2 } from 'lucide-react';
-import { cn } from '@/src/utils';
-import { useNotification } from '../context/NotificationContext';
-import { ClientPicker } from '../components/ClientPicker';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Download,
+  Plus,
+  Trash2,
+  FileText,
+  Eye,
+  Edit2,
+} from "lucide-react";
+import { cn } from "@/src/utils";
+import { useNotification } from "../context/NotificationContext";
+import { ClientPicker } from "../components/ClientPicker";
 import {
   InvoiceService,
   ClientService,
@@ -11,8 +19,8 @@ import {
   BankAccountService,
   AuthService,
   OrganizationService,
-  ProductService
-} from '../api';
+  ProductService,
+} from "../api";
 
 interface LineItem {
   line_item_id?: number;
@@ -26,8 +34,8 @@ export function InvoiceEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const bookingIdParam = searchParams.get('booking_id');
-  const duplicateFromParam = searchParams.get('duplicate_from');
+  const bookingIdParam = searchParams.get("booking_id");
+  const duplicateFromParam = searchParams.get("duplicate_from");
   const isEditMode = !!id;
   const { showNotification } = useNotification();
 
@@ -43,50 +51,60 @@ export function InvoiceEditor() {
   const [lastInvoiceMeta, setLastInvoiceMeta] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    client: '' as number | string,
-    booking: bookingIdParam || '',
-    invoice_number: '',
+    client: "" as number | string,
+    booking: bookingIdParam || "",
+    invoice_number: "",
     issue_date: new Date().toISOString().slice(0, 10),
-    due_date: '',
-    event_date: '',
-    status: 'draft',
-    currency: '' as number | string,
-    bank_account: '' as number | string,
+    due_date: "",
+    event_date: "",
+    status: "draft",
+    currency: "" as number | string,
+    bank_account: "" as number | string,
     show_bank_details: true,
     discount_amount: 0,
     discount_percentage: 0,
     tax_percentage: 0,
-    notes: '',
-    title: 'Invoice',
+    notes: "",
+    title: "Invoice",
   });
-  const [lineItems, setLineItems] = useState<LineItem[]>([{ name: '', description: '', quantity: 1, unit_price: 0 }]);
+  const [lineItems, setLineItems] = useState<LineItem[]>([
+    { name: "", description: "", quantity: 1, unit_price: 0 },
+  ]);
 
   const fetchClients = async () => {
     try {
       const res = await ClientService.getAll();
       setClients(res.data.results || res.data);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchCurrencies = async () => {
     try {
       const res = await CurrencyService.getAll();
       setCurrencies(res.data.results || res.data);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchBankAccounts = async () => {
     try {
       const res = await BankAccountService.getAll();
       setBankAccounts(res.data.results || res.data);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchProducts = async () => {
     try {
       const res = await ProductService.getAll();
       setProducts(res.data.results || res.data);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchOrg = async () => {
@@ -97,39 +115,49 @@ export function InvoiceEditor() {
         setOrg(res.data);
         return res.data;
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
     return null;
   };
 
   const loadInvoice = async (invoiceId: string, isDuplicate = false) => {
     const res = await InvoiceService.get(invoiceId);
     const inv = res.data;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      client: inv.client || '',
-      booking: inv.booking || '',
-      invoice_number: isDuplicate ? prev.invoice_number : (inv.invoice_number || ''),
-      issue_date: inv.issue_date ? new Date(inv.issue_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
-      due_date: inv.due_date ? new Date(inv.due_date).toISOString().slice(0, 10) : '',
-      event_date: inv.event_date ? new Date(inv.event_date).toISOString().slice(0, 10) : '',
-      status: isDuplicate ? 'draft' : (inv.status || 'draft'),
-      currency: inv.currency || '',
-      bank_account: inv.bank_account || '',
+      client: inv.client || "",
+      booking: inv.booking || "",
+      invoice_number: isDuplicate
+        ? prev.invoice_number
+        : inv.invoice_number || "",
+      issue_date: inv.issue_date
+        ? new Date(inv.issue_date).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+      due_date: inv.due_date
+        ? new Date(inv.due_date).toISOString().slice(0, 10)
+        : "",
+      event_date: inv.event_date
+        ? new Date(inv.event_date).toISOString().slice(0, 10)
+        : "",
+      status: isDuplicate ? "draft" : inv.status || "draft",
+      currency: inv.currency || "",
+      bank_account: inv.bank_account || "",
       show_bank_details: inv.show_bank_details !== false,
       discount_amount: parseFloat(inv.discount_amount) || 0,
       discount_percentage: parseFloat(inv.discount_percentage) || 0,
       tax_percentage: parseFloat(inv.tax_percentage) || 0,
-      notes: inv.notes || '',
-      title: isDuplicate ? `Copy of ${inv.title || 'Invoice'}` : (inv.title || 'Invoice'),
+      notes: inv.notes || "",
+      title: inv.title || "Invoice",
     }));
     setLineItems(
       (inv.line_items || []).map((li: any) => ({
         ...(isDuplicate ? {} : { line_item_id: li.line_item_id }),
         name: li.name,
-        description: li.description || '',
+        description: li.description || "",
         quantity: parseFloat(li.quantity),
         unit_price: parseFloat(li.unit_price),
-      }))
+      })),
     );
     if (!isDuplicate) {
       setInvoiceMeta(inv);
@@ -139,55 +167,74 @@ export function InvoiceEditor() {
   const loadPrefill = async (bookingId: string) => {
     const res = await InvoiceService.prefillFromBooking(bookingId);
     const data = res.data;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      client: data.client || '',
-      booking: data.booking || '',
+      client: data.client || "",
+      booking: data.booking || "",
       discount_amount: parseFloat(data.discount_amount) || 0,
       discount_percentage: parseFloat(data.discount_percentage) || 0,
     }));
     if (data.line_items?.length) {
-      setLineItems(data.line_items.map((li: any) => ({
-        name: li.name,
-        description: li.description || '',
-        quantity: parseFloat(li.quantity),
-        unit_price: parseFloat(li.unit_price),
-      })));
+      setLineItems(
+        data.line_items.map((li: any) => ({
+          name: li.name,
+          description: li.description || "",
+          quantity: parseFloat(li.quantity),
+          unit_price: parseFloat(li.unit_price),
+        })),
+      );
     }
   };
 
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      await Promise.all([fetchClients(), fetchCurrencies(), fetchBankAccounts(), fetchProducts()]);
+      await Promise.all([
+        fetchClients(),
+        fetchCurrencies(),
+        fetchBankAccounts(),
+        fetchProducts(),
+      ]);
       const orgData = await fetchOrg();
       try {
         if (!id) {
           const nextMeta = await InvoiceService.getNextNumber();
           if (nextMeta.data) {
             setLastInvoiceMeta(nextMeta.data);
-            setFormData(prev => ({ ...prev, invoice_number: nextMeta.data.next_invoice_number }));
+            setFormData((prev) => ({
+              ...prev,
+              invoice_number: nextMeta.data.next_invoice_number,
+            }));
           }
         }
-        
+
         if (id) {
           await loadInvoice(id);
         } else if (duplicateFromParam) {
           await loadInvoice(duplicateFromParam, true);
           if (orgData?.currency?.id) {
-            setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
+            setFormData((prev) => ({
+              ...prev,
+              currency: prev.currency || orgData.currency.id,
+            }));
           }
         } else if (bookingIdParam) {
           await loadPrefill(bookingIdParam);
           if (orgData?.currency?.id) {
-            setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
+            setFormData((prev) => ({
+              ...prev,
+              currency: prev.currency || orgData.currency.id,
+            }));
           }
         } else if (orgData?.currency?.id) {
-          setFormData(prev => ({ ...prev, currency: prev.currency || orgData.currency.id }));
+          setFormData((prev) => ({
+            ...prev,
+            currency: prev.currency || orgData.currency.id,
+          }));
         }
       } catch (err) {
         console.error("Failed to initialize invoice editor", err);
-        showNotification("Failed to load invoice data.", 'error');
+        showNotification("Failed to load invoice data.", "error");
       } finally {
         setIsLoading(false);
       }
@@ -196,28 +243,48 @@ export function InvoiceEditor() {
   }, [id]);
 
   const updateLineItem = (index: number, field: keyof LineItem, value: any) => {
-    setLineItems(prev => {
+    setLineItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       return next;
     });
   };
 
-  const addLineItem = () => setLineItems(prev => [...prev, { name: '', description: '', quantity: 1, unit_price: 0 }]);
-  const removeLineItem = (index: number) => setLineItems(prev => prev.filter((_, i) => i !== index));
+  const addLineItem = () =>
+    setLineItems((prev) => [
+      ...prev,
+      { name: "", description: "", quantity: 1, unit_price: 0 },
+    ]);
+  const removeLineItem = (index: number) =>
+    setLineItems((prev) => prev.filter((_, i) => i !== index));
 
-  const subtotal = lineItems.reduce((acc, li) => acc + (Number(li.quantity) || 0) * (Number(li.unit_price) || 0), 0);
-  const discountValue = formData.discount_percentage > 0
-    ? subtotal * (formData.discount_percentage / 100)
-    : (formData.discount_amount || 0);
+  const subtotal = lineItems.reduce(
+    (acc, li) =>
+      acc + (Number(li.quantity) || 0) * (Number(li.unit_price) || 0),
+    0,
+  );
+  const discountValue =
+    formData.discount_percentage > 0
+      ? subtotal * (formData.discount_percentage / 100)
+      : formData.discount_amount || 0;
   const taxableAmount = Math.max(0, subtotal - discountValue);
   const taxValue = taxableAmount * ((formData.tax_percentage || 0) / 100);
   const grandTotal = Math.max(0, taxableAmount + taxValue);
 
-  const selectedCurrency = currencies.find(c => c.id === parseInt(String(formData.currency)));
-  const currencySymbol = selectedCurrency?.symbol || org?.currency?.symbol || localStorage.getItem('currencySymbol') || '$';
+  const selectedCurrency = currencies.find(
+    (c) => c.id === parseInt(String(formData.currency)),
+  );
+  const currencySymbol =
+    selectedCurrency?.symbol ||
+    org?.currency?.symbol ||
+    localStorage.getItem("currencySymbol") ||
+    "$";
 
-  const formatCurrency = (amount: number) => (amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatCurrency = (amount: number) =>
+    (amount || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   const buildPayload = (statusOverride?: string) => ({
     client: formData.client ? parseInt(String(formData.client)) : null,
@@ -227,15 +294,20 @@ export function InvoiceEditor() {
     event_date: formData.event_date || null,
     status: statusOverride || formData.status,
     currency: formData.currency ? parseInt(String(formData.currency)) : null,
-    bank_account: formData.show_bank_details ? (formData.bank_account ? parseInt(String(formData.bank_account)) : null) : null,
+    bank_account: formData.show_bank_details
+      ? formData.bank_account
+        ? parseInt(String(formData.bank_account))
+        : null
+      : null,
     show_bank_details: formData.show_bank_details,
-    discount_amount: formData.discount_percentage > 0 ? 0 : formData.discount_amount,
+    discount_amount:
+      formData.discount_percentage > 0 ? 0 : formData.discount_amount,
     discount_percentage: formData.discount_percentage,
     tax_percentage: formData.tax_percentage,
     notes: formData.notes,
     title: formData.title,
     invoice_number: formData.invoice_number || undefined,
-    line_items: lineItems.map(li => ({
+    line_items: lineItems.map((li) => ({
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
       name: li.name,
       description: li.description,
@@ -246,11 +318,11 @@ export function InvoiceEditor() {
 
   const handleSave = async (statusOverride?: string, skipNavigate = false) => {
     if (!formData.client) {
-      showNotification("Please select a client.", 'warning');
+      showNotification("Please select a client.", "warning");
       return null;
     }
-    if (lineItems.length === 0 || lineItems.some(li => !li.name)) {
-      showNotification("Every line item needs a name.", 'warning');
+    if (lineItems.length === 0 || lineItems.some((li) => !li.name)) {
+      showNotification("Every line item needs a name.", "warning");
       return null;
     }
     try {
@@ -259,7 +331,10 @@ export function InvoiceEditor() {
       const res = isEditMode
         ? await InvoiceService.patch(id, payload)
         : await InvoiceService.create(payload);
-      showNotification(isEditMode ? "Invoice updated." : "Invoice created.", 'success');
+      showNotification(
+        isEditMode ? "Invoice updated." : "Invoice created.",
+        "success",
+      );
       if (!skipNavigate) {
         navigate(`/invoices/${res.data.invoice_id}/edit`, { replace: true });
       }
@@ -268,8 +343,12 @@ export function InvoiceEditor() {
     } catch (err: any) {
       console.error("Failed to save invoice", err);
       const apiError = err.response?.data;
-      const message = apiError?.client?.[0] || apiError?.line_items?.[0] || apiError?.detail || "Failed to save invoice.";
-      showNotification(message, 'error');
+      const message =
+        apiError?.client?.[0] ||
+        apiError?.line_items?.[0] ||
+        apiError?.detail ||
+        "Failed to save invoice.";
+      showNotification(message, "error");
       return null;
     } finally {
       setIsSaving(false);
@@ -278,7 +357,7 @@ export function InvoiceEditor() {
 
   const handlePreview = async () => {
     if (!isEditMode) {
-      const newId = await handleSave('draft', true);
+      const newId = await handleSave("draft", true);
       if (newId) navigate(`/invoices/${newId}/preview`);
     } else {
       navigate(`/invoices/${id}/preview`);
@@ -290,27 +369,37 @@ export function InvoiceEditor() {
     try {
       const response = await InvoiceService.download(id);
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `invoice_${invoiceMeta?.invoice_number || id}.pdf`);
+      link.setAttribute(
+        "download",
+        `invoice_${invoiceMeta?.invoice_number || id}.pdf`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
       console.error("Failed to download invoice", err);
-      showNotification("Failed to download invoice", 'error');
+      showNotification("Failed to download invoice", "error");
     }
   };
 
   if (isLoading) {
-    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading invoice editor...</div>;
+    return (
+      <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">
+        Loading invoice editor...
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/invoices')} className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors">
+          <button
+            onClick={() => navigate("/invoices")}
+            className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
@@ -320,7 +409,9 @@ export function InvoiceEditor() {
                 <input
                   type="text"
                   value={formData.invoice_number}
-                  onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, invoice_number: e.target.value })
+                  }
                   placeholder="e.g. INV-0001"
                   className="bg-transparent border-b border-dashed border-transparent group-hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
                 />
@@ -328,7 +419,9 @@ export function InvoiceEditor() {
               </div>
             </h1>
             <div className="flex items-center gap-3 mt-1">
-              <p className="text-[var(--text-muted)]">Fill in the details, then save as draft or issue it.</p>
+              <p className="text-[var(--text-muted)]">
+                Fill in the details, then save as draft or issue it.
+              </p>
               {lastInvoiceMeta?.last_invoice_number && !isEditMode && (
                 <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] px-2 py-0.5 rounded-full">
                   Last: {lastInvoiceMeta.last_invoice_number}
@@ -338,26 +431,53 @@ export function InvoiceEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={handlePreview} disabled={isSaving} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
+          <button
+            onClick={handlePreview}
+            disabled={isSaving}
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm"
+          >
             <Eye className="w-4 h-4" /> Preview
           </button>
           {isEditMode && (
-            <button onClick={handleDownload} className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
+            <button
+              onClick={handleDownload}
+              className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm"
+            >
               <Download className="w-4 h-4" /> PDF
             </button>
           )}
           {!isEditMode ? (
             <>
-              <button onClick={() => handleSave('draft')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50">
+              <button
+                onClick={() => handleSave("draft")}
+                disabled={isSaving}
+                className="flex-1 sm:flex-none justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50"
+              >
                 Save Draft
               </button>
-              <button onClick={() => handleSave('issued')} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
-                {isSaving ? 'Saving...' : 'Save & Issue'}
+              <button
+                onClick={() => handleSave("issued")}
+                disabled={isSaving}
+                className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
+                style={{
+                  backgroundColor:
+                    org?.primary_color || "var(--color-brand-primary, #7c3aed)",
+                }}
+              >
+                {isSaving ? "Saving..." : "Save & Issue"}
               </button>
             </>
           ) : (
-            <button onClick={() => handleSave()} disabled={isSaving} className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+            <button
+              onClick={() => handleSave()}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
+              style={{
+                backgroundColor:
+                  org?.primary_color || "var(--color-brand-primary, #7c3aed)",
+              }}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
           )}
         </div>
@@ -369,95 +489,154 @@ export function InvoiceEditor() {
           {/* From */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">From</h3>
-              <button onClick={() => navigate('/settings')} className="text-xs font-bold text-brand-primary hover:underline">Edit company details</button>
+              <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+                From
+              </h3>
+              <button
+                onClick={() => navigate("/settings")}
+                className="text-xs font-bold text-brand-primary hover:underline"
+              >
+                Edit company details
+              </button>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 {org?.company_logo && (
-                  <img src={org.company_logo.startsWith('http') ? org.company_logo : `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${org.company_logo.startsWith('/') ? '' : '/'}${org.company_logo}`} alt="logo" className="w-full h-full object-contain" />
+                  <img
+                    src={
+                      org.company_logo.startsWith("http")
+                        ? org.company_logo
+                        : `${
+                            import.meta.env.VITE_API_URL?.replace("/api", "") ||
+                            ""
+                          }${org.company_logo.startsWith("/") ? "" : "/"}${
+                            org.company_logo
+                          }`
+                    }
+                    alt="logo"
+                    className="w-full h-full object-contain"
+                  />
                 )}
               </div>
               <div>
-                <p className="font-bold text-[var(--text-main)]">{org?.name || 'Your Company'}</p>
-                {org?.address && <p className="text-xs text-[var(--text-muted)]">{org.address}</p>}
-                <p className="text-xs text-[var(--text-muted)]">{[org?.phone_number, org?.email].filter(Boolean).join(' · ')}</p>
+                <p className="font-bold text-[var(--text-main)]">
+                  {org?.name || "Your Company"}
+                </p>
+                {org?.address && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {org.address}
+                  </p>
+                )}
+                <p className="text-xs text-[var(--text-muted)]">
+                  {[org?.phone_number, org?.email].filter(Boolean).join(" · ")}
+                </p>
               </div>
             </div>
           </section>
 
           {/* Bill To */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Bill To</h3>
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">
+              Bill To
+            </h3>
             <ClientPicker
               clients={clients}
               value={formData.client}
-              onChange={(clientId) => setFormData({ ...formData, client: clientId })}
-              onClientCreated={(client) => setClients(prev => [...prev, client])}
+              onChange={(clientId) =>
+                setFormData({ ...formData, client: clientId })
+              }
+              onClientCreated={(client) =>
+                setClients((prev) => [...prev, client])
+              }
             />
           </section>
 
           {/* Meta */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Invoice Details</h3>
-            
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">
+              Invoice Details
+            </h3>
+
             <div className="mb-4">
-              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Invoice Title</label>
+              <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+                Invoice Title
+              </label>
               <input
                 type="text"
                 value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 placeholder="e.g. Website Redesign Invoice"
                 className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
               />
             </div>
 
-
-
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 sm:col-span-1">
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Event / Job Date</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+                  Event / Job Date
+                </label>
                 <input
                   type="date"
-                  value={formData.event_date || ''}
-                  onChange={e => setFormData({ ...formData, event_date: e.target.value })}
+                  value={formData.event_date || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, event_date: e.target.value })
+                  }
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 />
               </div>
               <div className="hidden sm:block"></div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Issue Date</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+                  Issue Date
+                </label>
                 <input
                   type="date"
-                  value={formData.issue_date || ''}
-                  onChange={e => setFormData({ ...formData, issue_date: e.target.value })}
+                  value={formData.issue_date || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, issue_date: e.target.value })
+                  }
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Due Date</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+                  Due Date
+                </label>
                 <input
                   type="date"
-                  value={formData.due_date || ''}
-                  onChange={e => setFormData({ ...formData, due_date: e.target.value })}
+                  value={formData.due_date || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, due_date: e.target.value })
+                  }
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Currency</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+                  Currency
+                </label>
                 <select
                   value={formData.currency}
-                  onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, currency: e.target.value })
+                  }
                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                 >
                   <option value="">Select currency...</option>
-                  {currencies.map(c => (
-                    <option key={c.id} value={c.id}>{c.code} ({c.symbol})</option>
+                  {currencies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.code} ({c.symbol})
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="col-span-2 flex items-center justify-between bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-3 h-11">
-                <label htmlFor="show-bank-details" className="text-xs font-bold text-[var(--text-muted)] uppercase cursor-pointer">
+                <label
+                  htmlFor="show-bank-details"
+                  className="text-xs font-bold text-[var(--text-muted)] uppercase cursor-pointer"
+                >
                   Include Bank Details on Invoice
                 </label>
                 <button
@@ -465,32 +644,46 @@ export function InvoiceEditor() {
                   type="button"
                   role="switch"
                   aria-checked={formData.show_bank_details}
-                  onClick={() => setFormData({ ...formData, show_bank_details: !formData.show_bank_details })}
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      show_bank_details: !formData.show_bank_details,
+                    })
+                  }
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0",
-                    formData.show_bank_details ? "bg-brand-primary" : "bg-[var(--border-soft)]"
+                    formData.show_bank_details
+                      ? "bg-brand-primary"
+                      : "bg-[var(--border-soft)]",
                   )}
                 >
                   <span
                     className={cn(
                       "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                      formData.show_bank_details ? "translate-x-6" : "translate-x-1"
+                      formData.show_bank_details
+                        ? "translate-x-6"
+                        : "translate-x-1",
                     )}
                   />
                 </button>
               </div>
               {formData.show_bank_details && (
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">Bank Account (shown on PDF)</label>
+                  <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
+                    Bank Account (shown on PDF)
+                  </label>
                   <select
                     value={formData.bank_account}
-                    onChange={e => setFormData({ ...formData, bank_account: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, bank_account: e.target.value })
+                    }
                     className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
                   >
                     <option value="">No bank account selected</option>
-                    {bankAccounts.map(b => (
+                    {bankAccounts.map((b) => (
                       <option key={b.bank_account_id} value={b.bank_account_id}>
-                        {b.bank_name} · {b.account_number} ({b.account_type === 'current' ? 'Current' : 'Savings'})
+                        {b.bank_name} · {b.account_number} (
+                        {b.account_type === "current" ? "Current" : "Savings"})
                       </option>
                     ))}
                   </select>
@@ -502,14 +695,26 @@ export function InvoiceEditor() {
           {/* Line Items */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">Line Items</h3>
-              <button onClick={addLineItem} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm" style={{ backgroundColor: org?.primary_color || 'var(--color-brand-primary, #7c3aed)' }}>
+              <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+                Line Items
+              </h3>
+              <button
+                onClick={addLineItem}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                style={{
+                  backgroundColor:
+                    org?.primary_color || "var(--color-brand-primary, #7c3aed)",
+                }}
+              >
                 <Plus className="w-3 h-3" /> ADD ITEM
               </button>
             </div>
             <div className="space-y-3">
               {lineItems.map((item, i) => (
-                <div key={i} className="flex flex-col gap-3 bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]">
+                <div
+                  key={i}
+                  className="flex flex-col gap-3 bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]"
+                >
                   <div className="grid grid-cols-12 gap-3 items-start">
                     <div className="relative col-span-12 md:col-span-5">
                       <input
@@ -517,9 +722,11 @@ export function InvoiceEditor() {
                         placeholder="Item Name (Search Products...)"
                         value={item.name}
                         onFocus={() => setActiveDropdown(i)}
-                        onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
-                        onChange={e => {
-                          updateLineItem(i, 'name', e.target.value);
+                        onBlur={() =>
+                          setTimeout(() => setActiveDropdown(null), 200)
+                        }
+                        onChange={(e) => {
+                          updateLineItem(i, "name", e.target.value);
                           setActiveDropdown(i);
                         }}
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)]"
@@ -527,27 +734,46 @@ export function InvoiceEditor() {
                       {activeDropdown === i && products.length > 0 && (
                         <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg shadow-xl max-h-48 overflow-y-auto">
                           {products
-                            .filter(p => p.name.toLowerCase().includes(item.name.toLowerCase()))
-                            .map(p => (
+                            .filter((p) =>
+                              p.name
+                                .toLowerCase()
+                                .includes(item.name.toLowerCase()),
+                            )
+                            .map((p) => (
                               <div
                                 key={p.product_id}
                                 className="px-3 py-2.5 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
                                 onClick={() => {
-                                  updateLineItem(i, 'name', p.name);
-                                  updateLineItem(i, 'unit_price', parseFloat(p.units?.[0]?.rental_price || 0));
+                                  updateLineItem(i, "name", p.name);
+                                  updateLineItem(
+                                    i,
+                                    "unit_price",
+                                    parseFloat(p.units?.[0]?.rental_price || 0),
+                                  );
                                   setActiveDropdown(null);
                                 }}
                               >
                                 <div>
-                                  <p className="text-sm font-bold text-[var(--text-main)]">{p.name}</p>
-                                  <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">{p.category?.name || 'Product'}</p>
+                                  <p className="text-sm font-bold text-[var(--text-main)]">
+                                    {p.name}
+                                  </p>
+                                  <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">
+                                    {p.category?.name || "Product"}
+                                  </p>
                                 </div>
                                 <span className="text-xs font-bold text-[var(--text-main)]">
-                                  {currencySymbol} {parseFloat(p.units?.[0]?.rental_price || 0).toLocaleString()}
+                                  {currencySymbol}{" "}
+                                  {parseFloat(
+                                    p.units?.[0]?.rental_price || 0,
+                                  ).toLocaleString()}
                                 </span>
                               </div>
                             ))}
-                          {products.filter(p => p.name.toLowerCase().includes(item.name.toLowerCase())).length === 0 && (
+                          {products.filter((p) =>
+                            p.name
+                              .toLowerCase()
+                              .includes(item.name.toLowerCase()),
+                          ).length === 0 && (
                             <div className="px-3 py-4 text-center text-xs text-[var(--text-muted)] font-medium">
                               No products found.
                             </div>
@@ -559,28 +785,49 @@ export function InvoiceEditor() {
                       <input
                         type="number"
                         placeholder="Qty"
-                        value={item.quantity === 0 ? '' : item.quantity}
-                        onChange={e => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)}
+                        value={item.quantity === 0 ? "" : item.quantity}
+                        onChange={(e) =>
+                          updateLineItem(
+                            i,
+                            "quantity",
+                            parseFloat(e.target.value) || 0,
+                          )
+                        }
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
                       />
                     </div>
                     <div className="col-span-4 md:col-span-2">
                       <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs font-bold">{currencySymbol}</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs font-bold">
+                          {currencySymbol}
+                        </span>
                         <input
                           type="number"
                           placeholder="Price"
-                          value={item.unit_price === 0 ? '' : item.unit_price}
-                          onChange={e => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)}
+                          value={item.unit_price === 0 ? "" : item.unit_price}
+                          onChange={(e) =>
+                            updateLineItem(
+                              i,
+                              "unit_price",
+                              parseFloat(e.target.value) || 0,
+                            )
+                          }
                           className="w-full h-10 pl-12 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
                         />
                       </div>
                     </div>
                     <div className="col-span-3 md:col-span-2 flex items-center justify-end h-10 text-sm font-bold text-[var(--text-main)]">
-                      {currencySymbol} {formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
+                      {currencySymbol}{" "}
+                      {formatCurrency(
+                        (Number(item.quantity) || 0) *
+                          (Number(item.unit_price) || 0),
+                      )}
                     </div>
                     <div className="col-span-1 flex items-center justify-end h-10">
-                      <button onClick={() => removeLineItem(i)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors">
+                      <button
+                        onClick={() => removeLineItem(i)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -588,8 +835,10 @@ export function InvoiceEditor() {
                   <div className="w-full">
                     <textarea
                       placeholder="Add description..."
-                      value={item.description || ''}
-                      onChange={e => updateLineItem(i, 'description', e.target.value)}
+                      value={item.description || ""}
+                      onChange={(e) =>
+                        updateLineItem(i, "description", e.target.value)
+                      }
                       rows={2}
                       className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-muted)] resize-none"
                     />
@@ -601,10 +850,14 @@ export function InvoiceEditor() {
 
           {/* Notes */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">Notes / Terms</h3>
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">
+              Notes / Terms
+            </h3>
             <textarea
               value={formData.notes}
-              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               placeholder="Payment terms, thank-you note, or any extra instructions for the client..."
               rows={4}
               className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] resize-none"
@@ -615,29 +868,51 @@ export function InvoiceEditor() {
         {/* Right column: Summary */}
         <div className="lg:col-span-4">
           <div className="sticky top-0 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 space-y-6">
-            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">Summary</h3>
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+              Summary
+            </h3>
 
             <div className="flex justify-between text-sm">
-              <span className="text-[var(--text-muted)] font-medium">Subtotal</span>
-              <span className="font-bold text-[var(--text-main)]">{currencySymbol} {formatCurrency(subtotal)}</span>
+              <span className="text-[var(--text-muted)] font-medium">
+                Subtotal
+              </span>
+              <span className="font-bold text-[var(--text-main)]">
+                {currencySymbol} {formatCurrency(subtotal)}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">Discount ({currencySymbol})</label>
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">
+                  Discount ({currencySymbol})
+                </label>
                 <input
                   type="number"
-                  value={formData.discount_amount || ''}
-                  onChange={e => setFormData({ ...formData, discount_amount: parseFloat(e.target.value) || 0, discount_percentage: 0 })}
+                  value={formData.discount_amount || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      discount_amount: parseFloat(e.target.value) || 0,
+                      discount_percentage: 0,
+                    })
+                  }
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">Discount (%)</label>
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">
+                  Discount (%)
+                </label>
                 <input
                   type="number"
-                  value={formData.discount_percentage || ''}
-                  onChange={e => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) || 0, discount_amount: 0 })}
+                  value={formData.discount_percentage || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      discount_percentage: parseFloat(e.target.value) || 0,
+                      discount_amount: 0,
+                    })
+                  }
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
                 />
               </div>
@@ -645,37 +920,56 @@ export function InvoiceEditor() {
             {discountValue > 0 && (
               <div className="flex justify-between text-xs font-bold text-brand-accent uppercase tracking-wide">
                 <span>Discount</span>
-                <span>-{currencySymbol} {formatCurrency(discountValue)}</span>
+                <span>
+                  -{currencySymbol} {formatCurrency(discountValue)}
+                </span>
               </div>
             )}
 
             <div className="pt-4 border-t border-[var(--border-soft)]">
-              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">Tax (%)</label>
+              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">
+                Tax (%)
+              </label>
               <input
                 type="number"
-                value={formData.tax_percentage || ''}
-                onChange={e => setFormData({ ...formData, tax_percentage: parseFloat(e.target.value) || 0 })}
+                value={formData.tax_percentage || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    tax_percentage: parseFloat(e.target.value) || 0,
+                  })
+                }
                 className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
               />
             </div>
             {taxValue > 0 && (
               <div className="flex justify-between text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">
                 <span>Tax</span>
-                <span>{currencySymbol} {formatCurrency(taxValue)}</span>
+                <span>
+                  {currencySymbol} {formatCurrency(taxValue)}
+                </span>
               </div>
             )}
 
             <div className="pt-4 border-t border-[var(--border-soft)] flex justify-between items-baseline">
-              <span className="text-sm font-black uppercase tracking-wide text-[var(--text-muted)]">Total</span>
-              <span className="text-2xl font-black text-[var(--text-main)] tracking-tight">{currencySymbol} {formatCurrency(grandTotal)}</span>
+              <span className="text-sm font-black uppercase tracking-wide text-[var(--text-muted)]">
+                Total
+              </span>
+              <span className="text-2xl font-black text-[var(--text-main)] tracking-tight">
+                {currencySymbol} {formatCurrency(grandTotal)}
+              </span>
             </div>
 
             {isEditMode && (
               <div className="pt-4 border-t border-[var(--border-soft)] space-y-2">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase">Status</label>
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase">
+                  Status
+                </label>
                 <select
                   value={formData.status}
-                  onChange={e => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2.5 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)] cursor-pointer"
                 >
                   <option value="draft">Draft</option>
@@ -689,15 +983,13 @@ export function InvoiceEditor() {
                   disabled={isSaving}
                   className={cn(
                     "w-full mt-2 py-2.5 rounded-lg font-bold text-sm transition-colors disabled:opacity-50",
-                    "bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                    "bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--border-soft)]",
                   )}
                 >
                   Save Status & Changes
                 </button>
               </div>
             )}
-            
-
           </div>
         </div>
       </div>

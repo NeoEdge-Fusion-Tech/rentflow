@@ -8,25 +8,49 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0001_initial'),
+        ("users", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='email_verified',
+            model_name="user",
+            name="email_verified",
             field=models.BooleanField(default=False),
         ),
         migrations.CreateModel(
-            name='OTP',
+            name="OTP",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=6)),
-                ('purpose', models.CharField(choices=[('email_verification', 'Email Verification'), ('password_reset', 'Password Reset')], max_length=50)),
-                ('is_used', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField()),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='otps', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("code", models.CharField(max_length=6)),
+                (
+                    "purpose",
+                    models.CharField(
+                        choices=[
+                            ("email_verification", "Email Verification"),
+                            ("password_reset", "Password Reset"),
+                        ],
+                        max_length=50,
+                    ),
+                ),
+                ("is_used", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("expires_at", models.DateTimeField()),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="otps",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

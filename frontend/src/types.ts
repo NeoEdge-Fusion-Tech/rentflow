@@ -37,15 +37,15 @@ export interface Client {
   address: string;
   country: string;
   state: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
 }
 
 export interface Booking {
   id: string;
   clientId: string;
   bookingDate: string;
-  status: 'booked' | 'picked_up' | 'returned';
-  paymentStatus: 'pending' | 'partially_paid' | 'fully_paid';
+  status: "booked" | "picked_up" | "returned";
+  paymentStatus: "pending" | "partially_paid" | "fully_paid";
   createdAt: string;
   organization_name?: string;
 }
@@ -76,14 +76,14 @@ export interface Vendor {
   contact_phone?: string;
   service: string;
   description?: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
 }
 
 export interface EventProject {
   event_id: number;
   name: string;
   description?: string;
-  status: 'planned' | 'ongoing' | 'completed' | 'cancelled';
+  status: "planned" | "ongoing" | "completed" | "cancelled";
   start_date?: string;
   end_date?: string;
   invoice?: number | null;
@@ -105,7 +105,7 @@ export interface EventProject {
 export interface ExpenseLineItem {
   expense_id: number;
   event: number;
-  expense_type: 'vendor' | 'item';
+  expense_type: "vendor" | "item";
   vendor?: number | null;
   name: string;
   amount: number;
@@ -116,7 +116,7 @@ export interface ExpenseLineItem {
 export interface GeneralExpense {
   general_expense_id: number;
   organization: number;
-  expense_type: 'vendor' | 'item';
+  expense_type: "vendor" | "item";
   vendor?: number | null;
   vendor_name?: string;
   name: string;
@@ -128,7 +128,7 @@ export interface GeneralExpense {
 export interface ChecklistTask {
   task_id: number;
   event: number;
-  checklist_type: 'pre_event' | 'during_event' | 'post_event';
+  checklist_type: "pre_event" | "during_event" | "post_event";
   parent_task?: number | null;
   name: string;
   description?: string;
@@ -150,7 +150,7 @@ export interface Invoice {
 export interface FeedbackQuestion {
   id?: number;
   question_text: string;
-  question_type: 'TEXT' | 'RATING' | 'BOOLEAN' | 'RADIO' | 'CHECKBOX';
+  question_type: "TEXT" | "RATING" | "BOOLEAN" | "RADIO" | "CHECKBOX";
   options?: string[];
   is_required?: boolean;
   position: number;

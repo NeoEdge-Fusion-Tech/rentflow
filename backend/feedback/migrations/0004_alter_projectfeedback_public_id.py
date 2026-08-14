@@ -7,13 +7,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('feedback', '0003_feedbackquestion_is_required'),
+        ("feedback", "0003_feedbackquestion_is_required"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='projectfeedback',
-            name='public_id',
-            field=models.CharField(default=feedback.models.generate_short_id, editable=False, max_length=50, unique=True),
+            model_name="projectfeedback",
+            name="public_id",
+            field=models.CharField(
+                default=feedback.models.generate_short_id,
+                editable=False,
+                max_length=50,
+                unique=True,
+            ),
         ),
     ]

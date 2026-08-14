@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   TrendingUp,
@@ -14,11 +14,18 @@ import {
   Mail,
   Phone,
   User,
-  Copy
-} from 'lucide-react';
-import { cn } from '@/src/utils';
-import { useNotification } from '../context/NotificationContext';
-import { EventService, ExpenseService, VendorService, InvoiceService, ProjectFeedbackService, FeedbackService } from '../api';
+  Copy,
+} from "lucide-react";
+import { cn } from "@/src/utils";
+import { useNotification } from "../context/NotificationContext";
+import {
+  EventService,
+  ExpenseService,
+  VendorService,
+  InvoiceService,
+  ProjectFeedbackService,
+  FeedbackService,
+} from "../api";
 
 export function EventDetail() {
   const { id } = useParams();
@@ -27,7 +34,7 @@ export function EventDetail() {
 
   const [event, setEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const defaultCurrencySymbol = localStorage.getItem('currencySymbol') || '$';
+  const defaultCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
 
   // Edit event modal
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -44,23 +51,23 @@ export function EventDetail() {
 
   const [isCloneExpenseOpen, setIsCloneExpenseOpen] = useState(false);
   const [availableEvents, setAvailableEvents] = useState<any[]>([]);
-  const [selectedSourceEvent, setSelectedSourceEvent] = useState<string>('');
+  const [selectedSourceEvent, setSelectedSourceEvent] = useState<string>("");
   const [isCloningExpense, setIsCloningExpense] = useState(false);
 
   const [expenseForm, setExpenseForm] = useState({
-    expense_type: 'item',
-    vendor: '' as number | string,
-    name: '',
+    expense_type: "item",
+    vendor: "" as number | string,
+    name: "",
     amount: 0,
-    description: '',
-    date: '',
+    description: "",
+    date: "",
   });
 
   // Feedback
   const [projectFeedbacks, setProjectFeedbacks] = useState<any[]>([]);
   const [availableForms, setAvailableForms] = useState<any[]>([]);
   const [isAttachFeedbackOpen, setIsAttachFeedbackOpen] = useState(false);
-  const [selectedForm, setSelectedForm] = useState<string>('');
+  const [selectedForm, setSelectedForm] = useState<string>("");
 
   const [viewingResponsesFor, setViewingResponsesFor] = useState<any>(null);
   const [responses, setResponses] = useState<any[]>([]);
@@ -72,12 +79,12 @@ export function EventDetail() {
       const res = await EventService.get(id);
       setEvent(res.data);
       setEditForm({
-        name: res.data.name || '',
-        description: res.data.description || '',
-        status: res.data.status || 'planned',
-        start_date: res.data.start_date || '',
-        end_date: res.data.end_date || '',
-        invoice: res.data.invoice || '',
+        name: res.data.name || "",
+        description: res.data.description || "",
+        status: res.data.status || "planned",
+        start_date: res.data.start_date || "",
+        end_date: res.data.end_date || "",
+        invoice: res.data.invoice || "",
       });
     } catch (e) {
       console.error("Failed to fetch event", e);
@@ -89,7 +96,9 @@ export function EventDetail() {
     try {
       const res = await ExpenseService.getAll({ event: id });
       setExpenses(res.data.results || res.data);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchProjectFeedbacks = async () => {
@@ -97,7 +106,9 @@ export function EventDetail() {
     try {
       const res = await ProjectFeedbackService.getAll({ event: id });
       setProjectFeedbacks(res.data.results || res.data);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -107,9 +118,15 @@ export function EventDetail() {
         fetchEvent(),
         fetchExpenses(),
         fetchProjectFeedbacks(),
-        VendorService.getAll().then(res => setVendors(res.data.results || res.data)).catch(console.error),
-        InvoiceService.getAll().then(res => setInvoices(res.data.results || res.data)).catch(console.error),
-        FeedbackService.getForms().then(res => setAvailableForms(res.data.results || res.data)).catch(console.error),
+        VendorService.getAll()
+          .then((res) => setVendors(res.data.results || res.data))
+          .catch(console.error),
+        InvoiceService.getAll()
+          .then((res) => setInvoices(res.data.results || res.data))
+          .catch(console.error),
+        FeedbackService.getForms()
+          .then((res) => setAvailableForms(res.data.results || res.data))
+          .catch(console.error),
       ]);
       setIsLoading(false);
     })();
@@ -117,8 +134,11 @@ export function EventDetail() {
   }, [id]);
 
   const formatCurrency = (amount: number | string) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return (num || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+    return (num || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   // --- Event edit ---
@@ -134,11 +154,11 @@ export function EventDetail() {
         invoice: editForm.invoice ? parseInt(String(editForm.invoice)) : null,
       });
       setIsEditOpen(false);
-      showNotification("Project updated!", 'success');
+      showNotification("Project updated!", "success");
       fetchEvent();
     } catch (err) {
       console.error("Failed to update project", err);
-      showNotification("Failed to update project", 'error');
+      showNotification("Failed to update project", "error");
     } finally {
       setIsEditSaving(false);
     }
@@ -147,7 +167,14 @@ export function EventDetail() {
   // --- Expenses ---
   const openAddExpense = () => {
     setEditingExpense(null);
-    setExpenseForm({ expense_type: 'item', vendor: '', name: '', amount: 0, description: '', date: '' });
+    setExpenseForm({
+      expense_type: "item",
+      vendor: "",
+      name: "",
+      amount: 0,
+      description: "",
+      date: "",
+    });
     setIsAddExpenseOpen(true);
   };
 
@@ -155,11 +182,11 @@ export function EventDetail() {
     setEditingExpense(expense);
     setExpenseForm({
       expense_type: expense.expense_type,
-      vendor: expense.vendor || '',
-      name: expense.expense_type === 'item' ? expense.name : '',
+      vendor: expense.vendor || "",
+      name: expense.expense_type === "item" ? expense.name : "",
       amount: parseFloat(expense.amount) || 0,
-      description: expense.description || '',
-      date: expense.date || '',
+      description: expense.description || "",
+      date: expense.date || "",
     });
     setIsAddExpenseOpen(true);
   };
@@ -172,8 +199,12 @@ export function EventDetail() {
       const payload = {
         event: parseInt(id),
         expense_type: expenseForm.expense_type,
-        vendor: expenseForm.expense_type === 'vendor' ? parseInt(String(expenseForm.vendor)) : null,
-        name: expenseForm.expense_type === 'item' ? expenseForm.name : undefined,
+        vendor:
+          expenseForm.expense_type === "vendor"
+            ? parseInt(String(expenseForm.vendor))
+            : null,
+        name:
+          expenseForm.expense_type === "item" ? expenseForm.name : undefined,
         amount: expenseForm.amount,
         description: expenseForm.description,
         date: expenseForm.date || null,
@@ -185,12 +216,20 @@ export function EventDetail() {
       }
       setIsAddExpenseOpen(false);
       setEditingExpense(null);
-      showNotification(editingExpense ? "Expense updated!" : "Expense added!", 'success');
+      showNotification(
+        editingExpense ? "Expense updated!" : "Expense added!",
+        "success",
+      );
       fetchExpenses();
       fetchEvent();
     } catch (err: any) {
       console.error("Failed to save expense", err);
-      showNotification(err.response?.data?.vendor?.[0] || err.response?.data?.name?.[0] || "Failed to save expense", 'error');
+      showNotification(
+        err.response?.data?.vendor?.[0] ||
+          err.response?.data?.name?.[0] ||
+          "Failed to save expense",
+        "error",
+      );
     } finally {
       setIsExpenseSaving(false);
     }
@@ -198,21 +237,21 @@ export function EventDetail() {
 
   const handleDeleteExpense = (expenseId: number) => {
     showConfirm({
-      title: 'Delete Expense',
-      message: 'Remove this expense from the project?',
-      type: 'danger',
-      confirmText: 'Delete',
+      title: "Delete Expense",
+      message: "Remove this expense from the project?",
+      type: "danger",
+      confirmText: "Delete",
       onConfirm: async () => {
         try {
           await ExpenseService.delete(expenseId);
-          showNotification("Expense removed", 'success');
+          showNotification("Expense removed", "success");
           fetchExpenses();
           fetchEvent();
         } catch (err) {
           console.error("Failed to delete expense", err);
-          showNotification("Failed to delete expense", 'error');
+          showNotification("Failed to delete expense", "error");
         }
-      }
+      },
     });
   };
 
@@ -220,13 +259,16 @@ export function EventDetail() {
     if (!id || isExpenseSaving) return;
     try {
       setIsExpenseSaving(true);
-      await ExpenseService.duplicate({ target_event: parseInt(id), source_expense: expenseId });
-      showNotification("Expense duplicated!", 'success');
+      await ExpenseService.duplicate({
+        target_event: parseInt(id),
+        source_expense: expenseId,
+      });
+      showNotification("Expense duplicated!", "success");
       fetchExpenses();
       fetchEvent();
     } catch (err) {
       console.error("Failed to duplicate expense", err);
-      showNotification("Failed to duplicate expense", 'error');
+      showNotification("Failed to duplicate expense", "error");
     } finally {
       setIsExpenseSaving(false);
     }
@@ -248,14 +290,17 @@ export function EventDetail() {
     if (!id || !selectedSourceEvent) return;
     try {
       setIsCloningExpense(true);
-      await ExpenseService.duplicate({ target_event: parseInt(id), source_event: parseInt(selectedSourceEvent) });
-      showNotification("Expenses cloned successfully!", 'success');
+      await ExpenseService.duplicate({
+        target_event: parseInt(id),
+        source_event: parseInt(selectedSourceEvent),
+      });
+      showNotification("Expenses cloned successfully!", "success");
       setIsCloneExpenseOpen(false);
       fetchExpenses();
       fetchEvent();
     } catch (err) {
       console.error(err);
-      showNotification("Failed to clone expenses", 'error');
+      showNotification("Failed to clone expenses", "error");
     } finally {
       setIsCloningExpense(false);
     }
@@ -266,22 +311,30 @@ export function EventDetail() {
     e.preventDefault();
     if (!id || !selectedForm) return;
     try {
-      const res = await ProjectFeedbackService.create({ event_id: parseInt(id), form_id: parseInt(selectedForm) });
-      setProjectFeedbacks(prev => [...prev, res.data]);
+      const res = await ProjectFeedbackService.create({
+        event_id: parseInt(id),
+        form_id: parseInt(selectedForm),
+      });
+      setProjectFeedbacks((prev) => [...prev, res.data]);
       setIsAttachFeedbackOpen(false);
-      showNotification("Feedback form attached", 'success');
+      showNotification("Feedback form attached", "success");
       fetchProjectFeedbacks();
     } catch (err) {
       console.error(err);
-      showNotification("Failed to attach feedback form", 'error');
+      showNotification("Failed to attach feedback form", "error");
     }
   };
 
   const handleRemoveFeedback = async (pfId: number) => {
-    if (!window.confirm("Are you sure you want to remove this feedback form from the project?")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this feedback form from the project?",
+      )
+    )
+      return;
     try {
       await ProjectFeedbackService.delete(pfId);
-      setProjectFeedbacks(prev => prev.filter(pf => pf.id !== pfId));
+      setProjectFeedbacks((prev) => prev.filter((pf) => pf.id !== pfId));
       showNotification("Feedback form removed.", "success");
     } catch (err) {
       console.error(err);
@@ -309,7 +362,11 @@ export function EventDetail() {
   };
 
   if (isLoading || !event) {
-    return <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">Loading project...</div>;
+    return (
+      <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">
+        Loading project...
+      </div>
+    );
   }
 
   const profit = parseFloat(event.profit) || 0;
@@ -319,19 +376,36 @@ export function EventDetail() {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/events')} className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors">
+          <button
+            onClick={() => navigate("/events")}
+            className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-main)]">{event.name}</h1>
-            <p className="text-[var(--text-muted)] text-sm capitalize">{event.status}{event.invoice_number ? ` · Linked to ${event.invoice_number}` : ''}</p>
+            <h1 className="text-2xl font-bold text-[var(--text-main)]">
+              {event.name}
+            </h1>
+            <p className="text-[var(--text-muted)] text-sm capitalize">
+              {event.status}
+              {event.invoice_number
+                ? ` · Linked to ${event.invoice_number}`
+                : ""}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={() => navigate(`/task-checklist?event=${id}`)} className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
-            <ListChecks className="w-4 h-4" /> Task Checklist <ArrowUpRight className="w-3.5 h-3.5" />
+          <button
+            onClick={() => navigate(`/task-checklist?event=${id}`)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm"
+          >
+            <ListChecks className="w-4 h-4" /> Task Checklist{" "}
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm">
+          <button
+            onClick={() => setIsEditOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm"
+          >
             <Edit2 className="w-4 h-4" /> Edit Project
           </button>
         </div>
@@ -340,11 +414,15 @@ export function EventDetail() {
       {/* Client details (from the linked invoice) */}
       {event.client_details && (
         <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-5">
-          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Client</p>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">
+            Client
+          </p>
           <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-2">
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[var(--text-muted)]" />
-              <span className="font-bold text-[var(--text-main)]">{event.client_details.business_name}</span>
+              <span className="font-bold text-[var(--text-main)]">
+                {event.client_details.business_name}
+              </span>
             </div>
             {event.client_details.contact_name && (
               <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
@@ -352,16 +430,20 @@ export function EventDetail() {
                 {event.client_details.contact_name}
               </div>
             )}
-            {(event.client_details.email || event.client_details.contact_email) && (
+            {(event.client_details.email ||
+              event.client_details.contact_email) && (
               <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
                 <Mail className="w-4 h-4" />
-                {event.client_details.email || event.client_details.contact_email}
+                {event.client_details.email ||
+                  event.client_details.contact_email}
               </div>
             )}
-            {(event.client_details.phone_number || event.client_details.contact_phone) && (
+            {(event.client_details.phone_number ||
+              event.client_details.contact_phone) && (
               <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
                 <Phone className="w-4 h-4" />
-                {event.client_details.phone_number || event.client_details.contact_phone}
+                {event.client_details.phone_number ||
+                  event.client_details.contact_phone}
               </div>
             )}
           </div>
@@ -371,18 +453,40 @@ export function EventDetail() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Revenue</p>
-          <p className="text-xl font-black text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(event.revenue)}</p>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+            Revenue
+          </p>
+          <p className="text-xl font-black text-[var(--text-main)]">
+            {defaultCurrencySymbol}
+            {formatCurrency(event.revenue)}
+          </p>
         </div>
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Expenses</p>
-          <p className="text-xl font-black text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(event.total_expenses)}</p>
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+            Total Expenses
+          </p>
+          <p className="text-xl font-black text-[var(--text-main)]">
+            {defaultCurrencySymbol}
+            {formatCurrency(event.total_expenses)}
+          </p>
         </div>
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
-          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{isProfit ? 'Profit' : 'Loss'}</p>
-          <p className={cn("text-xl font-black flex items-center gap-1.5", isProfit ? "text-emerald-500" : "text-rose-500")}>
-            {isProfit ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-            {defaultCurrencySymbol}{formatCurrency(Math.abs(profit))}
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+            {isProfit ? "Profit" : "Loss"}
+          </p>
+          <p
+            className={cn(
+              "text-xl font-black flex items-center gap-1.5",
+              isProfit ? "text-emerald-500" : "text-rose-500",
+            )}
+          >
+            {isProfit ? (
+              <TrendingUp className="w-4 h-4" />
+            ) : (
+              <TrendingDown className="w-4 h-4" />
+            )}
+            {defaultCurrencySymbol}
+            {formatCurrency(Math.abs(profit))}
           </p>
         </div>
       </div>
@@ -390,12 +494,20 @@ export function EventDetail() {
       {/* Profit & Loss */}
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">Expenses</h3>
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+            Expenses
+          </h3>
           <div className="flex gap-2">
-            <button onClick={openCloneExpenseModal} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl hover:bg-[var(--bg-surface)] transition-colors shadow-sm">
+            <button
+              onClick={openCloneExpenseModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl hover:bg-[var(--bg-surface)] transition-colors shadow-sm"
+            >
               <Plus className="w-3 h-3" /> Clone from Project
             </button>
-            <button onClick={openAddExpense} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary">
+            <button
+              onClick={openAddExpense}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary"
+            >
               <Plus className="w-3 h-3" /> Add Expense
             </button>
           </div>
@@ -421,27 +533,52 @@ export function EventDetail() {
               <tbody className="divide-y divide-[var(--border-subtle)]">
                 {expenses.map((exp: any) => (
                   <tr key={exp.expense_id}>
-                    <td className="py-3 pr-4 font-bold text-[var(--text-main)]">{exp.name}</td>
+                    <td className="py-3 pr-4 font-bold text-[var(--text-main)]">
+                      {exp.name}
+                    </td>
                     <td className="py-3 pr-4">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                        exp.expense_type === 'vendor' ? "bg-blue-500/10 text-blue-500" : "bg-[var(--bg-app)] text-[var(--text-muted)]"
-                      )}>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                          exp.expense_type === "vendor"
+                            ? "bg-blue-500/10 text-blue-500"
+                            : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                        )}
+                      >
                         {exp.expense_type}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 text-[var(--text-muted)]">{exp.date ? new Date(exp.date).toLocaleDateString() : '—'}</td>
-                    <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">{exp.description || '—'}</td>
-                    <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)]">{defaultCurrencySymbol}{formatCurrency(exp.amount)}</td>
+                    <td className="py-3 pr-4 text-[var(--text-muted)]">
+                      {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">
+                      {exp.description || "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)]">
+                      {defaultCurrencySymbol}
+                      {formatCurrency(exp.amount)}
+                    </td>
                     <td className="py-3 pr-0 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleDuplicateExpense(exp.expense_id)} className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors" title="Duplicate">
+                        <button
+                          onClick={() => handleDuplicateExpense(exp.expense_id)}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
+                          title="Duplicate"
+                        >
                           <Copy className="w-4 h-4" />
                         </button>
-                        <button onClick={() => openEditExpense(exp)} className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors" title="Edit">
+                        <button
+                          onClick={() => openEditExpense(exp)}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                          title="Edit"
+                        >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDeleteExpense(exp.expense_id)} className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors" title="Delete">
+                        <button
+                          onClick={() => handleDeleteExpense(exp.expense_id)}
+                          className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                          title="Delete"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -457,8 +594,13 @@ export function EventDetail() {
       {/* Feedback Section */}
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 mt-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">Client Feedback Forms</h3>
-          <button onClick={() => setIsAttachFeedbackOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary">
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+            Client Feedback Forms
+          </h3>
+          <button
+            onClick={() => setIsAttachFeedbackOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary"
+          >
             <Plus className="w-3 h-3" /> Attach Form
           </button>
         </div>
@@ -470,21 +612,37 @@ export function EventDetail() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {projectFeedbacks.map((pf: any) => (
-              <div key={pf.id} className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm">
-                <h4 className="font-bold text-[var(--text-main)] mb-1 truncate">{pf.form?.title || 'Unknown Form'}</h4>
-                <p className="text-xs text-[var(--text-muted)] mb-3">Created: {new Date(pf.created_at).toLocaleDateString()}</p>
+              <div
+                key={pf.id}
+                className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm"
+              >
+                <h4 className="font-bold text-[var(--text-main)] mb-1 truncate">
+                  {pf.form?.title || "Unknown Form"}
+                </h4>
+                <p className="text-xs text-[var(--text-muted)] mb-3">
+                  Created: {new Date(pf.created_at).toLocaleDateString()}
+                </p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md">
                     Active Link
                   </span>
                   <div>
-                    <button onClick={() => handleViewResponses(pf)} className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary mr-4 transition-colors">
+                    <button
+                      onClick={() => handleViewResponses(pf)}
+                      className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary mr-4 transition-colors"
+                    >
                       View Responses
                     </button>
-                    <button onClick={() => copyPublicLink(pf.public_id)} className="text-sm font-bold text-brand-primary hover:underline mr-4">
+                    <button
+                      onClick={() => copyPublicLink(pf.public_id)}
+                      className="text-sm font-bold text-brand-primary hover:underline mr-4"
+                    >
                       Copy Link
                     </button>
-                    <button onClick={() => handleRemoveFeedback(pf.id)} className="text-sm font-bold text-rose-500 hover:underline">
+                    <button
+                      onClick={() => handleRemoveFeedback(pf.id)}
+                      className="text-sm font-bold text-rose-500 hover:underline"
+                    >
                       Remove
                     </button>
                   </div>
@@ -500,33 +658,86 @@ export function EventDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Edit Project</h2>
-              <button onClick={() => setIsEditOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Edit Project
+              </h2>
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4 overflow-y-auto">
+            <form
+              onSubmit={handleEditSubmit}
+              className="p-6 space-y-4 overflow-y-auto"
+            >
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Project / Event Name</label>
-                <input required type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Project / Event Name
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Description</label>
-                <textarea rows={2} value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none" />
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Start Date</label>
-                  <input type="date" value={editForm.start_date} onChange={e => setEditForm({ ...editForm, start_date: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.start_date}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, start_date: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">End Date</label>
-                  <input type="date" value={editForm.end_date} onChange={e => setEditForm({ ...editForm, end_date: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.end_date}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, end_date: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Status</label>
-                <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Status
+                </label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, status: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
                   <option value="planned">Planned</option>
                   <option value="ongoing">Ongoing</option>
                   <option value="completed">Completed</option>
@@ -534,17 +745,39 @@ export function EventDetail() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Revenue Invoice</label>
-                <select value={editForm.invoice} onChange={e => setEditForm({ ...editForm, invoice: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Revenue Invoice
+                </label>
+                <select
+                  value={editForm.invoice}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, invoice: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
                   <option value="">No invoice linked</option>
                   {invoices.map((inv: any) => (
-                    <option key={inv.invoice_id} value={inv.invoice_id}>{inv.invoice_number} — {inv.client_name || 'No client'}</option>
+                    <option key={inv.invoice_id} value={inv.invoice_id}>
+                      {inv.invoice_number} — {inv.client_name || "No client"}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setIsEditOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button type="submit" disabled={isEditSaving} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{isEditSaving ? 'Saving...' : 'Save Changes'}</button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSaving}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isEditSaving ? "Saving..." : "Save Changes"}
+                </button>
               </div>
             </form>
           </div>
@@ -556,57 +789,164 @@ export function EventDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">{editingExpense ? 'Edit Expense' : 'Add Expense'}</h2>
-              <button onClick={() => { setIsAddExpenseOpen(false); setEditingExpense(null); }} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                {editingExpense ? "Edit Expense" : "Add Expense"}
+              </h2>
+              <button
+                onClick={() => {
+                  setIsAddExpenseOpen(false);
+                  setEditingExpense(null);
+                }}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddExpense} className="p-6 space-y-4 overflow-y-auto">
+            <form
+              onSubmit={handleAddExpense}
+              className="p-6 space-y-4 overflow-y-auto"
+            >
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setExpenseForm({ ...expenseForm, expense_type: 'item' })} className={cn("py-2.5 rounded-xl border font-bold text-sm transition-colors", expenseForm.expense_type === 'item' ? "bg-brand-primary text-white border-brand-primary" : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]")}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpenseForm({ ...expenseForm, expense_type: "item" })
+                  }
+                  className={cn(
+                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                    expenseForm.expense_type === "item"
+                      ? "bg-brand-primary text-white border-brand-primary"
+                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                  )}
+                >
                   Item
                 </button>
-                <button type="button" onClick={() => setExpenseForm({ ...expenseForm, expense_type: 'vendor' })} className={cn("py-2.5 rounded-xl border font-bold text-sm transition-colors", expenseForm.expense_type === 'vendor' ? "bg-brand-primary text-white border-brand-primary" : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]")}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpenseForm({ ...expenseForm, expense_type: "vendor" })
+                  }
+                  className={cn(
+                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                    expenseForm.expense_type === "vendor"
+                      ? "bg-brand-primary text-white border-brand-primary"
+                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                  )}
+                >
                   Vendor
                 </button>
               </div>
 
-              {expenseForm.expense_type === 'vendor' ? (
+              {expenseForm.expense_type === "vendor" ? (
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Vendor <span className="text-rose-500">*</span></label>
-                  <select required value={expenseForm.vendor} onChange={e => setExpenseForm({ ...expenseForm, vendor: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Vendor <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={expenseForm.vendor}
+                    onChange={(e) =>
+                      setExpenseForm({ ...expenseForm, vendor: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  >
                     <option value="">Select a vendor...</option>
                     {vendors.map((v: any) => (
-                      <option key={v.vendor_id} value={v.vendor_id}>{v.business_name} — {v.service}</option>
+                      <option key={v.vendor_id} value={v.vendor_id}>
+                        {v.business_name} — {v.service}
+                      </option>
                     ))}
                   </select>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Item Name <span className="text-rose-500">*</span></label>
-                  <input required type="text" value={expenseForm.name} onChange={e => setExpenseForm({ ...expenseForm, name: e.target.value })} placeholder="e.g. Chairs & Tables Rental" className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Item Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={expenseForm.name}
+                    onChange={(e) =>
+                      setExpenseForm({ ...expenseForm, name: e.target.value })
+                    }
+                    placeholder="e.g. Chairs & Tables Rental"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Amount <span className="text-rose-500">*</span></label>
-                <input required type="number" step="0.01" value={expenseForm.amount || ''} onChange={e => setExpenseForm({ ...expenseForm, amount: parseFloat(e.target.value) || 0 })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Amount <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  value={expenseForm.amount || ""}
+                  onChange={(e) =>
+                    setExpenseForm({
+                      ...expenseForm,
+                      amount: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Description</label>
-                <textarea rows={2} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none" />
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={expenseForm.description}
+                  onChange={(e) =>
+                    setExpenseForm({
+                      ...expenseForm,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
+                />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Date (Optional)</label>
-                <input type="date" value={expenseForm.date || ''} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all" />
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Date (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={expenseForm.date || ""}
+                  onChange={(e) =>
+                    setExpenseForm({ ...expenseForm, date: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                />
               </div>
 
               <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => { setIsAddExpenseOpen(false); setEditingExpense(null); }} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button type="submit" disabled={isExpenseSaving} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isExpenseSaving ? 'Saving...' : (editingExpense ? 'Save Changes' : 'Add Expense')}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddExpenseOpen(false);
+                    setEditingExpense(null);
+                  }}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isExpenseSaving}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExpenseSaving
+                    ? "Saving..."
+                    : editingExpense
+                      ? "Save Changes"
+                      : "Add Expense"}
                 </button>
               </div>
             </form>
@@ -619,27 +959,56 @@ export function EventDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Clone Expenses</h2>
-              <button onClick={() => setIsCloneExpenseOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Clone Expenses
+              </h2>
+              <button
+                onClick={() => setIsCloneExpenseOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCloneExpenses} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Select Source Project <span className="text-rose-500">*</span></label>
-                <select required value={selectedSourceEvent} onChange={e => setSelectedSourceEvent(e.target.value)} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Select Source Project <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedSourceEvent}
+                  onChange={(e) => setSelectedSourceEvent(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
                   <option value="">Select a previous project...</option>
-                  {availableEvents.filter((ev: any) => ev.event_id !== parseInt(id!)).map((ev: any) => (
-                    <option key={ev.event_id} value={ev.event_id}>{ev.name}</option>
-                  ))}
+                  {availableEvents
+                    .filter((ev: any) => ev.event_id !== parseInt(id!))
+                    .map((ev: any) => (
+                      <option key={ev.event_id} value={ev.event_id}>
+                        {ev.name}
+                      </option>
+                    ))}
                 </select>
-                <p className="text-xs text-[var(--text-muted)] mt-1">This will copy all expenses from the selected project to this one.</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  This will copy all expenses from the selected project to this
+                  one.
+                </p>
               </div>
 
               <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsCloneExpenseOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button type="submit" disabled={!selectedSourceEvent || isCloningExpense} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isCloningExpense ? 'Cloning...' : 'Clone Expenses'}
+                <button
+                  type="button"
+                  onClick={() => setIsCloneExpenseOpen(false)}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedSourceEvent || isCloningExpense}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCloningExpense ? "Cloning..." : "Clone Expenses"}
                 </button>
               </div>
             </form>
@@ -652,25 +1021,49 @@ export function EventDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Attach Feedback Form</h2>
-              <button onClick={() => setIsAttachFeedbackOpen(false)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Attach Feedback Form
+              </h2>
+              <button
+                onClick={() => setIsAttachFeedbackOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAttachFeedback} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Select Template <span className="text-rose-500">*</span></label>
-                <select required value={selectedForm} onChange={e => setSelectedForm(e.target.value)} className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Select Template <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedForm}
+                  onChange={(e) => setSelectedForm(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
                   <option value="">Select a form...</option>
                   {availableForms.map((f: any) => (
-                    <option key={f.id} value={f.id}>{f.title}</option>
+                    <option key={f.id} value={f.id}>
+                      {f.title}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsAttachFeedbackOpen(false)} className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors">Cancel</button>
-                <button type="submit" disabled={!selectedForm} className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <button
+                  type="button"
+                  onClick={() => setIsAttachFeedbackOpen(false)}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedForm}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Attach
                 </button>
               </div>
@@ -685,17 +1078,26 @@ export function EventDetail() {
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <div>
-                <h2 className="text-lg font-bold text-[var(--text-main)]">Responses</h2>
-                <p className="text-sm text-[var(--text-muted)]">{viewingResponsesFor.form?.title}</p>
+                <h2 className="text-lg font-bold text-[var(--text-main)]">
+                  Responses
+                </h2>
+                <p className="text-sm text-[var(--text-muted)]">
+                  {viewingResponsesFor.form?.title}
+                </p>
               </div>
-              <button onClick={() => setViewingResponsesFor(null)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors">
+              <button
+                onClick={() => setViewingResponsesFor(null)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto bg-[var(--bg-app)]">
               {isLoadingResponses ? (
-                <div className="text-center py-10 text-[var(--text-muted)]">Loading responses...</div>
+                <div className="text-center py-10 text-[var(--text-muted)]">
+                  Loading responses...
+                </div>
               ) : responses.length === 0 ? (
                 <div className="text-center py-12 text-[var(--text-muted)] border-2 border-dashed border-[var(--border-soft)] rounded-2xl bg-[var(--bg-surface)]">
                   No one has submitted feedback yet.
@@ -703,44 +1105,78 @@ export function EventDetail() {
               ) : (
                 <div className="space-y-6">
                   {responses.map((response: any) => (
-                    <div key={response.id} className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm">
+                    <div
+                      key={response.id}
+                      className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm"
+                    >
                       <div className="flex justify-between items-start mb-4 border-b border-[var(--border-soft)] pb-4">
                         <div>
-                          <p className="font-bold text-[var(--text-main)]">{response.client_name || 'Anonymous'}</p>
-                          {response.client_email && <p className="text-sm text-[var(--text-muted)]">{response.client_email}</p>}
+                          <p className="font-bold text-[var(--text-main)]">
+                            {response.client_name || "Anonymous"}
+                          </p>
+                          {response.client_email && (
+                            <p className="text-sm text-[var(--text-muted)]">
+                              {response.client_email}
+                            </p>
+                          )}
                         </div>
                         <span className="text-xs text-[var(--text-muted)]">
                           {new Date(response.submitted_at).toLocaleString()}
                         </span>
                       </div>
-                      
+
                       <div className="space-y-4">
                         {response.answers.map((ans: any, idx: number) => {
                           // Find question text if possible
-                          const q = viewingResponsesFor.form?.questions?.find((q: any) => q.id === ans.question);
-                          const qText = q ? q.question_text : `Question ${ans.question}`;
-                          const qType = q ? q.question_type : 'TEXT';
+                          const q = viewingResponsesFor.form?.questions?.find(
+                            (q: any) => q.id === ans.question,
+                          );
+                          const qText = q
+                            ? q.question_text
+                            : `Question ${ans.question}`;
+                          const qType = q ? q.question_type : "TEXT";
 
                           return (
-                            <div key={idx} className="bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-subtle)]">
-                              <p className="text-sm font-bold text-[var(--text-main)] mb-1">{qText}</p>
-                              {qType === 'TEXT' && (
-                                <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">{ans.answer_text || '—'}</p>
+                            <div
+                              key={idx}
+                              className="bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-subtle)]"
+                            >
+                              <p className="text-sm font-bold text-[var(--text-main)] mb-1">
+                                {qText}
+                              </p>
+                              {qType === "TEXT" && (
+                                <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">
+                                  {ans.answer_text || "—"}
+                                </p>
                               )}
-                              {qType === 'RATING' && (
+                              {qType === "RATING" && (
                                 <div className="text-amber-400 font-bold">
-                                  {ans.answer_rating ? '★'.repeat(ans.answer_rating) : '—'}
+                                  {ans.answer_rating
+                                    ? "★".repeat(ans.answer_rating)
+                                    : "—"}
                                   <span className="text-[var(--border-soft)] ml-1">
-                                    {ans.answer_rating ? '★'.repeat(5 - ans.answer_rating) : ''}
+                                    {ans.answer_rating
+                                      ? "★".repeat(5 - ans.answer_rating)
+                                      : ""}
                                   </span>
                                 </div>
                               )}
-                              {qType === 'BOOLEAN' && (
-                                <span className={cn(
-                                  "text-xs font-bold px-2 py-1 rounded-md",
-                                  ans.answer_boolean === true ? "bg-emerald-500/10 text-emerald-500" : (ans.answer_boolean === false ? "bg-rose-500/10 text-rose-500" : "bg-[var(--bg-surface)] text-[var(--text-muted)]")
-                                )}>
-                                  {ans.answer_boolean === true ? 'Yes' : (ans.answer_boolean === false ? 'No' : '—')}
+                              {qType === "BOOLEAN" && (
+                                <span
+                                  className={cn(
+                                    "text-xs font-bold px-2 py-1 rounded-md",
+                                    ans.answer_boolean === true
+                                      ? "bg-emerald-500/10 text-emerald-500"
+                                      : ans.answer_boolean === false
+                                        ? "bg-rose-500/10 text-rose-500"
+                                        : "bg-[var(--bg-surface)] text-[var(--text-muted)]",
+                                  )}
+                                >
+                                  {ans.answer_boolean === true
+                                    ? "Yes"
+                                    : ans.answer_boolean === false
+                                      ? "No"
+                                      : "—"}
                                 </span>
                               )}
                             </div>

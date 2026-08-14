@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Building2, 
-  Search, 
-  ExternalLink, 
-  MoreVertical, 
-  TrendingUp, 
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Building2,
+  Search,
+  ExternalLink,
+  MoreVertical,
+  TrendingUp,
   Calendar,
   Users,
   ShieldCheck,
   Filter,
-  FileText
-} from 'lucide-react';
-import { SuperAdminService } from '../../api';
+  FileText,
+} from "lucide-react";
+import { SuperAdminService } from "../../api";
 
 interface OrgStats {
   id: number;
@@ -27,8 +27,8 @@ export function Organizations() {
   const navigate = useNavigate();
   const [orgs, setOrgs] = useState<OrgStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const currencySymbol = localStorage.getItem('currencySymbol') || '$';
+  const [searchQuery, setSearchQuery] = useState("");
+  const currencySymbol = localStorage.getItem("currencySymbol") || "$";
 
   useEffect(() => {
     fetchOrgs();
@@ -49,23 +49,27 @@ export function Organizations() {
 
   const formatCurrency = (amount: number, symbol: string) => {
     const isNegative = amount < 0;
-    const formattedAmount = new Intl.NumberFormat('en-US', {
+    const formattedAmount = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(Math.abs(amount));
-    return `${isNegative ? '-' : ''}${symbol}${formattedAmount}`;
+    return `${isNegative ? "-" : ""}${symbol}${formattedAmount}`;
   };
 
-  const filteredOrgs = orgs.filter(org => 
-    org.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOrgs = orgs.filter((org) =>
+    org.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-main)]">Organizations</h1>
-          <p className="text-[var(--text-muted)]">Oversee and manage all tenants on the platform.</p>
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">
+            Organizations
+          </h1>
+          <p className="text-[var(--text-muted)]">
+            Oversee and manage all tenants on the platform.
+          </p>
         </div>
       </div>
 
@@ -77,8 +81,12 @@ export function Organizations() {
               <Building2 className="w-6 h-6 text-indigo-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-muted)]">Total Tenants</p>
-              <h3 className="text-2xl font-bold text-[var(--text-main)]">{orgs.length}</h3>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Total Tenants
+              </p>
+              <h3 className="text-2xl font-bold text-[var(--text-main)]">
+                {orgs.length}
+              </h3>
             </div>
           </div>
         </div>
@@ -88,9 +96,17 @@ export function Organizations() {
               <TrendingUp className="w-6 h-6 text-emerald-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-muted)]">Pro Subscriptions</p>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Pro Subscriptions
+              </p>
               <h3 className="text-2xl font-bold text-[var(--text-main)]">
-                {orgs.filter(o => (o as any).subscription?.plan_name?.toLowerCase() === 'pro').length}
+                {
+                  orgs.filter(
+                    (o) =>
+                      (o as any).subscription?.plan_name?.toLowerCase() ===
+                      "pro",
+                  ).length
+                }
               </h3>
             </div>
           </div>
@@ -101,8 +117,12 @@ export function Organizations() {
               <ShieldCheck className="w-6 h-6 text-amber-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-muted)]">Active Status</p>
-              <h3 className="text-2xl font-bold text-[var(--text-main)]">{orgs.length}</h3>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Active Status
+              </p>
+              <h3 className="text-2xl font-bold text-[var(--text-main)]">
+                {orgs.length}
+              </h3>
             </div>
           </div>
         </div>
@@ -132,49 +152,80 @@ export function Organizations() {
           <table className="w-full text-left">
             <thead className="bg-[var(--bg-app)]/50">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Organization</th>
-                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Plan</th>
-                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Activity</th>
-                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Financials</th>
-                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Joined</th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  Organization
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  Plan
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  Activity
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  Financials
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  Joined
+                </th>
                 <th className="px-6 py-4"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">Loading tenants...</td>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-8 text-center text-[var(--text-muted)]"
+                  >
+                    Loading tenants...
+                  </td>
                 </tr>
               ) : filteredOrgs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-[var(--text-muted)]">No organizations found.</td>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-8 text-center text-[var(--text-muted)]"
+                  >
+                    No organizations found.
+                  </td>
                 </tr>
               ) : (
                 filteredOrgs.map((org: any) => (
-                  <tr key={org.id} className="hover:bg-[var(--bg-app)]/50 transition-colors">
+                  <tr
+                    key={org.id}
+                    className="hover:bg-[var(--bg-app)]/50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center">
                           <Building2 className="w-5 h-5 text-indigo-500" />
                         </div>
                         <div>
-                          <p 
+                          <p
                             className="font-bold text-[var(--text-main)] cursor-pointer hover:text-brand-primary transition-colors"
-                            onClick={() => navigate(`/superadmin/organizations/${org.id}`)}
+                            onClick={() =>
+                              navigate(`/superadmin/organizations/${org.id}`)
+                            }
                           >
                             {org.name}
                           </p>
-                          <p className="text-xs text-[var(--text-muted)]">ID: {org.id}</p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            ID: {org.id}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        (org.subscription?.plan_name || 'Free').toLowerCase() === 'pro' 
-                          ? 'bg-purple-500/10 text-purple-500' 
-                          : 'bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-soft)]'
-                      }`}>
-                        {org.subscription?.plan_name || 'Free'}
+                      <span
+                        className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          (
+                            org.subscription?.plan_name || "Free"
+                          ).toLowerCase() === "pro"
+                            ? "bg-purple-500/10 text-purple-500"
+                            : "bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-soft)]"
+                        }`}
+                      >
+                        {org.subscription?.plan_name || "Free"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -192,17 +243,37 @@ export function Organizations() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-0.5">
                         <p className="font-bold text-[var(--text-main)] text-sm">
-                          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">Revenue</span>
-                          {formatCurrency(org.revenue || 0, org.currency?.symbol || currencySymbol)}
+                          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">
+                            Revenue
+                          </span>
+                          {formatCurrency(
+                            org.revenue || 0,
+                            org.currency?.symbol || currencySymbol,
+                          )}
                         </p>
                         {(org.expenses || 0) > 0 && (
                           <p className="text-xs text-[var(--text-muted)] mt-1">
-                            Exp: {formatCurrency(org.expenses, org.currency?.symbol || currencySymbol)}
+                            Exp:{" "}
+                            {formatCurrency(
+                              org.expenses,
+                              org.currency?.symbol || currencySymbol,
+                            )}
                           </p>
                         )}
-                        {((org.revenue || 0) > 0 || (org.expenses || 0) > 0) && (
-                          <p className={`text-xs font-medium ${((org.revenue || 0) - (org.expenses || 0)) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            P/L: {formatCurrency((org.revenue || 0) - (org.expenses || 0), org.currency?.symbol || currencySymbol)}
+                        {((org.revenue || 0) > 0 ||
+                          (org.expenses || 0) > 0) && (
+                          <p
+                            className={`text-xs font-medium ${
+                              (org.revenue || 0) - (org.expenses || 0) >= 0
+                                ? "text-emerald-500"
+                                : "text-rose-500"
+                            }`}
+                          >
+                            P/L:{" "}
+                            {formatCurrency(
+                              (org.revenue || 0) - (org.expenses || 0),
+                              org.currency?.symbol || currencySymbol,
+                            )}
                           </p>
                         )}
                       </div>
@@ -214,8 +285,10 @@ export function Organizations() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => navigate(`/superadmin/organizations/${org.id}`)}
+                        <button
+                          onClick={() =>
+                            navigate(`/superadmin/organizations/${org.id}`)
+                          }
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 rounded-lg transition-all"
                         >
                           Manage

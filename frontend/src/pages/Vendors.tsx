@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Truck,
   Search,
@@ -14,17 +14,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
-  Building2
-} from 'lucide-react';
-import { cn } from '@/src/utils';
-import { useNotification } from '../context/NotificationContext';
-import { VendorService } from '@/src/api';
+  Building2,
+} from "lucide-react";
+import { cn } from "@/src/utils";
+import { useNotification } from "../context/NotificationContext";
+import { VendorService } from "@/src/api";
 
 export function Vendors() {
   const { showNotification, showConfirm } = useNotification();
   const [vendors, setVendors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
@@ -34,14 +34,14 @@ export function Vendors() {
   const [viewingVendor, setViewingVendor] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    business_name: '',
-    contact_name: '',
-    contact_email: '',
-    contact_phone: '',
-    service: '',
-    description: '',
-    status: 'active',
-    logo: null as File | string | null
+    business_name: "",
+    contact_name: "",
+    contact_email: "",
+    contact_phone: "",
+    service: "",
+    description: "",
+    status: "active",
+    logo: null as File | string | null,
   });
 
   const fetchVendors = async () => {
@@ -63,14 +63,14 @@ export function Vendors() {
   const openAddModal = () => {
     setEditingVendor(null);
     setFormData({
-      business_name: '',
-      contact_name: '',
-      contact_email: '',
-      contact_phone: '',
-      service: '',
-      description: '',
-      status: 'active',
-      logo: null
+      business_name: "",
+      contact_name: "",
+      contact_email: "",
+      contact_phone: "",
+      service: "",
+      description: "",
+      status: "active",
+      logo: null,
     });
     setIsModalOpen(true);
   };
@@ -78,34 +78,35 @@ export function Vendors() {
   const openEditModal = (vendor: any) => {
     setEditingVendor(vendor);
     setFormData({
-      business_name: vendor.business_name || '',
-      contact_name: vendor.contact_name || '',
-      contact_email: vendor.contact_email || '',
-      contact_phone: vendor.contact_phone || '',
-      service: vendor.service || '',
-      description: vendor.description || '',
-      status: vendor.status || 'active',
-      logo: vendor.logo || null
+      business_name: vendor.business_name || "",
+      contact_name: vendor.contact_name || "",
+      contact_email: vendor.contact_email || "",
+      contact_phone: vendor.contact_phone || "",
+      service: vendor.service || "",
+      description: vendor.description || "",
+      status: vendor.status || "active",
+      logo: vendor.logo || null,
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
     showConfirm({
-      title: 'Delete Vendor',
-      message: 'Are you sure you want to delete this vendor? This cannot be undone.',
-      type: 'danger',
-      confirmText: 'Delete',
+      title: "Delete Vendor",
+      message:
+        "Are you sure you want to delete this vendor? This cannot be undone.",
+      type: "danger",
+      confirmText: "Delete",
       onConfirm: async () => {
         try {
           await VendorService.delete(id);
-          showNotification("Vendor deleted successfully", 'success');
+          showNotification("Vendor deleted successfully", "success");
           fetchVendors();
         } catch (e) {
           console.error("Failed to delete vendor", e);
-          showNotification("Failed to delete vendor", 'error');
+          showNotification("Failed to delete vendor", "error");
         }
-      }
+      },
     });
   };
 
@@ -115,11 +116,11 @@ export function Vendors() {
 
     const payload = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === 'logo') {
+      if (key === "logo") {
         if (value instanceof File) {
-          payload.append('logo', value);
+          payload.append("logo", value);
         }
-      } else if (value !== null && value !== '') {
+      } else if (value !== null && value !== "") {
         payload.append(key, value as string);
       }
     });
@@ -132,30 +133,41 @@ export function Vendors() {
         await VendorService.create(payload);
       }
       setIsModalOpen(false);
-      showNotification(editingVendor ? "Vendor updated!" : "Vendor created!", 'success');
+      showNotification(
+        editingVendor ? "Vendor updated!" : "Vendor created!",
+        "success",
+      );
       fetchVendors();
     } catch (error) {
       console.error("Failed to save vendor", error);
-      showNotification("Failed to save vendor", 'error');
+      showNotification("Failed to save vendor", "error");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const filteredVendors = vendors.filter(v => {
-    const searchString = `${v.business_name} ${v.contact_name} ${v.service}`.toLowerCase();
+  const filteredVendors = vendors.filter((v) => {
+    const searchString =
+      `${v.business_name} ${v.contact_name} ${v.service}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
-  const displayedVendors = filteredVendors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const activeVendors = vendors.filter(v => v.status === 'active').length;
+  const displayedVendors = filteredVendors.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+  const activeVendors = vendors.filter((v) => v.status === "active").length;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-main)]">Vendor Directory</h1>
-          <p className="text-[var(--text-muted)]">Manage service providers used across your projects.</p>
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">
+            Vendor Directory
+          </h1>
+          <p className="text-[var(--text-muted)]">
+            Manage service providers used across your projects.
+          </p>
         </div>
         <button
           onClick={openAddModal}
@@ -169,17 +181,29 @@ export function Vendors() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2 mt-4">
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">Total Vendors</p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">{vendors.length}</p>
+            <p className="text-sm font-medium text-[var(--text-muted)]">
+              Total Vendors
+            </p>
+            <p className="text-2xl font-bold text-[var(--text-main)]">
+              {vendors.length}
+            </p>
           </div>
-          <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary"><Truck size={24}/></div>
+          <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
+            <Truck size={24} />
+          </div>
         </div>
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">Active Vendors</p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">{activeVendors}</p>
+            <p className="text-sm font-medium text-[var(--text-muted)]">
+              Active Vendors
+            </p>
+            <p className="text-2xl font-bold text-[var(--text-main)]">
+              {activeVendors}
+            </p>
           </div>
-          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500"><ShieldCheck size={24}/></div>
+          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+            <ShieldCheck size={24} />
+          </div>
         </div>
       </div>
 
@@ -204,35 +228,58 @@ export function Vendors() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {displayedVendors.map((vendor) => (
-            <div key={vendor.vendor_id} className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group">
+            <div
+              key={vendor.vendor_id}
+              className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group"
+            >
               <div className="flex items-start justify-between mb-6">
                 <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
                   {vendor.logo ? (
-                    <img src={vendor.logo} alt={vendor.business_name} className="w-full h-full object-cover" />
+                    <img
+                      src={vendor.logo}
+                      alt={vendor.business_name}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    (vendor.business_name?.[0] || 'V').toUpperCase()
+                    (vendor.business_name?.[0] || "V").toUpperCase()
                   )}
                 </div>
                 <div className="flex gap-2 items-center">
-                  <span className={cn(
-                    "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                    vendor.status === 'active' ? "bg-emerald-500/10 text-emerald-500" : "bg-[var(--bg-app)] text-[var(--text-muted)]"
-                  )}>
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      vendor.status === "active"
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                    )}
+                  >
                     {vendor.status}
                   </span>
 
-                  <button onClick={() => openEditModal(vendor)} className="p-1 text-[var(--text-muted)] hover:text-brand-primary" title="Edit">
+                  <button
+                    onClick={() => openEditModal(vendor)}
+                    className="p-1 text-[var(--text-muted)] hover:text-brand-primary"
+                    title="Edit"
+                  >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(vendor.vendor_id)} className="p-1 text-[var(--text-muted)] hover:text-rose-500" title="Delete">
+                  <button
+                    onClick={() => handleDelete(vendor.vendor_id)}
+                    className="p-1 text-[var(--text-muted)] hover:text-rose-500"
+                    title="Delete"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1 mb-6">
-                <h3 className="text-lg font-bold text-[var(--text-main)]">{vendor.business_name}</h3>
-                <p className="text-sm text-[var(--text-muted)] font-medium">{vendor.contact_name || 'No Contact Person'}</p>
+                <h3 className="text-lg font-bold text-[var(--text-main)]">
+                  {vendor.business_name}
+                </h3>
+                <p className="text-sm text-[var(--text-muted)] font-medium">
+                  {vendor.contact_name || "No Contact Person"}
+                </p>
               </div>
 
               <div className="space-y-3 mb-8">
@@ -242,16 +289,21 @@ export function Vendors() {
                 </div>
                 <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
                   <Mail className="w-4 h-4 text-[var(--text-muted)]" />
-                  <span className="truncate">{vendor.contact_email || 'N/A'}</span>
+                  <span className="truncate">
+                    {vendor.contact_email || "N/A"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
                   <Phone className="w-4 h-4 text-[var(--text-muted)]" />
-                  {vendor.contact_phone || 'N/A'}
+                  {vendor.contact_phone || "N/A"}
                 </div>
               </div>
 
               <div className="flex items-center justify-end pt-6 border-t border-[var(--border-subtle)]">
-                <button onClick={() => setViewingVendor(vendor)} className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline">
+                <button
+                  onClick={() => setViewingVendor(vendor)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline"
+                >
                   View Profile
                   <ExternalLink className="w-3 h-3" />
                 </button>
@@ -269,20 +321,31 @@ export function Vendors() {
       {!isLoading && filteredVendors.length > 0 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredVendors.length)} of {filteredVendors.length} results
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, filteredVendors.length)} of{" "}
+            {filteredVendors.length} results
           </p>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
               disabled={currentPage === 1}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredVendors.length / itemsPerPage), p + 1))}
+              onClick={() =>
+                setCurrentPage((p) =>
+                  Math.min(
+                    Math.ceil(filteredVendors.length / itemsPerPage),
+                    p + 1,
+                  ),
+                )
+              }
               className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={currentPage === Math.ceil(filteredVendors.length / itemsPerPage)}
+              disabled={
+                currentPage === Math.ceil(filteredVendors.length / itemsPerPage)
+              }
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -296,7 +359,7 @@ export function Vendors() {
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-main)]">
-                {editingVendor ? 'Edit Vendor' : 'Add New Vendor'}
+                {editingVendor ? "Edit Vendor" : "Add New Vendor"}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -306,13 +369,20 @@ export function Vendors() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-6 overflow-y-auto"
+            >
               <div className="flex flex-col items-center justify-center space-y-3">
                 <div className="relative group">
                   <div className="w-24 h-24 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] flex items-center justify-center overflow-hidden">
                     {formData.logo ? (
                       <img
-                        src={formData.logo instanceof File ? URL.createObjectURL(formData.logo) : formData.logo}
+                        src={
+                          formData.logo instanceof File
+                            ? URL.createObjectURL(formData.logo)
+                            : formData.logo
+                        }
                         alt="Logo Preview"
                         className="w-full h-full object-cover"
                       />
@@ -326,48 +396,62 @@ export function Vendors() {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={e => {
+                      onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          setFormData({...formData, logo: e.target.files[0]});
+                          setFormData({ ...formData, logo: e.target.files[0] });
                         }
                       }}
                     />
                   </label>
                 </div>
-                <span className="text-xs font-bold text-[var(--text-muted)]">Vendor Logo (Optional)</span>
+                <span className="text-xs font-bold text-[var(--text-muted)]">
+                  Vendor Logo (Optional)
+                </span>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Vendor Business Name <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Vendor Business Name <span className="text-rose-500">*</span>
+                </label>
                 <input
                   required
                   type="text"
                   value={formData.business_name}
-                  onChange={e => setFormData({...formData, business_name: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, business_name: e.target.value })
+                  }
                   placeholder="e.g. Bright Sound & Lighting"
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Vendor Service <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Vendor Service <span className="text-rose-500">*</span>
+                </label>
                 <input
                   required
                   type="text"
                   value={formData.service}
-                  onChange={e => setFormData({...formData, service: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, service: e.target.value })
+                  }
                   placeholder="e.g. Sound & Lighting Rental"
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Contact Name <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Contact Name <span className="text-rose-500">*</span>
+                </label>
                 <input
                   required
                   type="text"
                   value={formData.contact_name}
-                  onChange={e => setFormData({...formData, contact_name: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contact_name: e.target.value })
+                  }
                   placeholder="Contact Person"
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
@@ -375,21 +459,35 @@ export function Vendors() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Contact Email</label>
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Contact Email
+                  </label>
                   <input
                     type="email"
                     value={formData.contact_email}
-                    onChange={e => setFormData({...formData, contact_email: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_email: e.target.value,
+                      })
+                    }
                     placeholder="Optional"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">Contact Phone</label>
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Contact Phone
+                  </label>
                   <input
                     type="tel"
                     value={formData.contact_phone}
-                    onChange={e => setFormData({...formData, contact_phone: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_phone: e.target.value,
+                      })
+                    }
                     placeholder="Optional"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
@@ -397,21 +495,29 @@ export function Vendors() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Description</label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Description
+                </label>
                 <textarea
                   rows={3}
                   value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="What this vendor provides..."
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Status</label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Status
+                </label>
                 <select
                   value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 >
                   <option value="active">Active</option>
@@ -432,7 +538,11 @@ export function Vendors() {
                   disabled={isSaving}
                   className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSaving ? 'Saving...' : (editingVendor ? 'Save Changes' : 'Create Vendor')}
+                  {isSaving
+                    ? "Saving..."
+                    : editingVendor
+                      ? "Save Changes"
+                      : "Create Vendor"}
                 </button>
               </div>
             </form>
@@ -460,13 +570,19 @@ export function Vendors() {
               <div className="flex items-center space-x-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] flex items-center justify-center overflow-hidden shrink-0">
                   {viewingVendor.logo ? (
-                    <img src={viewingVendor.logo} alt="Logo" className="w-full h-full object-cover" />
+                    <img
+                      src={viewingVendor.logo}
+                      alt="Logo"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <Building2 className="w-8 h-8 text-[var(--text-muted)]" />
                   )}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-[var(--text-main)]">{viewingVendor.business_name}</h3>
+                  <h3 className="text-xl font-bold text-[var(--text-main)]">
+                    {viewingVendor.business_name}
+                  </h3>
                   <div className="flex items-center text-sm text-[var(--text-muted)] mt-1">
                     <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-brand-primary/10 text-brand-primary uppercase">
                       {viewingVendor.status}
@@ -480,23 +596,39 @@ export function Vendors() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Contact Person</span>
-                  <p className="text-sm font-medium text-[var(--text-main)]">{viewingVendor.contact_name || 'N/A'}</p>
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">
+                    Contact Person
+                  </span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">
+                    {viewingVendor.contact_name || "N/A"}
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Contact Email</span>
-                  <p className="text-sm font-medium text-[var(--text-main)]">{viewingVendor.contact_email || 'N/A'}</p>
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">
+                    Contact Email
+                  </span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">
+                    {viewingVendor.contact_email || "N/A"}
+                  </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Contact Phone</span>
-                  <p className="text-sm font-medium text-[var(--text-main)]">{viewingVendor.contact_phone || 'N/A'}</p>
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">
+                    Contact Phone
+                  </span>
+                  <p className="text-sm font-medium text-[var(--text-main)]">
+                    {viewingVendor.contact_phone || "N/A"}
+                  </p>
                 </div>
               </div>
 
               {viewingVendor.description && (
                 <div className="space-y-1 pt-4 border-t border-[var(--border-soft)]">
-                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">Description</span>
-                  <p className="text-sm font-medium text-[var(--text-main)] whitespace-pre-wrap">{viewingVendor.description}</p>
+                  <span className="text-xs font-bold text-[var(--text-muted)] uppercase">
+                    Description
+                  </span>
+                  <p className="text-sm font-medium text-[var(--text-main)] whitespace-pre-wrap">
+                    {viewingVendor.description}
+                  </p>
                 </div>
               )}
 

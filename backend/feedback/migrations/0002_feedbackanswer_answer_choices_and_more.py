@@ -6,23 +6,37 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('feedback', '0001_initial'),
+        ("feedback", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='feedbackanswer',
-            name='answer_choices',
+            model_name="feedbackanswer",
+            name="answer_choices",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='feedbackquestion',
-            name='options',
-            field=models.JSONField(blank=True, help_text='List of choices for RADIO and CHECKBOX types', null=True),
+            model_name="feedbackquestion",
+            name="options",
+            field=models.JSONField(
+                blank=True,
+                help_text="List of choices for RADIO and CHECKBOX types",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='feedbackquestion',
-            name='question_type',
-            field=models.CharField(choices=[('TEXT', 'Text'), ('RATING', 'Rating'), ('BOOLEAN', 'Yes/No'), ('RADIO', 'Single Choice (Radio)'), ('CHECKBOX', 'Multiple Choice (Checkbox)')], default='TEXT', max_length=20),
+            model_name="feedbackquestion",
+            name="question_type",
+            field=models.CharField(
+                choices=[
+                    ("TEXT", "Text"),
+                    ("RATING", "Rating"),
+                    ("BOOLEAN", "Yes/No"),
+                    ("RADIO", "Single Choice (Radio)"),
+                    ("CHECKBOX", "Multiple Choice (Checkbox)"),
+                ],
+                default="TEXT",
+                max_length=20,
+            ),
         ),
     ]

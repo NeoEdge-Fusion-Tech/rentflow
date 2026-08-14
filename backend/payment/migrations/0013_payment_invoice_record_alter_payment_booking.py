@@ -7,19 +7,31 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0019_bookingitemunit_quantity_returned_damaged_and_more'),
-        ('payment', '0012_alter_invoice_issue_date'),
+        ("inventory", "0019_bookingitemunit_quantity_returned_damaged_and_more"),
+        ("payment", "0012_alter_invoice_issue_date"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payment',
-            name='invoice_record',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='recorded_payments', to='payment.invoice'),
+            model_name="payment",
+            name="invoice_record",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="recorded_payments",
+                to="payment.invoice",
+            ),
         ),
         migrations.AlterField(
-            model_name='payment',
-            name='booking',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='inventory.booking'),
+            model_name="payment",
+            name="booking",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="payments",
+                to="inventory.booking",
+            ),
         ),
     ]

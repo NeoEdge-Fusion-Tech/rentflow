@@ -6,18 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0018_remove_bookingitemunit_quantity_returned_in_damaged_condition_and_more'),
+        (
+            "inventory",
+            "0018_remove_bookingitemunit_quantity_returned_in_damaged_condition_and_more",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity_returned_damaged',
+            model_name="bookingitemunit",
+            name="quantity_returned_damaged",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity_returned_good',
+            model_name="bookingitemunit",
+            name="quantity_returned_good",
             field=models.PositiveIntegerField(default=0),
         ),
     ]

@@ -8,26 +8,62 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0018_alter_invoice_booking'),
-        ('users', '0024_feedback'),
+        ("payment", "0018_alter_invoice_booking"),
+        ("users", "0024_feedback"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GeneralExpense',
+            name="GeneralExpense",
             fields=[
-                ('general_expense_id', models.AutoField(primary_key=True, serialize=False)),
-                ('expense_type', models.CharField(choices=[('vendor', 'Vendor'), ('item', 'Item')], max_length=10)),
-                ('name', models.CharField(max_length=255)),
-                ('amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('date', models.DateField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_general_expenses', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='general_expenses', to='users.organization')),
-                ('vendor', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='general_expenses', to='users.vendor')),
+                (
+                    "general_expense_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                (
+                    "expense_type",
+                    models.CharField(
+                        choices=[("vendor", "Vendor"), ("item", "Item")], max_length=10
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                (
+                    "amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                ("description", models.TextField(blank=True, null=True)),
+                ("date", models.DateField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_general_expenses",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="general_expenses",
+                        to="users.organization",
+                    ),
+                ),
+                (
+                    "vendor",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="general_expenses",
+                        to="users.vendor",
+                    ),
+                ),
             ],
         ),
     ]

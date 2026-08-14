@@ -8,21 +8,56 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0023_vendor'),
+        ("users", "0023_vendor"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Feedback',
+            name="Feedback",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('feedback', 'Product Feedback'), ('contact', 'Contact Support'), ('rating', 'App Rating')], default='feedback', max_length=20)),
-                ('rating', models.PositiveIntegerField(blank=True, null=True)),
-                ('subject', models.CharField(blank=True, max_length=255, null=True)),
-                ('message', models.TextField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('organization', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='feedbacks', to='users.organization')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='feedbacks', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("feedback", "Product Feedback"),
+                            ("contact", "Contact Support"),
+                            ("rating", "App Rating"),
+                        ],
+                        default="feedback",
+                        max_length=20,
+                    ),
+                ),
+                ("rating", models.PositiveIntegerField(blank=True, null=True)),
+                ("subject", models.CharField(blank=True, max_length=255, null=True)),
+                ("message", models.TextField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="feedbacks",
+                        to="users.organization",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="feedbacks",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

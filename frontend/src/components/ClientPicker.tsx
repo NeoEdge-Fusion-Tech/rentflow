@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, X } from 'lucide-react';
-import { ClientService } from '../api';
+import React, { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { ClientService } from "../api";
 
 interface ClientPickerProps {
   clients: any[];
@@ -9,26 +9,33 @@ interface ClientPickerProps {
   onClientCreated?: (client: any) => void;
 }
 
-export function ClientPicker({ clients, value, onChange, onClientCreated }: ClientPickerProps) {
+export function ClientPicker({
+  clients,
+  value,
+  onChange,
+  onClientCreated,
+}: ClientPickerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    business_name: '', email: '', phone_number: ''
+    business_name: "",
+    email: "",
+    phone_number: "",
   });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     try {
       setIsSaving(true);
       const res = await ClientService.create(formData);
       onClientCreated?.(res.data);
       onChange(res.data.client_id);
       setIsModalOpen(false);
-      setFormData({ business_name: '', email: '', phone_number: '' });
+      setFormData({ business_name: "", email: "", phone_number: "" });
     } catch (err: any) {
-      setError(err.response?.data?.email?.[0] || 'Failed to create client.');
+      setError(err.response?.data?.email?.[0] || "Failed to create client.");
     } finally {
       setIsSaving(false);
     }
@@ -38,12 +45,12 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <select
-          value={value ?? ''}
-          onChange={e => onChange(parseInt(e.target.value))}
+          value={value ?? ""}
+          onChange={(e) => onChange(parseInt(e.target.value))}
           className="flex-1 h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary text-sm font-medium text-[var(--text-main)] transition-all"
         >
           <option value="">Choose a client...</option>
-          {clients.map(c => (
+          {clients.map((c) => (
             <option key={c.client_id} value={String(c.client_id)}>
               {c.business_name}
             </option>
@@ -62,7 +69,9 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
           <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Add New Client</h2>
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Add New Client
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
@@ -78,35 +87,47 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
                   {error}
                 </div>
               )}
-              
+
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Business Name <span className="text-rose-500">*</span></label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Business Name <span className="text-rose-500">*</span>
+                </label>
                 <input
                   required
                   type="text"
                   value={formData.business_name}
-                  onChange={e => setFormData({ ...formData, business_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, business_name: e.target.value })
+                  }
                   placeholder="Business Name"
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Email Address</label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">Phone</label>
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Phone
+                </label>
                 <input
                   type="tel"
                   value={formData.phone_number}
-                  onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone_number: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                 />
               </div>
@@ -124,7 +145,7 @@ export function ClientPicker({ clients, value, onChange, onClientCreated }: Clie
                   disabled={isSaving}
                   className="flex-1 px-6 py-3 font-bold text-brand-accent bg-brand-primary hover:opacity-90 rounded-xl transition-all shadow-lg shadow-brand-primary/20 whitespace-nowrap disabled:opacity-50"
                 >
-                  {isSaving ? 'Saving...' : 'Create Client'}
+                  {isSaving ? "Saving..." : "Create Client"}
                 </button>
               </div>
             </form>

@@ -6,6 +6,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from django.http import HttpResponse
 
+
 def api_home(request):
     html = """
     <!DOCTYPE html>
@@ -41,17 +42,22 @@ def api_home(request):
     """
     return HttpResponse(html)
 
+
 urlpatterns = [
-    path('', api_home, name='home'),
-    path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
-    path('api/notification/', include('notification.urls')),
-    path('api/inventory/', include('inventory.urls')),
-    path('api/payment/', include('payment.urls')),
-    path('api/events/', include('events.urls')),
-    path('api/feedback/', include('feedback.urls')),
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path("", api_home, name="home"),
+    path("admin/", admin.site.urls),
+    path("api/users/", include("users.urls")),
+    path("api/notification/", include("notification.urls")),
+    path("api/inventory/", include("inventory.urls")),
+    path("api/payment/", include("payment.urls")),
+    path("api/events/", include("events.urls")),
+    path("api/feedback/", include("feedback.urls")),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
 ]
 
 if settings.DEBUG:

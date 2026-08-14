@@ -7,13 +7,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0012_remove_product_price_per_day'),
+        ("inventory", "0012_remove_product_price_per_day"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='productunit',
-            old_name='rental_unit_label',
-            new_name='unit',
+            model_name="productunit",
+            old_name="rental_unit_label",
+            new_name="unit",
         ),
     ]

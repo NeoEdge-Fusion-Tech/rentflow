@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0016_alter_invoice_status'),
+        ("payment", "0016_alter_invoice_status"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='invoice',
-            name='event_date',
-            field=models.DateTimeField(blank=True, help_text='The date of the event/job', null=True),
+            model_name="invoice",
+            name="event_date",
+            field=models.DateTimeField(
+                blank=True, help_text="The date of the event/job", null=True
+            ),
         ),
     ]

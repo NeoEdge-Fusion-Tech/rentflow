@@ -10,6 +10,7 @@ from .serializers import (
     FeedbackResponseSerializer,
 )
 
+
 class FeedbackFormViewSet(viewsets.ModelViewSet):
     serializer_class = FeedbackFormSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -23,9 +24,11 @@ class ProjectFeedbackViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ProjectFeedback.objects.filter(event__organization=self.request.user.organization)
+        return ProjectFeedback.objects.filter(
+            event__organization=self.request.user.organization
+        )
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def responses(self, request, pk=None):
         project_feedback = self.get_object()
         responses = FeedbackResponse.objects.filter(project_feedback=project_feedback)
@@ -39,7 +42,9 @@ class PublicFeedbackViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         """Fetch form details by UUID (pk is UUID)"""
-        project_feedback = get_object_or_404(ProjectFeedback, public_id=pk, is_active=True)
+        project_feedback = get_object_or_404(
+            ProjectFeedback, public_id=pk, is_active=True
+        )
         serializer = ProjectFeedbackSerializer(project_feedback)
         return Response(serializer.data)
 

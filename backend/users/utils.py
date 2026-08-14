@@ -7,31 +7,37 @@ from notification.services import dispatch_email
 
 from django.template.loader import render_to_string
 
+
 def generate_otp(user, purpose):
     # Invalidate previous un-used OTPs for this purpose
     OTP.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
-    
-    code = ''.join(random.choices(string.digits, k=6))
+
+    code = "".join(random.choices(string.digits, k=6))
     expires_at = timezone.now() + timedelta(minutes=15)
-    
+
     otp = OTP.objects.create(
-        user=user,
-        code=code,
-        purpose=purpose,
-        expires_at=expires_at
+        user=user, code=code, purpose=purpose, expires_at=expires_at
     )
     return otp
 
+
 def send_verification_email(user):
-    otp = generate_otp(user, 'email_verification')
+    otp = generate_otp(user, "email_verification")
     subject = "Verify your NeoOps Account"
     body_text = f"Hello {user.first_name},\n\nYour verification code is: {otp.code}\n\nThis code will expire in 15 minutes."
-    body_html = render_to_string('emails/verification.html', {'user': user, 'otp': otp})
-    dispatch_email(to_email=user.email, subject=subject, body_text=body_text, body_html=body_html)
+    body_html = render_to_string("emails/verification.html", {"user": user, "otp": otp})
+    dispatch_email(
+        to_email=user.email, subject=subject, body_text=body_text, body_html=body_html
+    )
+
 
 def send_password_reset_email(user):
-    otp = generate_otp(user, 'password_reset')
+    otp = generate_otp(user, "password_reset")
     subject = "NeoOps Password Reset"
     body_text = f"Hello {user.first_name},\n\nSomeone requested a password reset for your account.\nYour reset code is: {otp.code}\n\nIf this was not you, please ignore this email."
-    body_html = render_to_string('emails/password_reset.html', {'user': user, 'otp': otp})
-    dispatch_email(to_email=user.email, subject=subject, body_text=body_text, body_html=body_html)
+    body_html = render_to_string(
+        "emails/password_reset.html", {"user": user, "otp": otp}
+    )
+    dispatch_email(
+        to_email=user.email, subject=subject, body_text=body_text, body_html=body_html
+    )

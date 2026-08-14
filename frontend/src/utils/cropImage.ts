@@ -1,65 +1,67 @@
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
-    const image = new Image()
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-    image.setAttribute('crossOrigin', 'anonymous')
-    image.src = url
-  })
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (error) => reject(error));
+    image.setAttribute("crossOrigin", "anonymous");
+    image.src = url;
+  });
 
 export function getRadianAngle(degreeValue: number) {
-  return (degreeValue * Math.PI) / 180
+  return (degreeValue * Math.PI) / 180;
 }
 
 export default async function getCroppedImg(
   imageSrc: string,
   pixelCrop: { x: number; y: number; width: number; height: number },
-  rotation = 0
+  rotation = 0,
 ): Promise<File | null> {
-  const image = await createImage(imageSrc)
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
   if (!ctx) {
-    return null
+    return null;
   }
 
   // Calculate bounding box of the rotated image
-  const maxSize = Math.max(image.width, image.height)
-  const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2))
+  const maxSize = Math.max(image.width, image.height);
+  const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
 
-  canvas.width = safeArea
-  canvas.height = safeArea
+  canvas.width = safeArea;
+  canvas.height = safeArea;
 
-  ctx.translate(safeArea / 2, safeArea / 2)
-  ctx.rotate(getRadianAngle(rotation))
-  ctx.translate(-safeArea / 2, -safeArea / 2)
+  ctx.translate(safeArea / 2, safeArea / 2);
+  ctx.rotate(getRadianAngle(rotation));
+  ctx.translate(-safeArea / 2, -safeArea / 2);
 
   ctx.drawImage(
     image,
     safeArea / 2 - image.width / 2,
-    safeArea / 2 - image.height / 2
-  )
+    safeArea / 2 - image.height / 2,
+  );
 
-  const data = ctx.getImageData(0, 0, safeArea, safeArea)
+  const data = ctx.getImageData(0, 0, safeArea, safeArea);
 
-  canvas.width = pixelCrop.width
-  canvas.height = pixelCrop.height
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
 
   ctx.putImageData(
     data,
     Math.round(0 - safeArea / 2 + image.width / 2 - pixelCrop.x),
-    Math.round(0 - safeArea / 2 + image.height / 2 - pixelCrop.y)
-  )
+    Math.round(0 - safeArea / 2 + image.height / 2 - pixelCrop.y),
+  );
 
   return new Promise((resolve) => {
     canvas.toBlob((file) => {
       if (file) {
-        const newFile = new File([file], 'cropped_logo.png', { type: 'image/png' });
-        resolve(newFile)
+        const newFile = new File([file], "cropped_logo.png", {
+          type: "image/png",
+        });
+        resolve(newFile);
       } else {
-        resolve(null)
+        resolve(null);
       }
-    }, 'image/png')
-  })
+    }, "image/png");
+  });
 }

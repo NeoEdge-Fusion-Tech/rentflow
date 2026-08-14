@@ -9,59 +9,164 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0013_payment_invoice_record_alter_payment_booking'),
-        ('users', '0022_alter_user_role'),
+        ("payment", "0013_payment_invoice_record_alter_payment_booking"),
+        ("users", "0022_alter_user_role"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='invoice',
-            name='show_bank_details',
+            model_name="invoice",
+            name="show_bank_details",
             field=models.BooleanField(default=True),
         ),
         migrations.CreateModel(
-            name='Quotation',
+            name="Quotation",
             fields=[
-                ('quotation_id', models.AutoField(primary_key=True, serialize=False)),
-                ('show_bank_details', models.BooleanField(default=True)),
-                ('quotation_number', models.CharField(max_length=50, unique=True)),
-                ('issue_date', models.DateTimeField(default=django.utils.timezone.now)),
-                ('expiry_date', models.DateTimeField(blank=True, null=True)),
-                ('title', models.CharField(blank=True, default='Quotation', max_length=255, null=True)),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('sent', 'Sent'), ('accepted', 'Accepted'), ('rejected', 'Rejected'), ('expired', 'Expired'), ('converted', 'Converted')], default='draft', max_length=20)),
-                ('subtotal', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('discount_amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('discount_percentage', models.DecimalField(decimal_places=2, default=0, max_digits=5)),
-                ('tax_percentage', models.DecimalField(decimal_places=2, default=0, max_digits=5)),
-                ('tax_amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('total_amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('notes', models.TextField(blank=True, null=True)),
-                ('converted_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('bank_account', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='quotations', to='users.bankaccount')),
-                ('client', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='quotations', to='users.client')),
-                ('converted_invoice', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='source_quotation', to='payment.invoice')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_quotations', to=settings.AUTH_USER_MODEL)),
-                ('currency', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='quotations', to='users.currency')),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='quotations', to='users.organization')),
+                ("quotation_id", models.AutoField(primary_key=True, serialize=False)),
+                ("show_bank_details", models.BooleanField(default=True)),
+                ("quotation_number", models.CharField(max_length=50, unique=True)),
+                ("issue_date", models.DateTimeField(default=django.utils.timezone.now)),
+                ("expiry_date", models.DateTimeField(blank=True, null=True)),
+                (
+                    "title",
+                    models.CharField(
+                        blank=True, default="Quotation", max_length=255, null=True
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("sent", "Sent"),
+                            ("accepted", "Accepted"),
+                            ("rejected", "Rejected"),
+                            ("expired", "Expired"),
+                            ("converted", "Converted"),
+                        ],
+                        default="draft",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "subtotal",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                (
+                    "discount_amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                (
+                    "discount_percentage",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=5),
+                ),
+                (
+                    "tax_percentage",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=5),
+                ),
+                (
+                    "tax_amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                (
+                    "total_amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                ("notes", models.TextField(blank=True, null=True)),
+                ("converted_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "bank_account",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="quotations",
+                        to="users.bankaccount",
+                    ),
+                ),
+                (
+                    "client",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="quotations",
+                        to="users.client",
+                    ),
+                ),
+                (
+                    "converted_invoice",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="source_quotation",
+                        to="payment.invoice",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_quotations",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "currency",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="quotations",
+                        to="users.currency",
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="quotations",
+                        to="users.organization",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='QuotationLineItem',
+            name="QuotationLineItem",
             fields=[
-                ('line_item_id', models.AutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=500)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('quantity', models.DecimalField(decimal_places=2, default=1, max_digits=10)),
-                ('unit_price', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('total', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('position', models.PositiveIntegerField(default=0)),
-                ('quotation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='line_items', to='payment.quotation')),
+                ("line_item_id", models.AutoField(primary_key=True, serialize=False)),
+                ("name", models.CharField(max_length=500)),
+                ("description", models.TextField(blank=True, null=True)),
+                (
+                    "quantity",
+                    models.DecimalField(decimal_places=2, default=1, max_digits=10),
+                ),
+                (
+                    "unit_price",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                (
+                    "total",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=12),
+                ),
+                ("position", models.PositiveIntegerField(default=0)),
+                (
+                    "quotation",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="line_items",
+                        to="payment.quotation",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['position', 'line_item_id'],
+                "ordering": ["position", "line_item_id"],
             },
         ),
     ]

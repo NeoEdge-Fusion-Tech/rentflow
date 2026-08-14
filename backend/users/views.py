@@ -11,12 +11,40 @@ from inventory.models import Booking
 import django_filters.rest_framework as django_filters
 from dateutil.relativedelta import relativedelta
 from config.pagination import StandardResultsSetPagination
-from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Vendor, Currency, Feedback
-from .serializers import OrganizationSerializer, SubscriptionSerializer, SubscriptionPlanSerializer, OrganizationAccountDetailsSerializer, BankAccountSerializer, UserSerializer, ClientSerializer, VendorSerializer, RegisterSerializer, VerifyOTPSerializer, SetNewPasswordSerializer, AdminChangePasswordSerializer, ChangePasswordSerializer, CurrencySerializer, FeedbackSerializer
+from .models import (
+    Organization,
+    OrganizationAccountDetails,
+    BankAccount,
+    Subscription,
+    SubscriptionPlan,
+    User,
+    Client,
+    Vendor,
+    Currency,
+    Feedback,
+)
+from .serializers import (
+    OrganizationSerializer,
+    SubscriptionSerializer,
+    SubscriptionPlanSerializer,
+    OrganizationAccountDetailsSerializer,
+    BankAccountSerializer,
+    UserSerializer,
+    ClientSerializer,
+    VendorSerializer,
+    RegisterSerializer,
+    VerifyOTPSerializer,
+    SetNewPasswordSerializer,
+    AdminChangePasswordSerializer,
+    ChangePasswordSerializer,
+    CurrencySerializer,
+    FeedbackSerializer,
+)
 from users.mixins import TenantIsolationMixin
 from .utils import send_verification_email, send_password_reset_email
 from rest_framework import status
 from payment.models import Payment, Invoice
+
 
 class MeAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -32,29 +60,37 @@ class MeAPIView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     def patch(self, request):
         return self.put(request)
-        
+
     def delete(self, request):
         user = request.user
         user.delete()
-        return Response({"message": "Account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"message": "Account deleted successfully."},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
 
 class RegisterAPIView(APIView):
-    permission_classes = [] 
-    
+    permission_classes = []
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             send_verification_email(user)
-            return Response({
-                "message": "Registration successful. Please check your email for the verification code.",
-                "user_id": user.id,
-                "email": user.email
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "message": "Registration successful. Please check your email for the verification code.",
+                    "user_id": user.id,
+                    "email": user.email,
+                },
+                status=status.HTTP_201_CREATED,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class VerifyEmailAPIView(APIView):
     permission_classes = []
@@ -62,55 +98,91 @@ class VerifyEmailAPIView(APIView):
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
-            code = serializer.validated_data['code']
+            email = serializer.validated_data["email"]
+            code = serializer.validated_data["code"]
             try:
                 user = User.objects.get(email=email)
-                otp = OTP.objects.filter(user=user, code=code, purpose='email_verification', is_used=False, expires_at__gt=timezone.now()).first()
+                otp = OTP.objects.filter(
+                    user=user,
+                    code=code,
+                    purpose="email_verification",
+                    is_used=False,
+                    expires_at__gt=timezone.now(),
+                ).first()
                 if otp:
                     otp.is_used = True
                     otp.save()
                     user.email_verified = True
                     user.save()
                     from rest_framework_simplejwt.tokens import RefreshToken
+
                     refresh = RefreshToken.for_user(user)
-                    return Response({
-                        "message": "Email verified successfully.",
-                        "access": str(refresh.access_token),
-                        "refresh": str(refresh)
-                    }, status=status.HTTP_200_OK)
-                return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {
+                            "message": "Email verified successfully.",
+                            "access": str(refresh.access_token),
+                            "refresh": str(refresh),
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                return Response(
+                    {"error": "Invalid or expired OTP."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             except User.DoesNotExist:
-                return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ResendVerificationEmailAPIView(APIView):
     permission_classes = []
 
     def post(self, request):
-        email = request.data.get('email')
+        email = request.data.get("email")
         if not email:
-            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             user = User.objects.get(email=email)
             if user.email_verified:
-                return Response({"message": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"message": "Email is already verified."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             send_verification_email(user)
-            return Response({"message": "Verification email sent successfully."}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Verification email sent successfully."},
+                status=status.HTTP_200_OK,
+            )
         except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
 
 class TriggerPasswordResetAPIView(APIView):
     permission_classes = []
 
     def post(self, request):
-        email = request.data.get('email')
+        email = request.data.get("email")
         try:
             user = User.objects.get(email=email)
             send_password_reset_email(user)
-            return Response({"message": "Password reset OTP sent to email."}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Password reset OTP sent to email."},
+                status=status.HTTP_200_OK,
+            )
         except User.DoesNotExist:
-            return Response({"message": "If an account with that email exists, an OTP has been sent."}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "message": "If an account with that email exists, an OTP has been sent."
+                },
+                status=status.HTTP_200_OK,
+            )
+
 
 class SetNewPasswordAPIView(APIView):
     permission_classes = []
@@ -118,22 +190,37 @@ class SetNewPasswordAPIView(APIView):
     def post(self, request):
         serializer = SetNewPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
-            code = serializer.validated_data['code']
-            new_password = serializer.validated_data['new_password']
+            email = serializer.validated_data["email"]
+            code = serializer.validated_data["code"]
+            new_password = serializer.validated_data["new_password"]
             try:
                 user = User.objects.get(email=email)
-                otp = OTP.objects.filter(user=user, code=code, purpose='password_reset', is_used=False, expires_at__gt=timezone.now()).first()
+                otp = OTP.objects.filter(
+                    user=user,
+                    code=code,
+                    purpose="password_reset",
+                    is_used=False,
+                    expires_at__gt=timezone.now(),
+                ).first()
                 if otp:
                     user.set_password(new_password)
                     user.save()
                     otp.is_used = True
                     otp.save()
-                    return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
-                return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {"message": "Password updated successfully."},
+                        status=status.HTTP_200_OK,
+                    )
+                return Response(
+                    {"error": "Invalid or expired OTP."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             except User.DoesNotExist:
-                return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"error": "User not found."}, status=status.HTTP_404_NOT_FOUND
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -142,12 +229,18 @@ class ChangePasswordAPIView(APIView):
         serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            if not user.check_password(serializer.validated_data['current_password']):
-                return Response({"error": "Incorrect current password."}, status=status.HTTP_400_BAD_REQUEST)
-            user.set_password(serializer.validated_data['new_password'])
+            if not user.check_password(serializer.validated_data["current_password"]):
+                return Response(
+                    {"error": "Incorrect current password."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.set_password(serializer.validated_data["new_password"])
             user.save()
-            return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Password updated successfully."}, status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class FeedbackAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -157,119 +250,169 @@ class FeedbackAPIView(APIView):
         if serializer.is_valid():
             serializer.save(
                 user=request.user,
-                organization=request.user.organization if hasattr(request.user, 'organization') else None
+                organization=(
+                    request.user.organization
+                    if hasattr(request.user, "organization")
+                    else None
+                ),
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
+
 class SubscriptionViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+
 
 class SubscriptionPlanViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
+
     # Usually only superadmins should manage plans, but any user can view them
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        if self.action in ["create", "update", "partial_update", "destroy"]:
             return [IsAdminUser()]
         return super().get_permissions()
+
 
 class OrganizationAccountDetailsViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = OrganizationAccountDetails.objects.all()
     serializer_class = OrganizationAccountDetailsSerializer
+
 
 class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = StandardResultsSetPagination
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     def admin_change_password(self, request, pk=None):
         user_to_modify = self.get_object()
-        if request.user.role != 'admin':
-            return Response({"error": "Only organization admins can change passwords."}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role != "admin":
+            return Response(
+                {"error": "Only organization admins can change passwords."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if request.user == user_to_modify:
-            return Response({"error": "Use your profile to change your own password."}, status=status.HTTP_400_BAD_REQUEST)
-            
+            return Response(
+                {"error": "Use your profile to change your own password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = AdminChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
-            user_to_modify.set_password(serializer.validated_data['new_password'])
+            user_to_modify.set_password(serializer.validated_data["new_password"])
             user_to_modify.save()
             return Response({"message": "User password updated successfully."})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     def admin_trigger_reset(self, request, pk=None):
         user_to_modify = self.get_object()
-        if request.user.role != 'admin':
-            return Response({"error": "Only organization admins can trigger reset."}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role != "admin":
+            return Response(
+                {"error": "Only organization admins can trigger reset."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         send_password_reset_email(user_to_modify)
         return Response({"message": "Password reset email sent to user."})
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     def deactivate(self, request, pk=None):
         user_to_modify = self.get_object()
-        if request.user.role != 'admin':
-            return Response({"error": "Only organization admins can deactivate users."}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role != "admin":
+            return Response(
+                {"error": "Only organization admins can deactivate users."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if request.user == user_to_modify:
-            return Response({"error": "You cannot deactivate or activate yourself."}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"error": "You cannot deactivate or activate yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         user_to_modify.is_active = not user_to_modify.is_active
         user_to_modify.save()
         status_text = "activated" if user_to_modify.is_active else "deactivated"
-        return Response({"message": f"User {status_text} safely.", "is_active": user_to_modify.is_active})
+        return Response(
+            {
+                "message": f"User {status_text} safely.",
+                "is_active": user_to_modify.is_active,
+            }
+        )
 
     def destroy(self, request, *args, **kwargs):
         user_to_modify = self.get_object()
         if request.user == user_to_modify:
-            return Response({"error": "You cannot delete yourself from the team dashboard. Use your profile settings."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "error": "You cannot delete yourself from the team dashboard. Use your profile settings."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return super().destroy(request, *args, **kwargs)
+
 
 class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['status']
-    search_fields = ['first_name', 'last_name', 'email', 'phone_number', 'company_name']
+    filterset_fields = ["status"]
+    search_fields = ["first_name", "last_name", "email", "phone_number", "company_name"]
 
     def get_queryset(self):
-        return super().get_queryset().annotate(
-            bookings_count=Count('bookings', distinct=True),
-            standalone_invoices_count=Count('invoices', filter=Q(invoices__booking__isnull=True), distinct=True)
+        return (
+            super()
+            .get_queryset()
+            .annotate(
+                bookings_count=Count("bookings", distinct=True),
+                standalone_invoices_count=Count(
+                    "invoices", filter=Q(invoices__booking__isnull=True), distinct=True
+                ),
+            )
         )
 
     def perform_create(self, serializer):
         user = self.request.user
-        kwargs = {'created_by': user, 'updated_by': user}
+        kwargs = {"created_by": user, "updated_by": user}
         if not user.is_superuser:
-            kwargs['organization'] = user.organization
+            kwargs["organization"] = user.organization
         serializer.save(**kwargs)
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
+
 
 class VendorViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['status']
-    search_fields = ['business_name', 'contact_name', 'contact_email', 'service']
+    filterset_fields = ["status"]
+    search_fields = ["business_name", "contact_name", "contact_email", "service"]
 
     def perform_create(self, serializer):
         user = self.request.user
-        kwargs = {'created_by': user, 'updated_by': user}
+        kwargs = {"created_by": user, "updated_by": user}
         if not user.is_superuser:
-            kwargs['organization'] = user.organization
+            kwargs["organization"] = user.organization
         serializer.save(**kwargs)
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
+
 
 class BankAccountViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BankAccount.objects.all()
@@ -277,110 +420,128 @@ class BankAccountViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        kwargs = {'created_by': user, 'updated_by': user}
+        kwargs = {"created_by": user, "updated_by": user}
         if not user.is_superuser:
-            kwargs['organization'] = user.organization
+            kwargs["organization"] = user.organization
         serializer.save(**kwargs)
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
 
+
 class SuperAdminStatsAPIView(APIView):
     permission_classes = [IsAdminUser]
-    
+
     def get(self, request):
         total_orgs = Organization.objects.count()
         total_users = User.objects.count()
-        
+
         # Total Platform Revenue (global sum of amount_paid)
-        platform_revenue_agg = Booking.objects.aggregate(total=Sum('amount_paid'))
-        booking_revenue = platform_revenue_agg['total'] or 0
-        
+        platform_revenue_agg = Booking.objects.aggregate(total=Sum("amount_paid"))
+        booking_revenue = platform_revenue_agg["total"] or 0
+
         invoice_revenue_agg = Invoice.objects.filter(
-            status='paid',
-            booking__isnull=True
-        ).aggregate(total=Sum('total_amount'))
-        invoice_revenue = invoice_revenue_agg['total'] or 0
-        
+            status="paid", booking__isnull=True
+        ).aggregate(total=Sum("total_amount"))
+        invoice_revenue = invoice_revenue_agg["total"] or 0
+
         platform_revenue = float(booking_revenue) + float(invoice_revenue)
-        
+
         # Global booking volume
-        active_bookings = Booking.objects.exclude(status__in=['returned', 'cancelled']).count()
-        
+        active_bookings = Booking.objects.exclude(
+            status__in=["returned", "cancelled"]
+        ).count()
+
         # Chart Data (Last 6 Months)
         today = timezone.now()
         start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         from dateutil.relativedelta import relativedelta
-        
+
         chart_data = []
         for i in range(5, -1, -1):
             start = start_of_month - relativedelta(months=i)
             end = start + relativedelta(months=1)
             bookings_qs = Booking.objects.filter(
-                created_at__gte=start,
-                created_at__lt=end
+                created_at__gte=start, created_at__lt=end
             )
             b_count = bookings_qs.count()
-            p_agg = bookings_qs.aggregate(total_rev=Sum('amount_paid'))
-            
+            p_agg = bookings_qs.aggregate(total_rev=Sum("amount_paid"))
+
             inv_agg = Invoice.objects.filter(
                 created_at__gte=start,
                 created_at__lt=end,
-                status='paid',
-                booking__isnull=True
-            ).aggregate(total_rev=Sum('total_amount'))
-            
-            total_rev = float(p_agg['total_rev'] or 0) + float(inv_agg['total_rev'] or 0)
-            
-            chart_data.append({
-                'name': start.strftime('%b'),
-                'revenue': total_rev,
-                'bookings': b_count
-            })
+                status="paid",
+                booking__isnull=True,
+            ).aggregate(total_rev=Sum("total_amount"))
+
+            total_rev = float(p_agg["total_rev"] or 0) + float(
+                inv_agg["total_rev"] or 0
+            )
+
+            chart_data.append(
+                {
+                    "name": start.strftime("%b"),
+                    "revenue": total_rev,
+                    "bookings": b_count,
+                }
+            )
 
         # Recent Activity (Global)
         recent_activity = []
-        recent_bookings = Booking.objects.select_related('organization').order_by('-updated_at')[:5]
+        recent_bookings = Booking.objects.select_related("organization").order_by(
+            "-updated_at"
+        )[:5]
         for b in recent_bookings:
-            recent_activity.append({
-                'title': f"[{b.organization.name}] Booking #{b.booking_id} {b.get_status_display()}",
-                'time': b.updated_at.strftime("%I:%M %p"),
-                'type': 'booking'
-            })
+            recent_activity.append(
+                {
+                    "title": f"[{b.organization.name}] Booking #{b.booking_id} {b.get_status_display()}",
+                    "time": b.updated_at.strftime("%I:%M %p"),
+                    "type": "booking",
+                }
+            )
 
         top_orgs_qs = Organization.objects.annotate(
-            total_bookings=Count('bookings', distinct=True),
-            revenue=Sum('bookings__amount_paid')
-        ).order_by('-total_bookings')[:10]
-        
+            total_bookings=Count("bookings", distinct=True),
+            revenue=Sum("bookings__amount_paid"),
+        ).order_by("-total_bookings")[:10]
+
         orgs_overview = []
         for org in top_orgs_qs:
-            orgs_overview.append({
-                'id': org.id,
-                'name': org.name,
-                'total_bookings': org.total_bookings,
-                'revenue': float(org.revenue or 0),
-                'currency_symbol': org.currency.symbol if org.currency else '$'
-            })
-        
-        return Response({
-            'total_organizations': total_orgs,
-            'total_users': total_users,
-            'platform_revenue': float(platform_revenue),
-            'active_bookings': active_bookings,
-            'chart_data': chart_data,
-            'recent_activity': recent_activity,
-            'organizations_overview': orgs_overview,
-        })
+            orgs_overview.append(
+                {
+                    "id": org.id,
+                    "name": org.name,
+                    "total_bookings": org.total_bookings,
+                    "revenue": float(org.revenue or 0),
+                    "currency_symbol": org.currency.symbol if org.currency else "$",
+                }
+            )
+
+        return Response(
+            {
+                "total_organizations": total_orgs,
+                "total_users": total_users,
+                "platform_revenue": float(platform_revenue),
+                "active_bookings": active_bookings,
+                "chart_data": chart_data,
+                "recent_activity": recent_activity,
+                "organizations_overview": orgs_overview,
+            }
+        )
+
 
 class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
-    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['is_active']
-    search_fields = ['name']
-    ordering_fields = ['created_at', 'name']
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_fields = ["is_active"]
+    search_fields = ["name"]
+    ordering_fields = ["created_at", "name"]
 
     def get_queryset(self):
         from django.db import models
@@ -391,26 +552,34 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
 
         # Exclude deleted organizations by default unless specifically requested
         qs = super().get_queryset()
-        if self.request.query_params.get('include_deleted') != 'true':
+        if self.request.query_params.get("include_deleted") != "true":
             qs = qs.filter(is_deleted=False)
-            
-        revenue_subquery = Invoice.objects.filter(
-            organization=OuterRef('pk')
-        ).values('organization').annotate(
-            total=Sum('total_amount')
-        ).values('total')
 
-        expenses_subquery = ExpenseLineItem.objects.filter(
-            organization=OuterRef('pk')
-        ).values('organization').annotate(
-            total=Sum('amount')
-        ).values('total')
+        revenue_subquery = (
+            Invoice.objects.filter(organization=OuterRef("pk"))
+            .values("organization")
+            .annotate(total=Sum("total_amount"))
+            .values("total")
+        )
+
+        expenses_subquery = (
+            ExpenseLineItem.objects.filter(organization=OuterRef("pk"))
+            .values("organization")
+            .annotate(total=Sum("amount"))
+            .values("total")
+        )
 
         qs = qs.annotate(
-            total_bookings=Count('bookings', distinct=True),
-            total_invoices=Count('invoices', distinct=True),
-            revenue=Coalesce(Subquery(revenue_subquery), Value(0), output_field=models.DecimalField()),
-            expenses=Coalesce(Subquery(expenses_subquery), Value(0), output_field=models.DecimalField())
+            total_bookings=Count("bookings", distinct=True),
+            total_invoices=Count("invoices", distinct=True),
+            revenue=Coalesce(
+                Subquery(revenue_subquery), Value(0), output_field=models.DecimalField()
+            ),
+            expenses=Coalesce(
+                Subquery(expenses_subquery),
+                Value(0),
+                output_field=models.DecimalField(),
+            ),
         )
         return qs
 
@@ -421,7 +590,7 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
         instance.deleted_at = timezone.now()
         instance.name = f"{instance.name}_deleted_{timestamp}"
         instance.save()
-        
+
         # Soft delete users associated with the organization and free up their emails
         for user in instance.users.all():
             user.is_deleted = True
@@ -430,56 +599,75 @@ class SuperAdminOrganizationViewSet(viewsets.ModelViewSet):
             user.email = f"deleted_{timestamp}_{user.email}"
             user.save()
 
+
 class SuperAdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['organization', 'role', 'is_active']
-    search_fields = ['username', 'email', 'first_name', 'last_name']
-    ordering_fields = ['date_joined', 'username']
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_fields = ["organization", "role", "is_active"]
+    search_fields = ["username", "email", "first_name", "last_name"]
+    ordering_fields = ["date_joined", "username"]
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def set_password(self, request, pk=None):
         user_to_modify = self.get_object()
         serializer = AdminChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
-            user_to_modify.set_password(serializer.validated_data['new_password'])
+            user_to_modify.set_password(serializer.validated_data["new_password"])
             user_to_modify.save()
-            return Response({"message": "User password updated successfully by Superadmin."})
+            return Response(
+                {"message": "User password updated successfully by Superadmin."}
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):
         user_to_modify = self.get_object()
         if request.user == user_to_modify:
-            return Response({"error": "You cannot deactivate or activate yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "You cannot deactivate or activate yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         user_to_modify.is_active = not user_to_modify.is_active
         user_to_modify.save()
         status_text = "activated" if user_to_modify.is_active else "deactivated"
-        return Response({"message": f"User {status_text} safely by Superadmin.", "is_active": user_to_modify.is_active})
+        return Response(
+            {
+                "message": f"User {status_text} safely by Superadmin.",
+                "is_active": user_to_modify.is_active,
+            }
+        )
 
     def destroy(self, request, *args, **kwargs):
         user_to_modify = self.get_object()
         if request.user == user_to_modify:
-            return Response({"error": "As a Superadmin, you cannot delete your own account here."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "As a Superadmin, you cannot delete your own account here."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return super().destroy(request, *args, **kwargs)
+
 
 class CurrencyViewSet(viewsets.ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['status']
-    search_fields = ['name', 'code']
+    filterset_fields = ["status"]
+    search_fields = ["name", "code"]
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ["list", "retrieve"]:
             return []
         return [IsAdminUser()]
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.action == 'list' and self.request.query_params.get('all') != 'true':
-            qs = qs.filter(status='active')
+        if self.action == "list" and self.request.query_params.get("all") != "true":
+            qs = qs.filter(status="active")
         return qs

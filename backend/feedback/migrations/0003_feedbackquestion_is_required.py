@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('feedback', '0002_feedbackanswer_answer_choices_and_more'),
+        ("feedback", "0002_feedbackanswer_answer_choices_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='feedbackquestion',
-            name='is_required',
+            model_name="feedbackquestion",
+            name="is_required",
             field=models.BooleanField(default=True),
         ),
     ]

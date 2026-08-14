@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import { AuthService } from '../api';
-import { Logo } from '../components/Logo';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { useTheme } from '../context/ThemeContext';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import { AuthService } from "../api";
+import { Logo } from "../components/Logo";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { useTheme } from "../context/ThemeContext";
 
 export function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorText, setErrorText] = useState('');
+  const [errorText, setErrorText] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { theme } = useTheme();
 
@@ -21,33 +21,36 @@ export function Login() {
     if (!email || !password) return;
     try {
       setIsLoading(true);
-      setErrorText('');
+      setErrorText("");
       const res = await AuthService.login({ username: email, password });
       if (res.data && res.data.access) {
         if (rememberMe) {
-          localStorage.setItem('token', res.data.access);
+          localStorage.setItem("token", res.data.access);
         } else {
-          sessionStorage.setItem('token', res.data.access);
+          sessionStorage.setItem("token", res.data.access);
         }
-        
+
         try {
           const userRes = await AuthService.getMe();
           if (userRes.data.is_superuser) {
-            navigate('/superadmin');
+            navigate("/superadmin");
           } else {
-            navigate('/dashboard');
+            navigate("/dashboard");
           }
         } catch (e) {
-          navigate('/dashboard');
+          navigate("/dashboard");
         }
       } else {
-        setErrorText('Invalid credentials. Please try again.');
+        setErrorText("Invalid credentials. Please try again.");
       }
     } catch (err: any) {
-      if (err.response?.data?.email?.[0] === "Please verify your email address before logging in.") {
+      if (
+        err.response?.data?.email?.[0] ===
+        "Please verify your email address before logging in."
+      ) {
         navigate(`/verify-email?email=${encodeURIComponent(email)}`);
       } else {
-        setErrorText('Invalid credentials. Please try again.');
+        setErrorText("Invalid credentials. Please try again.");
       }
       console.error(err);
     } finally {
@@ -64,9 +67,14 @@ export function Login() {
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
-          <Logo className="h-16 mb-8" dark={theme !== 'dark'} />
-          <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">Manage your inventory with NeoOps</h1>
-          <p className="text-lg text-[var(--text-on-brand)] opacity-80">Manage inventory, bookings, invoices, and customers from one intuitive platform.</p>
+          <Logo className="h-16 mb-8" dark={theme !== "dark"} />
+          <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">
+            Manage your inventory with NeoOps
+          </h1>
+          <p className="text-lg text-[var(--text-on-brand)] opacity-80">
+            Manage inventory, bookings, invoices, and customers from one
+            intuitive platform.
+          </p>
         </div>
       </div>
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
@@ -74,10 +82,15 @@ export function Login() {
           <h2 className="mt-6 text-3xl font-extrabold text-[var(--text-main)] flex items-center gap-3">
             <Logo className="h-10" />
           </h2>
-          <h3 className="mt-8 text-2xl font-bold text-[var(--text-main)]">Sign in to your account</h3>
+          <h3 className="mt-8 text-2xl font-bold text-[var(--text-main)]">
+            Sign in to your account
+          </h3>
           <p className="mt-2 text-sm text-[var(--text-muted)] flex items-center gap-1.5">
             Or
-            <button onClick={() => navigate('/register')} className="font-bold text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors underline underline-offset-4 decoration-2 decoration-[var(--text-link)]/40 hover:decoration-[var(--text-link)]">
+            <button
+              onClick={() => navigate("/register")}
+              className="font-bold text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors underline underline-offset-4 decoration-2 decoration-[var(--text-link)]/40 hover:decoration-[var(--text-link)]"
+            >
               start your free trial
             </button>
           </p>
@@ -90,15 +103,37 @@ export function Login() {
             )}
             <form className="space-y-6" onSubmit={handleLogin}>
               <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)]">Email address</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm" placeholder="you@example.com" />
+                <label className="block text-sm font-medium text-[var(--text-muted)]">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm"
+                  placeholder="you@example.com"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)]">Password</label>
+                <label className="block text-sm font-medium text-[var(--text-muted)]">
+                  Password
+                </label>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm pr-10" placeholder="••••••••" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="mt-1 appearance-none block w-full px-3 py-2.5 border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl shadow-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-brand-primary focus:border-brand-primary sm:text-sm pr-10"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none"
+                  >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
@@ -106,26 +141,40 @@ export function Login() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <input id="remember-me" name="remember-me" type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-[var(--border-soft)] rounded accent-brand-primary" />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-[var(--text-main)]">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 text-brand-primary focus:ring-brand-primary border-[var(--border-soft)] rounded accent-brand-primary"
+                  />
+                  <label
+                    htmlFor="remember-me"
+                    className="ml-2 block text-sm text-[var(--text-main)]"
+                  >
                     Remember me
                   </label>
-                  </div>
-
-                  <div className="text-sm">
-                    <button type="button" onClick={() => navigate('/forgot-password')} className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors">
-                      Forgot your password?
-                    </button>
-                  </div>
                 </div>
 
+                <div className="text-sm">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                    className="font-medium text-[var(--text-link)] hover:text-[var(--text-link-hover)] transition-colors"
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
+              </div>
+
               <div>
-                <button 
-                  type="submit" 
-                  disabled={isLoading} 
+                <button
+                  type="submit"
+                  disabled={isLoading}
                   className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 bg-brand-primary text-brand-accent hover:opacity-90"
                 >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
+                  {isLoading ? "Signing in..." : "Sign in"}
                 </button>
               </div>
             </form>

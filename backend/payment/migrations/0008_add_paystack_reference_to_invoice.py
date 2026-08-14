@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0007_invoicelineitem_details'),
+        ("payment", "0007_invoicelineitem_details"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='invoice',
-            name='paystack_reference',
+            model_name="invoice",
+            name="paystack_reference",
             field=models.CharField(blank=True, max_length=100, null=True, unique=True),
         ),
     ]

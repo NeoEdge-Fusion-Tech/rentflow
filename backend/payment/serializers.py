@@ -1,57 +1,115 @@
 from rest_framework import serializers
 from users.mixins import TenantSerializerMixin
-from .models import Payment, Invoice, InvoiceLineItem, Quotation, QuotationLineItem, Receipt, SubscriptionPayment, GeneralExpense
+from .models import (
+    Payment,
+    Invoice,
+    InvoiceLineItem,
+    Quotation,
+    QuotationLineItem,
+    Receipt,
+    SubscriptionPayment,
+    GeneralExpense,
+)
 from .utils import compute_invoice_totals
 from users.models import Organization, Subscription
 from users.serializers import ClientSerializer, BankAccountSerializer
 
+
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
-        fields = ['subscription_id', 'plan_name', 'status', 'current_period_end']
+        fields = ["subscription_id", "plan_name", "status", "current_period_end"]
+
 
 class SubscriptionPaymentSerializer(serializers.ModelSerializer):
-    organization_name = serializers.CharField(source='organization.name', read_only=True)
-    
+    organization_name = serializers.CharField(
+        source="organization.name", read_only=True
+    )
+
     class Meta:
         model = SubscriptionPayment
-        fields = '__all__'
+        fields = "__all__"
+
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):
     line_item_id = serializers.IntegerField(required=False)
 
     class Meta:
         model = InvoiceLineItem
-        fields = ['line_item_id', 'name', 'description', 'quantity', 'unit_price', 'total', 'position']
-        read_only_fields = ['total']
+        fields = [
+            "line_item_id",
+            "name",
+            "description",
+            "quantity",
+            "unit_price",
+            "total",
+            "position",
+        ]
+        read_only_fields = ["total"]
 
 
 class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    invoice_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    invoice_number = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
     line_items = InvoiceLineItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
-    client_details = ClientSerializer(source='client', read_only=True)
-    bank_account_details = BankAccountSerializer(source='bank_account', read_only=True)
-    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    client_details = ClientSerializer(source="client", read_only=True)
+    bank_account_details = BankAccountSerializer(source="bank_account", read_only=True)
+    organization_name = serializers.CharField(
+        source="organization.name", read_only=True
+    )
     organization_logo = serializers.SerializerMethodField()
     currency_symbol = serializers.SerializerMethodField()
-    amount_left = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    amount_left = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True
+    )
     recorded_payments = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
         fields = [
-            'invoice_id', 'booking', 'client', 'client_name', 'client_details', 'title', 'invoice_number',
-            'issue_date', 'due_date', 'event_date', 'status', 'currency', 'currency_symbol', 'bank_account',
-            'bank_account_details', 'show_bank_details', 'subtotal', 'discount_amount', 'discount_percentage',
-            'tax_percentage', 'tax_amount', 'total_amount', 'amount_paid', 'amount_left', 'notes', 'line_items', 'organization_name',
-            'organization_logo', 'recorded_payments'
+            "invoice_id",
+            "booking",
+            "client",
+            "client_name",
+            "client_details",
+            "title",
+            "invoice_number",
+            "issue_date",
+            "due_date",
+            "event_date",
+            "status",
+            "currency",
+            "currency_symbol",
+            "bank_account",
+            "bank_account_details",
+            "show_bank_details",
+            "subtotal",
+            "discount_amount",
+            "discount_percentage",
+            "tax_percentage",
+            "tax_amount",
+            "total_amount",
+            "amount_paid",
+            "amount_left",
+            "notes",
+            "line_items",
+            "organization_name",
+            "organization_logo",
+            "recorded_payments",
         ]
-        read_only_fields = ['subtotal', 'tax_amount', 'total_amount', 'amount_paid', 'amount_left']
+        read_only_fields = [
+            "subtotal",
+            "tax_amount",
+            "total_amount",
+            "amount_paid",
+            "amount_left",
+        ]
 
     def get_organization_logo(self, obj):
         if obj.organization and obj.organization.company_logo:
-            request = self.context.get('request')
+            request = self.context.get("request")
             if request:
                 return request.build_absolute_uri(obj.organization.company_logo.url)
             return obj.organization.company_logo.url
@@ -63,25 +121,34 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return None
 
     def get_currency_symbol(self, obj):
-        currency = obj.currency or (obj.organization.currency if obj.organization_id else None)
+        currency = obj.currency or (
+            obj.organization.currency if obj.organization_id else None
+        )
         return currency.symbol if currency else None
 
     def get_recorded_payments(self, obj):
-        payments = obj.recorded_payments.filter(status='completed')
-        return [{
-            'payment_id': p.payment_id,
-            'amount': p.amount,
-            'payment_date': p.payment_date,
-            'receipt_id': p.receipt.receipt_number if hasattr(p, 'receipt') else None,
-            'created_by': p.created_by.get_full_name() if p.created_by else None
-        } for p in payments]
+        payments = obj.recorded_payments.filter(status="completed")
+        return [
+            {
+                "payment_id": p.payment_id,
+                "amount": p.amount,
+                "payment_date": p.payment_date,
+                "receipt_id": (
+                    p.receipt.receipt_number if hasattr(p, "receipt") else None
+                ),
+                "created_by": p.created_by.get_full_name() if p.created_by else None,
+            }
+            for p in payments
+        ]
 
     def validate(self, data):
-        client = data.get('client') or (self.instance.client if self.instance else None)
+        client = data.get("client") or (self.instance.client if self.instance else None)
         if not client:
             raise serializers.ValidationError({"client": "A client is required."})
-        if not self.instance and not data.get('line_items'):
-            raise serializers.ValidationError({"line_items": "At least one line item is required."})
+        if not self.instance and not data.get("line_items"):
+            raise serializers.ValidationError(
+                {"line_items": "At least one line item is required."}
+            )
         return data
 
     def _apply_totals(self, instance, line_items_data):
@@ -96,33 +163,35 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         instance.total_amount = total_amount
 
     def create(self, validated_data):
-        line_items_data = validated_data.pop('line_items', [])
-        if not validated_data.get('currency'):
-            organization = validated_data.get('organization')
+        line_items_data = validated_data.pop("line_items", [])
+        if not validated_data.get("currency"):
+            organization = validated_data.get("organization")
             if organization and organization.currency:
-                validated_data['currency'] = organization.currency
+                validated_data["currency"] = organization.currency
         invoice = Invoice(**validated_data)
         self._apply_totals(invoice, line_items_data)
         invoice.save()
 
         for idx, item_data in enumerate(line_items_data):
-            item_data.pop('line_item_id', None)
+            item_data.pop("line_item_id", None)
             InvoiceLineItem.objects.create(invoice=invoice, position=idx, **item_data)
         return invoice
 
     def update(self, instance, validated_data):
-        line_items_data = validated_data.pop('line_items', None)
+        line_items_data = validated_data.pop("line_items", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         if line_items_data is not None:
-            existing_items = {item.line_item_id: item for item in instance.line_items.all()}
+            existing_items = {
+                item.line_item_id: item for item in instance.line_items.all()
+            }
 
             kept_items = []
             for idx, item_data in enumerate(line_items_data):
-                item_id = item_data.pop('line_item_id', None)
-                item_data['position'] = idx
+                item_id = item_data.pop("line_item_id", None)
+                item_data["position"] = idx
                 if item_id and item_id in existing_items:
                     item = existing_items.pop(item_id)
                     for attr, value in item_data.items():
@@ -130,7 +199,9 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                     item.save()
                     kept_items.append(item)
                 else:
-                    kept_items.append(InvoiceLineItem.objects.create(invoice=instance, **item_data))
+                    kept_items.append(
+                        InvoiceLineItem.objects.create(invoice=instance, **item_data)
+                    )
 
             # Remaining items were removed by the client
             for item in existing_items.values():
@@ -149,34 +220,73 @@ class QuotationLineItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuotationLineItem
-        fields = ['line_item_id', 'name', 'description', 'quantity', 'unit_price', 'total', 'position']
-        read_only_fields = ['total']
+        fields = [
+            "line_item_id",
+            "name",
+            "description",
+            "quantity",
+            "unit_price",
+            "total",
+            "position",
+        ]
+        read_only_fields = ["total"]
 
 
 class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    quotation_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    quotation_number = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
     line_items = QuotationLineItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
-    client_details = ClientSerializer(source='client', read_only=True)
-    bank_account_details = BankAccountSerializer(source='bank_account', read_only=True)
-    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    client_details = ClientSerializer(source="client", read_only=True)
+    bank_account_details = BankAccountSerializer(source="bank_account", read_only=True)
+    organization_name = serializers.CharField(
+        source="organization.name", read_only=True
+    )
     organization_logo = serializers.SerializerMethodField()
     currency_symbol = serializers.SerializerMethodField()
 
     class Meta:
         model = Quotation
         fields = [
-            'quotation_id', 'client', 'client_name', 'client_details', 'title', 'quotation_number',
-            'issue_date', 'expiry_date', 'status', 'currency', 'currency_symbol', 'bank_account',
-            'bank_account_details', 'show_bank_details', 'subtotal', 'discount_amount', 'discount_percentage',
-            'tax_percentage', 'tax_amount', 'total_amount', 'notes', 'line_items', 'organization_name',
-            'organization_logo', 'converted_invoice', 'converted_at'
+            "quotation_id",
+            "client",
+            "client_name",
+            "client_details",
+            "title",
+            "quotation_number",
+            "issue_date",
+            "expiry_date",
+            "status",
+            "currency",
+            "currency_symbol",
+            "bank_account",
+            "bank_account_details",
+            "show_bank_details",
+            "subtotal",
+            "discount_amount",
+            "discount_percentage",
+            "tax_percentage",
+            "tax_amount",
+            "total_amount",
+            "notes",
+            "line_items",
+            "organization_name",
+            "organization_logo",
+            "converted_invoice",
+            "converted_at",
         ]
-        read_only_fields = ['subtotal', 'tax_amount', 'total_amount', 'converted_invoice', 'converted_at']
+        read_only_fields = [
+            "subtotal",
+            "tax_amount",
+            "total_amount",
+            "converted_invoice",
+            "converted_at",
+        ]
 
     def get_organization_logo(self, obj):
         if obj.organization and obj.organization.company_logo:
-            request = self.context.get('request')
+            request = self.context.get("request")
             if request:
                 return request.build_absolute_uri(obj.organization.company_logo.url)
             return obj.organization.company_logo.url
@@ -188,15 +298,19 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return None
 
     def get_currency_symbol(self, obj):
-        currency = obj.currency or (obj.organization.currency if obj.organization_id else None)
+        currency = obj.currency or (
+            obj.organization.currency if obj.organization_id else None
+        )
         return currency.symbol if currency else None
 
     def validate(self, data):
-        client = data.get('client') or (self.instance.client if self.instance else None)
+        client = data.get("client") or (self.instance.client if self.instance else None)
         if not client:
             raise serializers.ValidationError({"client": "A client is required."})
-        if not self.instance and not data.get('line_items'):
-            raise serializers.ValidationError({"line_items": "At least one line item is required."})
+        if not self.instance and not data.get("line_items"):
+            raise serializers.ValidationError(
+                {"line_items": "At least one line item is required."}
+            )
         return data
 
     def _apply_totals(self, instance, line_items_data):
@@ -211,33 +325,37 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         instance.total_amount = total_amount
 
     def create(self, validated_data):
-        line_items_data = validated_data.pop('line_items', [])
-        if not validated_data.get('currency'):
-            organization = validated_data.get('organization')
+        line_items_data = validated_data.pop("line_items", [])
+        if not validated_data.get("currency"):
+            organization = validated_data.get("organization")
             if organization and organization.currency:
-                validated_data['currency'] = organization.currency
+                validated_data["currency"] = organization.currency
         quotation = Quotation(**validated_data)
         self._apply_totals(quotation, line_items_data)
         quotation.save()
 
         for idx, item_data in enumerate(line_items_data):
-            item_data.pop('line_item_id', None)
-            QuotationLineItem.objects.create(quotation=quotation, position=idx, **item_data)
+            item_data.pop("line_item_id", None)
+            QuotationLineItem.objects.create(
+                quotation=quotation, position=idx, **item_data
+            )
         return quotation
 
     def update(self, instance, validated_data):
-        line_items_data = validated_data.pop('line_items', None)
+        line_items_data = validated_data.pop("line_items", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         if line_items_data is not None:
-            existing_items = {item.line_item_id: item for item in instance.line_items.all()}
+            existing_items = {
+                item.line_item_id: item for item in instance.line_items.all()
+            }
 
             kept_items = []
             for idx, item_data in enumerate(line_items_data):
-                item_id = item_data.pop('line_item_id', None)
-                item_data['position'] = idx
+                item_id = item_data.pop("line_item_id", None)
+                item_data["position"] = idx
                 if item_id and item_id in existing_items:
                     item = existing_items.pop(item_id)
                     for attr, value in item_data.items():
@@ -245,7 +363,11 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                     item.save()
                     kept_items.append(item)
                 else:
-                    kept_items.append(QuotationLineItem.objects.create(quotation=instance, **item_data))
+                    kept_items.append(
+                        QuotationLineItem.objects.create(
+                            quotation=instance, **item_data
+                        )
+                    )
 
             for item in existing_items.values():
                 item.delete()
@@ -259,20 +381,31 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
 
 class ReceiptSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    organization_name = serializers.CharField(source='organization.name', read_only=True)
-    
+    organization_name = serializers.CharField(
+        source="organization.name", read_only=True
+    )
+
     class Meta:
         model = Receipt
         fields = [
-            'receipt_id', 'payment', 'receipt_number', 'issue_date', 
-            'status', 'amount', 'notes', 'organization_name'
+            "receipt_id",
+            "payment",
+            "receipt_number",
+            "issue_date",
+            "status",
+            "amount",
+            "notes",
+            "organization_name",
         ]
-        read_only_fields = ['receipt_number', 'issue_date']
+        read_only_fields = ["receipt_number", "issue_date"]
+
 
 class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
-    booking_ref = serializers.CharField(source='booking.booking_id', read_only=True)
-    invoice_number = serializers.CharField(source='invoice_record.invoice_number', read_only=True)
+    booking_ref = serializers.CharField(source="booking.booking_id", read_only=True)
+    invoice_number = serializers.CharField(
+        source="invoice_record.invoice_number", read_only=True
+    )
     receipt = ReceiptSerializer(read_only=True)
 
     def get_client_name(self, obj):
@@ -285,22 +418,39 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            'payment_id', 'booking', 'booking_ref', 'client_name', 
-            'amount', 'status', 'payment_date', 'invoice_id', 
-            'invoice_record', 'invoice_number',
-            'receipt_id', 'receipt'
+            "payment_id",
+            "booking",
+            "booking_ref",
+            "client_name",
+            "amount",
+            "status",
+            "payment_date",
+            "invoice_id",
+            "invoice_record",
+            "invoice_number",
+            "receipt_id",
+            "receipt",
         ]
-        read_only_fields = ['payment_date', 'invoice_id', 'receipt_id']
+        read_only_fields = ["payment_date", "invoice_id", "receipt_id"]
 
 
 class GeneralExpenseSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    vendor_name = serializers.CharField(source='vendor.service', read_only=True)
+    vendor_name = serializers.CharField(source="vendor.service", read_only=True)
 
     class Meta:
         model = GeneralExpense
         fields = [
-            'general_expense_id', 'organization', 'expense_type', 'vendor',
-            'vendor_name', 'name', 'amount', 'description', 'date',
-            'created_at', 'updated_at', 'created_by'
+            "general_expense_id",
+            "organization",
+            "expense_type",
+            "vendor",
+            "vendor_name",
+            "name",
+            "amount",
+            "description",
+            "date",
+            "created_at",
+            "updated_at",
+            "created_by",
         ]
-        read_only_fields = ['created_at', 'updated_at', 'created_by', 'organization']
+        read_only_fields = ["created_at", "updated_at", "created_by", "organization"]
