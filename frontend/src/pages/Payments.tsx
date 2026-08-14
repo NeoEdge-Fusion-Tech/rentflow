@@ -88,16 +88,34 @@ export function Payments() {
           <p className="text-sm font-medium text-[var(--text-muted)]">
             Total Displayed Revenue
           </p>
-          <div className="flex items-baseline gap-2 mt-1">
-            <p className="text-2xl font-bold text-[var(--text-main)]">
-              {currencySymbol}
-              {formatCurrency(
-                payments.reduce(
-                  (acc, p) => acc + (parseFloat(p.amount) || 0),
-                  0,
-                ),
-              )}
-            </p>
+          <div className="flex flex-col gap-1 mt-2 max-h-24 overflow-y-auto">
+            {Object.entries(
+              payments.reduce((acc: Record<string, number>, p: any) => {
+                const sym = p.currency_symbol || currencySymbol;
+                acc[sym] = (acc[sym] || 0) + (parseFloat(p.amount) || 0);
+                return acc;
+              }, {}),
+            ).length === 0 ? (
+              <p className="text-2xl font-bold text-[var(--text-main)]">
+                {currencySymbol}0.00
+              </p>
+            ) : (
+              Object.entries(
+                payments.reduce((acc: Record<string, number>, p: any) => {
+                  const sym = p.currency_symbol || currencySymbol;
+                  acc[sym] = (acc[sym] || 0) + (parseFloat(p.amount) || 0);
+                  return acc;
+                }, {}),
+              ).map(([sym, amt]) => (
+                <p
+                  key={sym}
+                  className="text-xl font-bold text-[var(--text-main)]"
+                >
+                  {sym}
+                  {formatCurrency(amt as number, sym)}
+                </p>
+              ))
+            )}
           </div>
         </div>
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
@@ -222,8 +240,11 @@ export function Payments() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-[var(--text-main)]">
-                          {currencySymbol}
-                          {formatCurrency(payment.amount)}
+                          {payment.currency_symbol || currencySymbol}
+                          {formatCurrency(
+                            payment.amount,
+                            payment.currency_symbol || currencySymbol,
+                          )}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -298,8 +319,11 @@ export function Payments() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-bold text-[var(--text-main)]">
-                        {currencySymbol}
-                        {formatCurrency(payment.amount)}
+                        {payment.currency_symbol || currencySymbol}
+                        {formatCurrency(
+                          payment.amount,
+                          payment.currency_symbol || currencySymbol,
+                        )}
                       </p>
                       <span
                         className={cn(

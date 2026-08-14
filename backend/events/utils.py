@@ -38,6 +38,7 @@ def compute_period_totals(organization, start, end):
             issue_date__gte=start,
             issue_date__lt=end,
             pl_events__isnull=True,
+            booking__isnull=True,
             status="paid",
         )
         .values("currency__symbol")

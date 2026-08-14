@@ -407,6 +407,7 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         source="invoice_record.invoice_number", read_only=True
     )
     receipt = ReceiptSerializer(read_only=True)
+    currency_symbol = serializers.SerializerMethodField()
 
     def get_client_name(self, obj):
         if obj.booking and obj.booking.client:
@@ -414,6 +415,15 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         if obj.invoice_record and obj.invoice_record.client:
             return obj.invoice_record.client.business_name
         return "System Generated"
+
+    def get_currency_symbol(self, obj):
+        if obj.invoice_record and obj.invoice_record.currency:
+            return obj.invoice_record.currency.symbol
+        if obj.booking and obj.booking.currency:
+            return obj.booking.currency.symbol
+        if obj.organization and obj.organization.currency:
+            return obj.organization.currency.symbol
+        return "$"
 
     class Meta:
         model = Payment
@@ -430,8 +440,14 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "invoice_number",
             "receipt_id",
             "receipt",
+            "currency_symbol",
         ]
-        read_only_fields = ["payment_date", "invoice_id", "receipt_id"]
+        read_only_fields = [
+            "payment_date",
+            "invoice_id",
+            "receipt_id",
+            "currency_symbol",
+        ]
 
 
 class GeneralExpenseSerializer(TenantSerializerMixin, serializers.ModelSerializer):

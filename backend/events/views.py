@@ -72,23 +72,12 @@ class EventDashboardStatsAPIView(APIView):
             start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end = start + relativedelta(months=1)
 
-        (
-            total_revenue,
-            total_project_expenses,
-            total_general_expenses,
-            total_profit,
-            total_loss,
-        ) = compute_period_totals(organization, start, end)
+        currency_totals = compute_period_totals(organization, start, end)
 
         return Response(
             {
                 "period": period,
-                "total_revenue": total_revenue,
-                "total_project_expenses": total_project_expenses,
-                "total_general_expenses": total_general_expenses,
-                "total_expenses": total_project_expenses + total_general_expenses,
-                "total_profit": total_profit,
-                "total_loss": total_loss,
+                "currencies": currency_totals,
             }
         )
 
