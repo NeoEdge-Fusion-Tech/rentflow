@@ -59,7 +59,13 @@ export function Invoices() {
       setIsLoading(true);
       const params: any = { page };
       if (searchQuery) params.search = searchQuery;
-      if (activeTab !== "All") params.status = activeTab.toLowerCase();
+      if (activeTab !== "All") {
+        if (activeTab === "Trash") {
+          params.status = "cancelled";
+        } else {
+          params.status = activeTab.toLowerCase();
+        }
+      }
       const res = await InvoiceService.getAll(params);
       setInvoices(res.data.results || res.data);
       setTotalCount(res.data.count || (res.data.results || res.data).length);
