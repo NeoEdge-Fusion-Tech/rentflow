@@ -322,6 +322,9 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         fields = [
             "client_id",
             "organization",
+            "client_type",
+            "first_name",
+            "last_name",
             "business_name",
             "email",
             "phone_number",

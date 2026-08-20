@@ -40,6 +40,9 @@ export function Clients() {
 
   // Form State
   const [formData, setFormData] = useState({
+    client_type: "business",
+    first_name: "",
+    last_name: "",
     business_name: "",
     email: "",
     phone_number: "",
@@ -82,6 +85,9 @@ export function Clients() {
     setEditingClient(null);
     setCustomIndustry("");
     setFormData({
+      client_type: "business",
+      first_name: "",
+      last_name: "",
       business_name: "",
       email: "",
       phone_number: "",
@@ -117,6 +123,9 @@ export function Clients() {
     setEditingClient(client);
     setCustomIndustry(isStandardIndustry ? "" : client.industry || "");
     setFormData({
+      client_type: client.client_type || "business",
+      first_name: client.first_name || "",
+      last_name: client.last_name || "",
       business_name: client.business_name || "",
       email: client.email || "",
       phone_number: client.phone_number || "",
@@ -201,8 +210,9 @@ export function Clients() {
   };
 
   const filteredClients = clients.filter((c) => {
-    const searchString =
-      `${c.business_name} ${c.contact_name} ${c.email}`.toLowerCase();
+    const searchString = `${c.business_name || ""} ${c.first_name || ""} ${
+      c.last_name || ""
+    } ${c.contact_name || ""} ${c.email || ""}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
@@ -311,11 +321,14 @@ export function Clients() {
                   {client.logo ? (
                     <img
                       src={client.logo}
-                      alt={client.business_name}
+                      alt={client.business_name || client.first_name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    (client.business_name?.[0] || "C").toUpperCase()
+                    (client.client_type === "individual"
+                      ? client.first_name?.[0]
+                      : client.business_name?.[0] || "C"
+                    ).toUpperCase()
                   )}
                 </div>
                 <div className="flex gap-2 items-center">
@@ -349,7 +362,11 @@ export function Clients() {
 
               <div className="space-y-1 mb-6">
                 <h3 className="text-lg font-bold text-[var(--text-main)]">
-                  {client.business_name}
+                  {client.client_type === "individual"
+                    ? `${client.first_name || ""} ${
+                        client.last_name || ""
+                      }`.trim()
+                    : client.business_name}
                 </h3>
                 <p className="text-sm text-[var(--text-muted)] font-medium">
                   {client.contact_name || "No Contact Person"}
@@ -503,54 +520,121 @@ export function Clients() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Business Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.business_name}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        business_name: e.target.value,
-                      })
-                    }
-                    placeholder="Business Name (Required)"
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Client Industry
-                  </label>
-                  <select
-                    value={formData.industry}
-                    onChange={(e) =>
-                      setFormData({ ...formData, industry: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  >
-                    <option value="">-Select an Industry-</option>
-                    <option value="tech">Technology</option>
-                    <option value="retail">Retail</option>
-                    <option value="finance">Finance</option>
-                    <option value="other">Other</option>
-                  </select>
-                  {formData.industry === "other" && (
-                    <input
-                      type="text"
-                      placeholder="Specify Industry"
-                      value={customIndustry}
-                      onChange={(e) => setCustomIndustry(e.target.value)}
-                      className="w-full px-4 py-3 mt-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                      required
-                    />
+              {/* Type Toggle */}
+              <div className="flex gap-4 p-1 bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)] w-fit mb-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, client_type: "business" })
+                  }
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                    formData.client_type === "business"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)]",
                   )}
-                </div>
+                >
+                  Business
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, client_type: "individual" })
+                  }
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                    formData.client_type === "individual"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)]",
+                  )}
+                >
+                  Individual
+                </button>
               </div>
+
+              {formData.client_type === "business" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Business Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.business_name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          business_name: e.target.value,
+                        })
+                      }
+                      placeholder="Business Name (Required)"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Client Industry
+                    </label>
+                    <select
+                      value={formData.industry}
+                      onChange={(e) =>
+                        setFormData({ ...formData, industry: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    >
+                      <option value="">-Select an Industry-</option>
+                      <option value="tech">Technology</option>
+                      <option value="retail">Retail</option>
+                      <option value="finance">Finance</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {formData.industry === "other" && (
+                      <input
+                        type="text"
+                        placeholder="Specify Industry"
+                        value={customIndustry}
+                        onChange={(e) => setCustomIndustry(e.target.value)}
+                        className="w-full px-4 py-3 mt-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                        required
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      First Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.first_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, first_name: e.target.value })
+                      }
+                      placeholder="First Name (Required)"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Last Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.last_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, last_name: e.target.value })
+                      }
+                      placeholder="Last Name (Required)"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">

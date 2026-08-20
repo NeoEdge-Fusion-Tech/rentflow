@@ -259,8 +259,15 @@ class Client(models.Model):
         Organization, on_delete=models.CASCADE, related_name="clients"
     )
     client_id = models.AutoField(primary_key=True)
+    client_type = models.CharField(
+        max_length=20,
+        choices=[("business", "Business"), ("individual", "Individual")],
+        default="business",
+    )
     logo = models.ImageField(upload_to="client_logos/", blank=True, null=True)
-    business_name = models.CharField(max_length=255)
+    business_name = models.CharField(max_length=255, blank=True, null=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     contact_name = models.CharField(max_length=255, blank=True, null=True)
