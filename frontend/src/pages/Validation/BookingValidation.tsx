@@ -9,6 +9,8 @@ import {
   RefreshCcw,
   ArrowLeft,
   Package,
+  Activity,
+  X,
 } from "lucide-react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { cn } from "@/src/utils";
@@ -21,6 +23,7 @@ export function BookingValidation() {
 
   const [booking, setBooking] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
 
   const [serialCode, setSerialCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
@@ -213,9 +216,17 @@ export function BookingValidation() {
         {/* Booking Details & Items */}
         <div className="space-y-6">
           <div className="bg-[var(--bg-surface)] p-6 rounded-3xl border border-[var(--border-soft)] shadow-xl">
-            <h2 className="font-bold text-[var(--text-main)] mb-4">
-              Items in Booking
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-[var(--text-main)]">
+                Items in Booking
+              </h2>
+              <button
+                onClick={() => setShowAnalyzeModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-lg text-sm font-bold hover:bg-brand-primary/20 transition-colors"
+              >
+                <Activity className="w-4 h-4" /> Analyze
+              </button>
+            </div>
 
             {booking.items?.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)]">
@@ -496,6 +507,88 @@ export function BookingValidation() {
           </form>
         </div>
       </div>
+
+      {showAnalyzeModal && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl p-6 w-full max-w-lg border border-[var(--border-soft)] shadow-2xl relative">
+            <button
+              onClick={() => setShowAnalyzeModal(false)}
+              className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+              <Activity className="w-6 h-6 text-brand-primary" /> Booking
+              Analysis
+            </h2>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+              {booking.items?.map((item: any) => {
+                const pendingPickup = Math.max(
+                  0,
+                  item.quantity - (item.total_picked_up || 0),
+                );
+                const pendingReturn = Math.max(
+                  0,
+                  (item.total_picked_up || 0) - (item.total_returned || 0),
+                );
+
+                if (pendingPickup === 0 && pendingReturn === 0) return null;
+
+                return (
+                  <div
+                    key={item.item_id}
+                    className="p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)]"
+                  >
+                    <p className="font-bold text-[var(--text-main)] text-sm mb-2">
+                      {item.product_name}
+                    </p>
+                    {pendingPickup > 0 && (
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-amber-500 font-medium">
+                          Pending Pickup:
+                        </span>
+                        <span className="font-bold text-[var(--text-main)]">
+                          {pendingPickup} units
+                        </span>
+                      </div>
+                    )}
+                    {pendingReturn > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-rose-500 font-medium">
+                          Pending Return:
+                        </span>
+                        <span className="font-bold text-[var(--text-main)]">
+                          {pendingReturn} units
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {booking.items?.every(
+                (item: any) =>
+                  Math.max(0, item.quantity - (item.total_picked_up || 0)) ===
+                    0 &&
+                  Math.max(
+                    0,
+                    (item.total_picked_up || 0) - (item.total_returned || 0),
+                  ) === 0,
+              ) && (
+                <div className="text-center py-8 text-[var(--text-muted)]">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3 opacity-80" />
+                  <p className="font-bold text-[var(--text-main)]">
+                    All items have been processed.
+                  </p>
+                  <p className="text-sm mt-1">
+                    Nothing pending for pickup or return.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,8 +15,11 @@ import {
   Trash2,
   TrendingUp,
   X,
+  Printer,
+  QrCode,
 } from "lucide-react";
 import { cn } from "@/src/utils";
+import { QRCodeSVG } from "qrcode.react";
 import { ProductService, CategoryService } from "../api";
 
 export function Inventory() {
@@ -25,6 +28,10 @@ export function Inventory() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showQRExportModal, setShowQRExportModal] = useState(false);
+  const [selectedUnitsForQR, setSelectedUnitsForQR] = useState<
+    { productName: string; unitName: string; identifier: string }[]
+  >([]);
   const currencySymbol = localStorage.getItem("currencySymbol") || "$";
   const [units, setUnits] = useState([
     {
@@ -338,6 +345,13 @@ export function Inventory() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowQRExportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+          >
+            <QrCode className="w-4 h-4" />
+            <span className="hidden sm:inline">Export QR</span>
+          </button>
           <button
             onClick={() => setShowCategoryModal(true)}
             className="px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
@@ -952,18 +966,34 @@ export function Inventory() {
                           <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
                             Serial Number
                           </label>
-                          <input
-                            type="text"
-                            placeholder="SN000000"
-                            required
-                            value={unit.serial_number}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].serial_number = e.target.value;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
-                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="SN000000"
+                              required
+                              value={unit.serial_number}
+                              onChange={(e) => {
+                                const newUnits = [...units];
+                                newUnits[i].serial_number = e.target.value;
+                                setUnits(newUnits);
+                              }}
+                              className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newUnits = [...units];
+                                newUnits[i].serial_number = `SN-${Math.random()
+                                  .toString(36)
+                                  .substring(2, 8)
+                                  .toUpperCase()}`;
+                                setUnits(newUnits);
+                              }}
+                              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap"
+                            >
+                              {unit.serial_number ? "Regenerate" : "Generate"}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div>
@@ -1472,6 +1502,193 @@ export function Inventory() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export QR Codes Modal */}
+      {showQRExportModal && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-[var(--border-soft)] shadow-2xl flex flex-col relative">
+            <div className="print:hidden flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-[var(--text-main)]">
+                Export QR Codes
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-brand-accent rounded-xl hover:opacity-90 font-bold text-sm transition-opacity"
+                >
+                  <Printer className="w-4 h-4" /> Print
+                </button>
+                <button
+                  onClick={() => setShowQRExportModal(false)}
+                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="print:hidden space-y-4 mb-6 max-h-[30vh] overflow-y-auto border border-[var(--border-soft)] p-4 rounded-xl bg-[var(--bg-app)]/50">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-bold text-[var(--text-main)]">
+                  Select Units to Export
+                </p>
+                <button
+                  onClick={() => {
+                    const allIdentifiers: any[] = [];
+                    products.forEach(
+                      (p) =>
+                        p.units?.forEach((u: any) => {
+                          const identifier =
+                            u.unit_type === "single"
+                              ? u.serial_number
+                              : u.product_unit_id?.toString();
+                          if (identifier)
+                            allIdentifiers.push({
+                              productName: p.name,
+                              unitName:
+                                u.name ||
+                                (u.unit_type === "single" ? "SN" : "Bulk"),
+                              identifier,
+                            });
+                        }),
+                    );
+                    if (
+                      selectedUnitsForQR.length === allIdentifiers.length &&
+                      allIdentifiers.length > 0
+                    ) {
+                      setSelectedUnitsForQR([]);
+                    } else {
+                      setSelectedUnitsForQR(allIdentifiers);
+                    }
+                  }}
+                  className="text-xs font-bold text-brand-primary hover:underline"
+                >
+                  {selectedUnitsForQR.length > 0
+                    ? "Deselect All"
+                    : "Select All"}
+                </button>
+              </div>
+              {products.map((product) => (
+                <div key={product.product_id} className="mb-4">
+                  <p className="font-bold text-sm text-[var(--text-main)]">
+                    {product.name}
+                  </p>
+                  <div className="ml-2 flex flex-wrap gap-2 mt-2">
+                    {product.units?.map((unit: any) => {
+                      const identifier =
+                        unit.unit_type === "single"
+                          ? unit.serial_number
+                          : unit.product_unit_id.toString();
+                      if (!identifier) return null;
+                      const isSelected = selectedUnitsForQR.some(
+                        (u) => u.identifier === identifier,
+                      );
+                      return (
+                        <label
+                          key={unit.product_unit_id}
+                          className="flex items-center gap-2 text-xs p-2 bg-[var(--bg-surface)] rounded-lg border border-[var(--border-soft)] cursor-pointer hover:border-brand-primary/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            className="accent-brand-primary rounded"
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedUnitsForQR([
+                                  ...selectedUnitsForQR,
+                                  {
+                                    productName: product.name,
+                                    unitName:
+                                      unit.name ||
+                                      (unit.unit_type === "single"
+                                        ? "SN"
+                                        : "Bulk"),
+                                    identifier,
+                                  },
+                                ]);
+                              } else {
+                                setSelectedUnitsForQR(
+                                  selectedUnitsForQR.filter(
+                                    (u) => u.identifier !== identifier,
+                                  ),
+                                );
+                              }
+                            }}
+                          />
+                          <span className="text-[var(--text-main)]">
+                            {unit.name ||
+                              (unit.unit_type === "single"
+                                ? unit.serial_number
+                                : "Bulk")}
+                          </span>
+                        </label>
+                      );
+                    })}
+                    {(!product.units || product.units.length === 0) && (
+                      <p className="text-xs text-[var(--text-muted)] ml-2">
+                        No units
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Print Only View */}
+            <div className="hidden print:grid print:grid-cols-4 print:gap-4 print:p-4 print:bg-white print:text-black">
+              {selectedUnitsForQR.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-xl text-center"
+                  style={{ pageBreakInside: "avoid" }}
+                >
+                  <QRCodeSVG value={item.identifier} size={120} />
+                  <p className="font-bold mt-3 text-sm">{item.productName}</p>
+                  <p className="text-xs text-gray-700">{item.unitName}</p>
+                  <p className="text-xs text-gray-500 font-mono mt-1">
+                    {item.identifier}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Preview for non-print mode */}
+            <div className="print:hidden flex-1 flex flex-col">
+              <p className="text-sm font-bold text-[var(--text-main)] mb-4 border-t border-[var(--border-soft)] pt-4">
+                Preview
+              </p>
+              {selectedUnitsForQR.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-[var(--text-muted)]">
+                  <QrCode className="w-12 h-12 mb-2 opacity-50" />
+                  <p className="text-sm">
+                    Select units above to preview QR codes.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto max-h-[40vh] p-1">
+                  {selectedUnitsForQR.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center justify-center p-4 border border-[var(--border-soft)] rounded-xl bg-white text-black text-center shadow-sm"
+                    >
+                      <QRCodeSVG value={item.identifier} size={100} />
+                      <p className="font-bold mt-3 text-xs truncate w-full">
+                        {item.productName}
+                      </p>
+                      <p className="text-[10px] text-gray-600 truncate w-full">
+                        {item.unitName}
+                      </p>
+                      <p className="text-[10px] text-gray-500 font-mono mt-1">
+                        {item.identifier}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
