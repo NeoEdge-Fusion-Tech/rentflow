@@ -1750,10 +1750,14 @@ export function Inventory() {
               {selectedUnitsForQR.map((item, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center justify-start h-full p-2 border border-dashed border-gray-400 text-center"
+                  className="flex flex-col items-center justify-start h-full min-w-0 p-2 border border-dashed border-gray-400 text-center"
                   style={{ pageBreakInside: "avoid" }}
                 >
-                  <QRCodeSVG value={item.identifier} size={160} />
+                  <QRCodeSVG
+                    value={item.identifier}
+                    size={160}
+                    style={{ width: "100%", height: "auto", maxWidth: 160 }}
+                  />
                   <p className="font-bold mt-2 text-xs">{item.productName}</p>
                   <p className="text-[10px] text-gray-700">{item.unitName}</p>
                   <p className="text-[10px] text-gray-500 font-mono mt-1">
