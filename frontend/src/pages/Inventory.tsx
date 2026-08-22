@@ -17,10 +17,10 @@ import {
   X,
   Printer,
   QrCode,
-  RefreshCw,
+  Download,
 } from "lucide-react";
 import { cn } from "@/src/utils";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { ProductService, CategoryService } from "../api";
 
 export function Inventory() {
@@ -33,6 +33,11 @@ export function Inventory() {
   const [selectedUnitsForQR, setSelectedUnitsForQR] = useState<
     { productName: string; unitName: string; identifier: string }[]
   >([]);
+  const [singleQRView, setSingleQRView] = useState<{
+    productName: string;
+    unitName: string;
+    identifier: string;
+  } | null>(null);
   const currencySymbol = localStorage.getItem("currencySymbol") || "$";
   const [units, setUnits] = useState([
     {
@@ -351,7 +356,7 @@ export function Inventory() {
             className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
           >
             <QrCode className="w-4 h-4" />
-            <span className="hidden sm:inline">Export QR</span>
+            <span className="hidden sm:inline">Export Product Line QR</span>
           </button>
           <button
             onClick={() => setShowCategoryModal(true)}
@@ -669,6 +674,9 @@ export function Inventory() {
                                     <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                                       Availability
                                     </th>
+                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">
+                                      Actions
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[var(--border-subtle)]">
@@ -766,6 +774,75 @@ export function Inventory() {
                                               damaged
                                             </div>
                                           </div>
+                                        </div>
+                                      </td>
+                                      <td className="px-4 py-2 text-xs text-right align-top">
+                                        <div className="flex justify-end gap-2 mt-1">
+                                          <button
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              const identifier =
+                                                unit.unit_type === "single"
+                                                  ? unit.serial_number
+                                                  : unit.product_unit_id.toString();
+                                              if (!identifier) return;
+                                              setSingleQRView({
+                                                productName: product.name,
+                                                unitName:
+                                                  unit.name ||
+                                                  (unit.unit_type === "single"
+                                                    ? "SN"
+                                                    : "Bulk"),
+                                                identifier,
+                                              });
+                                            }}
+                                            title="View QR Code"
+                                            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"
+                                          >
+                                            <QrCode className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              const identifier =
+                                                unit.unit_type === "single"
+                                                  ? unit.serial_number
+                                                  : unit.product_unit_id.toString();
+                                              if (!identifier) return;
+                                              const canvas =
+                                                document.getElementById(
+                                                  `qr-${unit.product_unit_id}`,
+                                                ) as HTMLCanvasElement;
+                                              if (canvas) {
+                                                const url =
+                                                  canvas.toDataURL("image/png");
+                                                const link =
+                                                  document.createElement("a");
+                                                link.download = `${product.name.replace(
+                                                  /\s+/g,
+                                                  "_",
+                                                )}_${identifier}_QR.png`;
+                                                link.href = url;
+                                                link.click();
+                                              }
+                                            }}
+                                            title="Download QR Code"
+                                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                                          >
+                                            <Download className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                        {/* Hidden canvas for downloading */}
+                                        <div className="hidden">
+                                          <QRCodeCanvas
+                                            id={`qr-${unit.product_unit_id}`}
+                                            value={
+                                              unit.unit_type === "single"
+                                                ? unit.serial_number || ""
+                                                : unit.product_unit_id.toString()
+                                            }
+                                            size={512}
+                                          />
                                         </div>
                                       </td>
                                     </tr>
@@ -978,21 +1055,7 @@ export function Inventory() {
                               }}
                               className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
                             />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newUnits = [...units];
-                                newUnits[i].serial_number = `SN-${Math.random()
-                                  .toString(36)
-                                  .substring(2, 8)
-                                  .toUpperCase()}`;
-                                setUnits(newUnits);
-                              }}
-                              title="Generate Random Serial Number"
-                              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors flex items-center justify-center shrink-0"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
+
                             <button
                               type="button"
                               onClick={() => {
@@ -1002,15 +1065,12 @@ export function Inventory() {
                                   );
                                   return;
                                 }
-                                setSelectedUnitsForQR([
-                                  {
-                                    productName:
-                                      newProduct.name || "Unknown Product",
-                                    unitName: "SN",
-                                    identifier: unit.serial_number,
-                                  },
-                                ]);
-                                setShowQRExportModal(true);
+                                setSingleQRView({
+                                  productName:
+                                    newProduct.name || "Unknown Product",
+                                  unitName: "SN",
+                                  identifier: unit.serial_number,
+                                });
                               }}
                               className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap flex items-center gap-2"
                             >
@@ -1537,7 +1597,7 @@ export function Inventory() {
           <div className="bg-[var(--bg-surface)] rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-[var(--border-soft)] shadow-2xl flex flex-col relative">
             <div className="print:hidden flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
-                Export QR Codes
+                Export Product Line QR Codes
               </h2>
               <div className="flex gap-2">
                 <button
@@ -1663,11 +1723,11 @@ export function Inventory() {
             </div>
 
             {/* Print Only View */}
-            <div className="hidden print:grid print:grid-cols-4 print:gap-4 print:p-4 print:bg-white print:text-black">
+            <div className="hidden print:grid print:grid-cols-4 print:gap-4 print:p-4 print:bg-white print:text-black print:items-start print:content-start">
               {selectedUnitsForQR.map((item, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-xl text-center"
+                  className="flex flex-col items-center justify-start h-full p-4 border border-gray-300 rounded-xl text-center"
                   style={{ pageBreakInside: "avoid" }}
                 >
                   <QRCodeSVG value={item.identifier} size={120} />
@@ -1713,6 +1773,75 @@ export function Inventory() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single QR Code View Modal */}
+      {singleQRView && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 print:static print:bg-white print:block">
+          <div className="bg-[var(--bg-surface)] rounded-2xl p-8 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative print:shadow-none print:border-none print:max-w-none print:p-0 print:m-0">
+            <button
+              onClick={() => setSingleQRView(null)}
+              className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors print:hidden"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-bold text-[var(--text-main)] mb-6 print:hidden">
+              Unit QR Code
+            </h2>
+
+            <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
+              <QRCodeSVG value={singleQRView.identifier} size={200} />
+            </div>
+
+            {/* Hidden canvas for downloading */}
+            <div className="hidden">
+              <QRCodeCanvas
+                id="single-qr-canvas"
+                value={singleQRView.identifier}
+                size={512}
+              />
+            </div>
+
+            <p className="font-bold text-sm text-[var(--text-main)]">
+              {singleQRView.productName}
+            </p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              {singleQRView.unitName}
+            </p>
+            <p className="text-xs text-[var(--text-muted)] font-mono mt-2">
+              {singleQRView.identifier}
+            </p>
+
+            <div className="flex gap-3 w-full mt-8 print:hidden">
+              <button
+                onClick={() => {
+                  const canvas = document.getElementById(
+                    "single-qr-canvas",
+                  ) as HTMLCanvasElement;
+                  if (canvas) {
+                    const url = canvas.toDataURL("image/png");
+                    const link = document.createElement("a");
+                    link.download = `${singleQRView.productName.replace(
+                      /\s+/g,
+                      "_",
+                    )}_${singleQRView.identifier}_QR.png`;
+                    link.href = url;
+                    link.click();
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity"
+              >
+                <Download className="w-4 h-4" /> Download
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--bg-app)] text-[var(--text-main)] border border-[var(--border-soft)] font-bold rounded-xl hover:bg-[var(--border-subtle)] transition-colors"
+              >
+                <Printer className="w-4 h-4" /> Print
+              </button>
             </div>
           </div>
         </div>
