@@ -1746,17 +1746,17 @@ export function Inventory() {
             </div>
 
             {/* Print Only View */}
-            <div className="hidden qr-print-only print:grid print:grid-cols-2 print:gap-4 print:p-2 print:bg-white print:text-black print:items-start print:content-start">
+            <div className="hidden qr-print-only print:grid print:grid-cols-4 print:gap-2 print:p-1 print:bg-white print:text-black print:items-start print:content-start">
               {selectedUnitsForQR.map((item, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center justify-start h-full p-4 border border-dashed border-gray-400 text-center"
+                  className="flex flex-col items-center justify-start h-full p-2 border border-dashed border-gray-400 text-center"
                   style={{ pageBreakInside: "avoid" }}
                 >
-                  <QRCodeSVG value={item.identifier} size={280} />
-                  <p className="font-bold mt-4 text-base">{item.productName}</p>
-                  <p className="text-sm text-gray-700">{item.unitName}</p>
-                  <p className="text-sm text-gray-500 font-mono mt-1">
+                  <QRCodeSVG value={item.identifier} size={160} />
+                  <p className="font-bold mt-2 text-xs">{item.productName}</p>
+                  <p className="text-[10px] text-gray-700">{item.unitName}</p>
+                  <p className="text-[10px] text-gray-500 font-mono mt-1">
                     {item.identifier}
                   </p>
                 </div>
