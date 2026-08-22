@@ -17,6 +17,7 @@ import {
   X,
   Printer,
   QrCode,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { QRCodeSVG } from "qrcode.react";
@@ -470,8 +471,8 @@ export function Inventory() {
                 <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
                   Rented
                 </th>
-                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-rose-500 uppercase tracking-wider text-center">
-                  Dmg
+                <th className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-wider text-center">
+                  DAMAGED
                 </th>
                 <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   Actions
@@ -759,13 +760,11 @@ export function Inventory() {
                                               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
                                               {unit.quantity_rented ?? 0} rented
                                             </span>
-                                            <span
-                                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-500/10 text-rose-500"
-                                              title="Damaged"
-                                            >
-                                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
-                                              {unit.quantity_damaged ?? 0} dmg
-                                            </span>
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 text-rose-500 rounded-full">
+                                              <AlertTriangle className="w-3.5 h-3.5" />
+                                              {unit.quantity_damaged ?? 0}{" "}
+                                              damaged
+                                            </div>
                                           </div>
                                         </div>
                                       </td>
@@ -989,9 +988,34 @@ export function Inventory() {
                                   .toUpperCase()}`;
                                 setUnits(newUnits);
                               }}
-                              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap"
+                              title="Generate Random Serial Number"
+                              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors flex items-center justify-center shrink-0"
                             >
-                              {unit.serial_number ? "Regenerate" : "Generate"}
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!unit.serial_number) {
+                                  alert(
+                                    "Please enter a serial number first to preview its QR code.",
+                                  );
+                                  return;
+                                }
+                                setSelectedUnitsForQR([
+                                  {
+                                    productName:
+                                      newProduct.name || "Unknown Product",
+                                    unitName: "SN",
+                                    identifier: unit.serial_number,
+                                  },
+                                ]);
+                                setShowQRExportModal(true);
+                              }}
+                              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap flex items-center gap-2"
+                            >
+                              <QrCode className="w-4 h-4" />
+                              View QR
                             </button>
                           </div>
                         </div>

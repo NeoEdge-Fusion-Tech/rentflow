@@ -106,3 +106,22 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
 }
+
+@media print {
+  html,
+  body,
+  #root,
+  [class*="overflow-hidden"],
+  [class*="max-h-"],
+  [class*="fixed"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+  }
+
+  /* Hide scrollbars during print */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
