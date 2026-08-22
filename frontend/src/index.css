@@ -129,6 +129,14 @@
   body.is-printing-qr * {
     visibility: hidden;
   }
+  /* Any ancestor of .qr-print-only with its own `position` (e.g. Tailwind's
+     `relative`) becomes the containing block for .qr-print-only's absolute
+     positioning below, confining it to that ancestor's box (often centered
+     and width-capped) instead of the full page. Neutralize those too. */
+  body.is-printing-qr [class*="relative"],
+  body.is-printing-qr [class*="absolute"] {
+    position: static !important;
+  }
   body.is-printing-qr .qr-print-only,
   body.is-printing-qr .qr-print-only * {
     visibility: visible;
