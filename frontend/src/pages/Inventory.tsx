@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNotification } from "../context/NotificationContext";
 import {
   Search,
@@ -53,6 +53,17 @@ export function Inventory() {
     },
   ]);
   const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showQRExportModal || singleQRView) {
+      document.body.classList.add("is-printing-qr");
+    } else {
+      document.body.classList.remove("is-printing-qr");
+    }
+    return () => {
+      document.body.classList.remove("is-printing-qr");
+    };
+  }, [showQRExportModal, singleQRView]);
 
   const formatCurrency = (amount: number | string, overrideSymbol?: string) => {
     // If a currency symbol is not provided, we try to grab it from local state if available.
@@ -1723,7 +1734,7 @@ export function Inventory() {
             </div>
 
             {/* Print Only View */}
-            <div className="hidden print:grid print:grid-cols-4 print:gap-4 print:p-4 print:bg-white print:text-black print:items-start print:content-start">
+            <div className="hidden qr-print-only print:grid print:grid-cols-4 print:gap-4 print:p-4 print:bg-white print:text-black print:items-start print:content-start">
               {selectedUnitsForQR.map((item, i) => (
                 <div
                   key={i}
@@ -1781,7 +1792,7 @@ export function Inventory() {
       {/* Single QR Code View Modal */}
       {singleQRView && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 print:static print:bg-white print:block">
-          <div className="bg-[var(--bg-surface)] rounded-2xl p-8 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative print:shadow-none print:border-none print:max-w-none print:p-0 print:m-0">
+          <div className="qr-print-only bg-[var(--bg-surface)] rounded-2xl p-8 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative print:shadow-none print:border-none print:max-w-none print:p-0 print:m-0">
             <button
               onClick={() => setSingleQRView(null)}
               className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors print:hidden"
