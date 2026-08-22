@@ -1734,17 +1734,17 @@ export function Inventory() {
             </div>
 
             {/* Print Only View */}
-            <div className="hidden qr-print-only print:grid print:grid-cols-4 print:gap-4 print:p-4 print:bg-white print:text-black print:items-start print:content-start">
+            <div className="hidden qr-print-only print:grid print:grid-cols-2 print:gap-4 print:p-2 print:bg-white print:text-black print:items-start print:content-start">
               {selectedUnitsForQR.map((item, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center justify-start h-full p-4 border border-gray-300 rounded-xl text-center"
+                  className="flex flex-col items-center justify-start h-full p-4 border border-dashed border-gray-400 text-center"
                   style={{ pageBreakInside: "avoid" }}
                 >
-                  <QRCodeSVG value={item.identifier} size={120} />
-                  <p className="font-bold mt-3 text-sm">{item.productName}</p>
-                  <p className="text-xs text-gray-700">{item.unitName}</p>
-                  <p className="text-xs text-gray-500 font-mono mt-1">
+                  <QRCodeSVG value={item.identifier} size={280} />
+                  <p className="font-bold mt-4 text-base">{item.productName}</p>
+                  <p className="text-sm text-gray-700">{item.unitName}</p>
+                  <p className="text-sm text-gray-500 font-mono mt-1">
                     {item.identifier}
                   </p>
                 </div>
@@ -1804,7 +1804,7 @@ export function Inventory() {
             </h2>
 
             <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
-              <QRCodeSVG value={singleQRView.identifier} size={200} />
+              <QRCodeSVG value={singleQRView.identifier} size={280} />
             </div>
 
             {/* Hidden canvas for downloading */}
