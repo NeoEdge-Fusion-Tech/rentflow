@@ -734,46 +734,74 @@ export function InvoiceEditor() {
                       {activeDropdown === i && products.length > 0 && (
                         <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg shadow-xl max-h-48 overflow-y-auto">
                           {products
-                            .filter((p) =>
-                              p.name
-                                .toLowerCase()
-                                .includes(item.name.toLowerCase()),
+                            .flatMap((p) =>
+                              (p.units || []).map((u: any) => ({
+                                ...u,
+                                product: p,
+                              })),
                             )
-                            .map((p) => (
+                            .filter((u) => {
+                              const searchStr = `${u.name || ""} ${
+                                u.product.name
+                              } ${u.serial_number || ""}`.toLowerCase();
+                              return searchStr.includes(
+                                item.name.toLowerCase(),
+                              );
+                            })
+                            .map((u) => (
                               <div
-                                key={p.product_id}
+                                key={u.product_unit_id}
                                 className="px-3 py-2.5 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
                                 onClick={() => {
-                                  updateLineItem(i, "name", p.name);
+                                  updateLineItem(
+                                    i,
+                                    "name",
+                                    u.name ||
+                                      `${u.product.name}${
+                                        u.serial_number
+                                          ? ` (${u.serial_number})`
+                                          : ""
+                                      }`,
+                                  );
                                   updateLineItem(
                                     i,
                                     "unit_price",
-                                    parseFloat(p.units?.[0]?.rental_price || 0),
+                                    parseFloat(u.rental_price || 0),
                                   );
                                   setActiveDropdown(null);
                                 }}
                               >
                                 <div>
                                   <p className="text-sm font-bold text-[var(--text-main)]">
-                                    {p.name}
+                                    {u.name ||
+                                      `${u.product.name}${
+                                        u.serial_number
+                                          ? ` (${u.serial_number})`
+                                          : ""
+                                      }`}
                                   </p>
-                                  <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">
-                                    {p.category?.name || "Product"}
+                                  <p className="inline-block px-1.5 py-0.5 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded text-[10px] text-[var(--text-muted)] font-medium uppercase mt-0.5">
+                                    {u.product.name}
                                   </p>
                                 </div>
                                 <span className="text-xs font-bold text-[var(--text-main)]">
                                   {currencySymbol}{" "}
                                   {parseFloat(
-                                    p.units?.[0]?.rental_price || 0,
+                                    u.rental_price || 0,
                                   ).toLocaleString()}
                                 </span>
                               </div>
                             ))}
-                          {products.filter((p) =>
-                            p.name
-                              .toLowerCase()
-                              .includes(item.name.toLowerCase()),
-                          ).length === 0 && (
+                          {products
+                            .flatMap((p) => p.units || [])
+                            .filter((u: any) => {
+                              const searchStr = `${u.name || ""} ${
+                                u.serial_number || ""
+                              }`.toLowerCase();
+                              return searchStr.includes(
+                                item.name.toLowerCase(),
+                              );
+                            }).length === 0 && (
                             <div className="px-3 py-4 text-center text-xs text-[var(--text-muted)] font-medium">
                               No products found.
                             </div>
