@@ -352,555 +352,567 @@ export function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-main)]">
-            Inventory Management
-          </h1>
-          <p className="text-[var(--text-muted)]">
-            Manage your products, categories, and stock levels.
-          </p>
+      {/* Main page content — hidden during QR print jobs so print pagination
+          only ever contains the .qr-print-only content (avoids extra/duplicate
+          pages from this section's height still counting toward the print layout) */}
+      <div className="print:hidden space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--text-main)]">
+              Inventory Management
+            </h1>
+            <p className="text-[var(--text-muted)]">
+              Manage your products, categories, and stock levels.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowQRExportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+            >
+              <QrCode className="w-4 h-4" />
+              <span className="hidden sm:inline">Export Product Line QR</span>
+            </button>
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+            >
+              Categories
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 bg-brand-primary text-brand-accent px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+            >
+              <Plus className="w-5 h-5" />
+              Add Product
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowQRExportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
-          >
-            <QrCode className="w-4 h-4" />
-            <span className="hidden sm:inline">Export Product Line QR</span>
-          </button>
-          <button
-            onClick={() => setShowCategoryModal(true)}
-            className="px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
-          >
-            Categories
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-brand-primary text-brand-accent px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
-          >
-            <Plus className="w-5 h-5" />
-            Add Product
-          </button>
-        </div>
-      </div>
 
-      {/* Module Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2 mt-4">
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">
-              Total Products
-            </p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">
-              {products.length}
-            </p>
+        {/* Module Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2 mt-4">
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Total Products
+              </p>
+              <p className="text-2xl font-bold text-[var(--text-main)]">
+                {products.length}
+              </p>
+            </div>
+            <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
+              <Package size={24} />
+            </div>
           </div>
-          <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
-            <Package size={24} />
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Value of Displayed Stock (Cost)
+              </p>
+              <p className="text-2xl font-bold text-[var(--text-main)]">
+                {currencySymbol}
+                {formatCurrency(
+                  products.reduce(
+                    (acc, p) => acc + (parseFloat(p.total_cost_price) || 0),
+                    0,
+                  ),
+                )}
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+              <TrendingUp size={24} />
+            </div>
           </div>
-        </div>
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">
-              Value of Displayed Stock (Cost)
-            </p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">
-              {currencySymbol}
-              {formatCurrency(
-                products.reduce(
-                  (acc, p) => acc + (parseFloat(p.total_cost_price) || 0),
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Items Needing Repair
+              </p>
+              <p className="text-2xl font-bold text-rose-500">
+                {products.reduce(
+                  (acc, p) => acc + (p.total_quantity_damaged_condition || 0),
                   0,
-                ),
-              )}
-            </p>
-          </div>
-          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
-            <TrendingUp size={24} />
-          </div>
-        </div>
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">
-              Items Needing Repair
-            </p>
-            <p className="text-2xl font-bold text-rose-500">
-              {products.reduce(
-                (acc, p) => acc + (p.total_quantity_damaged_condition || 0),
-                0,
-              )}
-            </p>
-          </div>
-          <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
-            <AlertTriangle size={24} />
+                )}
+              </p>
+            </div>
+            <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
+              <AlertTriangle size={24} />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Filters & Search */}
-      <div className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-soft)] shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Search products, serial numbers..."
-            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-[var(--text-main)]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        {/* Filters & Search */}
+        <div className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-soft)] shadow-sm flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Search products, serial numbers..."
+              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-[var(--text-main)]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
+              <Filter className="w-4 h-4" />
+              Category
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
+              Status
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-            <Filter className="w-4 h-4" />
-            Category
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-            Status
-          </button>
-        </div>
-      </div>
 
-      {/* Table */}
-      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
-                <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                  Product
-                </th>
-                <th className="hidden lg:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                  Cost
-                </th>
-                <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                  Qty
-                </th>
-                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-emerald-500 uppercase tracking-wider text-center">
-                  Good
-                </th>
-                <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-blue-500 uppercase tracking-wider text-center">
-                  Avail
-                </th>
-                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                  Rented
-                </th>
-                <th className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-wider text-center">
-                  DAMAGED
-                </th>
-                <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-6 py-8 text-center text-[var(--text-muted)]"
-                  >
-                    Loading inventory...
-                  </td>
+        {/* Table */}
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
+                  <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="hidden lg:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                    Cost
+                  </th>
+                  <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                    Qty
+                  </th>
+                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-emerald-500 uppercase tracking-wider text-center">
+                    Good
+                  </th>
+                  <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-blue-500 uppercase tracking-wider text-center">
+                    Avail
+                  </th>
+                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                    Rented
+                  </th>
+                  <th className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-wider text-center">
+                    DAMAGED
+                  </th>
+                  <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ) : products.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-6 py-8 text-center text-[var(--text-muted)]"
-                  >
-                    No products found.
-                  </td>
-                </tr>
-              ) : (
-                products
-                  .slice(
-                    (currentPage - 1) * itemsPerPage,
-                    currentPage * itemsPerPage,
-                  )
-                  .map((product) => (
-                    <React.Fragment key={product.product_id}>
-                      <tr
-                        className="hover:bg-[var(--bg-app)] transition-colors group cursor-pointer"
-                        onClick={() => toggleProductExpand(product.product_id)}
-                      >
-                        <td className="px-4 sm:px-6 py-4">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <div
-                              className={cn(
-                                "transition-transform duration-200",
-                                expandedProductIds.includes(product.product_id)
-                                  ? "rotate-90"
-                                  : "",
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-[var(--text-muted)]"
+                    >
+                      Loading inventory...
+                    </td>
+                  </tr>
+                ) : products.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-[var(--text-muted)]"
+                    >
+                      No products found.
+                    </td>
+                  </tr>
+                ) : (
+                  products
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage,
+                    )
+                    .map((product) => (
+                      <React.Fragment key={product.product_id}>
+                        <tr
+                          className="hover:bg-[var(--bg-app)] transition-colors group cursor-pointer"
+                          onClick={() =>
+                            toggleProductExpand(product.product_id)
+                          }
+                        >
+                          <td className="px-4 sm:px-6 py-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div
+                                className={cn(
+                                  "transition-transform duration-200",
+                                  expandedProductIds.includes(
+                                    product.product_id,
+                                  )
+                                    ? "rotate-90"
+                                    : "",
+                                )}
+                              >
+                                <ChevronRight className="w-3.5 h-3.5 sm:w-4 h-4 text-[var(--text-muted)]" />
+                              </div>
+                              <div className="hidden sm:flex w-8 h-8 bg-[var(--bg-app)] rounded-lg items-center justify-center text-[var(--text-muted)] shrink-0">
+                                <Package className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)] truncate">
+                                  {product.name}
+                                </p>
+                                <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] uppercase tracking-wider truncate">
+                                  {product.slug}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="hidden lg:table-cell px-6 py-4">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
+                              <Tag className="w-3 h-3" />
+                              {product.category_name || "Uncategorized"}
+                            </span>
+                          </td>
+                          <td className="px-2 sm:px-6 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
+                            {currencySymbol}
+                            {formatCurrency(product.total_cost_price)}
+                          </td>
+                          <td className="px-2 sm:px-6 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("total");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:text-brand-primary hover:underline transition-all"
+                            >
+                              {product.total_quantity || 0}
+                            </button>
+                          </td>
+                          <td className="hidden sm:table-cell px-6 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("good");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-emerald-600 hover:underline transition-all"
+                            >
+                              {product.total_quantity_good_condition || 0}
+                            </button>
+                          </td>
+                          <td className="px-2 sm:px-6 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("available");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-blue-600 hover:underline transition-all"
+                            >
+                              {product.total_quantity_good_condition_available ||
+                                0}
+                            </button>
+                          </td>
+                          <td className="hidden sm:table-cell px-6 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("rented");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:underline transition-all"
+                            >
+                              {Math.max(
+                                0,
+                                (product.total_quantity_good_condition || 0) -
+                                  (product.total_quantity_good_condition_available ||
+                                    0),
                               )}
-                            >
-                              <ChevronRight className="w-3.5 h-3.5 sm:w-4 h-4 text-[var(--text-muted)]" />
-                            </div>
-                            <div className="hidden sm:flex w-8 h-8 bg-[var(--bg-app)] rounded-lg items-center justify-center text-[var(--text-muted)] shrink-0">
-                              <Package className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)] truncate">
-                                {product.name}
-                              </p>
-                              <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] uppercase tracking-wider truncate">
-                                {product.slug}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="hidden lg:table-cell px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                            <Tag className="w-3 h-3" />
-                            {product.category_name || "Uncategorized"}
-                          </span>
-                        </td>
-                        <td className="px-2 sm:px-6 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
-                          {currencySymbol}
-                          {formatCurrency(product.total_cost_price)}
-                        </td>
-                        <td className="px-2 sm:px-6 py-4 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDrillDownProduct(product);
-                              setDrillDownType("total");
-                              setShowDrillDown(true);
-                            }}
-                            className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:text-brand-primary hover:underline transition-all"
-                          >
-                            {product.total_quantity || 0}
-                          </button>
-                        </td>
-                        <td className="hidden sm:table-cell px-6 py-4 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDrillDownProduct(product);
-                              setDrillDownType("good");
-                              setShowDrillDown(true);
-                            }}
-                            className="text-xs sm:text-sm font-bold text-emerald-600 hover:underline transition-all"
-                          >
-                            {product.total_quantity_good_condition || 0}
-                          </button>
-                        </td>
-                        <td className="px-2 sm:px-6 py-4 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDrillDownProduct(product);
-                              setDrillDownType("available");
-                              setShowDrillDown(true);
-                            }}
-                            className="text-xs sm:text-sm font-bold text-blue-600 hover:underline transition-all"
-                          >
-                            {product.total_quantity_good_condition_available ||
-                              0}
-                          </button>
-                        </td>
-                        <td className="hidden sm:table-cell px-6 py-4 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDrillDownProduct(product);
-                              setDrillDownType("rented");
-                              setShowDrillDown(true);
-                            }}
-                            className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:underline transition-all"
-                          >
-                            {Math.max(
-                              0,
-                              (product.total_quantity_good_condition || 0) -
-                                (product.total_quantity_good_condition_available ||
-                                  0),
-                            )}
-                          </button>
-                        </td>
-                        <td className="hidden sm:table-cell px-6 py-4 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDrillDownProduct(product);
-                              setDrillDownType("damaged");
-                              setShowDrillDown(true);
-                            }}
-                            className="text-xs sm:text-sm font-bold text-rose-600 hover:underline transition-all"
-                          >
-                            {product.total_quantity_damaged_condition || 0}
-                          </button>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                            </button>
+                          </td>
+                          <td className="hidden sm:table-cell px-6 py-4 text-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEditProductClick(product);
+                                setDrillDownProduct(product);
+                                setDrillDownType("damaged");
+                                setShowDrillDown(true);
                               }}
-                              className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                              className="text-xs sm:text-sm font-bold text-rose-600 hover:underline transition-all"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              {product.total_quantity_damaged_condition || 0}
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteProduct(product.product_id);
-                              }}
-                              className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Expanded Sub-table for Units */}
-                      {expandedProductIds.includes(product.product_id) && (
-                        <tr className="bg-[var(--bg-app)]/50">
-                          <td colSpan={9} className="px-12 py-4">
-                            <div className="border border-[var(--border-soft)] rounded-xl bg-[var(--bg-surface)] overflow-x-auto shadow-sm">
-                              <table className="w-full text-left min-w-[500px]">
-                                <thead className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
-                                  <tr>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                      Unit Name
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                                      Type
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                                      Qty
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                                      Unit Cost
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                                      Total Cost
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
-                                      Rental Rate
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                      Availability
-                                    </th>
-                                    <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">
-                                      Actions
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[var(--border-subtle)]">
-                                  {product.units?.map((unit: any) => (
-                                    <tr
-                                      key={unit.product_unit_id}
-                                      className="hover:bg-[var(--bg-app)] transition-colors"
-                                    >
-                                      <td className="px-4 py-2 text-xs font-semibold text-[var(--text-main)]">
-                                        {unit.name || "-"}
-                                      </td>
-                                      <td className="px-4 py-2 text-xs text-center">
-                                        <span
-                                          className={cn(
-                                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                                            unit.unit_type === "bulk"
-                                              ? "bg-purple-500/10 text-purple-500"
-                                              : "bg-blue-500/10 text-blue-500",
-                                          )}
-                                        >
-                                          {unit.unit_type}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">
-                                        {unit.unit_type === "bulk"
-                                          ? unit.quantity
-                                          : 1}
-                                      </td>
-                                      <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)]">
-                                        {currencySymbol}
-                                        {formatCurrency(unit.unit_cost_price)}
-                                      </td>
-                                      <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">
-                                        {currencySymbol}
-                                        {formatCurrency(unit.cost_price)}
-                                      </td>
-                                      <td className="px-4 py-2 text-xs text-center font-bold text-brand-primary">
-                                        {currencySymbol}
-                                        {formatCurrency(unit.rental_price)}
-                                        <span className="text-[10px] font-normal text-[var(--text-muted)] ml-1">
-                                          {unit.unit?.replace("_", " ")}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-2 text-xs">
-                                        <div className="flex flex-col gap-1.5">
-                                          {/* Status badge */}
-                                          <span
-                                            className={cn(
-                                              "px-2 py-0.5 rounded-full font-bold border text-[10px] w-fit uppercase",
-                                              unit.status === "available"
-                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                                : unit.status === "rented"
-                                                  ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                                                  : unit.status === "damaged"
-                                                    ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                                                    : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-subtle)]",
-                                            )}
-                                          >
-                                            {unit.status}
-                                          </span>
-                                          {/* SN for single units */}
-                                          {unit.unit_type === "single" &&
-                                            unit.serial_number && (
-                                              <span className="text-[9px] font-mono text-[var(--text-muted)] pl-0.5">
-                                                SN: {unit.serial_number}
-                                              </span>
-                                            )}
-                                          {/* Qty breakdown pills */}
-                                          <div className="flex flex-wrap gap-1 mt-0.5">
-                                            <span
-                                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-violet-500/10 text-violet-500"
-                                              title="Good Condition"
-                                            >
-                                              <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />
-                                              {unit.quantity_good ?? 0} good
-                                            </span>
-                                            <span
-                                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500"
-                                              title="Available"
-                                            >
-                                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                                              {unit.quantity_available ?? 0}{" "}
-                                              avail
-                                            </span>
-                                            <span
-                                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-500"
-                                              title="Currently Rented"
-                                            >
-                                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-                                              {unit.quantity_rented ?? 0} rented
-                                            </span>
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 text-rose-500 rounded-full">
-                                              <AlertTriangle className="w-3.5 h-3.5" />
-                                              {unit.quantity_damaged ?? 0}{" "}
-                                              damaged
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-2 text-xs text-right align-top">
-                                        <div className="flex justify-end gap-2 mt-1">
-                                          <button
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              const identifier =
-                                                unit.unit_type === "single"
-                                                  ? unit.serial_number
-                                                  : unit.product_unit_id.toString();
-                                              if (!identifier) return;
-                                              setSingleQRView({
-                                                productName: product.name,
-                                                unitName:
-                                                  unit.name ||
-                                                  (unit.unit_type === "single"
-                                                    ? "SN"
-                                                    : "Bulk"),
-                                                identifier,
-                                              });
-                                            }}
-                                            title="View QR Code"
-                                            className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"
-                                          >
-                                            <QrCode className="w-4 h-4" />
-                                          </button>
-                                          <button
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              const identifier =
-                                                unit.unit_type === "single"
-                                                  ? unit.serial_number
-                                                  : unit.product_unit_id.toString();
-                                              if (!identifier) return;
-                                              const canvas =
-                                                document.getElementById(
-                                                  `qr-${unit.product_unit_id}`,
-                                                ) as HTMLCanvasElement;
-                                              if (canvas) {
-                                                const url =
-                                                  canvas.toDataURL("image/png");
-                                                const link =
-                                                  document.createElement("a");
-                                                link.download = `${product.name.replace(
-                                                  /\s+/g,
-                                                  "_",
-                                                )}_${identifier}_QR.png`;
-                                                link.href = url;
-                                                link.click();
-                                              }
-                                            }}
-                                            title="Download QR Code"
-                                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                                          >
-                                            <Download className="w-4 h-4" />
-                                          </button>
-                                        </div>
-                                        {/* Hidden canvas for downloading */}
-                                        <div className="hidden">
-                                          <QRCodeCanvas
-                                            id={`qr-${unit.product_unit_id}`}
-                                            value={
-                                              unit.unit_type === "single"
-                                                ? unit.serial_number || ""
-                                                : unit.product_unit_id.toString()
-                                            }
-                                            size={512}
-                                          />
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditProductClick(product);
+                                }}
+                                className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteProduct(product.product_id);
+                                }}
+                                className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  ))
-              )}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
-          <p className="text-sm text-[var(--text-muted)]">
-            Showing{" "}
-            {products.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}{" "}
-            to {Math.min(currentPage * itemsPerPage, products.length)} of{" "}
-            {products.length} results
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.min(Math.ceil(products.length / itemsPerPage), p + 1),
-                )
-              }
-              className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={
-                currentPage === Math.ceil(products.length / itemsPerPage) ||
-                products.length === 0
-              }
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+                        {/* Expanded Sub-table for Units */}
+                        {expandedProductIds.includes(product.product_id) && (
+                          <tr className="bg-[var(--bg-app)]/50">
+                            <td colSpan={9} className="px-12 py-4">
+                              <div className="border border-[var(--border-soft)] rounded-xl bg-[var(--bg-surface)] overflow-x-auto shadow-sm">
+                                <table className="w-full text-left min-w-[500px]">
+                                  <thead className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
+                                    <tr>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                        Unit Name
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                                        Type
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                                        Qty
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                                        Unit Cost
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                                        Total Cost
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                                        Rental Rate
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                        Availability
+                                      </th>
+                                      <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">
+                                        Actions
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-[var(--border-subtle)]">
+                                    {product.units?.map((unit: any) => (
+                                      <tr
+                                        key={unit.product_unit_id}
+                                        className="hover:bg-[var(--bg-app)] transition-colors"
+                                      >
+                                        <td className="px-4 py-2 text-xs font-semibold text-[var(--text-main)]">
+                                          {unit.name || "-"}
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-center">
+                                          <span
+                                            className={cn(
+                                              "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                              unit.unit_type === "bulk"
+                                                ? "bg-purple-500/10 text-purple-500"
+                                                : "bg-blue-500/10 text-blue-500",
+                                            )}
+                                          >
+                                            {unit.unit_type}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">
+                                          {unit.unit_type === "bulk"
+                                            ? unit.quantity
+                                            : 1}
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)]">
+                                          {currencySymbol}
+                                          {formatCurrency(unit.unit_cost_price)}
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">
+                                          {currencySymbol}
+                                          {formatCurrency(unit.cost_price)}
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-center font-bold text-brand-primary">
+                                          {currencySymbol}
+                                          {formatCurrency(unit.rental_price)}
+                                          <span className="text-[10px] font-normal text-[var(--text-muted)] ml-1">
+                                            {unit.unit?.replace("_", " ")}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-2 text-xs">
+                                          <div className="flex flex-col gap-1.5">
+                                            {/* Status badge */}
+                                            <span
+                                              className={cn(
+                                                "px-2 py-0.5 rounded-full font-bold border text-[10px] w-fit uppercase",
+                                                unit.status === "available"
+                                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                  : unit.status === "rented"
+                                                    ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                                    : unit.status === "damaged"
+                                                      ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-subtle)]",
+                                              )}
+                                            >
+                                              {unit.status}
+                                            </span>
+                                            {/* SN for single units */}
+                                            {unit.unit_type === "single" &&
+                                              unit.serial_number && (
+                                                <span className="text-[9px] font-mono text-[var(--text-muted)] pl-0.5">
+                                                  SN: {unit.serial_number}
+                                                </span>
+                                              )}
+                                            {/* Qty breakdown pills */}
+                                            <div className="flex flex-wrap gap-1 mt-0.5">
+                                              <span
+                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-violet-500/10 text-violet-500"
+                                                title="Good Condition"
+                                              >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />
+                                                {unit.quantity_good ?? 0} good
+                                              </span>
+                                              <span
+                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500"
+                                                title="Available"
+                                              >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                                                {unit.quantity_available ?? 0}{" "}
+                                                avail
+                                              </span>
+                                              <span
+                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-500"
+                                                title="Currently Rented"
+                                              >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                                                {unit.quantity_rented ?? 0}{" "}
+                                                rented
+                                              </span>
+                                              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 text-rose-500 rounded-full">
+                                                <AlertTriangle className="w-3.5 h-3.5" />
+                                                {unit.quantity_damaged ?? 0}{" "}
+                                                damaged
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-right align-top">
+                                          <div className="flex justify-end gap-2 mt-1">
+                                            <button
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                const identifier =
+                                                  unit.unit_type === "single"
+                                                    ? unit.serial_number
+                                                    : unit.product_unit_id.toString();
+                                                if (!identifier) return;
+                                                setSingleQRView({
+                                                  productName: product.name,
+                                                  unitName:
+                                                    unit.name ||
+                                                    (unit.unit_type === "single"
+                                                      ? "SN"
+                                                      : "Bulk"),
+                                                  identifier,
+                                                });
+                                              }}
+                                              title="View QR Code"
+                                              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"
+                                            >
+                                              <QrCode className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                const identifier =
+                                                  unit.unit_type === "single"
+                                                    ? unit.serial_number
+                                                    : unit.product_unit_id.toString();
+                                                if (!identifier) return;
+                                                const canvas =
+                                                  document.getElementById(
+                                                    `qr-${unit.product_unit_id}`,
+                                                  ) as HTMLCanvasElement;
+                                                if (canvas) {
+                                                  const url =
+                                                    canvas.toDataURL(
+                                                      "image/png",
+                                                    );
+                                                  const link =
+                                                    document.createElement("a");
+                                                  link.download = `${product.name.replace(
+                                                    /\s+/g,
+                                                    "_",
+                                                  )}_${identifier}_QR.png`;
+                                                  link.href = url;
+                                                  link.click();
+                                                }
+                                              }}
+                                              title="Download QR Code"
+                                              className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                                            >
+                                              <Download className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                          {/* Hidden canvas for downloading */}
+                                          <div className="hidden">
+                                            <QRCodeCanvas
+                                              id={`qr-${unit.product_unit_id}`}
+                                              value={
+                                                unit.unit_type === "single"
+                                                  ? unit.serial_number || ""
+                                                  : unit.product_unit_id.toString()
+                                              }
+                                              size={512}
+                                            />
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="px-6 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
+            <p className="text-sm text-[var(--text-muted)]">
+              Showing{" "}
+              {products.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}{" "}
+              to {Math.min(currentPage * itemsPerPage, products.length)} of{" "}
+              {products.length} results
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(Math.ceil(products.length / itemsPerPage), p + 1),
+                  )
+                }
+                className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
+                disabled={
+                  currentPage === Math.ceil(products.length / itemsPerPage) ||
+                  products.length === 0
+                }
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
