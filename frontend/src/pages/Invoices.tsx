@@ -19,6 +19,7 @@ import {
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { InvoiceService, AuthService } from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function Invoices() {
   const navigate = useNavigate();
@@ -327,25 +328,34 @@ export function Invoices() {
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
                     Total
                   </p>
-                  <p className="text-xl font-black text-[var(--text-main)]">
-                    {invoice.currency_symbol || defaultCurrencySymbol}
-                    {formatCurrency(invoice.total_amount)}
+                  <p className="text-xl font-black text-[var(--text-main)] flex items-center justify-end">
+                    <RevenueDisplay
+                      amount={`${
+                        invoice.currency_symbol || defaultCurrencySymbol
+                      }${formatCurrency(invoice.total_amount)}`}
+                    />
                   </p>
                   {parseFloat(invoice.amount_paid) > 0 &&
                     invoice.status !== "paid" && (
                       <div className="mt-1 flex flex-col items-end">
-                        <p className="text-xs text-emerald-600 font-bold">
+                        <p className="text-xs text-emerald-600 font-bold flex items-center justify-end gap-1">
                           Paid:{" "}
-                          {invoice.currency_symbol || defaultCurrencySymbol}
-                          {formatCurrency(invoice.amount_paid)}
+                          <RevenueDisplay
+                            amount={`${
+                              invoice.currency_symbol || defaultCurrencySymbol
+                            }${formatCurrency(invoice.amount_paid)}`}
+                          />
                         </p>
-                        <p className="text-xs text-amber-600 font-bold">
+                        <p className="text-xs text-amber-600 font-bold flex items-center justify-end gap-1">
                           Left:{" "}
-                          {invoice.currency_symbol || defaultCurrencySymbol}
-                          {formatCurrency(
-                            invoice.total_amount -
-                              parseFloat(invoice.amount_paid),
-                          )}
+                          <RevenueDisplay
+                            amount={`${
+                              invoice.currency_symbol || defaultCurrencySymbol
+                            }${formatCurrency(
+                              invoice.total_amount -
+                                parseFloat(invoice.amount_paid),
+                            )}`}
+                          />
                         </p>
                       </div>
                     )}
@@ -488,12 +498,15 @@ export function Invoices() {
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
                   <span className="text-[var(--text-muted)]">Amount Left</span>
-                  <span className="font-bold text-[var(--text-main)]">
-                    {selectedInvoice.currency_symbol || defaultCurrencySymbol}
-                    {formatCurrency(
-                      selectedInvoice.total_amount -
-                        parseFloat(selectedInvoice.amount_paid),
-                    )}
+                  <span className="font-bold text-[var(--text-main)] flex items-center justify-end">
+                    <RevenueDisplay
+                      amount={`${
+                        selectedInvoice.currency_symbol || defaultCurrencySymbol
+                      }${formatCurrency(
+                        selectedInvoice.total_amount -
+                          parseFloat(selectedInvoice.amount_paid),
+                      )}`}
+                    />
                   </span>
                 </div>
                 <div>

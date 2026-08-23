@@ -11,12 +11,12 @@ import {
   ChevronRight,
   Calendar,
   ArrowRightCircle,
-  Eye,
   Copy,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { QuotationService, AuthService } from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function Quotations() {
   const navigate = useNavigate();
@@ -346,9 +346,12 @@ export function Quotations() {
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
                     Total
                   </p>
-                  <p className="text-xl font-black text-[var(--text-main)]">
-                    {quotation.currency_symbol || defaultCurrencySymbol}
-                    {formatCurrency(quotation.total_amount)}
+                  <p className="text-xl font-black text-[var(--text-main)] flex items-center justify-end">
+                    <RevenueDisplay
+                      amount={`${
+                        quotation.currency_symbol || defaultCurrencySymbol
+                      }${formatCurrency(quotation.total_amount)}`}
+                    />
                   </p>
                 </div>
 

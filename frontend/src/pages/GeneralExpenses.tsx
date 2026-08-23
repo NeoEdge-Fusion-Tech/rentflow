@@ -15,6 +15,7 @@ import {
 import { GeneralExpenseService } from "@/src/api";
 import { useNotification } from "../context/NotificationContext";
 import { cn } from "@/src/utils";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function GeneralExpenses() {
   const { showNotification, showConfirm } = useNotification();
@@ -195,10 +196,16 @@ export function GeneralExpenses() {
           <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
             Total General Expenses
           </p>
-          <p className="text-2xl font-bold text-[var(--text-main)]">
-            {stats
-              ? `${defaultCurrencySymbol}${formatCurrency(stats.total_amount)}`
-              : "…"}
+          <p className="text-2xl font-bold text-[var(--text-main)] flex items-center">
+            {stats ? (
+              <RevenueDisplay
+                amount={`${defaultCurrencySymbol}${formatCurrency(
+                  stats.total_amount,
+                )}`}
+              />
+            ) : (
+              "…"
+            )}
           </p>
         </div>
 
@@ -211,12 +218,16 @@ export function GeneralExpenses() {
           <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
             This Month
           </p>
-          <p className="text-2xl font-bold text-[var(--text-main)]">
-            {stats
-              ? `${defaultCurrencySymbol}${formatCurrency(
+          <p className="text-2xl font-bold text-[var(--text-main)] flex items-center">
+            {stats ? (
+              <RevenueDisplay
+                amount={`${defaultCurrencySymbol}${formatCurrency(
                   stats.current_month_amount,
-                )}`
-              : "…"}
+                )}`}
+              />
+            ) : (
+              "…"
+            )}
           </p>
         </div>
 
@@ -326,9 +337,12 @@ export function GeneralExpenses() {
                     <td className="py-3 px-4 text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
                     </td>
-                    <td className="py-3 px-4 text-right font-bold text-[var(--text-main)]">
-                      {defaultCurrencySymbol}
-                      {formatCurrency(exp.amount)}
+                    <td className="py-3 px-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
+                      <RevenueDisplay
+                        amount={`${defaultCurrencySymbol}${formatCurrency(
+                          exp.amount,
+                        )}`}
+                      />
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
