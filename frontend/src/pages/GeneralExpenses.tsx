@@ -166,6 +166,11 @@ export function GeneralExpenses() {
     });
   };
 
+  const displayedExpenses = expenses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -307,7 +312,7 @@ export function GeneralExpenses() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
-                {expenses.map((exp: any) => (
+                {displayedExpenses.map((exp: any) => (
                   <tr
                     key={exp.general_expense_id}
                     className="hover:bg-[var(--bg-app)] transition-colors"

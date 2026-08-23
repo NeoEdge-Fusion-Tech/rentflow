@@ -119,10 +119,25 @@ export function Dashboard() {
   useEffect(() => {
     if (!showPl) return;
     EventService.getMonthlyBreakdown({ year: plYear })
-      .then((res) => setPlMonthly(res.data))
+      .then((res) => {
+        const flattened = res.data.map((m: any) => {
+          const currData = m.currencies?.[currencySymbol] || {
+            revenue: 0,
+            expenses: 0,
+            profit: 0,
+          };
+          return {
+            ...m,
+            revenue: currData.revenue || 0,
+            expenses: currData.expenses || 0,
+            profit: currData.profit || 0,
+          };
+        });
+        setPlMonthly(flattened);
+      })
       .catch((e) => console.error("Failed fetching monthly P&L breakdown", e));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plYear, showPl]);
+  }, [plYear, showPl, currencySymbol]);
 
   const fetchUser = async () => {
     try {

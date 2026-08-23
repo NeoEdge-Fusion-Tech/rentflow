@@ -191,6 +191,11 @@ export function Invoices() {
     });
   };
 
+  const displayedInvoices = invoices.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -269,12 +274,12 @@ export function Invoices() {
           <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">
             Loading invoices...
           </div>
-        ) : invoices.length === 0 ? (
+        ) : displayedInvoices.length === 0 ? (
           <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">
             No invoices found.
           </div>
         ) : (
-          invoices.map((invoice) => (
+          displayedInvoices.map((invoice) => (
             <div
               key={invoice.invoice_id}
               className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group"

@@ -11,7 +11,10 @@ import {
   X,
   Trash2,
   ChevronLeft,
+  ChevronRight,
   ArrowUpRight,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -27,8 +30,11 @@ export function Events() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20; // Match DRF backend page size
+  const itemsPerPage = 12; // Adjusted for better grid display
   const [totalCount, setTotalCount] = useState(0);
+  const [viewType, setViewType] = useState<"card" | "list">(
+    (localStorage.getItem("projectsViewType") as "card" | "list") || "card",
+  );
   const defaultCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,7 +52,11 @@ export function Events() {
   const fetchEvents = async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await EventService.getAll({ page, search: searchTerm });
+      const response = await EventService.getAll({
+        page,
+        search: searchTerm,
+        page_size: itemsPerPage,
+      });
       setEvents(response.data.results || response.data);
       setTotalCount(
         response.data.count || (response.data.results || response.data).length,
@@ -163,13 +173,47 @@ export function Events() {
             Track profit & loss and task checklists for each event or project.
           </p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20"
-        >
-          <Plus className="w-5 h-5" />
-          New Project
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl p-1 shadow-sm mr-2">
+            <button
+              onClick={() => {
+                setViewType("card");
+                localStorage.setItem("projectsViewType", "card");
+              }}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors flex items-center justify-center",
+                viewType === "card"
+                  ? "bg-brand-primary/10 text-brand-primary"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)]",
+              )}
+              title="Card View"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                setViewType("list");
+                localStorage.setItem("projectsViewType", "list");
+              }}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors flex items-center justify-center",
+                viewType === "list"
+                  ? "bg-brand-primary/10 text-brand-primary"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)]",
+              )}
+              title="List View"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
+          <button
+            onClick={openAddModal}
+            className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20"
+          >
+            <Plus className="w-5 h-5" />
+            New Project
+          </button>
+        </div>
       </div>
 
       <div className="relative">
@@ -190,7 +234,11 @@ export function Events() {
         <div className="flex justify-center p-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
         </div>
-      ) : (
+      ) : events.length === 0 ? (
+        <div className="text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
+          No projects found.
+        </div>
+      ) : viewType === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {events.map((ev) => {
             const profit = parseFloat(ev.profit) || 0;
@@ -311,11 +359,123 @@ export function Events() {
               </div>
             );
           })}
-          {events.length === 0 && (
-            <div className="col-span-full text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
-              No projects found.
-            </div>
-          )}
+        </div>
+      ) : (
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] overflow-x-auto shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                <th className="py-4 px-6 font-bold">Project Name</th>
+                <th className="py-4 px-6 font-bold">Client</th>
+                <th className="py-4 px-6 font-bold">Dates</th>
+                <th className="py-4 px-6 font-bold">Status</th>
+                <th className="py-4 px-6 font-bold text-right">Revenue</th>
+                <th className="py-4 px-6 font-bold text-right">Expenses</th>
+                <th className="py-4 px-6 font-bold text-right">
+                  Profit / Loss
+                </th>
+                <th className="py-4 px-6 font-bold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-subtle)]">
+              {events.map((ev) => {
+                const profit = parseFloat(ev.profit) || 0;
+                return (
+                  <tr
+                    key={ev.event_id}
+                    onClick={() => navigate(`/events/${ev.event_id}`)}
+                    className="hover:bg-[var(--bg-app)] transition-colors cursor-pointer group"
+                  >
+                    <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary shrink-0">
+                          <Briefcase size={16} />
+                        </div>
+                        {ev.name}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-[var(--text-muted)]">
+                      {ev.client_details?.business_name || "—"}
+                    </td>
+                    <td className="py-4 px-6 text-[var(--text-muted)] whitespace-nowrap">
+                      {ev.start_date
+                        ? new Date(ev.start_date).toLocaleDateString()
+                        : "—"}{" "}
+                      -{" "}
+                      {ev.end_date
+                        ? new Date(ev.end_date).toLocaleDateString()
+                        : "—"}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
+                          ev.status === "ongoing"
+                            ? "bg-blue-500/10 text-blue-500"
+                            : ev.status === "completed"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : ev.status === "cancelled"
+                                ? "bg-rose-500/10 text-rose-500"
+                                : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                        )}
+                      >
+                        {ev.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
+                      <div className="flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            ev.revenue,
+                          )}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
+                      <div className="flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            ev.total_expenses,
+                          )}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-right font-bold whitespace-nowrap">
+                      <div
+                        className={cn(
+                          "flex items-center justify-end gap-1.5",
+                          profit >= 0 ? "text-emerald-500" : "text-rose-500",
+                        )}
+                      >
+                        {profit >= 0 ? (
+                          <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                        ) : (
+                          <TrendingDown className="w-3.5 h-3.5 shrink-0" />
+                        )}
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            Math.abs(profit),
+                          )}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(ev.event_id);
+                        }}
+                        className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

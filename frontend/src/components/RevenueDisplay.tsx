@@ -19,7 +19,10 @@ export function RevenueDisplay({
     <div className={`flex items-center gap-2 ${className}`}>
       <span>{isRevenueHidden ? "****" : amount}</span>
       <button
-        onClick={toggleRevenueVisibility}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleRevenueVisibility();
+        }}
         className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none"
         title={isRevenueHidden ? "Show Revenue" : "Hide Revenue"}
       >

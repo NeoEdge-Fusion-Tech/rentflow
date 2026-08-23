@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Upload,
   Building2,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -27,6 +29,10 @@ export function Vendors() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
+
+  const [viewType, setViewType] = useState<"card" | "list">(
+    (localStorage.getItem("vendorsViewType") as "card" | "list") || "card",
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -169,13 +175,47 @@ export function Vendors() {
             Manage service providers used across your projects.
           </p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20"
-        >
-          <Plus className="w-5 h-5" />
-          Add Vendor
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl p-1 shadow-sm mr-2">
+            <button
+              onClick={() => {
+                setViewType("card");
+                localStorage.setItem("vendorsViewType", "card");
+              }}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors flex items-center justify-center",
+                viewType === "card"
+                  ? "bg-brand-primary/10 text-brand-primary"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)]",
+              )}
+              title="Card View"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                setViewType("list");
+                localStorage.setItem("vendorsViewType", "list");
+              }}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors flex items-center justify-center",
+                viewType === "list"
+                  ? "bg-brand-primary/10 text-brand-primary"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)]",
+              )}
+              title="List View"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
+          <button
+            onClick={openAddModal}
+            className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20"
+          >
+            <Plus className="w-5 h-5" />
+            Add Vendor
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2 mt-4">
@@ -225,7 +265,11 @@ export function Vendors() {
         <div className="flex justify-center p-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
         </div>
-      ) : (
+      ) : displayedVendors.length === 0 ? (
+        <div className="text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
+          No vendors found.
+        </div>
+      ) : viewType === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {displayedVendors.map((vendor) => (
             <div
@@ -310,11 +354,120 @@ export function Vendors() {
               </div>
             </div>
           ))}
-          {filteredVendors.length === 0 && (
-            <div className="col-span-full text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
-              No vendors found.
-            </div>
-          )}
+        </div>
+      ) : (
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] overflow-x-auto shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                <th className="py-4 px-6 font-bold">Vendor Name</th>
+                <th className="py-4 px-6 font-bold">Contact Info</th>
+                <th className="py-4 px-6 font-bold">Service</th>
+                <th className="py-4 px-6 font-bold text-center">Projects</th>
+                <th className="py-4 px-6 font-bold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-subtle)]">
+              {displayedVendors.map((vendor) => (
+                <tr
+                  key={vendor.vendor_id}
+                  className="hover:bg-[var(--bg-app)] transition-colors group"
+                >
+                  <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
+                        {vendor.logo ? (
+                          <img
+                            src={vendor.logo}
+                            alt={vendor.business_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          (vendor.business_name?.[0] || "V").toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span>{vendor.business_name}</span>
+                        <div className="flex gap-2 items-center mt-0.5">
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                              vendor.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-500"
+                                : "bg-rose-500/10 text-rose-500",
+                            )}
+                          >
+                            {vendor.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                      {vendor.contact_name && (
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <User className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate max-w-[150px]">
+                            {vendor.contact_name}
+                          </span>
+                        </div>
+                      )}
+                      {vendor.contact_email && (
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <Mail className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate max-w-[150px]">
+                            {vendor.contact_email}
+                          </span>
+                        </div>
+                      )}
+                      {vendor.contact_phone && (
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <Phone className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate max-w-[150px]">
+                            {vendor.contact_phone}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                      {vendor.service || "General"}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
+                    {vendor.projects_count || 0}
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => openViewModal(vendor)}
+                        className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openEditModal(vendor)}
+                        className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                        title="Edit Vendor"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(vendor.vendor_id)}
+                        className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Delete Vendor"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
