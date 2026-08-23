@@ -17,6 +17,7 @@ import {
   Building2,
   LayoutGrid,
   List,
+  User,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
