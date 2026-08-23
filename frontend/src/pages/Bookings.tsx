@@ -1112,7 +1112,7 @@ export function Bookings() {
       </div>
 
       {/* Pagination */}
-      {bookings.length > itemsPerPage && (
+      {bookings.length > 0 && (
         <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
           <p className="text-sm text-[var(--text-muted)]">
             Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}

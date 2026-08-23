@@ -373,7 +373,7 @@ export function GeneralExpenses() {
         )}
       </div>
 
-      {!isLoading && totalCount > itemsPerPage && (
+      {!isLoading && totalCount > 0 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-[var(--text-muted)]">
             Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}

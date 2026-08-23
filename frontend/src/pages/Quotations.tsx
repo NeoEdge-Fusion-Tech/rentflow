@@ -23,6 +23,12 @@ export function Quotations() {
   const navigate = useNavigate();
   const { showNotification, showConfirm } = useNotification();
   const [quotations, setQuotations] = useState<any[]>([]);
+  const [quotationStats, setQuotationStats] = useState({
+    total: 0,
+    draft: 0,
+    sent: 0,
+    converted: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,7 +64,16 @@ export function Quotations() {
       }
       if (searchQuery) params.search = searchQuery;
       const res = await QuotationService.getAll(params);
-      setQuotations(res.data.results || res.data);
+      const data = res.data.results || res.data;
+      setQuotations(data);
+      if (activeTab === "All" && !searchQuery) {
+        setQuotationStats({
+          total: data.length,
+          draft: data.filter((q: any) => q.status === "draft").length,
+          sent: data.filter((q: any) => q.status === "sent").length,
+          converted: data.filter((q: any) => q.status === "converted").length,
+        });
+      }
       setCurrentPage(1);
     } catch (err) {
       console.error("Failed to fetch quotations", err);
@@ -171,13 +186,6 @@ export function Quotations() {
     });
   };
 
-  const counts = {
-    total: quotations.length,
-    draft: quotations.filter((q) => q.status === "draft").length,
-    sent: quotations.filter((q) => q.status === "sent").length,
-    converted: quotations.filter((q) => q.status === "converted").length,
-  };
-
   const displayedQuotations = quotations.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
@@ -218,10 +226,14 @@ export function Quotations() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-2">
         {[
-          { label: "Total", value: counts.total, color: "slate" },
-          { label: "Draft", value: counts.draft, color: "amber" },
-          { label: "Sent", value: counts.sent, color: "blue" },
-          { label: "Converted", value: counts.converted, color: "emerald" },
+          { label: "Total", value: quotationStats.total, color: "slate" },
+          { label: "Draft", value: quotationStats.draft, color: "amber" },
+          { label: "Sent", value: quotationStats.sent, color: "blue" },
+          {
+            label: "Converted",
+            value: quotationStats.converted,
+            color: "emerald",
+          },
         ].map((s, idx) => (
           <div
             key={idx}
@@ -428,7 +440,7 @@ export function Quotations() {
       </div>
 
       {/* Pagination */}
-      {quotations.length > itemsPerPage && (
+      {quotations.length > 0 && (
         <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
           <p className="text-sm text-[var(--text-muted)]">
             Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
