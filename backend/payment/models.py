@@ -265,6 +265,7 @@ class Quotation(models.Model):
         ("rejected", "Rejected"),
         ("expired", "Expired"),
         ("converted", "Converted"),
+        ("cancelled", "Cancelled"),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default="draft")
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
