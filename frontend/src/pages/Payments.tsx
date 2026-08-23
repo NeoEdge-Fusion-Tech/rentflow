@@ -16,6 +16,7 @@ import {
 import { cn } from "@/src/utils";
 
 import { PaymentService } from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function Payments() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -111,8 +112,9 @@ export function Payments() {
                   key={sym}
                   className="text-xl font-bold text-[var(--text-main)]"
                 >
-                  {sym}
-                  {formatCurrency(amt as number, sym)}
+                  <RevenueDisplay
+                    amount={`${sym}${formatCurrency(amt as number, sym)}`}
+                  />
                 </p>
               ))
             )}
@@ -239,12 +241,15 @@ export function Payments() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-[var(--text-main)]">
-                          {payment.currency_symbol || currencySymbol}
-                          {formatCurrency(
-                            payment.amount,
-                            payment.currency_symbol || currencySymbol,
-                          )}
+                        <span className="text-sm font-bold text-[var(--text-main)] flex items-center">
+                          <RevenueDisplay
+                            amount={`${
+                              payment.currency_symbol || currencySymbol
+                            }${formatCurrency(
+                              payment.amount,
+                              payment.currency_symbol || currencySymbol,
+                            )}`}
+                          />
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -318,12 +323,15 @@ export function Payments() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-bold text-[var(--text-main)]">
-                        {payment.currency_symbol || currencySymbol}
-                        {formatCurrency(
-                          payment.amount,
-                          payment.currency_symbol || currencySymbol,
-                        )}
+                      <p className="font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${
+                            payment.currency_symbol || currencySymbol
+                          }${formatCurrency(
+                            payment.amount,
+                            payment.currency_symbol || currencySymbol,
+                          )}`}
+                        />
                       </p>
                       <span
                         className={cn(

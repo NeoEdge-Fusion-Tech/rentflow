@@ -3,6 +3,7 @@ import { Coins, TrendingUp, BarChart3, Users } from "lucide-react";
 import { api } from "@/src/api";
 import { useNotification } from "@/src/context/NotificationContext";
 import { format } from "date-fns";
+import { RevenueDisplay } from "@/src/components/RevenueDisplay";
 
 export function Revenue() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -49,10 +50,13 @@ export function Revenue() {
             Total SaaS Revenue
           </h3>
           <p className="text-2xl font-bold text-[var(--text-main)]">
-            ₦
-            {metrics?.total_revenue?.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-            }) || "0.00"}
+            <RevenueDisplay
+              amount={`₦${
+                metrics?.total_revenue?.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                }) || "0.00"
+              }`}
+            />
           </p>
         </div>
 
@@ -80,10 +84,13 @@ export function Revenue() {
             Estimated MRR
           </h3>
           <p className="text-2xl font-bold text-[var(--text-main)]">
-            ₦
-            {metrics?.total_revenue?.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-            }) || "0.00"}
+            <RevenueDisplay
+              amount={`₦${
+                metrics?.total_revenue?.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                }) || "0.00"
+              }`}
+            />
           </p>
         </div>
       </div>
@@ -118,7 +125,7 @@ export function Revenue() {
                     {payment.organization_name || payment.organization}
                   </td>
                   <td className="px-4 py-3 font-medium text-[var(--text-main)]">
-                    {payment.amount}
+                    <RevenueDisplay amount={payment.amount} />
                   </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">

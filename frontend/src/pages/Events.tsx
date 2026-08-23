@@ -11,12 +11,12 @@ import {
   X,
   Trash2,
   ChevronLeft,
-  ChevronRight,
   ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { EventService, InvoiceService, FeedbackService } from "@/src/api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function Events() {
   const navigate = useNavigate();
@@ -259,18 +259,24 @@ export function Events() {
                     <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider shrink-0">
                       Revenue
                     </span>
-                    <span className="text-sm font-bold text-[var(--text-main)] text-right truncate">
-                      {defaultCurrencySymbol}
-                      {formatCurrency(ev.revenue)}
+                    <span className="text-sm font-bold text-[var(--text-main)] text-right truncate flex items-center justify-end">
+                      <RevenueDisplay
+                        amount={`${defaultCurrencySymbol}${formatCurrency(
+                          ev.revenue,
+                        )}`}
+                      />
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider shrink-0">
                       Expenses
                     </span>
-                    <span className="text-sm font-bold text-[var(--text-main)] text-right truncate">
-                      {defaultCurrencySymbol}
-                      {formatCurrency(ev.total_expenses)}
+                    <span className="text-sm font-bold text-[var(--text-main)] text-right truncate flex items-center justify-end">
+                      <RevenueDisplay
+                        amount={`${defaultCurrencySymbol}${formatCurrency(
+                          ev.total_expenses,
+                        )}`}
+                      />
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
@@ -288,8 +294,11 @@ export function Events() {
                       ) : (
                         <TrendingDown className="w-3 h-3 shrink-0" />
                       )}
-                      {defaultCurrencySymbol}
-                      {formatCurrency(Math.abs(profit))}
+                      <RevenueDisplay
+                        amount={`${defaultCurrencySymbol}${formatCurrency(
+                          Math.abs(profit),
+                        )}`}
+                      />
                     </span>
                   </div>
                 </div>

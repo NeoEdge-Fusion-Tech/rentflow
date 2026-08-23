@@ -28,6 +28,7 @@ import {
   Area,
 } from "recharts";
 import { StatsService, AuthService, EventService } from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 const StatCard = ({ title, value, change, icon: Icon, trend }: any) => (
   <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
@@ -209,9 +210,13 @@ export function Dashboard() {
             />
             <StatCard
               title="Platform Gross Revenue"
-              value={`${currencySymbol}${formatCurrency(
-                stats?.platform_revenue || 0,
-              )}`}
+              value={
+                <RevenueDisplay
+                  amount={`${currencySymbol}${formatCurrency(
+                    stats?.platform_revenue || 0,
+                  )}`}
+                />
+              }
               change={0}
               icon={TrendingUp}
               trend="up"
@@ -313,9 +318,13 @@ export function Dashboard() {
                           Total Revenue
                         </p>
                         <p className="text-lg font-black text-[var(--text-main)]">
-                          {plLoading
-                            ? "…"
-                            : `${sym}${formatCurrency(tRevenue, sym)}`}
+                          {plLoading ? (
+                            "…"
+                          ) : (
+                            <RevenueDisplay
+                              amount={`${sym}${formatCurrency(tRevenue, sym)}`}
+                            />
+                          )}
                         </p>
                       </div>
                       <div className="p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-soft)]">
@@ -323,24 +332,36 @@ export function Dashboard() {
                           Total Expenses
                         </p>
                         <p className="text-lg font-black text-[var(--text-main)]">
-                          {plLoading
-                            ? "…"
-                            : `${sym}${formatCurrency(tExp, sym)}`}
+                          {plLoading ? (
+                            "…"
+                          ) : (
+                            <RevenueDisplay
+                              amount={`${sym}${formatCurrency(tExp, sym)}`}
+                            />
+                          )}
                         </p>
                         {!plLoading && (
                           <div className="mt-2 space-y-1">
                             <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
                               <span>Projects:</span>
                               <span className="font-bold">
-                                {sym}
-                                {formatCurrency(tProjExp, sym)}
+                                <RevenueDisplay
+                                  amount={`${sym}${formatCurrency(
+                                    tProjExp,
+                                    sym,
+                                  )}`}
+                                />
                               </span>
                             </div>
                             <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
                               <span>General:</span>
                               <span className="font-bold">
-                                {sym}
-                                {formatCurrency(tGenExp, sym)}
+                                <RevenueDisplay
+                                  amount={`${sym}${formatCurrency(
+                                    tGenExp,
+                                    sym,
+                                  )}`}
+                                />
                               </span>
                             </div>
                           </div>
@@ -351,9 +372,13 @@ export function Dashboard() {
                           <TrendingUp className="w-3 h-3" /> Total Profit
                         </p>
                         <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                          {plLoading
-                            ? "…"
-                            : `${sym}${formatCurrency(tProfit, sym)}`}
+                          {plLoading ? (
+                            "…"
+                          ) : (
+                            <RevenueDisplay
+                              amount={`${sym}${formatCurrency(tProfit, sym)}`}
+                            />
+                          )}
                         </p>
                       </div>
                       <div className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/10">
@@ -361,9 +386,13 @@ export function Dashboard() {
                           <TrendingDown className="w-3 h-3" /> Total Loss
                         </p>
                         <p className="text-lg font-black text-rose-600 dark:text-rose-400">
-                          {plLoading
-                            ? "…"
-                            : `${sym}${formatCurrency(tLoss, sym)}`}
+                          {plLoading ? (
+                            "…"
+                          ) : (
+                            <RevenueDisplay
+                              amount={`${sym}${formatCurrency(tLoss, sym)}`}
+                            />
+                          )}
                         </p>
                       </div>
                     </div>
@@ -523,10 +552,13 @@ export function Dashboard() {
                         <p className="font-bold text-sm text-[var(--text-main)]">
                           {org.name}
                         </p>
-                        <p className="text-xs text-[var(--text-muted)]">
+                        <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                           {org.total_bookings} Bookings •{" "}
-                          {org.currency_symbol || currencySymbol}
-                          {formatCurrency(org.revenue)}
+                          <RevenueDisplay
+                            amount={`${
+                              org.currency_symbol || currencySymbol
+                            }${formatCurrency(org.revenue)}`}
+                          />
                         </p>
                       </div>
                     </div>

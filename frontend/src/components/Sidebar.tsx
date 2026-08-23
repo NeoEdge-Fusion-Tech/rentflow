@@ -21,11 +21,14 @@ import {
   ScanLine,
   HelpCircle,
   MessageSquare,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "@/src/utils";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useVisibility } from "../context/VisibilityContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -80,6 +83,7 @@ export function Sidebar({
   currentUser,
 }: SidebarProps) {
   const { theme } = useTheme();
+  const { isRevenueHidden, toggleRevenueVisibility } = useVisibility();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -323,6 +327,17 @@ export function Sidebar({
                 </p>
               </div>
             </div>
+            <button
+              onClick={toggleRevenueVisibility}
+              className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] hover:text-brand-primary rounded-xl transition-all duration-200 mb-1"
+            >
+              {isRevenueHidden ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+              {isRevenueHidden ? "Show Revenue" : "Hide Revenue"}
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-[var(--text-muted)] hover:bg-rose-500/10 hover:text-rose-500 rounded-xl transition-all duration-200"

@@ -21,6 +21,7 @@ import {
   Tooltip,
 } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
+import { RevenueDisplay } from "../../components/RevenueDisplay";
 
 export function Dashboard() {
   const { theme } = useTheme();
@@ -69,7 +70,11 @@ export function Dashboard() {
     },
     {
       title: "Platform Revenue",
-      value: `$${stats.platform_revenue.toLocaleString()}`,
+      value: (
+        <RevenueDisplay
+          amount={`$${stats.platform_revenue.toLocaleString()}`}
+        />
+      ),
       icon: CreditCard,
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
@@ -226,9 +231,12 @@ export function Dashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-emerald-500 block">
-                    {org.currency_symbol}
-                    {(org.revenue || 0).toLocaleString()}
+                  <span className="text-sm font-bold text-emerald-500 block flex items-center justify-end">
+                    <RevenueDisplay
+                      amount={`${org.currency_symbol}${(
+                        org.revenue || 0
+                      ).toLocaleString()}`}
+                    />
                   </span>
                 </div>
               </div>

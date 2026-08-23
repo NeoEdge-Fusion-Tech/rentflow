@@ -26,6 +26,7 @@ import {
   ProjectFeedbackService,
   FeedbackService,
 } from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function EventDetail() {
   const { id } = useParams();
@@ -457,8 +458,11 @@ export function EventDetail() {
             Revenue
           </p>
           <p className="text-xl font-black text-[var(--text-main)]">
-            {defaultCurrencySymbol}
-            {formatCurrency(event.revenue)}
+            <RevenueDisplay
+              amount={`${defaultCurrencySymbol}${formatCurrency(
+                event.revenue,
+              )}`}
+            />
           </p>
         </div>
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
@@ -466,8 +470,11 @@ export function EventDetail() {
             Total Expenses
           </p>
           <p className="text-xl font-black text-[var(--text-main)]">
-            {defaultCurrencySymbol}
-            {formatCurrency(event.total_expenses)}
+            <RevenueDisplay
+              amount={`${defaultCurrencySymbol}${formatCurrency(
+                event.total_expenses,
+              )}`}
+            />
           </p>
         </div>
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
@@ -481,12 +488,15 @@ export function EventDetail() {
             )}
           >
             {isProfit ? (
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-4 h-4 shrink-0" />
             ) : (
-              <TrendingDown className="w-4 h-4" />
+              <TrendingDown className="w-4 h-4 shrink-0" />
             )}
-            {defaultCurrencySymbol}
-            {formatCurrency(Math.abs(profit))}
+            <RevenueDisplay
+              amount={`${defaultCurrencySymbol}${formatCurrency(
+                Math.abs(profit),
+              )}`}
+            />
           </p>
         </div>
       </div>
@@ -554,9 +564,12 @@ export function EventDetail() {
                     <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">
                       {exp.description || "—"}
                     </td>
-                    <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)]">
-                      {defaultCurrencySymbol}
-                      {formatCurrency(exp.amount)}
+                    <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
+                      <RevenueDisplay
+                        amount={`${defaultCurrencySymbol}${formatCurrency(
+                          exp.amount,
+                        )}`}
+                      />
                     </td>
                     <td className="py-3 pr-0 text-right">
                       <div className="flex items-center justify-end gap-1">
