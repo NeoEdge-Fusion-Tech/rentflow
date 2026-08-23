@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNotification } from "../context/NotificationContext";
 import {
   Search,
@@ -1745,27 +1746,32 @@ export function Inventory() {
               ))}
             </div>
 
-            {/* Print Only View */}
-            <div className="hidden qr-print-only print:grid print:grid-cols-4 print:gap-2 print:p-1 print:bg-white print:text-black print:items-start print:content-start">
-              {selectedUnitsForQR.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center justify-start h-full min-w-0 p-2 border border-dashed border-gray-400 text-center"
-                  style={{ pageBreakInside: "avoid" }}
-                >
-                  <QRCodeSVG
-                    value={item.identifier}
-                    size={160}
-                    style={{ width: "100%", height: "auto", maxWidth: 160 }}
-                  />
-                  <p className="font-bold mt-2 text-xs">{item.productName}</p>
-                  <p className="text-[10px] text-gray-700">{item.unitName}</p>
-                  <p className="text-[10px] text-gray-500 font-mono mt-1">
-                    {item.identifier}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {/* Print Only View — portaled straight to document.body so the print
+                layout is never confined by an ancestor's position/overflow/flex
+                (the modal box, its backdrop, or the app shell around it) */}
+            {createPortal(
+              <div className="hidden qr-print-only print:grid print:grid-cols-4 print:gap-2 print:p-1 print:bg-white print:text-black print:items-start print:content-start">
+                {selectedUnitsForQR.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center justify-start h-full min-w-0 p-2 border border-dashed border-gray-400 text-center"
+                    style={{ pageBreakInside: "avoid" }}
+                  >
+                    <QRCodeSVG
+                      value={item.identifier}
+                      size={160}
+                      style={{ width: "100%", height: "auto", maxWidth: 160 }}
+                    />
+                    <p className="font-bold mt-2 text-xs">{item.productName}</p>
+                    <p className="text-[10px] text-gray-700">{item.unitName}</p>
+                    <p className="text-[10px] text-gray-500 font-mono mt-1">
+                      {item.identifier}
+                    </p>
+                  </div>
+                ))}
+              </div>,
+              document.body,
+            )}
 
             {/* Preview for non-print mode */}
             <div className="print:hidden flex-1 flex flex-col">
@@ -1807,71 +1813,94 @@ export function Inventory() {
 
       {/* Single QR Code View Modal */}
       {singleQRView && (
-        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 print:static print:bg-white print:block">
-          <div className="qr-print-only bg-[var(--bg-surface)] rounded-2xl p-8 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative print:shadow-none print:border-none print:max-w-none print:p-0 print:m-0">
-            <button
-              onClick={() => setSingleQRView(null)}
-              className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors print:hidden"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-bold text-[var(--text-main)] mb-6 print:hidden">
-              Unit QR Code
-            </h2>
-
-            <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
-              <QRCodeSVG value={singleQRView.identifier} size={280} />
-            </div>
-
-            {/* Hidden canvas for downloading */}
-            <div className="hidden">
-              <QRCodeCanvas
-                id="single-qr-canvas"
+        <>
+          {/* Print-only content, portaled straight to document.body so it isn't
+              confined by the modal box / backdrop / app shell ancestors */}
+          {createPortal(
+            <div className="hidden qr-print-only print:flex print:flex-col print:items-center print:justify-center print:text-center print:bg-white print:text-black">
+              <QRCodeSVG
                 value={singleQRView.identifier}
-                size={512}
+                size={280}
+                style={{ width: 280, height: 280 }}
               />
-            </div>
-
-            <p className="font-bold text-sm text-[var(--text-main)]">
-              {singleQRView.productName}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">
-              {singleQRView.unitName}
-            </p>
-            <p className="text-xs text-[var(--text-muted)] font-mono mt-2">
-              {singleQRView.identifier}
-            </p>
-
-            <div className="flex gap-3 w-full mt-8 print:hidden">
+              <p className="font-bold text-sm mt-4">
+                {singleQRView.productName}
+              </p>
+              <p className="text-xs text-gray-700 mt-1">
+                {singleQRView.unitName}
+              </p>
+              <p className="text-xs text-gray-500 font-mono mt-2">
+                {singleQRView.identifier}
+              </p>
+            </div>,
+            document.body,
+          )}
+          <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 print:hidden">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative">
               <button
-                onClick={() => {
-                  const canvas = document.getElementById(
-                    "single-qr-canvas",
-                  ) as HTMLCanvasElement;
-                  if (canvas) {
-                    const url = canvas.toDataURL("image/png");
-                    const link = document.createElement("a");
-                    link.download = `${singleQRView.productName.replace(
-                      /\s+/g,
-                      "_",
-                    )}_${singleQRView.identifier}_QR.png`;
-                    link.href = url;
-                    link.click();
-                  }
-                }}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity"
+                onClick={() => setSingleQRView(null)}
+                className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors"
               >
-                <Download className="w-4 h-4" /> Download
+                <X className="w-5 h-5" />
               </button>
-              <button
-                onClick={() => window.print()}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--bg-app)] text-[var(--text-main)] border border-[var(--border-soft)] font-bold rounded-xl hover:bg-[var(--border-subtle)] transition-colors"
-              >
-                <Printer className="w-4 h-4" /> Print
-              </button>
+              <h2 className="text-lg font-bold text-[var(--text-main)] mb-6">
+                Unit QR Code
+              </h2>
+
+              <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
+                <QRCodeSVG value={singleQRView.identifier} size={280} />
+              </div>
+
+              {/* Hidden canvas for downloading */}
+              <div className="hidden">
+                <QRCodeCanvas
+                  id="single-qr-canvas"
+                  value={singleQRView.identifier}
+                  size={512}
+                />
+              </div>
+
+              <p className="font-bold text-sm text-[var(--text-main)]">
+                {singleQRView.productName}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                {singleQRView.unitName}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] font-mono mt-2">
+                {singleQRView.identifier}
+              </p>
+
+              <div className="flex gap-3 w-full mt-8 print:hidden">
+                <button
+                  onClick={() => {
+                    const canvas = document.getElementById(
+                      "single-qr-canvas",
+                    ) as HTMLCanvasElement;
+                    if (canvas) {
+                      const url = canvas.toDataURL("image/png");
+                      const link = document.createElement("a");
+                      link.download = `${singleQRView.productName.replace(
+                        /\s+/g,
+                        "_",
+                      )}_${singleQRView.identifier}_QR.png`;
+                      link.href = url;
+                      link.click();
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  <Download className="w-4 h-4" /> Download
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--bg-app)] text-[var(--text-main)] border border-[var(--border-soft)] font-bold rounded-xl hover:bg-[var(--border-subtle)] transition-colors"
+                >
+                  <Printer className="w-4 h-4" /> Print
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
