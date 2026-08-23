@@ -94,8 +94,8 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    fetchStats();
-    fetchUser();
+    fetchUserAndStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -121,16 +121,18 @@ export function Dashboard() {
     EventService.getMonthlyBreakdown({ year: plYear })
       .then((res) => {
         const flattened = res.data.map((m: any) => {
-          const currData = m.currencies?.[currencySymbol] || {
-            revenue: 0,
-            expenses: 0,
-            profit: 0,
-          };
+          const currData = m.currencies?.[currencySymbol] || {};
+          const rev = currData.total_revenue || 0;
+          const projExp = currData.total_project_expenses || 0;
+          const genExp = currData.total_general_expenses || 0;
+          const prof = currData.total_profit || 0;
+          // loss is total_loss
+
           return {
             ...m,
-            revenue: currData.revenue || 0,
-            expenses: currData.expenses || 0,
-            profit: currData.profit || 0,
+            revenue: parseFloat(rev),
+            expenses: parseFloat(projExp) + parseFloat(genExp),
+            profit: parseFloat(prof),
           };
         });
         setPlMonthly(flattened);
@@ -139,44 +141,41 @@ export function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plYear, showPl, currencySymbol]);
 
-  const fetchUser = async () => {
+  const fetchUserAndStats = async () => {
+    setIsLoading(true);
+    let user = null;
     try {
       const res = await AuthService.getMe();
-      setCurrentUser(res.data);
+      user = res.data;
+      setCurrentUser(user);
     } catch (e) {
       console.error("Failed fetching user", e);
     }
-  };
 
-  const fetchStats = async () => {
-    try {
-      setIsLoading(true);
-      // Attempt Super-Admin Fetch
-      const response = await StatsService.getSuperAdminStats();
+    if (user?.is_superuser) {
       setIsAdmin(true);
-      setStats(response.data);
-      if (response.data.currency_symbol) {
-        setCurrencySymbol(response.data.currency_symbol);
-      }
-    } catch (error: any) {
-      if (error.response?.status === 403) {
-        // Fallback to Tenant-Admin Fetch
-        setIsAdmin(false);
-        try {
-          const tenantResponse = await StatsService.getTenantStats();
-          setStats(tenantResponse.data);
-          if (tenantResponse.data.currency_symbol) {
-            setCurrencySymbol(tenantResponse.data.currency_symbol);
-          }
-        } catch (tenantError) {
-          console.error("Failed fetching tenant stats", tenantError);
+      try {
+        const response = await StatsService.getSuperAdminStats();
+        setStats(response.data);
+        if (response.data.currency_symbol) {
+          setCurrencySymbol(response.data.currency_symbol);
         }
-      } else {
+      } catch (error) {
         console.error("Failed fetching super admin stats", error);
       }
-    } finally {
-      setIsLoading(false);
+    } else {
+      setIsAdmin(false);
+      try {
+        const tenantResponse = await StatsService.getTenantStats();
+        setStats(tenantResponse.data);
+        if (tenantResponse.data.currency_symbol) {
+          setCurrencySymbol(tenantResponse.data.currency_symbol);
+        }
+      } catch (tenantError) {
+        console.error("Failed fetching tenant stats", tenantError);
+      }
     }
+    setIsLoading(false);
   };
 
   if (isLoading) {
