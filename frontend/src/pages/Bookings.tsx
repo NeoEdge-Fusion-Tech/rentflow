@@ -1319,54 +1319,101 @@ export function Bookings() {
                               <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pl-1">
                                 Product
                               </label>
-                              <select
-                                value={item.product_id}
-                                onChange={(e) => {
-                                  const prodId = e.target.value;
-                                  const prod = products.find(
-                                    (p) => p.product_id === parseInt(prodId),
-                                  );
-                                  setBookingItems((prev) => {
-                                    const newItems = [...prev];
-                                    newItems[i] = {
-                                      ...newItems[i],
-                                      product_id: prodId,
-                                      unit_price:
-                                        prod?.units?.[0]?.rental_price || 0,
-                                      selected_unit_ids: [],
-                                    };
-                                    return newItems;
-                                  });
-                                  fetchAvailability(i, prodId);
-                                }}
-                                className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)] transition-all"
+                              <div
+                                className="relative"
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <option value="">Select a product...</option>
-                                {products.map((p) => {
-                                  const unitLabels = (p.units || [])
-                                    .map((u: any) => u.serial_number || u.name)
-                                    .filter(Boolean);
-
-                                  let display = p.name;
-                                  if (unitLabels.length > 0) {
-                                    const preview = unitLabels
-                                      .slice(0, 3)
-                                      .join(", ");
-                                    display = `${p.name} — ${preview}${
-                                      unitLabels.length > 3 ? ", ..." : ""
-                                    }`;
+                                <input
+                                  type="text"
+                                  value={
+                                    searchQueries[i] !== undefined
+                                      ? searchQueries[i]
+                                      : products.find(
+                                          (p) =>
+                                            p.product_id.toString() ===
+                                            item.product_id,
+                                        )?.name || ""
                                   }
-
-                                  return (
-                                    <option
-                                      key={p.product_id}
-                                      value={String(p.product_id)}
-                                    >
-                                      {display}
-                                    </option>
-                                  );
-                                })}
-                              </select>
+                                  placeholder="Search Products..."
+                                  onChange={(e) => {
+                                    setSearchQueries((prev) => ({
+                                      ...prev,
+                                      [i]: e.target.value,
+                                    }));
+                                    setActiveDropdown(i);
+                                  }}
+                                  onFocus={() => setActiveDropdown(i)}
+                                  className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)] transition-all"
+                                />
+                                {activeDropdown === i && (
+                                  <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                                    {products
+                                      .filter((p) => {
+                                        const query = (
+                                          searchQueries[i] || ""
+                                        ).toLowerCase();
+                                        return (
+                                          p.name
+                                            .toLowerCase()
+                                            .includes(query) ||
+                                          (p.category_name || "")
+                                            .toLowerCase()
+                                            .includes(query)
+                                        );
+                                      })
+                                      .map((p) => {
+                                        const unitPrice =
+                                          p.units?.[0]?.rental_price || 0;
+                                        return (
+                                          <div
+                                            key={p.product_id}
+                                            className="px-4 py-3 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
+                                            onClick={() => {
+                                              const prodId = String(
+                                                p.product_id,
+                                              );
+                                              setSearchQueries((prev) => ({
+                                                ...prev,
+                                                [i]: p.name,
+                                              }));
+                                              setBookingItems((prev) => {
+                                                const newItems = [...prev];
+                                                newItems[i] = {
+                                                  ...newItems[i],
+                                                  product_id: prodId,
+                                                  unit_price: parseFloat(
+                                                    unitPrice as string,
+                                                  ),
+                                                  selected_unit_ids: [],
+                                                };
+                                                return newItems;
+                                              });
+                                              fetchAvailability(i, prodId);
+                                              setActiveDropdown(null);
+                                            }}
+                                          >
+                                            <div>
+                                              <div className="font-bold text-sm text-[var(--text-main)]">
+                                                {p.name}
+                                              </div>
+                                              {p.category_name && (
+                                                <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                                  {p.category_name}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="font-black text-sm text-[var(--text-main)]">
+                                              {currencySymbol}{" "}
+                                              {parseFloat(
+                                                unitPrice as string,
+                                              ).toLocaleString()}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
                             <div className="col-span-6 md:col-span-2 space-y-2">
