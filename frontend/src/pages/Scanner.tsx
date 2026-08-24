@@ -358,7 +358,13 @@ export function Scanner() {
                       min="1"
                       value={quantity}
                       onChange={(e) =>
-                        setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                        setQuantity(
+                          e.target.value === ""
+                            ? ("" as any)
+                            : e.target.value === ""
+                              ? ("" as any)
+                              : Math.max(1, parseInt(e.target.value) || 1),
+                        )
                       }
                       className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-4 focus:ring-brand-primary/10 focus:border-brand-primary text-sm font-bold text-[var(--text-main)]"
                       required
@@ -379,7 +385,11 @@ export function Scanner() {
                           setQtyDamaged(
                             Math.min(
                               quantity,
-                              Math.max(0, parseInt(e.target.value) || 0),
+                              e.target.value === ""
+                                ? ("" as any)
+                                : e.target.value === ""
+                                  ? ("" as any)
+                                  : Math.max(0, parseInt(e.target.value) || 0),
                             ),
                           )
                         }

@@ -901,7 +901,10 @@ export function EventDetail() {
                   onChange={(e) =>
                     setExpenseForm({
                       ...expenseForm,
-                      amount: parseFloat(e.target.value) || 0,
+                      amount:
+                        e.target.value === ""
+                          ? ("" as any)
+                          : parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"

@@ -211,7 +211,7 @@ export function Bookings() {
     event_location: "",
     contact_name: "",
     contact_phone: "",
-    event_name: "",
+    booking_title: "",
     status: "pending",
     amount_paid: 0,
     discount_amount: 0,
@@ -389,7 +389,7 @@ export function Bookings() {
         event_location: formData.event_location,
         contact_name: formData.contact_name,
         contact_phone: formData.contact_phone,
-        event_name: formData.event_name,
+        booking_title: formData.booking_title,
         status: formData.status,
         amount_paid: formData.amount_paid,
         discount_amount: formData.discount_amount,
@@ -448,7 +448,7 @@ export function Bookings() {
       event_location: "",
       contact_name: "",
       contact_phone: "",
-      event_name: "",
+      booking_title: "",
       status: "pending",
       discount_amount: 0,
       discount_percentage: 0,
@@ -906,7 +906,7 @@ export function Bookings() {
                         </span>
                       </div>
                       <h3 className="text-lg font-bold text-[var(--text-main)] mt-0.5">
-                        {booking.event_name ||
+                        {booking.booking_title ||
                           (booking.contact_name
                             ? `${booking.contact_name} Event`
                             : booking.client_name || "Generic Event")}
@@ -1022,7 +1022,7 @@ export function Bookings() {
                             event_location: booking.event_location || "",
                             contact_name: booking.contact_name || "",
                             contact_phone: booking.contact_phone || "",
-                            event_name: booking.event_name || "",
+                            booking_title: booking.booking_title || "",
                             delivery_mode: booking.delivery_mode || "pickup",
                             items: initialItems,
                           });
@@ -1184,16 +1184,17 @@ export function Bookings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pl-11">
                       <div className="col-span-full">
                         <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2 ml-1">
-                          Event Name (Optional)
+                          Booking Title
                         </label>
                         <input
+                          required
                           type="text"
                           placeholder="e.g. Wedding Reception"
-                          value={formData.event_name}
+                          value={formData.booking_title}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              event_name: e.target.value,
+                              booking_title: e.target.value,
                             })
                           }
                           className="w-full h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary text-sm font-medium text-[var(--text-main)] transition-all"
@@ -1341,14 +1342,30 @@ export function Bookings() {
                                 className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)] transition-all"
                               >
                                 <option value="">Select a product...</option>
-                                {products.map((p) => (
-                                  <option
-                                    key={p.product_id}
-                                    value={String(p.product_id)}
-                                  >
-                                    {p.name}
-                                  </option>
-                                ))}
+                                {products.map((p) => {
+                                  const unitLabels = (p.units || [])
+                                    .map((u: any) => u.serial_number || u.name)
+                                    .filter(Boolean);
+
+                                  let display = p.name;
+                                  if (unitLabels.length > 0) {
+                                    const preview = unitLabels
+                                      .slice(0, 3)
+                                      .join(", ");
+                                    display = `${p.name} — ${preview}${
+                                      unitLabels.length > 3 ? ", ..." : ""
+                                    }`;
+                                  }
+
+                                  return (
+                                    <option
+                                      key={p.product_id}
+                                      value={String(p.product_id)}
+                                    >
+                                      {display}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </div>
 
@@ -1361,7 +1378,10 @@ export function Bookings() {
                                 value={item.quantity_booked}
                                 min="1"
                                 onChange={(e) => {
-                                  const q = parseInt(e.target.value) || 1;
+                                  const q =
+                                    e.target.value === ""
+                                      ? ("" as any)
+                                      : parseInt(e.target.value) || 1;
                                   setBookingItems((prev) => {
                                     const next = [...prev];
                                     next[i].quantity_booked = q;
@@ -1384,7 +1404,10 @@ export function Bookings() {
                                   type="number"
                                   value={item.unit_price}
                                   onChange={(e) => {
-                                    const p = parseFloat(e.target.value) || 0;
+                                    const p =
+                                      e.target.value === ""
+                                        ? ("" as any)
+                                        : parseFloat(e.target.value) || 0;
                                     setBookingItems((prev) => {
                                       const next = [...prev];
                                       next[i].unit_price = p;
@@ -1661,7 +1684,9 @@ export function Bookings() {
                                   setFormData({
                                     ...formData,
                                     discount_amount:
-                                      parseFloat(e.target.value) || 0,
+                                      e.target.value === ""
+                                        ? ("" as any)
+                                        : parseFloat(e.target.value) || 0,
                                     discount_percentage: 0,
                                   })
                                 }
@@ -1679,7 +1704,9 @@ export function Bookings() {
                                   setFormData({
                                     ...formData,
                                     discount_percentage:
-                                      parseFloat(e.target.value) || 0,
+                                      e.target.value === ""
+                                        ? ("" as any)
+                                        : parseFloat(e.target.value) || 0,
                                     discount_amount: 0,
                                   })
                                 }
@@ -1707,7 +1734,10 @@ export function Bookings() {
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  amount_paid: parseFloat(e.target.value) || 0,
+                                  amount_paid:
+                                    e.target.value === ""
+                                      ? ("" as any)
+                                      : parseFloat(e.target.value) || 0,
                                 })
                               }
                               className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent transition-all font-black text-[var(--text-main)]"
@@ -1869,16 +1899,16 @@ export function Bookings() {
                   <div className="grid grid-cols-2 gap-6 pl-11">
                     <div className="col-span-full">
                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
-                        Event Name
+                        Booking Title
                       </label>
                       {isManagingBooking ? (
                         <input
                           type="text"
-                          value={editFormData?.event_name || ""}
+                          value={editFormData?.booking_title || ""}
                           onChange={(e) =>
                             setEditFormData({
                               ...editFormData,
-                              event_name: e.target.value,
+                              booking_title: e.target.value,
                             })
                           }
                           className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-4 py-2 text-sm font-bold text-[var(--text-main)] outline-none focus:border-brand-primary"
@@ -1886,7 +1916,7 @@ export function Bookings() {
                         />
                       ) : (
                         <p className="text-sm font-bold text-[var(--text-main)]">
-                          {selectedBooking.event_name || "N/A"}
+                          {selectedBooking.booking_title || "N/A"}
                         </p>
                       )}
                     </div>
@@ -2048,7 +2078,10 @@ export function Bookings() {
                           onChange={(e) =>
                             setEditFormData({
                               ...editFormData,
-                              amount_paid: parseFloat(e.target.value) || 0,
+                              amount_paid:
+                                e.target.value === ""
+                                  ? ("" as any)
+                                  : parseFloat(e.target.value) || 0,
                             })
                           }
                           className="w-full h-11 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold text-emerald-500 transition-all shadow-sm"
@@ -2455,15 +2488,34 @@ export function Bookings() {
                                       <option value="">
                                         Select a product...
                                       </option>
-                                      {products.map((p) => (
-                                        <option
-                                          key={p.product_id}
-                                          value={String(p.product_id)}
-                                          className="bg-[var(--bg-surface)]"
-                                        >
-                                          {p.name}
-                                        </option>
-                                      ))}
+                                      {products.map((p) => {
+                                        const unitLabels = (p.units || [])
+                                          .map(
+                                            (u: any) =>
+                                              u.serial_number || u.name,
+                                          )
+                                          .filter(Boolean);
+
+                                        let display = p.name;
+                                        if (unitLabels.length > 0) {
+                                          const preview = unitLabels
+                                            .slice(0, 3)
+                                            .join(", ");
+                                          display = `${p.name} — ${preview}${
+                                            unitLabels.length > 3 ? ", ..." : ""
+                                          }`;
+                                        }
+
+                                        return (
+                                          <option
+                                            key={p.product_id}
+                                            value={String(p.product_id)}
+                                            className="bg-[var(--bg-surface)]"
+                                          >
+                                            {display}
+                                          </option>
+                                        );
+                                      })}
                                     </select>
                                   ) : (
                                     <span className="text-sm font-bold text-[var(--text-main)] block">
@@ -2482,7 +2534,9 @@ export function Bookings() {
                                           value={item.quantity_booked}
                                           onChange={(e) => {
                                             const val =
-                                              parseInt(e.target.value) || 1;
+                                              e.target.value === ""
+                                                ? ("" as any)
+                                                : parseInt(e.target.value) || 1;
                                             const newItems = [
                                               ...editFormData.items,
                                             ];
@@ -2552,7 +2606,9 @@ export function Bookings() {
                                       value={item.unit_price}
                                       onChange={(e) => {
                                         const p =
-                                          parseFloat(e.target.value) || 0;
+                                          e.target.value === ""
+                                            ? ("" as any)
+                                            : parseFloat(e.target.value) || 0;
                                         const newItems = [
                                           ...editFormData.items,
                                         ];
@@ -3549,7 +3605,10 @@ export function Bookings() {
                           ...editingDoc,
                           data: {
                             ...editingDoc.data,
-                            total_amount: parseFloat(e.target.value) || 0,
+                            total_amount:
+                              e.target.value === ""
+                                ? ("" as any)
+                                : parseFloat(e.target.value) || 0,
                           },
                         })
                       }
@@ -3573,7 +3632,10 @@ export function Bookings() {
                         ...editingDoc,
                         data: {
                           ...editingDoc.data,
-                          amount: parseFloat(e.target.value) || 0,
+                          amount:
+                            e.target.value === ""
+                              ? ("" as any)
+                              : parseFloat(e.target.value) || 0,
                         },
                       })
                     }

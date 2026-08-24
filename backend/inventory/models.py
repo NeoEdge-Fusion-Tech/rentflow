@@ -265,11 +265,18 @@ class ProductUnit(models.Model):
             self.quantity_good = qty_good
 
             # rented = currently picked up but not returned
-            agg = BookingItemUnit.objects.filter(product_unit=self).aggregate(
-                total_picked_up=Sum("quantity_picked_up"),
-                total_returned_good=Sum("quantity_returned_good"),
-                total_returned_damaged=Sum("quantity_returned_damaged"),
-            )
+            if self.pk:
+                agg = BookingItemUnit.objects.filter(product_unit=self).aggregate(
+                    total_picked_up=Sum("quantity_picked_up"),
+                    total_returned_good=Sum("quantity_returned_good"),
+                    total_returned_damaged=Sum("quantity_returned_damaged"),
+                )
+            else:
+                agg = {
+                    "total_picked_up": 0,
+                    "total_returned_good": 0,
+                    "total_returned_damaged": 0,
+                }
             picked_up = agg["total_picked_up"] or 0
             returned_good = agg["total_returned_good"] or 0
             returned_damaged = agg["total_returned_damaged"] or 0
@@ -329,7 +336,7 @@ class Booking(models.Model):
         choices=[("pickup", "Pickup"), ("delivery", "Delivery")],
         default="pickup",
     )
-    event_name = models.CharField(max_length=255, blank=True, null=True)
+    booking_title = models.CharField(max_length=255)
     event_location = models.TextField(blank=True, null=True)
     contact_name = models.CharField(max_length=255, blank=True, null=True)
     contact_phone = models.CharField(max_length=50, blank=True, null=True)

@@ -27,6 +27,8 @@ import { ProductService, CategoryService } from "../api";
 export function Inventory() {
   const { showNotification, showConfirm } = useNotification();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -51,6 +53,7 @@ export function Inventory() {
       cost_price: "0.00",
       rental_price: "0.00",
       unit: "per_day",
+      description: "",
     },
   ]);
   const [products, setProducts] = useState<any[]>([]);
@@ -116,7 +119,7 @@ export function Inventory() {
   React.useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, [searchTerm]);
+  }, [searchTerm, selectedCategoryFilter, selectedStatusFilter]);
 
   const fetchCategories = async () => {
     try {
@@ -147,6 +150,7 @@ export function Inventory() {
             cost_price: u.cost_price.toString(),
             rental_price: u.rental_price.toString(),
             unit: u.unit || "per_day",
+            description: u.description || "",
             // read-only breakdown fields
             quantity_available: u.quantity_available ?? 0,
             quantity_rented: u.quantity_rented ?? 0,
@@ -164,6 +168,7 @@ export function Inventory() {
               cost_price: "0.00",
               rental_price: "0.00",
               unit: "per_day",
+              description: "",
             },
           ],
     );
@@ -207,6 +212,7 @@ export function Inventory() {
           status: u.status || "available",
           rental_price: parseFloat(u.rental_price || "0"),
           unit: u.unit || "per_day",
+          description: u.description || "",
           quantity_damaged: (u as any).quantity_damaged ?? 0,
         })),
       };
@@ -233,6 +239,7 @@ export function Inventory() {
           cost_price: "0.00",
           rental_price: "0.00",
           unit: "per_day",
+          description: "",
         },
       ]);
       fetchProducts();
@@ -340,7 +347,17 @@ export function Inventory() {
     try {
       setIsLoading(true);
       // Backend expects 'search' parameter for SearchFilter
-      const response = await ProductService.getAll({ search: searchTerm });
+      const params: any = { search: searchTerm };
+      if (selectedCategoryFilter) params.category = selectedCategoryFilter;
+      if (selectedStatusFilter) {
+        if (selectedStatusFilter === "all") params.all = "true";
+        else if (selectedStatusFilter === "active") params.is_active = "True";
+        else if (selectedStatusFilter === "inactive") {
+          params.all = "true";
+          params.is_active = "False";
+        }
+      }
+      const response = await ProductService.getAll(params);
       // DRF ModelViewSet returns { count, next, previous, results: [...] } when paginated
       setProducts(response.data.results || response.data);
       setCurrentPage(1);
@@ -455,13 +472,70 @@ export function Inventory() {
             />
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-              <Filter className="w-4 h-4" />
-              Category
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-              Status
-            </button>
+            <div className="relative">
+              <select
+                value={selectedCategoryFilter}
+                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                className="appearance-none flex items-center gap-2 pl-10 pr-8 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] bg-transparent hover:bg-[var(--bg-app)] font-medium transition-colors outline-none cursor-pointer"
+              >
+                <option value="">All Categories</option>
+                {categories.map((c) => (
+                  <option
+                    key={c.id || c.category_id}
+                    value={c.id || c.category_id}
+                  >
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M1 1L5 5L9 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="relative">
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                className="appearance-none flex items-center gap-2 pl-4 pr-8 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] bg-transparent hover:bg-[var(--bg-app)] font-medium transition-colors outline-none cursor-pointer"
+              >
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M1 1L5 5L9 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1116,13 +1190,32 @@ export function Inventory() {
                             onChange={(e) => {
                               const newUnits = [...units];
                               newUnits[i].quantity =
-                                parseInt(e.target.value) || 1;
+                                e.target.value === ""
+                                  ? ("" as any)
+                                  : parseInt(e.target.value) || 1;
                               setUnits(newUnits);
                             }}
                             className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
                           />
                         </div>
                       )}
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                        Unit Description (Optional)
+                      </label>
+                      <textarea
+                        placeholder="Additional details about this unit..."
+                        value={unit.description || ""}
+                        onChange={(e) => {
+                          const newUnits = [...units];
+                          newUnits[i].description = e.target.value;
+                          setUnits(newUnits);
+                        }}
+                        className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)] resize-y"
+                        rows={2}
+                      />
                     </div>
 
                     {/* Quantity Breakdown — editable damaged stepper + derived displays */}
@@ -1162,7 +1255,9 @@ export function Inventory() {
                                 const cur =
                                   (newUnits[i] as any).quantity_damaged ?? 0;
                                 const max =
-                                  parseInt(String(unit.quantity)) || 1;
+                                  unit.quantity === ""
+                                    ? ("" as any)
+                                    : parseInt(String(unit.quantity)) || 1;
                                 (newUnits[i] as any).quantity_damaged =
                                   Math.min(max, cur + 1);
                                 setUnits(newUnits);
@@ -1182,7 +1277,9 @@ export function Inventory() {
                             <span className="font-black text-emerald-500">
                               {Math.max(
                                 0,
-                                (parseInt(String(unit.quantity)) || 0) -
+                                (unit.quantity === ""
+                                  ? ("" as any)
+                                  : parseInt(String(unit.quantity)) || 0) -
                                   ((unit as any).quantity_damaged ?? 0),
                               )}
                             </span>
@@ -1196,7 +1293,9 @@ export function Inventory() {
                                 0,
                                 Math.max(
                                   0,
-                                  (parseInt(String(unit.quantity)) || 0) -
+                                  (unit.quantity === ""
+                                    ? ("" as any)
+                                    : parseInt(String(unit.quantity)) || 0) -
                                     ((unit as any).quantity_damaged ?? 0),
                                 ) - ((unit as any).quantity_rented ?? 0),
                               )}
@@ -1339,6 +1438,7 @@ export function Inventory() {
                         cost_price: "0.00",
                         rental_price: "0.00",
                         unit: "per_day",
+                        description: "",
                       },
                     ])
                   }
@@ -1366,6 +1466,7 @@ export function Inventory() {
                       cost_price: "0.00",
                       rental_price: "0.00",
                       unit: "per_day",
+                      description: "",
                     },
                   ]);
                 }}

@@ -1104,7 +1104,7 @@ def generate_receipt_pdf(receipt):
     data = [
         ["Description", "Value"],
         ["Booking ID", f"#{booking.booking_id}"],
-        ["Event Name", booking.event_name or "N/A"],
+        ["Booking Title", booking.booking_title or "N/A"],
         ["Payment Method", "Completed Transaction"],
         ["Total Booking Amount", f"{currency_symbol}{total_amount:,.2f}"],
         ["Amount Paid in this Transaction", f"{currency_symbol}{amount_paid_now:,.2f}"],

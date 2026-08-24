@@ -339,7 +339,7 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "pickup_date",
             "return_date",
             "delivery_mode",
-            "event_name",
+            "booking_title",
             "event_location",
             "contact_name",
             "contact_phone",

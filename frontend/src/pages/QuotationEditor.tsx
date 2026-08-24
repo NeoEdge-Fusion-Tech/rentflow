@@ -791,7 +791,9 @@ export function QuotationEditor() {
                           updateLineItem(
                             i,
                             "quantity",
-                            parseFloat(e.target.value) || 0,
+                            e.target.value === ""
+                              ? ("" as any)
+                              : parseFloat(e.target.value) || 0,
                           )
                         }
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
@@ -810,7 +812,9 @@ export function QuotationEditor() {
                             updateLineItem(
                               i,
                               "unit_price",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value === ""
+                                ? ("" as any)
+                                : parseFloat(e.target.value) || 0,
                             )
                           }
                           className="w-full h-10 pl-12 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
@@ -893,7 +897,10 @@ export function QuotationEditor() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      discount_amount: parseFloat(e.target.value) || 0,
+                      discount_amount:
+                        e.target.value === ""
+                          ? ("" as any)
+                          : parseFloat(e.target.value) || 0,
                       discount_percentage: 0,
                     })
                   }
@@ -910,7 +917,10 @@ export function QuotationEditor() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      discount_percentage: parseFloat(e.target.value) || 0,
+                      discount_percentage:
+                        e.target.value === ""
+                          ? ("" as any)
+                          : parseFloat(e.target.value) || 0,
                       discount_amount: 0,
                     })
                   }
@@ -937,7 +947,10 @@ export function QuotationEditor() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    tax_percentage: parseFloat(e.target.value) || 0,
+                    tax_percentage:
+                      e.target.value === ""
+                        ? ("" as any)
+                        : parseFloat(e.target.value) || 0,
                   })
                 }
                 className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"

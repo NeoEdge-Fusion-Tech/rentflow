@@ -147,7 +147,7 @@ export function Bookings() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-medium text-[var(--text-main)] truncate max-w-[150px]">
-                        {booking.event_name || "Generic Event"}
+                        {booking.booking_title || "Generic Event"}
                       </p>
                       <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-1">
                         <Calendar className="w-3 h-3" />
