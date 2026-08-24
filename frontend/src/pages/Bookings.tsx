@@ -53,6 +53,27 @@ export function Bookings() {
     any | null
   >(null);
   const [paymentLinkAmount, setPaymentLinkAmount] = useState<number>(0);
+
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const [activeEditDropdown, setActiveEditDropdown] = useState<number | null>(
+    null,
+  );
+  const [searchQueries, setSearchQueries] = useState<Record<number, string>>(
+    {},
+  );
+  const [editSearchQueries, setEditSearchQueries] = useState<
+    Record<number, string>
+  >({});
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveDropdown(null);
+      setActiveEditDropdown(null);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (selectedBooking) {
       fetchBillingDocs(selectedBooking.booking_id);
