@@ -89,7 +89,7 @@ export function Inventory() {
   };
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [itemsPerPage, setItemsPerPage] = useState(6);
 
   const [categories, setCategories] = useState<any[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -959,12 +959,35 @@ export function Inventory() {
 
           {/* Pagination */}
           <div className="px-6 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
-            <p className="text-sm text-[var(--text-muted)]">
-              Showing{" "}
-              {products.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}{" "}
-              to {Math.min(currentPage * itemsPerPage, products.length)} of{" "}
-              {products.length} results
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-[var(--text-muted)]">
+                Showing{" "}
+                {products.length === 0
+                  ? 0
+                  : (currentPage - 1) * itemsPerPage + 1}{" "}
+                to {Math.min(currentPage * itemsPerPage, products.length)} of{" "}
+                {products.length} results
+              </p>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-[var(--text-muted)]">
+                  Rows per page:
+                </label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
+                >
+                  <option value={6}>6</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

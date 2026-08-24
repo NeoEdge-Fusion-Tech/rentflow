@@ -253,7 +253,7 @@ export function Bookings() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [itemsPerPage, setItemsPerPage] = useState(6);
 
   const [clients, setClients] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -1135,11 +1135,32 @@ export function Bookings() {
       {/* Pagination */}
       {bookings.length > 0 && (
         <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
-          <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, bookings.length)} of{" "}
-            {bookings.length}
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-[var(--text-muted)]">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, bookings.length)} of{" "}
+              {bookings.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-[var(--text-muted)]">
+                Rows per page:
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
+              >
+                <option value={6}>6</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -1168,7 +1189,7 @@ export function Bookings() {
       {/* Add Booking Modal */}
       {isAddingBooking && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+          <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-7xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--border-subtle)] bg-[var(--bg-app)]/50">
               <div>
@@ -1367,7 +1388,7 @@ export function Bookings() {
                                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)] transition-all"
                                 />
                                 {activeDropdown === i && (
-                                  <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                                  <div className="absolute z-50 left-0 top-full mt-1 min-w-[32rem] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
                                     {products
                                       .filter((p) => {
                                         const query = (
@@ -2518,73 +2539,117 @@ export function Bookings() {
                                 </div>
                                 <div className="flex-1">
                                   {item.is_new ? (
-                                    <select
-                                      value={
-                                        item.product_id || item.product || ""
-                                      }
-                                      onChange={(e) => {
-                                        const prodId = e.target.value;
-                                        const prod = products.find(
-                                          (p) =>
-                                            p.product_id === parseInt(prodId),
-                                        );
-                                        const newItems = [
-                                          ...editFormData.items,
-                                        ];
-                                        newItems[i] = {
-                                          ...item,
-                                          product: parseInt(prodId),
-                                          product_id: parseInt(prodId),
-                                          product_name: prod?.name || "",
-                                          unit_price:
-                                            prod?.units?.[0]?.rental_price || 0,
-                                          selected_unit_ids: [],
-                                        };
-                                        setEditFormData({
-                                          ...editFormData,
-                                          items: newItems,
-                                        });
-                                        fetchAvailableUnitsForManage(
-                                          prodId,
-                                          selectedBooking.booking_id,
-                                          editFormData.pickup_date,
-                                          editFormData.return_date,
-                                        );
-                                      }}
-                                      className="w-full h-10 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold transition-all text-[var(--text-main)]"
+                                    <div
+                                      className="relative"
+                                      onClick={(e) => e.stopPropagation()}
                                     >
-                                      <option value="">
-                                        Select a product...
-                                      </option>
-                                      {products.map((p) => {
-                                        const unitLabels = (p.units || [])
-                                          .map(
-                                            (u: any) =>
-                                              u.serial_number || u.name,
-                                          )
-                                          .filter(Boolean);
-
-                                        let display = p.name;
-                                        if (unitLabels.length > 0) {
-                                          const preview = unitLabels
-                                            .slice(0, 3)
-                                            .join(", ");
-                                          display = `${p.name} — ${preview}${
-                                            unitLabels.length > 3 ? ", ..." : ""
-                                          }`;
+                                      <input
+                                        type="text"
+                                        value={
+                                          editSearchQueries[i] !== undefined
+                                            ? editSearchQueries[i]
+                                            : products.find(
+                                                (p) =>
+                                                  p.product_id.toString() ===
+                                                  (
+                                                    item.product_id ||
+                                                    item.product
+                                                  )?.toString(),
+                                              )?.name || ""
                                         }
-
-                                        return (
-                                          <option
-                                            key={p.product_id}
-                                            value={String(p.product_id)}
-                                            className="bg-[var(--bg-surface)]"
-                                          >
-                                            {display}
-                                          </option>
-                                        );
-                                      })}
-                                    </select>
+                                        placeholder="Search Products..."
+                                        onChange={(e) => {
+                                          setEditSearchQueries((prev) => ({
+                                            ...prev,
+                                            [i]: e.target.value,
+                                          }));
+                                          setActiveEditDropdown(i);
+                                        }}
+                                        onFocus={() => setActiveEditDropdown(i)}
+                                        className="w-full h-10 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold transition-all text-[var(--text-main)]"
+                                      />
+                                      {activeEditDropdown === i && (
+                                        <div className="absolute z-50 left-0 top-full mt-1 min-w-[32rem] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                                          {products
+                                            .filter((p) => {
+                                              const query = (
+                                                editSearchQueries[i] || ""
+                                              ).toLowerCase();
+                                              return (
+                                                p.name
+                                                  .toLowerCase()
+                                                  .includes(query) ||
+                                                (p.category_name || "")
+                                                  .toLowerCase()
+                                                  .includes(query)
+                                              );
+                                            })
+                                            .map((p) => {
+                                              const unitPrice =
+                                                p.units?.[0]?.rental_price || 0;
+                                              return (
+                                                <div
+                                                  key={p.product_id}
+                                                  className="px-4 py-3 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
+                                                  onClick={() => {
+                                                    const prodId = String(
+                                                      p.product_id,
+                                                    );
+                                                    setEditSearchQueries(
+                                                      (prev) => ({
+                                                        ...prev,
+                                                        [i]: p.name,
+                                                      }),
+                                                    );
+                                                    const newItems = [
+                                                      ...editFormData.items,
+                                                    ];
+                                                    newItems[i] = {
+                                                      ...item,
+                                                      product: parseInt(prodId),
+                                                      product_id:
+                                                        parseInt(prodId),
+                                                      product_name: p.name,
+                                                      unit_price: parseFloat(
+                                                        unitPrice as string,
+                                                      ),
+                                                      selected_unit_ids: [],
+                                                    };
+                                                    setEditFormData({
+                                                      ...editFormData,
+                                                      items: newItems,
+                                                    });
+                                                    fetchAvailableUnitsForManage(
+                                                      prodId,
+                                                      selectedBooking.booking_id,
+                                                      editFormData.pickup_date,
+                                                      editFormData.return_date,
+                                                    );
+                                                    setActiveEditDropdown(null);
+                                                  }}
+                                                >
+                                                  <div>
+                                                    <div className="font-bold text-sm text-[var(--text-main)]">
+                                                      {p.name}
+                                                    </div>
+                                                    {p.category_name && (
+                                                      <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                                        {p.category_name}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <div className="font-black text-sm text-[var(--text-main)]">
+                                                    {currencySymbol}{" "}
+                                                    {parseFloat(
+                                                      unitPrice as string,
+                                                    ).toLocaleString()}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                        </div>
+                                      )}
+                                    </div>
                                   ) : (
                                     <span className="text-sm font-bold text-[var(--text-main)] block">
                                       {item.product_name}
