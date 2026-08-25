@@ -240,7 +240,7 @@ export function PricingCards({
             {freePlan.features.map((feature, i) => (
               <li
                 key={i}
-                className="flex items-start gap-3 text-[var(--text-muted)] text-[15px]"
+                className="flex items-center gap-3 text-[var(--text-muted)] text-[15px]"
               >
                 <Check className="w-5 h-5 text-emerald-500 shrink-0" />
                 <span>{feature}</span>
@@ -251,11 +251,7 @@ export function PricingCards({
 
         {/* Premium Plan */}
         <div className="relative rounded-[2rem] p-[2px] transition-all duration-300 shadow-2xl group flex flex-col bg-gradient-to-b from-brand-primary/50 via-brand-primary/10 to-transparent border border-brand-primary/20">
-          <div className="absolute -top-4 right-8 z-10 bg-brand-primary text-brand-accent shadow-brand-primary/30 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-wider">
-            <Heart className="w-3 h-3 fill-current" /> Most Popular
-          </div>
-
-          <div className="relative bg-[var(--bg-surface)] rounded-[2rem] p-8 lg:p-10 h-full w-full flex flex-col">
+          <div className="relative bg-[var(--bg-surface)] rounded-[2rem] p-8 lg:p-10 h-full w-full flex flex-col z-10">
             <div className="mb-6 mt-2">
               <h3 className="text-2xl font-semibold mb-2">Premium Plan</h3>
               <p className="text-[var(--text-muted)] text-sm leading-relaxed">
@@ -312,7 +308,7 @@ export function PricingCards({
 
             <ul className="space-y-4 mt-8">
               {activePremium.features.map((feature, i) => (
-                <li key={i} className="flex items-start gap-3 text-[15px]">
+                <li key={i} className="flex items-center gap-3 text-[15px]">
                   <Check className="w-5 h-5 text-brand-primary shrink-0" />
                   <span className="text-[var(--text-main)] font-medium">
                     {feature}
@@ -320,6 +316,10 @@ export function PricingCards({
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div className="absolute -top-4 right-8 z-20 bg-brand-primary text-brand-accent shadow-brand-primary/30 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-wider pointer-events-none">
+            <Heart className="w-3 h-3 fill-current" /> Most Popular
           </div>
         </div>
       </div>
