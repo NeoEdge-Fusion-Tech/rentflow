@@ -93,6 +93,7 @@ function AppLayout() {
   const isAuthRoute =
     [
       "/",
+      "/pricing",
       "/login",
       "/register",
       "/onboarding",

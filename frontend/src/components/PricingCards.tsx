@@ -236,8 +236,8 @@ export function PricingCards({
         </div>
 
         {/* Premium Plan */}
-        <div className="relative rounded-[2rem] p-[2px] transition-all duration-300 shadow-2xl group flex flex-col bg-gradient-to-b from-brand-primary via-brand-primary/20 to-transparent">
-          <div className="absolute -top-4 right-8 bg-gradient-to-r from-pink-500 to-brand-primary text-white text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-wider">
+        <div className="relative rounded-[2rem] p-[2px] transition-all duration-300 shadow-2xl group flex flex-col bg-gradient-to-b from-brand-primary/50 via-brand-primary/10 to-transparent border border-brand-primary/20">
+          <div className="absolute -top-4 right-8 bg-brand-primary text-brand-accent shadow-brand-primary/30 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-wider">
             <Heart className="w-3 h-3 fill-current" /> Most Popular
           </div>
 
@@ -281,7 +281,7 @@ export function PricingCards({
                 isPremiumCurrent &&
                 currentPlan === activePremium.name.toLowerCase()
                   ? "bg-brand-primary/10 text-brand-primary cursor-not-allowed border border-brand-primary/20"
-                  : "bg-gradient-to-r from-pink-500 to-brand-primary text-white hover:opacity-90 shadow-lg shadow-brand-primary/30"
+                  : "bg-brand-primary text-brand-accent shadow-brand-primary/30 hover:opacity-90 shadow-lg shadow-brand-primary/30"
               }`}
             >
               {isUpgrading
