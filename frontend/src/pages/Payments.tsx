@@ -23,7 +23,7 @@ export function Payments() {
   const [isLoading, setIsLoading] = useState(true);
   const currencySymbol = localStorage.getItem("currencySymbol") || "$";
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(8);
 
   const formatCurrency = (amount: number | string, overrideSymbol?: string) => {
     // If a currency symbol is not provided, we try to grab it from local state if available.

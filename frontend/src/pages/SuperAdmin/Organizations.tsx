@@ -241,40 +241,90 @@ export function Organizations() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        <p className="font-bold text-[var(--text-main)] text-sm">
-                          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">
-                            Revenue
-                          </span>
-                          {formatCurrency(
-                            org.revenue || 0,
-                            org.currency?.symbol || currencySymbol,
-                          )}
-                        </p>
-                        {(org.expenses || 0) > 0 && (
-                          <p className="text-xs text-[var(--text-muted)] mt-1">
-                            Exp:{" "}
-                            {formatCurrency(
-                              org.expenses,
-                              org.currency?.symbol || currencySymbol,
+                      <div className="flex flex-col gap-3">
+                        {org.financials_by_currency ? (
+                          org.financials_by_currency.map(
+                            (fin: any, i: number) => (
+                              <div
+                                key={i}
+                                className="flex flex-col gap-0.5 border-b border-[var(--border-soft)] last:border-0 pb-2 last:pb-0"
+                              >
+                                <p className="font-bold text-[var(--text-main)] text-sm">
+                                  <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">
+                                    Revenue ({fin.currency_code})
+                                  </span>
+                                  {formatCurrency(
+                                    fin.revenue || 0,
+                                    fin.currency_symbol || currencySymbol,
+                                  )}
+                                </p>
+                                {(fin.expenses || 0) > 0 && (
+                                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                                    Exp:{" "}
+                                    {formatCurrency(
+                                      fin.expenses,
+                                      fin.currency_symbol || currencySymbol,
+                                    )}
+                                  </p>
+                                )}
+                                {((fin.revenue || 0) > 0 ||
+                                  (fin.expenses || 0) > 0) && (
+                                  <p
+                                    className={`text-xs font-medium ${
+                                      (fin.revenue || 0) -
+                                        (fin.expenses || 0) >=
+                                      0
+                                        ? "text-emerald-500"
+                                        : "text-rose-500"
+                                    }`}
+                                  >
+                                    P/L:{" "}
+                                    {formatCurrency(
+                                      (fin.revenue || 0) - (fin.expenses || 0),
+                                      fin.currency_symbol || currencySymbol,
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            ),
+                          )
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <p className="font-bold text-[var(--text-main)] text-sm">
+                              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block">
+                                Revenue
+                              </span>
+                              {formatCurrency(
+                                org.revenue || 0,
+                                org.currency?.symbol || currencySymbol,
+                              )}
+                            </p>
+                            {(org.expenses || 0) > 0 && (
+                              <p className="text-xs text-[var(--text-muted)] mt-1">
+                                Exp:{" "}
+                                {formatCurrency(
+                                  org.expenses,
+                                  org.currency?.symbol || currencySymbol,
+                                )}
+                              </p>
                             )}
-                          </p>
-                        )}
-                        {((org.revenue || 0) > 0 ||
-                          (org.expenses || 0) > 0) && (
-                          <p
-                            className={`text-xs font-medium ${
-                              (org.revenue || 0) - (org.expenses || 0) >= 0
-                                ? "text-emerald-500"
-                                : "text-rose-500"
-                            }`}
-                          >
-                            P/L:{" "}
-                            {formatCurrency(
-                              (org.revenue || 0) - (org.expenses || 0),
-                              org.currency?.symbol || currencySymbol,
+                            {((org.revenue || 0) > 0 ||
+                              (org.expenses || 0) > 0) && (
+                              <p
+                                className={`text-xs font-medium ${
+                                  (org.revenue || 0) - (org.expenses || 0) >= 0
+                                    ? "text-emerald-500"
+                                    : "text-rose-500"
+                                }`}
+                              >
+                                P/L:{" "}
+                                {formatCurrency(
+                                  (org.revenue || 0) - (org.expenses || 0),
+                                  org.currency?.symbol || currencySymbol,
+                                )}
+                              </p>
                             )}
-                          </p>
+                          </div>
                         )}
                       </div>
                     </td>

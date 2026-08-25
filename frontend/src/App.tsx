@@ -65,6 +65,8 @@ import { NotificationService, AuthService } from "./api";
 import { useTheme } from "./context/ThemeContext";
 import { useNotification } from "./context/NotificationContext";
 
+import { Pricing } from "./pages/Pricing";
+
 import { FeedbackForms } from "./pages/FeedbackForms";
 import { PublicFeedback } from "./pages/PublicFeedback";
 import { Landing } from "./pages/Landing";
@@ -197,6 +199,8 @@ function AppLayout() {
         <div className="flex-1 flex flex-col">
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/pricing" element={<Pricing />} />
+
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-email" element={<VerifyEmail />} />

@@ -398,22 +398,45 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
             product = Product.objects.get(pk=product_id)
 
+            exclude_id = self.instance.booking_id if self.instance else None
+
             # Use specific availability if dates are provided, otherwise fallback to total good condition
             if pickup and return_date:
                 avail = product.get_availability(
-                    pickup,
-                    return_date,
-                    exclude_booking_id=(
-                        self.instance.booking_id if self.instance else None
-                    ),
+                    pickup, return_date, exclude_booking_id=exclude_id
                 )
+                available_units_qs = product.get_available_units(
+                    pickup, return_date, exclude_booking_id=exclude_id
+                )
+                available_unit_ids = {
+                    u.product_unit_id: u.temp_available_qty for u in available_units_qs
+                }
             else:
                 avail = product.total_quantity_good_condition
+                available_unit_ids = {
+                    u.product_unit_id: u.quantity_good
+                    for u in product.units.exclude(status="damaged")
+                }
 
             if total_requested_qty > avail:
                 raise serializers.ValidationError(
                     f"Overbooked: Only {avail} units of '{product.name}' are available for the selected configuration."
                 )
+
+            # Check if specific units requested are available
+            for item in items_payload:
+                if item.get("product", None) == product:
+                    for unit_data in item.get("units", []):
+                        unit_obj = unit_data.get("product_unit")
+                        qty_req = unit_data.get("quantity", 1)
+                        if unit_obj:
+                            avail_qty_for_unit = available_unit_ids.get(
+                                unit_obj.product_unit_id, 0
+                            )
+                            if qty_req > avail_qty_for_unit:
+                                raise serializers.ValidationError(
+                                    f"Overbooked: The specific unit '{unit_obj.serial_number or unit_obj.product_unit_id}' of '{product.name}' is not available for these dates."
+                                )
 
         return data
 

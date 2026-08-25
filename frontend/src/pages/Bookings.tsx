@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotification } from "../context/NotificationContext";
@@ -931,9 +932,6 @@ export function Bookings() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                          #{booking.booking_id}
-                        </span>
                         <span
                           className={cn(
                             "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border",
@@ -962,7 +960,10 @@ export function Bookings() {
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                           <Clock className="w-3.5 h-3.5" />
-                          {new Date(booking.booking_date).toLocaleDateString()}
+                          {new Date(
+                            booking.pickup_date,
+                          ).toLocaleDateString()} -{" "}
+                          {new Date(booking.return_date).toLocaleDateString()}
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                           <Package className="w-3.5 h-3.5" />
@@ -1479,12 +1480,10 @@ export function Bookings() {
                                           >
                                             <div>
                                               <div className="font-bold text-sm text-[var(--text-main)]">
-                                                {u.name ||
-                                                  `${u.product.name}${
-                                                    u.serial_number
-                                                      ? ` (${u.serial_number})`
-                                                      : ""
-                                                  }`}
+                                                {u.name || u.product.name}
+                                                {u.serial_number
+                                                  ? ` (${u.serial_number})`
+                                                  : ""}
                                               </div>
                                               <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                                                 {u.product.name}
@@ -1574,23 +1573,32 @@ export function Bookings() {
                                 <div
                                   className={cn(
                                     "w-2 h-2 rounded-full",
-                                    item.available_qty < item.quantity_booked
-                                      ? "bg-rose-500 animate-pulse"
-                                      : "bg-emerald-500",
+                                    item.selected_unit_ids?.length > 0
+                                      ? "bg-emerald-500"
+                                      : item.available_qty <
+                                          item.quantity_booked
+                                        ? "bg-rose-500 animate-pulse"
+                                        : "bg-emerald-500",
                                   )}
                                 />
                                 <span
                                   className={cn(
                                     "text-[11px] font-black uppercase tracking-tight",
-                                    item.available_qty < item.quantity_booked
-                                      ? "text-rose-600"
-                                      : "text-emerald-600",
+                                    item.selected_unit_ids?.length > 0
+                                      ? "text-emerald-600"
+                                      : item.available_qty <
+                                          item.quantity_booked
+                                        ? "text-rose-600"
+                                        : "text-emerald-600",
                                   )}
                                 >
                                   {formData.pickup_date && formData.return_date
-                                    ? item.available_qty < item.quantity_booked
-                                      ? `OVERBOOKED: Only ${item.available_qty} left`
-                                      : `${item.available_qty} Units Available`
+                                    ? item.selected_unit_ids?.length > 0
+                                      ? "UNIT ASSIGNED"
+                                      : item.available_qty <
+                                          item.quantity_booked
+                                        ? `OVERBOOKED: Only ${item.available_qty} left`
+                                        : `${item.available_qty} Units Available`
                                     : "Set dates to check stock"}
                                 </span>
                               </div>
@@ -1604,78 +1612,6 @@ export function Bookings() {
                                     item.unit_price * item.quantity_booked,
                                   )}
                                 </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Refined Particular Unit Selection */}
-                          {item.available_units.length > 0 && (
-                            <div className="mt-4 bg-[var(--bg-app)]/50 rounded-xl p-3 border border-[var(--border-subtle)]">
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                                  Assign Specific Units (Selected{" "}
-                                  {item.selected_unit_ids.length}/
-                                  {item.quantity_booked})
-                                </label>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {item.available_units.map((u: any) => (
-                                  <button
-                                    key={u.product_unit_id}
-                                    onClick={() => {
-                                      setBookingItems((prev) => {
-                                        const next = [...prev];
-                                        const current =
-                                          next[i].selected_unit_ids;
-                                        if (
-                                          current.includes(u.product_unit_id)
-                                        ) {
-                                          next[i].selected_unit_ids =
-                                            current.filter(
-                                              (id: number) =>
-                                                id !== u.product_unit_id,
-                                            );
-                                        } else if (
-                                          current.length <
-                                          Number(next[i].quantity_booked)
-                                        ) {
-                                          next[i].selected_unit_ids = [
-                                            ...current,
-                                            u.product_unit_id,
-                                          ];
-                                        }
-                                        return next;
-                                      });
-                                    }}
-                                    className={cn(
-                                      "text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all",
-                                      item.selected_unit_ids.includes(
-                                        u.product_unit_id,
-                                      )
-                                        ? "bg-brand-primary text-white border-brand-primary shadow-sm"
-                                        : "bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-soft)] hover:border-brand-primary/50",
-                                    )}
-                                  >
-                                    <div className="flex flex-col items-center gap-1">
-                                      <span>{u.serial_number}</span>
-                                      {(u.quantity_picked_up > 0 ||
-                                        u.quantity_returned_good > 0 ||
-                                        u.quantity_returned_damaged > 0) && (
-                                        <div className="flex gap-1.5 text-[8px] opacity-80 font-black tracking-tighter uppercase">
-                                          <span className="text-blue-200">
-                                            P:{u.quantity_picked_up}
-                                          </span>
-                                          <span className="text-emerald-200">
-                                            G:{u.quantity_returned_good}
-                                          </span>
-                                          <span className="text-rose-200">
-                                            D:{u.quantity_returned_damaged}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </button>
-                                ))}
                               </div>
                             </div>
                           )}
@@ -2006,17 +1942,191 @@ export function Bookings() {
                     : "Manage booking status"}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  setIsViewingDetails(false);
-                  setIsManagingBooking(false);
-                  setSelectedBooking(null);
-                }}
-                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] rounded-xl hover:bg-[var(--bg-app)] transition-all"
-              >
-                <Plus className="w-5 h-5 rotate-45" />
-              </button>
+              <div className="flex items-center gap-4 print:hidden">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-main)] rounded-xl font-bold text-sm hover:border-brand-primary transition-all shadow-sm"
+                >
+                  <Printer className="w-4 h-4 text-brand-primary" /> Print
+                  Waybill
+                </button>
+                <button
+                  onClick={() => {
+                    setIsViewingDetails(false);
+                    setIsManagingBooking(false);
+                    setSelectedBooking(null);
+                  }}
+                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] rounded-xl hover:bg-[var(--bg-app)] transition-all"
+                >
+                  <Plus className="w-5 h-5 rotate-45" />
+                </button>
+              </div>
             </div>
+
+            {/* PRINT WAYBILL UI PORTAL */}
+            {createPortal(
+              <div className="hidden print:block w-full max-w-4xl mx-auto p-12 bg-white text-black min-h-screen">
+                <style type="text/css">
+                  {`
+                    @media print {
+                      #root { display: none !important; }
+                      body { background: white !important; -webkit-print-color-adjust: exact; }
+                    }
+                  `}
+                </style>
+                <div className="flex justify-between items-start border-b-2 border-black pb-8 mb-12">
+                  <div>
+                    <h1 className="text-4xl font-black uppercase tracking-widest text-black">
+                      Booking Waybill
+                    </h1>
+                    <p className="text-xl font-bold text-gray-500 mt-2">
+                      #{selectedBooking.booking_id}
+                    </p>
+                    {selectedBooking.booking_title && (
+                      <p className="text-sm font-bold mt-4 text-gray-800 uppercase tracking-widest">
+                        {selectedBooking.booking_title}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right text-sm space-y-2 pt-2">
+                    <p>
+                      <span className="font-bold uppercase text-xs text-gray-500 tracking-wider mr-3">
+                        Pickup:
+                      </span>{" "}
+                      <span className="font-medium text-black">
+                        {new Date(
+                          selectedBooking.pickup_date,
+                        ).toLocaleDateString()}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-bold uppercase text-xs text-gray-500 tracking-wider mr-3">
+                        Return:
+                      </span>{" "}
+                      <span className="font-medium text-black">
+                        {new Date(
+                          selectedBooking.return_date,
+                        ).toLocaleDateString()}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-bold uppercase text-xs text-gray-500 tracking-wider mr-3">
+                        Status:
+                      </span>{" "}
+                      <span className="font-black text-black uppercase tracking-widest">
+                        {selectedBooking.status}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-16 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="font-bold uppercase tracking-widest text-xs text-gray-500 mb-4 border-b border-gray-200 pb-3">
+                    Client Details
+                  </h3>
+                  <div className="space-y-1">
+                    <p className="font-black text-lg text-black">
+                      {selectedBooking.client?.business_name ||
+                        selectedBooking.client?.contact_name ||
+                        "Walk-in Client"}
+                    </p>
+                    {selectedBooking.client?.email && (
+                      <p className="text-gray-600 text-sm font-medium">
+                        {selectedBooking.client.email}
+                      </p>
+                    )}
+                    {selectedBooking.client?.phone && (
+                      <p className="text-gray-600 text-sm font-medium">
+                        {selectedBooking.client.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-20">
+                  <h3 className="font-bold uppercase tracking-widest text-xs text-gray-500 mb-6 border-b border-gray-200 pb-3">
+                    Items Booked
+                  </h3>
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b-2 border-black">
+                        <th className="py-3 font-bold uppercase tracking-widest text-xs text-black w-12 text-center">
+                          #
+                        </th>
+                        <th className="py-3 font-bold uppercase tracking-widest text-xs text-black">
+                          Product Details
+                        </th>
+                        <th className="py-3 font-bold uppercase tracking-widest text-xs text-black text-center w-32">
+                          Qty
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {selectedBooking.items.map((item: any, idx: number) => (
+                        <tr
+                          key={item.booking_item_id || idx}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="py-5 text-center text-gray-400 font-bold text-sm">
+                            {idx + 1}
+                          </td>
+                          <td className="py-5 pr-4">
+                            <p className="font-bold text-base text-black">
+                              {item.product_name}
+                            </p>
+                            {item.units && item.units.length > 0 && (
+                              <div className="mt-2.5 flex flex-wrap gap-2">
+                                {item.units.map((u: any) => (
+                                  <span
+                                    key={u.product_unit_id || u.product_unit}
+                                    className="text-[11px] font-bold font-mono tracking-tight bg-gray-100 px-2.5 py-1 rounded-md text-gray-700 border border-gray-200"
+                                  >
+                                    {u.serial_number || u.name || "Bulk Unit"}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-5 text-center font-black text-lg text-black">
+                            {item.quantity}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-24 pt-12 border-t-2 border-gray-200 break-inside-avoid">
+                  <h3 className="font-black uppercase tracking-widest text-sm mb-6 text-center text-black">
+                    Client Confirmation
+                  </h3>
+                  <p className="text-sm font-medium text-gray-600 mb-16 text-center max-w-2xl mx-auto leading-relaxed">
+                    I confirm that I have received the above listed items in
+                    good working condition. I agree to the terms of rental and
+                    understand my responsibility for any loss or damage during
+                    the rental period.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-20 px-8">
+                    <div>
+                      <div className="border-b-2 border-gray-400 h-10 mb-3"></div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest text-center">
+                        Client Signature
+                      </p>
+                    </div>
+                    <div>
+                      <div className="border-b-2 border-gray-400 h-10 mb-3 flex items-end justify-center pb-1 text-sm font-bold text-gray-800">
+                        {new Date().toLocaleDateString()}
+                      </div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest text-center">
+                        Date
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[500px]">
               {/* Left Column: Details & Logistics (42%) */}
@@ -2617,34 +2727,50 @@ export function Bookings() {
                                       {activeEditDropdown === i && (
                                         <div className="absolute z-50 left-0 top-full mt-1 min-w-[32rem] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
                                           {products
-                                            .filter((p) => {
+                                            .flatMap((p) =>
+                                              (p.units || []).map((u: any) => ({
+                                                ...u,
+                                                product: p,
+                                              })),
+                                            )
+                                            .filter((u) => {
                                               const query = (
                                                 editSearchQueries[i] || ""
                                               ).toLowerCase();
                                               return (
-                                                p.name
+                                                (u.name || "")
                                                   .toLowerCase()
                                                   .includes(query) ||
-                                                (p.category_name || "")
+                                                (u.product.name || "")
+                                                  .toLowerCase()
+                                                  .includes(query) ||
+                                                (u.product.category_name || "")
+                                                  .toLowerCase()
+                                                  .includes(query) ||
+                                                (u.serial_number || "")
                                                   .toLowerCase()
                                                   .includes(query)
                                               );
                                             })
-                                            .map((p) => {
+                                            .map((u) => {
                                               const unitPrice =
-                                                p.units?.[0]?.rental_price || 0;
+                                                u.rental_price ||
+                                                u.product?.rental_price ||
+                                                0;
                                               return (
                                                 <div
-                                                  key={p.product_id}
+                                                  key={u.product_unit_id}
                                                   className="px-4 py-3 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
                                                   onClick={() => {
                                                     const prodId = String(
-                                                      p.product_id,
+                                                      u.product.product_id,
                                                     );
                                                     setEditSearchQueries(
                                                       (prev) => ({
                                                         ...prev,
-                                                        [i]: p.name,
+                                                        [i]:
+                                                          u.name ||
+                                                          u.product.name,
                                                       }),
                                                     );
                                                     const newItems = [
@@ -2655,11 +2781,14 @@ export function Bookings() {
                                                       product: parseInt(prodId),
                                                       product_id:
                                                         parseInt(prodId),
-                                                      product_name: p.name,
+                                                      product_name:
+                                                        u.product.name,
                                                       unit_price: parseFloat(
                                                         unitPrice as string,
                                                       ),
-                                                      selected_unit_ids: [],
+                                                      selected_unit_ids: [
+                                                        u.product_unit_id,
+                                                      ],
                                                     };
                                                     setEditFormData({
                                                       ...editFormData,
@@ -2676,13 +2805,14 @@ export function Bookings() {
                                                 >
                                                   <div>
                                                     <div className="font-bold text-sm text-[var(--text-main)]">
-                                                      {p.name}
+                                                      {u.name || u.product.name}
+                                                      {u.serial_number
+                                                        ? ` (${u.serial_number})`
+                                                        : ""}
                                                     </div>
-                                                    {p.category_name && (
-                                                      <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                                        {p.category_name}
-                                                      </div>
-                                                    )}
+                                                    <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                                      {u.product.name}
+                                                    </div>
                                                   </div>
                                                   <div className="font-black text-sm text-[var(--text-main)]">
                                                     {currencySymbol}{" "}
@@ -2742,25 +2872,31 @@ export function Bookings() {
                                           <div
                                             className={cn(
                                               "w-1.5 h-1.5 rounded-full",
-                                              item.available_qty <
-                                                item.quantity_booked
-                                                ? "bg-rose-500 animate-pulse"
-                                                : "bg-emerald-500",
+                                              item.selected_unit_ids?.length > 0
+                                                ? "bg-emerald-500"
+                                                : item.available_qty <
+                                                    item.quantity_booked
+                                                  ? "bg-rose-500 animate-pulse"
+                                                  : "bg-emerald-500",
                                             )}
                                           />
                                           <span
                                             className={cn(
                                               "text-[9px] font-black uppercase tracking-tight",
-                                              item.available_qty <
-                                                item.quantity_booked
-                                                ? "text-rose-600"
-                                                : "text-emerald-600",
+                                              item.selected_unit_ids?.length > 0
+                                                ? "text-emerald-600"
+                                                : item.available_qty <
+                                                    item.quantity_booked
+                                                  ? "text-rose-600"
+                                                  : "text-emerald-600",
                                             )}
                                           >
-                                            {item.available_qty <
-                                            item.quantity_booked
-                                              ? `Overbooked (Max: ${item.available_qty})`
-                                              : "In Stock"}
+                                            {item.selected_unit_ids?.length > 0
+                                              ? "UNIT ASSIGNED"
+                                              : item.available_qty <
+                                                  item.quantity_booked
+                                                ? `Overbooked (Max: ${item.available_qty})`
+                                                : "In Stock"}
                                           </span>
                                         </div>
                                       )}
@@ -3628,7 +3764,7 @@ export function Bookings() {
                 Booking Created!
               </h2>
               <p className="text-[var(--text-muted)] font-medium">
-                #{lastCreatedBooking.booking_id} has been created successfully.
+                The booking has been created successfully.
               </p>
             </div>
 

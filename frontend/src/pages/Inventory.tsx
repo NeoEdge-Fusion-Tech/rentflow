@@ -1944,11 +1944,20 @@ export function Inventory() {
                     className="flex flex-col items-center justify-start h-full min-w-0 p-2 border border-dashed border-gray-400 text-center"
                     style={{ pageBreakInside: "avoid" }}
                   >
-                    <QRCodeSVG
-                      value={item.identifier}
-                      size={160}
-                      style={{ width: "100%", height: "auto", maxWidth: 160 }}
-                    />
+                    {codeType === "QR" ? (
+                      <QRCodeSVG
+                        value={item.identifier}
+                        size={160}
+                        style={{ width: "100%", height: "auto", maxWidth: 160 }}
+                      />
+                    ) : (
+                      <Barcode
+                        value={item.identifier}
+                        width={2}
+                        height={80}
+                        fontSize={16}
+                      />
+                    )}
                     <p className="font-bold mt-2 text-xs">{item.productName}</p>
                     <p className="text-[10px] text-gray-700">{item.unitName}</p>
                     <p className="text-[10px] text-gray-500 font-mono mt-1">
@@ -2042,7 +2051,7 @@ export function Inventory() {
             document.body,
           )}
           <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 print:hidden">
-            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 pt-14 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative">
               <button
                 onClick={() => setSingleQRView(null)}
                 className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors"

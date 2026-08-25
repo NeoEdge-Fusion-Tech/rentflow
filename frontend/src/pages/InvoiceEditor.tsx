@@ -173,6 +173,8 @@ export function InvoiceEditor() {
       booking: data.booking || "",
       discount_amount: parseFloat(data.discount_amount) || 0,
       discount_percentage: parseFloat(data.discount_percentage) || 0,
+      title: data.title || prev.title,
+      event_date: data.event_date || prev.event_date,
     }));
     if (data.line_items?.length) {
       setLineItems(
@@ -212,25 +214,30 @@ export function InvoiceEditor() {
           await loadInvoice(id);
         } else if (duplicateFromParam) {
           await loadInvoice(duplicateFromParam, true);
-          if (orgData?.currency?.id) {
+          const defaultCurrency = orgData?.currency?.id || orgData?.currency_id;
+          if (defaultCurrency) {
             setFormData((prev) => ({
               ...prev,
-              currency: prev.currency || orgData.currency.id,
+              currency: prev.currency || defaultCurrency,
             }));
           }
         } else if (bookingIdParam) {
           await loadPrefill(bookingIdParam);
-          if (orgData?.currency?.id) {
+          const defaultCurrency = orgData?.currency?.id || orgData?.currency_id;
+          if (defaultCurrency) {
             setFormData((prev) => ({
               ...prev,
-              currency: prev.currency || orgData.currency.id,
+              currency: prev.currency || defaultCurrency,
             }));
           }
-        } else if (orgData?.currency?.id) {
-          setFormData((prev) => ({
-            ...prev,
-            currency: prev.currency || orgData.currency.id,
-          }));
+        } else {
+          const defaultCurrency = orgData?.currency?.id || orgData?.currency_id;
+          if (defaultCurrency) {
+            setFormData((prev) => ({
+              ...prev,
+              currency: prev.currency || defaultCurrency,
+            }));
+          }
         }
       } catch (err) {
         console.error("Failed to initialize invoice editor", err);

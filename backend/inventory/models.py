@@ -122,7 +122,7 @@ class Product(models.Model):
 
         q = Q(
             product=self,
-            booking__status__in=["confirmed", "picked_up"],
+            booking__status__in=["pending", "confirmed", "picked_up"],
             booking__pickup_date__lte=end_date,
             booking__return_date__gte=start_date,
         )
@@ -148,7 +148,7 @@ class Product(models.Model):
 
         q = Q(
             product_unit__product=self,
-            booking_item__booking__status__in=["confirmed", "picked_up"],
+            booking_item__booking__status__in=["pending", "confirmed", "picked_up"],
             booking_item__booking__pickup_date__lte=end_date,
             booking_item__booking__return_date__gte=start_date,
         )

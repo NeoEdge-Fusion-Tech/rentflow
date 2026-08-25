@@ -24,7 +24,7 @@ export function GeneralExpenses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -375,11 +375,33 @@ export function GeneralExpenses() {
 
       {!isLoading && totalCount > 0 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}
-            results
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-[var(--text-muted)]">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}
+              results
+            </p>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-[var(--text-muted)]">
+                Rows per page:
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
+              >
+                <option value={6}>6</option>
+                <option value={9}>9</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

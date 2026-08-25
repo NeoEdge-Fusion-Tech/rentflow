@@ -24,9 +24,14 @@ import {
 } from "../api";
 import { format } from "date-fns";
 
+import { PricingCards } from "../components/PricingCards";
+
 export function Settings() {
   const { showNotification, showConfirm } = useNotification();
-  const [activeTab, setActiveTab] = useState("Workspace");
+  const initialTab = new URLSearchParams(window.location.search).get("tab");
+  const [activeTab, setActiveTab] = useState(
+    initialTab === "billing" ? "Billing & Plans" : "Workspace",
+  );
 
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -868,7 +873,15 @@ export function Settings() {
             </div>
             <div className="mt-6 flex gap-3">
               {(currentUser?.subscription_plan || "free") !== "free" && (
-                <button className="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] transition-colors">
+                <button
+                  onClick={() =>
+                    showNotification(
+                      "To cancel your plan, please contact support at support@neoedge.com or switch to the Free plan below.",
+                      "info",
+                    )
+                  }
+                  className="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-app)] transition-colors"
+                >
                   Cancel Plan
                 </button>
               )}
@@ -927,81 +940,21 @@ export function Settings() {
             </div>
           </div>
 
-          <h3 className="text-lg font-bold text-[var(--text-main)] mt-8 mb-4">
-            Available Plans
+          <h3 className="text-lg font-bold text-[var(--text-main)] mt-12 mb-4 text-center">
+            Upgrade Your Plan
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {subscriptionPlans.map((plan) => {
-              const currentPlanName = currentUser?.subscription_plan || "free";
-              const isCurrent =
-                currentPlanName.toLowerCase() === plan.name.toLowerCase();
-              return (
-                <div
-                  key={plan.id}
-                  className={`border ${
-                    isCurrent
-                      ? "border-brand-primary bg-brand-primary/10"
-                      : "border-[var(--border-soft)] bg-[var(--bg-surface)] hover:border-brand-primary/50"
-                  } rounded-2xl p-6 relative transition-colors`}
-                >
-                  {isCurrent && (
-                    <div className="absolute top-0 right-0 bg-brand-primary text-brand-accent text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg border border-brand-primary shadow-sm shadow-brand-primary/20">
-                      CURRENT
-                    </div>
-                  )}
-                  <h4 className="font-bold text-[var(--text-main)]">
-                    {plan.name}
-                  </h4>
-                  <p className="text-2xl font-bold mt-2 text-[var(--text-main)]">
-                    {currencySymbol}
-                    {plan.price}
-                    <span className="text-sm font-normal text-[var(--text-muted)]">
-                      /{plan.billing_cycle === "yearly" ? "yr" : "mo"}
-                    </span>
-                  </p>
-
-                  <ul className="mt-4 space-y-2 text-sm text-[var(--text-muted)]">
-                    {plan.has_invoice && (
-                      <li className="flex gap-2 items-center">
-                        <Check className="w-4 h-4 text-brand-primary" />{" "}
-                        Invoicing (
-                        {plan.max_invoices_per_month === -1
-                          ? "Unlimited"
-                          : plan.max_invoices_per_month}
-                        /month)
-                      </li>
-                    )}
-                    {plan.has_booking && (
-                      <li className="flex gap-2 items-center">
-                        <Check className="w-4 h-4 text-brand-primary" />{" "}
-                        Inventory bookings (
-                        {plan.max_inventory_booking_per_month === -1
-                          ? "Unlimited"
-                          : plan.max_inventory_booking_per_month}
-                        /month)
-                      </li>
-                    )}
-                  </ul>
-                  {!isCurrent && (
-                    <button
-                      onClick={() => handleUpgrade(plan.name.toLowerCase())}
-                      disabled={isUpgrading}
-                      className="w-full mt-6 bg-brand-primary text-brand-accent py-2 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-md active:translate-y-px disabled:opacity-50"
-                    >
-                      {isUpgrading
-                        ? "Redirecting..."
-                        : `Upgrade to ${plan.name}`}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-            {subscriptionPlans.length === 0 && (
-              <div className="col-span-full text-center py-8 text-[var(--text-muted)]">
-                No subscription plans available.
-              </div>
-            )}
-          </div>
+          <PricingCards
+            onUpgrade={handleUpgrade}
+            onSwitchToFree={() =>
+              showNotification(
+                "To cancel your plan, please contact support at support@neoedge.com or downgrade to the Free plan below.",
+                "info",
+              )
+            }
+            isUpgrading={isUpgrading}
+            currentPlanName={currentUser?.subscription_plan}
+            subscriptionPlans={subscriptionPlans}
+          />
         </div>
       )}
 

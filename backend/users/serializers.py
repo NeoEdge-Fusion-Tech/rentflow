@@ -116,6 +116,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
         required=False,
     )
     revenue = serializers.SerializerMethodField()
+    financials_by_currency = serializers.SerializerMethodField()
     total_bookings = serializers.SerializerMethodField()
     total_invoices = serializers.SerializerMethodField()
     expenses = serializers.SerializerMethodField()
@@ -147,6 +148,54 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
 
     def get_revenue(self, obj):
         return getattr(obj, "revenue", 0.00)
+
+    def get_financials_by_currency(self, obj):
+        from django.db.models import Sum
+        from payment.models import Invoice
+
+        default_currency_code = obj.currency.code if obj.currency else "NGN"
+        default_currency_symbol = obj.currency.symbol if obj.currency else "₦"
+        expenses = getattr(obj, "expenses", 0.00) or 0.00
+
+        # Try to avoid N+1 if we don't strictly need to.
+        # But for SuperAdmin paginated list, 10 queries is fine.
+        invoices = (
+            Invoice.objects.filter(organization=obj)
+            .values("currency__code", "currency__symbol")
+            .annotate(revenue=Sum("total_amount"))
+        )
+
+        results = {}
+        for inv in invoices:
+            code = inv["currency__code"] or default_currency_code
+            symbol = inv["currency__symbol"] or default_currency_symbol
+            results[code] = {
+                "currency_code": code,
+                "currency_symbol": symbol,
+                "revenue": float(inv["revenue"] or 0.00),
+                "expenses": 0.0,
+            }
+
+        if expenses > 0:
+            if default_currency_code not in results:
+                results[default_currency_code] = {
+                    "currency_code": default_currency_code,
+                    "currency_symbol": default_currency_symbol,
+                    "revenue": 0.0,
+                    "expenses": float(expenses),
+                }
+            else:
+                results[default_currency_code]["expenses"] = float(expenses)
+
+        if not results:
+            results[default_currency_code] = {
+                "currency_code": default_currency_code,
+                "currency_symbol": default_currency_symbol,
+                "revenue": 0.0,
+                "expenses": 0.0,
+            }
+
+        return list(results.values())
 
     def get_total_bookings(self, obj):
         return getattr(obj, "total_bookings", 0)

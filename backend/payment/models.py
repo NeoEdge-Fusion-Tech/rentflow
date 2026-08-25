@@ -202,6 +202,13 @@ class Invoice(models.Model):
         else:
             super().save(*args, **kwargs)
 
+        if self.booking_id:
+            invoices = self.booking.invoices.exclude(status="cancelled")
+            total_paid = sum(inv.amount_paid for inv in invoices)
+            if self.booking.amount_paid != total_paid:
+                self.booking.amount_paid = total_paid
+                self.booking.save()
+
     @property
     def amount_left(self):
         return max(0, self.total_amount - self.amount_paid)

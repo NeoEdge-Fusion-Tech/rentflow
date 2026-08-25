@@ -34,7 +34,7 @@ export function Quotations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const itemsPerPage = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(8);
   const defaultCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
 
   useEffect(() => {

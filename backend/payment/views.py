@@ -378,14 +378,31 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found."}, status=404)
 
-        line_items = [
-            {
-                "name": item.product.name,
-                "quantity": item.quantity_booked,
-                "unit_price": item.unit_price,
-            }
-            for item in booking.items.all()
-        ]
+        line_items = []
+        for item in booking.items.all():
+            if item.selected_units.exists():
+                for unit in item.selected_units.all():
+                    name = (
+                        f"{item.product.name} ({unit.serial_number})"
+                        if unit.serial_number
+                        else (unit.name if unit.name else item.product.name)
+                    )
+                    line_items.append(
+                        {
+                            "name": name,
+                            "quantity": 1,
+                            "unit_price": item.unit_price,
+                        }
+                    )
+            else:
+                line_items.append(
+                    {
+                        "name": item.product.name,
+                        "quantity": item.quantity_booked,
+                        "unit_price": item.unit_price,
+                    }
+                )
+
         return Response(
             {
                 "booking": booking.booking_id,
@@ -393,6 +410,12 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
                 "line_items": line_items,
                 "discount_amount": booking.discount_amount,
                 "discount_percentage": booking.discount_percentage,
+                "title": booking.booking_title,
+                "event_date": (
+                    booking.pickup_date.date().isoformat()
+                    if booking.pickup_date
+                    else None
+                ),
             }
         )
 

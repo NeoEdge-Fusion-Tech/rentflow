@@ -30,7 +30,7 @@ export function Events() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12; // Adjusted for better grid display
+  const [itemsPerPage, setItemsPerPage] = useState(12); // Adjusted for better grid display
   const [totalCount, setTotalCount] = useState(0);
   const [viewType, setViewType] = useState<"card" | "list">(
     (localStorage.getItem("projectsViewType") as "card" | "list") || "card",
@@ -481,11 +481,33 @@ export function Events() {
 
       {!isLoading && totalCount > 0 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-[var(--text-muted)]">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}
-            results
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-[var(--text-muted)]">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}
+              results
+            </p>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-[var(--text-muted)]">
+                Rows per page:
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
+              >
+                <option value={6}>6</option>
+                <option value={9}>9</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

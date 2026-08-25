@@ -54,6 +54,7 @@ const navItems = [
   { icon: ScanLine, label: "Validation App", path: "/validation" },
   { icon: HelpCircle, label: "Help & Support", path: "/support" },
   { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: CreditCard, label: "Billing & Plans", path: "/settings?tab=billing" },
 ];
 
 const superAdminItems = [
