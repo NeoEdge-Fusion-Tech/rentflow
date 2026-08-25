@@ -1,6 +1,18 @@
 import React, { useState } from "react";
 import { Check, Heart } from "lucide-react";
 
+// The Naira sign (₦) is drawn as a full-width "N" with horizontal bars that
+// run edge-to-edge, so at bold/large sizes it visually collides with
+// whatever digit follows unless given its own breathing room.
+function CurrencyAmount({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{ fontFamily: "'Noto Sans', sans-serif" }}>
+      <span style={{ marginRight: "0.15em" }}>₦</span>
+      {children}
+    </span>
+  );
+}
+
 export function PricingCards({
   onUpgrade,
   onSwitchToFree,
@@ -204,7 +216,9 @@ export function PricingCards({
           </div>
 
           <div className="mb-8">
-            <span className="text-5xl font-bold tracking-tight">₦0</span>
+            <span className="text-5xl font-bold tracking-tight">
+              <CurrencyAmount>0</CurrencyAmount>
+            </span>
             <span className="text-[var(--text-muted)] ml-2 font-medium">
               /month
             </span>
@@ -222,7 +236,7 @@ export function PricingCards({
             {isFreeCurrent ? "Current Plan" : "Downgrade to Free"}
           </button>
 
-          <ul className="space-y-4 mt-auto">
+          <ul className="space-y-4 mt-8">
             {freePlan.features.map((feature, i) => (
               <li
                 key={i}
@@ -237,7 +251,7 @@ export function PricingCards({
 
         {/* Premium Plan */}
         <div className="relative rounded-[2rem] p-[2px] transition-all duration-300 shadow-2xl group flex flex-col bg-gradient-to-b from-brand-primary/50 via-brand-primary/10 to-transparent border border-brand-primary/20">
-          <div className="absolute -top-4 right-8 bg-brand-primary text-brand-accent shadow-brand-primary/30 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-wider">
+          <div className="absolute -top-4 right-8 z-10 bg-brand-primary text-brand-accent shadow-brand-primary/30 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-wider">
             <Heart className="w-3 h-3 fill-current" /> Most Popular
           </div>
 
@@ -252,7 +266,9 @@ export function PricingCards({
             <div className="mb-8 flex flex-col">
               <div className="flex items-baseline">
                 <span className="text-5xl font-bold tracking-tight text-[var(--text-main)]">
-                  ₦{activePremium.price.toLocaleString()}
+                  <CurrencyAmount>
+                    {activePremium.price.toLocaleString()}
+                  </CurrencyAmount>
                 </span>
                 <span className="text-[var(--text-muted)] ml-2 font-medium">
                   /{isAnnual ? "year" : "month"}
@@ -260,11 +276,13 @@ export function PricingCards({
               </div>
               {isAnnual && (
                 <span className="text-sm font-medium text-emerald-500 mt-2 bg-emerald-500/10 w-fit px-3 py-1 rounded-full">
-                  Saves ₦
-                  {(
-                    premiumMonthly.price * 12 -
-                    premiumYearly.price
-                  ).toLocaleString()}{" "}
+                  Saves{" "}
+                  <CurrencyAmount>
+                    {(
+                      premiumMonthly.price * 12 -
+                      premiumYearly.price
+                    ).toLocaleString()}
+                  </CurrencyAmount>{" "}
                   by billing yearly!
                 </span>
               )}
@@ -292,7 +310,7 @@ export function PricingCards({
                   : "Upgrade Now"}
             </button>
 
-            <ul className="space-y-4 mt-auto">
+            <ul className="space-y-4 mt-8">
               {activePremium.features.map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-[15px]">
                   <Check className="w-5 h-5 text-brand-primary shrink-0" />

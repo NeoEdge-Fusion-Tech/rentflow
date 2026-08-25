@@ -28,6 +28,7 @@ import {
   Download,
   Eye,
   ReceiptText,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 

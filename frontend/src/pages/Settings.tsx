@@ -916,7 +916,12 @@ export function Settings() {
                           : "-"}
                       </td>
                       <td className="px-4 py-3 font-medium text-[var(--text-main)]">
-                        ₦{payment.amount}
+                        <span style={{ fontFamily: "'Noto Sans', sans-serif" }}>
+                          <span style={{ marginRight: "0.15em" }}>₦</span>
+                          {Number(payment.amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">
