@@ -849,11 +849,14 @@ export function Settings() {
                   {currentUser?.subscription_plan || "free"} Plan
                 </p>
                 {(currentUser?.subscription_plan || "free") !== "free" &&
-                  subscriptionDetails?.current_period_end && (
+                  subscriptionDetails?.subscription_details
+                    ?.current_period_end && (
                     <p className="text-sm text-[var(--text-muted)]">
                       Renews on{" "}
                       {format(
-                        new Date(subscriptionDetails.current_period_end),
+                        new Date(
+                          subscriptionDetails.subscription_details.current_period_end,
+                        ),
                         "MMMM d, yyyy",
                       )}
                     </p>

@@ -25,6 +25,12 @@ export function Landing() {
         <div className="flex items-center gap-4">
           <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />
           <button
+            onClick={() => navigate("/pricing")}
+            className="px-4 py-2 text-sm font-bold text-[var(--text-main)] hover:text-brand-primary transition-colors"
+          >
+            Pricing
+          </button>
+          <button
             onClick={() => navigate("/login")}
             className="px-4 py-2 text-sm font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] rounded-xl transition-colors"
           >

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 interface FooterProps {
   className?: string;
@@ -33,6 +34,15 @@ export function Footer({ className = "" }: FooterProps) {
         <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">
           &copy; {new Date().getFullYear()}
         </span>
+        <span className="text-[var(--border-strong)] hidden sm:inline px-2">
+          |
+        </span>
+        <Link
+          to="/pricing"
+          className="text-[10px] font-bold text-[var(--text-muted)] hover:text-brand-primary uppercase tracking-widest mt-1 transition-colors"
+        >
+          Pricing
+        </Link>
       </div>
     </div>
   );
