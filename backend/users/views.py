@@ -271,9 +271,13 @@ class SubscriptionViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
 
 class SubscriptionPlanViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     # Usually only superadmins should manage plans, but any user can view them
     def get_permissions(self):
