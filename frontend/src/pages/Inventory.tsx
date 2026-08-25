@@ -22,7 +22,33 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
+import Barcode from "react-barcode";
 import { ProductService, CategoryService } from "../api";
+
+const generateNextSerialNumber = (products: any[], draftUnits: any[]) => {
+  let maxNum = 0;
+  products.forEach((p) => {
+    p.units?.forEach((u: any) => {
+      if (u.serial_number && typeof u.serial_number === "string") {
+        const match = u.serial_number.match(/\d+$/);
+        if (match) {
+          const numPart = parseInt(match[0], 10);
+          if (numPart > maxNum) maxNum = numPart;
+        }
+      }
+    });
+  });
+  draftUnits.forEach((u) => {
+    if (u.serial_number && typeof u.serial_number === "string") {
+      const match = u.serial_number.match(/\d+$/);
+      if (match) {
+        const numPart = parseInt(match[0], 10);
+        if (numPart > maxNum) maxNum = numPart;
+      }
+    }
+  });
+  return `SN${String(maxNum + 1).padStart(6, "0")}`;
+};
 
 export function Inventory() {
   const { showNotification, showConfirm } = useNotification();
@@ -33,6 +59,7 @@ export function Inventory() {
   const [savingCategory, setSavingCategory] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showQRExportModal, setShowQRExportModal] = useState(false);
+  const [codeType, setCodeType] = useState<"QR" | "Barcode">("QR");
   const [selectedUnitsForQR, setSelectedUnitsForQR] = useState<
     { productName: string; unitName: string; identifier: string }[]
   >([]);
@@ -628,9 +655,6 @@ export function Inventory() {
                                 <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)] truncate">
                                   {product.name}
                                 </p>
-                                <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] uppercase tracking-wider truncate">
-                                  {product.slug}
-                                </p>
                               </div>
                             </div>
                           </td>
@@ -780,7 +804,15 @@ export function Inventory() {
                                         className="hover:bg-[var(--bg-app)] transition-colors"
                                       >
                                         <td className="px-4 py-2 text-xs font-semibold text-[var(--text-main)]">
-                                          {unit.name || "-"}
+                                          <div>{unit.name || "-"}</div>
+                                          {unit.description && (
+                                            <div
+                                              className="text-[10px] text-[var(--text-muted)] mt-0.5 font-normal line-clamp-1"
+                                              title={unit.description}
+                                            >
+                                              {unit.description}
+                                            </div>
+                                          )}
                                         </td>
                                         <td className="px-4 py-2 text-xs text-center">
                                           <span
@@ -1112,6 +1144,10 @@ export function Inventory() {
                             onClick={() => {
                               const newUnits = [...units];
                               newUnits[i].unit_type = "single";
+                              if (!newUnits[i].serial_number) {
+                                newUnits[i].serial_number =
+                                  generateNextSerialNumber(products, newUnits);
+                              }
                               setUnits(newUnits);
                             }}
                             className={cn(
@@ -1453,7 +1489,10 @@ export function Inventory() {
                       ...units,
                       {
                         name: "",
-                        serial_number: "",
+                        serial_number: generateNextSerialNumber(
+                          products,
+                          units,
+                        ),
                         status: "available",
                         unit_type: "single",
                         quantity: 1,
@@ -1481,7 +1520,7 @@ export function Inventory() {
                   setUnits([
                     {
                       name: "",
-                      serial_number: "",
+                      serial_number: generateNextSerialNumber(products, []),
                       status: "available",
                       unit_type: "single",
                       quantity: 1,
@@ -1747,7 +1786,31 @@ export function Inventory() {
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 Export Product Line QR Codes
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <div className="flex bg-[var(--bg-app)] rounded-lg p-1 mr-4 border border-[var(--border-soft)] print:hidden">
+                  <button
+                    onClick={() => setCodeType("QR")}
+                    className={cn(
+                      "px-3 py-1 text-sm font-bold rounded-md transition-all",
+                      codeType === "QR"
+                        ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                    )}
+                  >
+                    QR Code
+                  </button>
+                  <button
+                    onClick={() => setCodeType("Barcode")}
+                    className={cn(
+                      "px-3 py-1 text-sm font-bold transition-all rounded-md",
+                      codeType === "Barcode"
+                        ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                    )}
+                  >
+                    Barcode
+                  </button>
+                </div>
                 <button
                   onClick={() => window.print()}
                   className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-brand-accent rounded-xl hover:opacity-90 font-bold text-sm transition-opacity"
@@ -1916,7 +1979,17 @@ export function Inventory() {
                       key={i}
                       className="flex flex-col items-center justify-center p-4 border border-[var(--border-soft)] rounded-xl bg-white text-black text-center shadow-sm"
                     >
-                      <QRCodeSVG value={item.identifier} size={100} />
+                      {codeType === "QR" ? (
+                        <QRCodeSVG value={item.identifier} size={100} />
+                      ) : (
+                        <Barcode
+                          value={item.identifier}
+                          width={1.5}
+                          height={50}
+                          fontSize={14}
+                          displayValue={false}
+                        />
+                      )}
                       <p className="font-bold mt-3 text-xs truncate w-full">
                         {item.productName}
                       </p>
@@ -1942,11 +2015,20 @@ export function Inventory() {
               confined by the modal box / backdrop / app shell ancestors */}
           {createPortal(
             <div className="hidden qr-print-only print:flex print:flex-col print:items-center print:justify-center print:text-center print:bg-white print:text-black">
-              <QRCodeSVG
-                value={singleQRView.identifier}
-                size={280}
-                style={{ width: 280, height: 280 }}
-              />
+              {codeType === "QR" ? (
+                <QRCodeSVG
+                  value={singleQRView.identifier}
+                  size={280}
+                  style={{ width: 280, height: 280 }}
+                />
+              ) : (
+                <Barcode
+                  value={singleQRView.identifier}
+                  width={3}
+                  height={120}
+                  fontSize={20}
+                />
+              )}
               <p className="font-bold text-sm mt-4">
                 {singleQRView.productName}
               </p>
@@ -1967,12 +2049,42 @@ export function Inventory() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <h2 className="text-lg font-bold text-[var(--text-main)] mb-6">
-                Unit QR Code
-              </h2>
+              <div className="flex bg-[var(--bg-app)] rounded-lg p-1 mb-6 border border-[var(--border-soft)] w-full">
+                <button
+                  onClick={() => setCodeType("QR")}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-sm font-bold rounded-md transition-all",
+                    codeType === "QR"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                  )}
+                >
+                  QR Code
+                </button>
+                <button
+                  onClick={() => setCodeType("Barcode")}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-sm font-bold rounded-md transition-all",
+                    codeType === "Barcode"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                  )}
+                >
+                  Barcode
+                </button>
+              </div>
 
-              <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6">
-                <QRCodeSVG value={singleQRView.identifier} size={280} />
+              <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex items-center justify-center min-w-[280px] min-h-[150px]">
+                {codeType === "QR" ? (
+                  <QRCodeSVG value={singleQRView.identifier} size={280} />
+                ) : (
+                  <Barcode
+                    value={singleQRView.identifier}
+                    width={2}
+                    height={100}
+                    fontSize={16}
+                  />
+                )}
               </div>
 
               {/* Hidden canvas for downloading */}
@@ -2006,7 +2118,7 @@ export function Inventory() {
                       link.download = `${singleQRView.productName.replace(
                         /\s+/g,
                         "_",
-                      )}_${singleQRView.identifier}_QR.png`;
+                      )}_${singleQRView.identifier}_${codeType}.png`;
                       link.href = url;
                       link.click();
                     }

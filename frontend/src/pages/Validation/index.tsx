@@ -101,6 +101,24 @@ export function Validation() {
                       {new Date(booking.pickup_date).toLocaleDateString()}
                     </span>
                   </div>
+                  {booking.items && booking.items.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {booking.items.map((item: any) => (
+                        <span
+                          key={item.item_id || item.product_name}
+                          className="px-2 py-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-md text-[11px] font-medium text-[var(--text-main)] flex items-center gap-1"
+                        >
+                          <Package className="w-3 h-3 text-[var(--text-muted)]" />
+                          <span className="max-w-[120px] sm:max-w-[150px] truncate">
+                            {item.product_name}
+                          </span>
+                          <span className="text-[var(--text-muted)] ml-1 font-bold">
+                            ×{item.quantity}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 sm:mt-0 flex items-center justify-end text-brand-primary font-medium group-hover:translate-x-1 transition-transform">

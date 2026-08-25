@@ -41,6 +41,25 @@ import {
   AuthService,
 } from "../api";
 
+const extractErrorMessage = (e: any, defaultMsg = "An error occurred") => {
+  if (!e.response?.data) return defaultMsg;
+  const data = e.response.data;
+
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (data.non_field_errors?.[0]) return data.non_field_errors[0];
+
+  const keys = Object.keys(data);
+  if (keys.length > 0) {
+    const firstError = data[keys[0]];
+    const fieldName = keys[0].replace(/_/g, " ").toUpperCase();
+    if (Array.isArray(firstError)) return `${fieldName}: ${firstError[0]}`;
+    if (typeof firstError === "string") return `${fieldName}: ${firstError}`;
+  }
+
+  return defaultMsg;
+};
+
 export function Bookings() {
   const navigate = useNavigate();
   const { showNotification, showConfirm } = useNotification();
@@ -437,11 +456,10 @@ export function Bookings() {
       fetchBookings();
     } catch (e: any) {
       console.error(e);
-      const errorMsg =
-        e.response?.data?.non_field_errors?.[0] ||
-        e.response?.data?.detail ||
-        "Failed to create booking.";
-      showNotification(errorMsg, "error");
+      showNotification(
+        extractErrorMessage(e, "Failed to create booking."),
+        "error",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -584,7 +602,10 @@ export function Bookings() {
       setSelectedBooking(null);
       setEditFormData(null);
     } catch (e) {
-      showNotification("Failed to save changes", "error");
+      showNotification(
+        extractErrorMessage(e, "Failed to save changes"),
+        "error",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -694,7 +715,10 @@ export function Bookings() {
       if (setIsAddingBooking) setIsAddingBooking(false);
       resetForm();
     } catch (e) {
-      showNotification("Failed to update status", "error");
+      showNotification(
+        extractErrorMessage(e, "Failed to update status"),
+        "error",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -715,7 +739,10 @@ export function Bookings() {
           fetchBookings();
         } catch (e) {
           console.error(e);
-          showNotification("Failed to delete booking", "error");
+          showNotification(
+            extractErrorMessage(e, "Failed to delete booking"),
+            "error",
+          );
         } finally {
           setIsLoading(false);
         }
@@ -1390,33 +1417,47 @@ export function Bookings() {
                                 {activeDropdown === i && (
                                   <div className="absolute z-50 left-0 top-full mt-1 min-w-[32rem] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
                                     {products
-                                      .filter((p) => {
+                                      .flatMap((p) =>
+                                        (p.units || []).map((u: any) => ({
+                                          ...u,
+                                          product: p,
+                                        })),
+                                      )
+                                      .filter((u) => {
                                         const query = (
                                           searchQueries[i] || ""
                                         ).toLowerCase();
                                         return (
-                                          p.name
+                                          (u.name || "")
                                             .toLowerCase()
                                             .includes(query) ||
-                                          (p.category_name || "")
+                                          (u.product.name || "")
+                                            .toLowerCase()
+                                            .includes(query) ||
+                                          (u.product.category_name || "")
+                                            .toLowerCase()
+                                            .includes(query) ||
+                                          (u.serial_number || "")
                                             .toLowerCase()
                                             .includes(query)
                                         );
                                       })
-                                      .map((p) => {
+                                      .map((u) => {
                                         const unitPrice =
-                                          p.units?.[0]?.rental_price || 0;
+                                          u.rental_price ||
+                                          u.product?.rental_price ||
+                                          0;
                                         return (
                                           <div
-                                            key={p.product_id}
+                                            key={u.product_unit_id}
                                             className="px-4 py-3 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
                                             onClick={() => {
                                               const prodId = String(
-                                                p.product_id,
+                                                u.product.product_id,
                                               );
                                               setSearchQueries((prev) => ({
                                                 ...prev,
-                                                [i]: p.name,
+                                                [i]: u.name || u.product.name,
                                               }));
                                               setBookingItems((prev) => {
                                                 const newItems = [...prev];
@@ -1426,7 +1467,9 @@ export function Bookings() {
                                                   unit_price: parseFloat(
                                                     unitPrice as string,
                                                   ),
-                                                  selected_unit_ids: [],
+                                                  selected_unit_ids: [
+                                                    u.product_unit_id,
+                                                  ],
                                                 };
                                                 return newItems;
                                               });
@@ -1436,13 +1479,16 @@ export function Bookings() {
                                           >
                                             <div>
                                               <div className="font-bold text-sm text-[var(--text-main)]">
-                                                {p.name}
+                                                {u.name ||
+                                                  `${u.product.name}${
+                                                    u.serial_number
+                                                      ? ` (${u.serial_number})`
+                                                      : ""
+                                                  }`}
                                               </div>
-                                              {p.category_name && (
-                                                <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                                  {p.category_name}
-                                                </div>
-                                              )}
+                                              <div className="mt-1 inline-block px-2 py-0.5 border border-[var(--border-soft)] rounded text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                                {u.product.name}
+                                              </div>
                                             </div>
                                             <div className="font-black text-sm text-[var(--text-main)]">
                                               {currencySymbol}{" "}
