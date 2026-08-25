@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { PricingCards } from "../components/PricingCards";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { PaymentService, AuthService } from "../api";
+import { PaymentService, AuthService, UserService } from "../api";
 import { useNotification } from "../context/NotificationContext";
 
 export function Pricing() {
@@ -16,7 +16,7 @@ export function Pricing() {
 
   useEffect(() => {
     // Fetch plans for display
-    PaymentService.getSubscriptionPlans()
+    UserService.getSubscriptionPlans()
       .then((res) => {
         setSubscriptionPlans(
           (res.data.results || res.data).filter((p: any) => p.is_active),
