@@ -651,7 +651,13 @@ class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             currency=quotation.currency,
             bank_account=quotation.bank_account,
             show_bank_details=quotation.show_bank_details,
-            title=quotation.title,
+            title=(
+                quotation.title.replace("Quotation", "Invoice").replace(
+                    "quotation", "invoice"
+                )
+                if quotation.title
+                else "Invoice"
+            ),
             discount_amount=quotation.discount_amount,
             discount_percentage=quotation.discount_percentage,
             tax_percentage=quotation.tax_percentage,
