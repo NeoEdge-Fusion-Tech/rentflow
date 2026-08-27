@@ -24,6 +24,7 @@ import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import Barcode from "react-barcode";
 import { ProductService, CategoryService } from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 
 const generateNextSerialNumber = (products: any[], draftUnits: any[]) => {
   let maxNum = 0;
@@ -455,13 +456,14 @@ export function Inventory() {
                 Value of Displayed Stock (Cost)
               </p>
               <p className="text-2xl font-bold text-[var(--text-main)]">
-                {currencySymbol}
-                {formatCurrency(
-                  products.reduce(
-                    (acc, p) => acc + (parseFloat(p.total_cost_price) || 0),
-                    0,
-                  ),
-                )}
+                <RevenueDisplay
+                  amount={`${currencySymbol}${formatCurrency(
+                    products.reduce(
+                      (acc, p) => acc + (parseFloat(p.total_cost_price) || 0),
+                      0,
+                    ),
+                  )}`}
+                />
               </p>
             </div>
             <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
@@ -665,8 +667,11 @@ export function Inventory() {
                             </span>
                           </td>
                           <td className="px-2 sm:px-6 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
-                            {currencySymbol}
-                            {formatCurrency(product.total_cost_price)}
+                            <RevenueDisplay
+                              amount={`${currencySymbol}${formatCurrency(
+                                product.total_cost_price,
+                              )}`}
+                            />
                           </td>
                           <td className="px-2 sm:px-6 py-4 text-center">
                             <button
@@ -832,19 +837,30 @@ export function Inventory() {
                                             : 1}
                                         </td>
                                         <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)]">
-                                          {currencySymbol}
-                                          {formatCurrency(unit.unit_cost_price)}
+                                          <RevenueDisplay
+                                            amount={`${currencySymbol}${formatCurrency(
+                                              unit.unit_cost_price,
+                                            )}`}
+                                          />
                                         </td>
                                         <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">
-                                          {currencySymbol}
-                                          {formatCurrency(unit.cost_price)}
+                                          <RevenueDisplay
+                                            amount={`${currencySymbol}${formatCurrency(
+                                              unit.cost_price,
+                                            )}`}
+                                          />
                                         </td>
                                         <td className="px-4 py-2 text-xs text-center font-bold text-brand-primary">
-                                          {currencySymbol}
-                                          {formatCurrency(unit.rental_price)}
-                                          <span className="text-[10px] font-normal text-[var(--text-muted)] ml-1">
-                                            {unit.unit?.replace("_", " ")}
-                                          </span>
+                                          <div className="flex items-center justify-center">
+                                            <RevenueDisplay
+                                              amount={`${currencySymbol}${formatCurrency(
+                                                unit.rental_price,
+                                              )}`}
+                                            />
+                                            <span className="text-[10px] font-normal text-[var(--text-muted)] ml-1">
+                                              {unit.unit?.replace("_", " ")}
+                                            </span>
+                                          </div>
                                         </td>
                                         <td className="px-4 py-2 text-xs">
                                           <div className="flex flex-col gap-1.5">

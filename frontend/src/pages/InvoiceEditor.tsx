@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -916,7 +917,9 @@ export function InvoiceEditor() {
                 Subtotal
               </span>
               <span className="font-bold text-[var(--text-main)]">
-                {currencySymbol} {formatCurrency(subtotal)}
+                <RevenueDisplay
+                  amount={`${currencySymbol}${formatCurrency(subtotal)}`}
+                />
               </span>
             </div>
 
@@ -966,7 +969,10 @@ export function InvoiceEditor() {
               <div className="flex justify-between text-xs font-bold text-brand-accent uppercase tracking-wide">
                 <span>Discount</span>
                 <span>
-                  -{currencySymbol} {formatCurrency(discountValue)}
+                  -
+                  <RevenueDisplay
+                    amount={`${currencySymbol}${formatCurrency(discountValue)}`}
+                  />
                 </span>
               </div>
             )}
@@ -994,7 +1000,9 @@ export function InvoiceEditor() {
               <div className="flex justify-between text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">
                 <span>Tax</span>
                 <span>
-                  {currencySymbol} {formatCurrency(taxValue)}
+                  <RevenueDisplay
+                    amount={`${currencySymbol}${formatCurrency(taxValue)}`}
+                  />
                 </span>
               </div>
             )}
@@ -1004,7 +1012,9 @@ export function InvoiceEditor() {
                 Total
               </span>
               <span className="text-2xl font-black text-[var(--text-main)] tracking-tight">
-                {currencySymbol} {formatCurrency(grandTotal)}
+                <RevenueDisplay
+                  amount={`${currencySymbol}${formatCurrency(grandTotal)}`}
+                />
               </span>
             </div>
 

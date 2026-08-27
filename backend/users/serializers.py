@@ -143,6 +143,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "total_bookings",
             "total_invoices",
             "expenses",
+            "financials_by_currency",
         ]
         read_only_fields = ["created_at"]
 

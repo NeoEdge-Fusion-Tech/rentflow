@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { RevenueDisplay } from "../../components/RevenueDisplay";
 import { InvoiceService } from "../../api";
 import { FileText, Building2, Search, Filter } from "lucide-react";
 import { cn } from "@/src/utils";

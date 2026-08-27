@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { RevenueDisplay } from "../../components/RevenueDisplay";
 import { BookingService } from "../../api";
 import { Calendar, Building2, Search, Filter } from "lucide-react";
 import { cn } from "@/src/utils";
@@ -158,8 +159,11 @@ export function Bookings() {
                       {booking.client_name}
                     </td>
                     <td className="px-6 py-4 font-bold text-[var(--text-main)]">
-                      {currencySymbol}
-                      {formatCurrency(booking.total_amount)}
+                      <RevenueDisplay
+                        amount={`${currencySymbol}${formatCurrency(
+                          booking.total_amount,
+                        )}`}
+                      />
                     </td>
                     <td className="px-6 py-4">
                       <span

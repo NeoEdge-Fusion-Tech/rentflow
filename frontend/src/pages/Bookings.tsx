@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { RevenueDisplay } from "../components/RevenueDisplay";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -980,14 +981,21 @@ export function Bookings() {
                         Total Amount
                       </p>
                       <p className="text-xl font-black text-[var(--text-main)]">
-                        {currencySymbol}
-                        {formatCurrency(booking.total_amount)}
+                        <RevenueDisplay
+                          amount={`${currencySymbol}${formatCurrency(
+                            booking.total_amount,
+                          )}`}
+                        />
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
-                        Paid: {currencySymbol}
-                        {formatCurrency(booking.amount_paid)}
+                        Paid:{" "}
+                        <RevenueDisplay
+                          amount={`${currencySymbol}${formatCurrency(
+                            booking.amount_paid,
+                          )}`}
+                        />
                       </p>
                       <span
                         className={cn(
@@ -1608,10 +1616,11 @@ export function Bookings() {
                                   Subtotal
                                 </span>
                                 <span className="text-[var(--text-main)] text-sm font-black">
-                                  {currencySymbol}
-                                  {formatCurrency(
-                                    item.unit_price * item.quantity_booked,
-                                  )}
+                                  <RevenueDisplay
+                                    amount={`${currencySymbol}${formatCurrency(
+                                      item.unit_price * item.quantity_booked,
+                                    )}`}
+                                  />
                                 </span>
                               </div>
                             </div>
@@ -1738,8 +1747,11 @@ export function Bookings() {
                             Base Amount
                           </span>
                           <span className="text-lg font-black break-all text-right">
-                            {currencySymbol}
-                            {formatCurrency(totalBeforeDiscount)}
+                            <RevenueDisplay
+                              amount={`${currencySymbol}${formatCurrency(
+                                totalBeforeDiscount,
+                              )}`}
+                            />
                           </span>
                         </div>
 
@@ -1790,8 +1802,12 @@ export function Bookings() {
                             <div className="flex justify-between text-brand-accent font-bold text-xs uppercase tracking-widest px-1 gap-2 flex-wrap">
                               <span>Saved</span>
                               <span className="break-all text-right">
-                                - {currencySymbol}
-                                {formatCurrency(discountVal)}
+                                -{" "}
+                                <RevenueDisplay
+                                  amount={`${currencySymbol}${formatCurrency(
+                                    discountVal,
+                                  )}`}
+                                />
                               </span>
                             </div>
                           )}
@@ -1823,8 +1839,11 @@ export function Bookings() {
                               Total Amount
                             </span>
                             <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text-main)] tracking-tighter break-all text-right">
-                              {currencySymbol}
-                              {formatCurrency(grandTotal)}
+                              <RevenueDisplay
+                                amount={`${currencySymbol}${formatCurrency(
+                                  grandTotal,
+                                )}`}
+                              />
                             </span>
                           </div>
 
@@ -1833,10 +1852,14 @@ export function Bookings() {
                               Remaining Balance
                             </span>
                             <span className="text-xl sm:text-2xl font-black text-brand-accent tracking-tighter break-all text-right">
-                              {currencySymbol}
-                              {formatCurrency(
-                                Math.max(0, grandTotal - formData.amount_paid),
-                              )}
+                              <RevenueDisplay
+                                amount={`${currencySymbol}${formatCurrency(
+                                  Math.max(
+                                    0,
+                                    grandTotal - formData.amount_paid,
+                                  ),
+                                )}`}
+                              />
                             </span>
                           </div>
                         </div>
@@ -2334,8 +2357,11 @@ export function Bookings() {
                         />
                       ) : (
                         <p className="text-xl font-black text-emerald-500 tracking-tight">
-                          {currencySymbol}
-                          {formatCurrency(selectedBooking.amount_paid)}
+                          <RevenueDisplay
+                            amount={`${currencySymbol}${formatCurrency(
+                              selectedBooking.amount_paid,
+                            )}`}
+                          />
                         </p>
                       )}
                     </div>
@@ -2353,16 +2379,17 @@ export function Bookings() {
                             : "text-rose-500",
                         )}
                       >
-                        {currencySymbol}
-                        {formatCurrency(
-                          Math.max(
-                            0,
-                            parseFloat(selectedBooking.total_amount) -
-                              (isManagingBooking
-                                ? editFormData?.amount_paid
-                                : parseFloat(selectedBooking.amount_paid)),
-                          ),
-                        )}
+                        <RevenueDisplay
+                          amount={`${currencySymbol}${formatCurrency(
+                            Math.max(
+                              0,
+                              parseFloat(selectedBooking.total_amount) -
+                                (isManagingBooking
+                                  ? editFormData?.amount_paid
+                                  : parseFloat(selectedBooking.amount_paid)),
+                            ),
+                          )}`}
+                        />
                       </p>
                     </div>
                   </div>
@@ -2942,8 +2969,11 @@ export function Bookings() {
                                   </div>
                                 ) : (
                                   <span className="text-sm font-black text-[var(--text-main)] block">
-                                    {currencySymbol}
-                                    {formatCurrency(item.unit_price)}
+                                    <RevenueDisplay
+                                      amount={`${currencySymbol}${formatCurrency(
+                                        item.unit_price,
+                                      )}`}
+                                    />
                                   </span>
                                 )}
                                 <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest block">
@@ -3319,12 +3349,13 @@ export function Bookings() {
                               Grand Total
                             </p>
                             <p className="text-xl sm:text-2xl lg:text-3xl font-black text-[var(--text-main)] tracking-tight break-all">
-                              {currencySymbol}
-                              {formatCurrency(
-                                isManagingBooking
-                                  ? calculateEditTotal()
-                                  : selectedBooking.total_amount,
-                              )}
+                              <RevenueDisplay
+                                amount={`${currencySymbol}${formatCurrency(
+                                  isManagingBooking
+                                    ? calculateEditTotal()
+                                    : selectedBooking.total_amount,
+                                )}`}
+                              />
                             </p>
                           </div>
                           {/* Payment Status Badge */}
@@ -3342,8 +3373,12 @@ export function Bookings() {
                               {selectedBooking.payment_status || "unpaid"}
                             </span>
                             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">
-                              Paid: {currencySymbol}
-                              {formatCurrency(selectedBooking.amount_paid)}
+                              Paid:{" "}
+                              <RevenueDisplay
+                                amount={`${currencySymbol}${formatCurrency(
+                                  selectedBooking.amount_paid,
+                                )}`}
+                              />
                             </p>
                           </div>
                         </div>
@@ -3561,8 +3596,11 @@ export function Bookings() {
                                 Status: {inv.status}
                               </p>
                               <p className="text-lg font-black text-[var(--text-main)]">
-                                {currencySymbol}
-                                {formatCurrency(inv.total_amount)}
+                                <RevenueDisplay
+                                  amount={`${currencySymbol}${formatCurrency(
+                                    inv.total_amount,
+                                  )}`}
+                                />
                               </p>
                             </div>
                           </div>
@@ -3662,8 +3700,11 @@ export function Bookings() {
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                       <p className="text-xs font-black text-[var(--text-main)]">
-                                        {currencySymbol}
-                                        {formatCurrency(payment.amount)}
+                                        <RevenueDisplay
+                                          amount={`${currencySymbol}${formatCurrency(
+                                            payment.amount,
+                                          )}`}
+                                        />
                                       </p>
                                       <span
                                         className={cn(
@@ -4056,8 +4097,11 @@ export function Bookings() {
                     Amount Received
                   </span>
                   <span className="text-2xl font-black text-emerald-800">
-                    {currencySymbol}
-                    {formatCurrency(editingReceipt.amount)}
+                    <RevenueDisplay
+                      amount={`${currencySymbol}${formatCurrency(
+                        editingReceipt.amount,
+                      )}`}
+                    />
                   </span>
                 </div>
               </div>
@@ -4158,11 +4202,13 @@ export function Bookings() {
                   />
                 </div>
                 <p className="mt-2 text-[10px] text-[var(--text-muted)] font-medium italic">
-                  Balance remaining: {currencySymbol}
-                  {formatCurrency(
-                    isGeneratingPaymentLink.total_amount -
-                      (isGeneratingPaymentLink.amount_paid || 0),
-                  )}
+                  Balance remaining:{" "}
+                  <RevenueDisplay
+                    amount={`${currencySymbol}${formatCurrency(
+                      isGeneratingPaymentLink.total_amount -
+                        (isGeneratingPaymentLink.amount_paid || 0),
+                    )}`}
+                  />
                 </p>
               </div>
 
