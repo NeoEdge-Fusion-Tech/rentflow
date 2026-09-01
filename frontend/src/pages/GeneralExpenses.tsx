@@ -265,7 +265,7 @@ export function GeneralExpenses() {
             className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={startDate}
@@ -273,7 +273,7 @@ export function GeneralExpenses() {
               setStartDate(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 transition-all shadow-sm text-sm"
+            className="flex-1 min-w-[140px] px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 transition-all shadow-sm text-sm"
             placeholder="Start Date"
           />
           <span className="text-[var(--text-muted)]">to</span>
@@ -284,7 +284,7 @@ export function GeneralExpenses() {
               setEndDate(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 transition-all shadow-sm text-sm"
+            className="flex-1 min-w-[140px] px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 transition-all shadow-sm text-sm"
             placeholder="End Date"
           />
         </div>
@@ -300,37 +300,115 @@ export function GeneralExpenses() {
             No expenses found.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                  <th className="py-3 px-4 font-bold">Name</th>
-                  <th className="py-3 px-4 font-bold">Type</th>
-                  <th className="py-3 px-4 font-bold">Date</th>
-                  <th className="py-3 px-4 font-bold text-right">Amount</th>
-                  <th className="py-3 px-4 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {displayedExpenses.map((exp: any) => (
-                  <tr
-                    key={exp.general_expense_id}
-                    className="hover:bg-[var(--bg-app)] transition-colors"
-                  >
-                    <td className="py-3 px-4 font-bold text-[var(--text-main)]">
-                      {exp.expense_type === "vendor"
-                        ? exp.vendor_name
-                        : exp.name}
-                      {exp.description && (
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5 font-normal line-clamp-1">
-                          {exp.description}
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                    <th className="py-3 px-4 font-bold">Name</th>
+                    <th className="py-3 px-4 font-bold">Type</th>
+                    <th className="py-3 px-4 font-bold">Date</th>
+                    <th className="py-3 px-4 font-bold text-right">Amount</th>
+                    <th className="py-3 px-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {displayedExpenses.map((exp: any) => (
+                    <tr
+                      key={exp.general_expense_id}
+                      className="hover:bg-[var(--bg-app)] transition-colors"
+                    >
+                      <td className="py-3 px-4 font-bold text-[var(--text-main)]">
+                        {exp.expense_type === "vendor"
+                          ? exp.vendor_name
+                          : exp.name}
+                        {exp.description && (
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5 font-normal line-clamp-1">
+                            {exp.description}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                            exp.expense_type === "vendor"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                          )}
+                        >
+                          {exp.expense_type}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-[var(--text-muted)]">
+                        {exp.date
+                          ? new Date(exp.date).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            exp.amount,
+                          )}`}
+                        />
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEditModal(exp)}
+                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(exp.general_expense_id)}
+                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+              {displayedExpenses.map((exp: any) => (
+                <div
+                  key={exp.general_expense_id}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 bg-[var(--bg-app)] rounded-lg text-[var(--text-muted)] border border-[var(--border-soft)] shrink-0">
+                        <Wallet className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[var(--text-main)] text-sm truncate">
+                          {exp.expense_type === "vendor"
+                            ? exp.vendor_name
+                            : exp.name}
                         </p>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
+                        {exp.description && (
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-1">
+                            {exp.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            exp.amount,
+                          )}`}
+                        />
+                      </p>
                       <span
                         className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                          "inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase mt-1",
                           exp.expense_type === "vendor"
                             ? "bg-blue-500/10 text-blue-500"
                             : "bg-[var(--bg-app)] text-[var(--text-muted)]",
@@ -338,44 +416,37 @@ export function GeneralExpenses() {
                       >
                         {exp.expense_type}
                       </span>
-                    </td>
-                    <td className="py-3 px-4 text-[var(--text-muted)]">
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pl-11">
+                    <span className="text-xs text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
-                      <RevenueDisplay
-                        amount={`${defaultCurrencySymbol}${formatCurrency(
-                          exp.amount,
-                        )}`}
-                      />
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openEditModal(exp)}
-                          className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(exp.general_expense_id)}
-                          className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditModal(exp)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(exp.general_expense_id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {!isLoading && totalCount > 0 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+          <div className="flex flex-wrap items-center gap-4">
             <p className="text-sm text-[var(--text-muted)]">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
               {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}

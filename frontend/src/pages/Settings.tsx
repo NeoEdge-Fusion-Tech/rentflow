@@ -897,7 +897,7 @@ export function Settings() {
                 Subscription Payment History
               </h2>
             </div>
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
                   <tr>
@@ -946,6 +946,53 @@ export function Settings() {
                 </tbody>
               </table>
             </div>
+
+            <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+              {subscriptionPayments.length === 0 ? (
+                <div className="p-8 text-center text-[var(--text-muted)]">
+                  No payment history found.
+                </div>
+              ) : (
+                subscriptionPayments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-main)]">
+                          {payment.created_at
+                            ? format(
+                                new Date(payment.created_at),
+                                "MMM d, yyyy",
+                              )
+                            : "-"}
+                        </p>
+                        {payment.reference && (
+                          <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+                            {payment.reference}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p
+                          className="font-bold text-[var(--text-main)]"
+                          style={{ fontFamily: "'Noto Sans', sans-serif" }}
+                        >
+                          <span style={{ marginRight: "0.15em" }}>₦</span>
+                          {Number(payment.amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                          })}
+                        </p>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 mt-1">
+                          {payment.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           <h3 className="text-lg font-bold text-[var(--text-main)] mt-12 mb-4 text-center">
@@ -975,10 +1022,10 @@ export function Settings() {
             {users.map((u) => (
               <div
                 key={u.id}
-                className="flex items-center justify-between p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-primary text-brand-accent rounded-full flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 shrink-0 bg-brand-primary text-brand-accent rounded-full flex items-center justify-center font-bold">
                     {u.first_name?.[0]}
                     {u.last_name?.[0]}
                   </div>
@@ -992,7 +1039,7 @@ export function Settings() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <span className="text-xs font-medium bg-[var(--bg-surface)] text-[var(--text-muted)] px-2.5 py-1 rounded-full border border-[var(--border-soft)] capitalize">
                     {u.role === "staff"
                       ? "Staff"
@@ -1003,7 +1050,7 @@ export function Settings() {
                           : u.role || "Member"}
                   </span>
 
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex flex-wrap gap-2 sm:ml-4">
                     {u.id !== currentUser?.id && (
                       <button
                         onClick={() => handleTriggerReset(u.id)}

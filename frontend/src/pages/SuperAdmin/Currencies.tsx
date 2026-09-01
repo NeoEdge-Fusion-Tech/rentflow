@@ -113,7 +113,7 @@ export function Currencies() {
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-[var(--bg-app)]/50">
               <tr>
@@ -212,6 +212,74 @@ export function Currencies() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {isLoading ? (
+            <div className="px-6 py-12 text-center text-[var(--text-muted)]">
+              Loading currencies...
+            </div>
+          ) : filteredCurrencies.length === 0 ? (
+            <div className="px-6 py-12 text-center text-[var(--text-muted)]">
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-12 h-12 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl flex items-center justify-center mb-4 text-[var(--text-muted)]">
+                  <Coins className="w-6 h-6" />
+                </div>
+                <p>No currencies found</p>
+              </div>
+            </div>
+          ) : (
+            filteredCurrencies.map((currency) => (
+              <div
+                key={currency.id}
+                className="p-4 hover:bg-[var(--bg-app)]/50 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-bold border border-indigo-500/20 shrink-0 text-xs">
+                      {currency.code}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[var(--text-main)]">
+                        {currency.name}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Code: {currency.code}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-lg font-bold text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] px-3 py-1 rounded-lg">
+                      {currency.symbol}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-4 pl-[52px]">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      currency.status === "active"
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : "bg-rose-500/10 text-rose-500"
+                    }`}
+                  >
+                    {currency.status === "active" ? (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5" />
+                    )}
+                    {currency.status === "active" ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    onClick={() => handleToggleStatus(currency)}
+                    className="text-xs font-bold text-brand-primary hover:text-brand-accent transition-colors bg-brand-primary/10 hover:bg-brand-primary/20 px-3 py-1.5 rounded-lg"
+                  >
+                    {currency.status === "active" ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

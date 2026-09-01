@@ -141,7 +141,7 @@ export function Users() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-[var(--bg-app)]/50">
               <tr>
@@ -297,6 +297,120 @@ export function Users() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {isLoading ? (
+            <div className="p-8 text-center text-[var(--text-muted)]">
+              Loading platform users...
+            </div>
+          ) : users.length === 0 ? (
+            <div className="p-8 text-center text-[var(--text-muted)]">
+              No users found.
+            </div>
+          ) : (
+            users.map((user) => (
+              <div
+                key={user.id}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${
+                        user.is_superuser
+                          ? "bg-brand-primary text-brand-accent shadow-lg shadow-brand-primary/20"
+                          : "bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-soft)]"
+                      }`}
+                    >
+                      {user.first_name?.[0] ||
+                        user.username?.[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-bold text-[var(--text-main)] text-sm">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                        <Mail className="w-3 h-3" />
+                        <span>{user.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span
+                      className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        user.is_active
+                          ? "bg-emerald-500/10 text-emerald-500"
+                          : "bg-rose-500/10 text-rose-500"
+                      }`}
+                    >
+                      {user.is_active ? "Active" : "Deactivated"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)] pl-11">
+                  <span className="flex items-center gap-1.5">
+                    {user.is_superuser && (
+                      <Shield className="w-3 h-3 text-brand-primary" />
+                    )}
+                    <span
+                      className={`capitalize ${
+                        user.is_superuser
+                          ? "text-brand-primary font-medium"
+                          : ""
+                      }`}
+                    >
+                      {user.is_superuser
+                        ? "Super Admin"
+                        : user.role === "staff"
+                          ? "Staff"
+                          : user.role === "validator"
+                            ? "Validator"
+                            : user.role === "admin"
+                              ? "Admin"
+                              : user.role}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="w-3 h-3" />
+                    {user.organization_name || "System / Platform"}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${
+                      user.subscription_plan === "free"
+                        ? "bg-gray-500/10 text-gray-500"
+                        : "bg-emerald-500/10 text-emerald-500"
+                    }`}
+                  >
+                    {user.subscription_plan || "Free"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pl-11 mt-3">
+                  {user.is_active ? (
+                    <button
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border-soft)] text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all text-xs font-medium"
+                      title="Deactivate User"
+                    >
+                      <UserMinus className="w-3.5 h-3.5" />
+                      Deactivate
+                    </button>
+                  ) : (
+                    <button
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border-soft)] text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all text-xs font-medium"
+                      title="Activate User"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Activate
+                    </button>
+                  )}
+                  <button className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg transition-all">
+                    <MoreVertical className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -340,14 +340,14 @@ export function OrganizationDetail() {
           <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
             Financials (All Time)
           </p>
-          <div className="flex items-center justify-between mt-2">
+          <div className="grid grid-cols-3 gap-3 mt-2">
             <div>
               <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
                 Revenue
               </p>
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <span className="font-bold text-[var(--text-main)]">
+                <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span className="font-bold text-[var(--text-main)] text-sm sm:text-base break-all">
                   {formatCurrency(
                     Number(org.revenue || 0),
                     org.currency?.symbol || currencySymbol,
@@ -359,7 +359,7 @@ export function OrganizationDetail() {
               <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
                 Expenses
               </p>
-              <span className="font-bold text-[var(--text-main)]">
+              <span className="font-bold text-[var(--text-main)] text-sm sm:text-base break-all">
                 {formatCurrency(
                   Number(org.expenses || 0),
                   org.currency?.symbol || currencySymbol,
@@ -371,7 +371,7 @@ export function OrganizationDetail() {
                 Profit / Loss
               </p>
               <span
-                className={`font-bold ${
+                className={`font-bold text-sm sm:text-base break-all ${
                   (org.revenue || 0) - (org.expenses || 0) >= 0
                     ? "text-emerald-500"
                     : "text-rose-500"
@@ -397,7 +397,7 @@ export function OrganizationDetail() {
                 Team Members ({users.length})
               </h3>
             </div>
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-[var(--bg-app)]/50">
                   <tr>
@@ -482,6 +482,73 @@ export function OrganizationDetail() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--bg-app)] text-[var(--text-main)] border border-[var(--border-soft)] flex items-center justify-center text-xs font-bold shrink-0">
+                        {user.first_name?.[0] ||
+                          user.username?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[var(--text-main)]">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
+                          <Mail className="w-2.5 h-2.5" />
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${
+                          user.is_active
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "bg-rose-500/10 text-rose-500"
+                        }`}
+                      >
+                        {user.is_active ? "Active" : "Deactivated"}
+                      </span>
+                      <p className="text-[10px] text-[var(--text-muted)] font-medium capitalize mt-1">
+                        {user.role}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs pl-11">
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsPasswordModalOpen(true);
+                      }}
+                      className="font-medium text-brand-primary hover:underline transition-colors"
+                    >
+                      Set Password
+                    </button>
+                    {user.id !== currentUser?.id && (
+                      <button
+                        onClick={() =>
+                          handleToggleUserStatus(user.id, user.is_active)
+                        }
+                        className={`font-medium transition-colors ${
+                          user.is_active
+                            ? "text-[var(--text-muted)] hover:text-rose-500"
+                            : "text-emerald-500 hover:opacity-80"
+                        }`}
+                      >
+                        {user.is_active ? "Deactivate" : "Activate"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -570,7 +570,7 @@ export function Inventory() {
 
         {/* Table */}
         <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
@@ -1005,10 +1005,354 @@ export function Inventory() {
             </table>
           </div>
 
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {isLoading ? (
+              <div className="p-8 text-center text-[var(--text-muted)]">
+                Loading inventory...
+              </div>
+            ) : products.length === 0 ? (
+              <div className="p-8 text-center text-[var(--text-muted)]">
+                No products found.
+              </div>
+            ) : (
+              products
+                .slice(
+                  (currentPage - 1) * itemsPerPage,
+                  currentPage * itemsPerPage,
+                )
+                .map((product) => {
+                  const isExpanded = expandedProductIds.includes(
+                    product.product_id,
+                  );
+                  const rentedQty = Math.max(
+                    0,
+                    (product.total_quantity_good_condition || 0) -
+                      (product.total_quantity_good_condition_available || 0),
+                  );
+                  return (
+                    <div
+                      key={product.product_id}
+                      className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                    >
+                      <div
+                        className="flex items-start justify-between gap-3 cursor-pointer"
+                        onClick={() => toggleProductExpand(product.product_id)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={cn(
+                              "transition-transform duration-200 shrink-0",
+                              isExpanded ? "rotate-90" : "",
+                            )}
+                          >
+                            <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+                          </div>
+                          <div className="w-8 h-8 bg-[var(--bg-app)] rounded-lg flex items-center justify-center text-[var(--text-muted)] shrink-0">
+                            <Package className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-[var(--text-main)] text-sm truncate">
+                              {product.name}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                              <Tag className="w-3 h-3" />
+                              {product.category_name || "Uncategorized"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-[var(--text-main)] text-sm">
+                            <RevenueDisplay
+                              amount={`${currencySymbol}${formatCurrency(
+                                product.total_cost_price,
+                              )}`}
+                            />
+                          </p>
+                          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                            Cost
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mt-3 pl-11">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("total");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                        >
+                          Total {product.total_quantity || 0}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("good");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-emerald-500/10 text-[10px] font-bold text-emerald-600 transition-colors"
+                        >
+                          Good {product.total_quantity_good_condition || 0}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("available");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-blue-500/10 text-[10px] font-bold text-blue-600 transition-colors"
+                        >
+                          Avail{" "}
+                          {product.total_quantity_good_condition_available || 0}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("rented");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-muted)] transition-colors"
+                        >
+                          Rented {rentedQty}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("damaged");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-rose-500/10 text-[10px] font-black text-rose-600 transition-colors"
+                        >
+                          Damaged{" "}
+                          {product.total_quantity_damaged_condition || 0}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-3 pl-11">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditProductClick(product);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProduct(product.product_id);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-3 pl-11 space-y-2">
+                          {product.units?.map((unit: any) => (
+                            <div
+                              key={unit.product_unit_id}
+                              className="p-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-app)]"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-[var(--text-main)] truncate">
+                                    {unit.name || "-"}
+                                  </p>
+                                  {unit.unit_type === "single" &&
+                                    unit.serial_number && (
+                                      <p className="text-[9px] font-mono text-[var(--text-muted)]">
+                                        SN: {unit.serial_number}
+                                      </p>
+                                    )}
+                                  {unit.description && (
+                                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5 line-clamp-2">
+                                      {unit.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <span
+                                  className={cn(
+                                    "shrink-0 px-2 py-0.5 rounded-full font-bold border text-[9px] uppercase",
+                                    unit.status === "available"
+                                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                      : unit.status === "rented"
+                                        ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                        : unit.status === "damaged"
+                                          ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                          : "bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-subtle)]",
+                                  )}
+                                >
+                                  {unit.status}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[10px] text-[var(--text-muted)]">
+                                <span
+                                  className={cn(
+                                    "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase",
+                                    unit.unit_type === "bulk"
+                                      ? "bg-purple-500/10 text-purple-500"
+                                      : "bg-blue-500/10 text-blue-500",
+                                  )}
+                                >
+                                  {unit.unit_type}
+                                </span>
+                                <span>
+                                  Qty:{" "}
+                                  <strong className="text-[var(--text-main)]">
+                                    {unit.unit_type === "bulk"
+                                      ? unit.quantity
+                                      : 1}
+                                  </strong>
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  Cost:{" "}
+                                  <RevenueDisplay
+                                    amount={`${currencySymbol}${formatCurrency(
+                                      unit.unit_cost_price,
+                                    )}`}
+                                  />
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  Total:{" "}
+                                  <strong className="text-[var(--text-main)]">
+                                    <RevenueDisplay
+                                      amount={`${currencySymbol}${formatCurrency(
+                                        unit.cost_price,
+                                      )}`}
+                                    />
+                                  </strong>
+                                </span>
+                                <span className="flex items-center gap-1 text-brand-primary font-bold">
+                                  <RevenueDisplay
+                                    amount={`${currencySymbol}${formatCurrency(
+                                      unit.rental_price,
+                                    )}`}
+                                  />
+                                  <span className="font-normal text-[var(--text-muted)]">
+                                    /{unit.unit?.replace("_", " ")}
+                                  </span>
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-violet-500/10 text-violet-500"
+                                  title="Good Condition"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />
+                                  {unit.quantity_good ?? 0} good
+                                </span>
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500"
+                                  title="Available"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                                  {unit.quantity_available ?? 0} avail
+                                </span>
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-500"
+                                  title="Currently Rented"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                                  {unit.quantity_rented ?? 0} rented
+                                </span>
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-rose-500/10 text-rose-500 rounded-full text-[9px] font-black uppercase">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {unit.quantity_damaged ?? 0} damaged
+                                </span>
+                              </div>
+
+                              <div className="flex justify-end gap-2 mt-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    const identifier =
+                                      unit.unit_type === "single"
+                                        ? unit.serial_number
+                                        : unit.product_unit_id.toString();
+                                    if (!identifier) return;
+                                    setSingleQRView({
+                                      productName: product.name,
+                                      unitName:
+                                        unit.name ||
+                                        (unit.unit_type === "single"
+                                          ? "SN"
+                                          : "Bulk"),
+                                      identifier,
+                                    });
+                                  }}
+                                  title="View QR Code"
+                                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"
+                                >
+                                  <QrCode className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    const identifier =
+                                      unit.unit_type === "single"
+                                        ? unit.serial_number
+                                        : unit.product_unit_id.toString();
+                                    if (!identifier) return;
+                                    const canvas = document.getElementById(
+                                      `qr-mobile-${unit.product_unit_id}`,
+                                    ) as HTMLCanvasElement;
+                                    if (canvas) {
+                                      const url = canvas.toDataURL("image/png");
+                                      const link = document.createElement("a");
+                                      link.download = `${product.name.replace(
+                                        /\s+/g,
+                                        "_",
+                                      )}_${identifier}_QR.png`;
+                                      link.href = url;
+                                      link.click();
+                                    }
+                                  }}
+                                  title="Download QR Code"
+                                  className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                              {/* Hidden canvas for downloading */}
+                              <div className="hidden">
+                                <QRCodeCanvas
+                                  id={`qr-mobile-${unit.product_unit_id}`}
+                                  value={
+                                    unit.unit_type === "single"
+                                      ? unit.serial_number || ""
+                                      : unit.product_unit_id.toString()
+                                  }
+                                  size={512}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            )}
+          </div>
+
           {/* Pagination */}
-          <div className="px-6 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-[var(--text-muted)]">
+          <div className="px-4 sm:px-6 py-4 border-t border-[var(--border-soft)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="text-xs sm:text-sm text-[var(--text-muted)]">
                 Showing{" "}
                 {products.length === 0
                   ? 0
@@ -1017,7 +1361,7 @@ export function Inventory() {
                 {products.length} results
               </p>
               <div className="flex items-center gap-2">
-                <label className="text-sm text-[var(--text-muted)]">
+                <label className="text-xs sm:text-sm text-[var(--text-muted)]">
                   Rows per page:
                 </label>
                 <select
@@ -1036,7 +1380,7 @@ export function Inventory() {
                 </select>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
@@ -1798,12 +2142,12 @@ export function Inventory() {
       {showQRExportModal && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-[var(--bg-surface)] rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-[var(--border-soft)] shadow-2xl flex flex-col relative">
-            <div className="print:hidden flex justify-between items-center mb-4">
+            <div className="print:hidden flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 Export Product Line QR Codes
               </h2>
-              <div className="flex gap-2 items-center">
-                <div className="flex bg-[var(--bg-app)] rounded-lg p-1 mr-4 border border-[var(--border-soft)] print:hidden">
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex bg-[var(--bg-app)] rounded-lg p-1 sm:mr-4 border border-[var(--border-soft)] print:hidden">
                   <button
                     onClick={() => setCodeType("QR")}
                     className={cn(

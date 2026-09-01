@@ -103,8 +103,8 @@ export function SubscriptionPlans() {
   );
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-brand-primary" />
@@ -116,7 +116,7 @@ export function SubscriptionPlans() {
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary/90 transition-colors"
+          className="flex items-center justify-center gap-2 bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary/90 transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
           Create Plan
@@ -135,7 +135,7 @@ export function SubscriptionPlans() {
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
               <tr>
@@ -209,6 +209,78 @@ export function SubscriptionPlans() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {filteredPlans.map((plan) => (
+            <div
+              key={plan.id}
+              className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-4 h-4 text-brand-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-[var(--text-main)]">
+                      {plan.name}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] capitalize">
+                      {plan.billing_cycle}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                  <p className="font-medium text-[var(--text-main)]">
+                    ${plan.price}
+                  </p>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      plan.is_active
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : "bg-gray-500/10 text-gray-500"
+                    }`}
+                  >
+                    {plan.is_active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)] pl-11">
+                <span>
+                  Invoices:{" "}
+                  {plan.max_invoices_per_month === -1
+                    ? "Unlimited"
+                    : plan.max_invoices_per_month}
+                </span>
+                <span>
+                  Bookings:{" "}
+                  {plan.max_inventory_booking_per_month === -1
+                    ? "Unlimited"
+                    : plan.max_inventory_booking_per_month}
+                </span>
+                {plan.is_free && (
+                  <span className="text-brand-primary">Free Plan</span>
+                )}
+              </div>
+
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => openEditModal(plan)}
+                  className="flex items-center gap-1 text-brand-primary hover:text-brand-primary/80 text-xs font-medium"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+              </div>
+            </div>
+          ))}
+          {filteredPlans.length === 0 && (
+            <div className="px-4 py-8 text-center text-[var(--text-muted)]">
+              No subscription plans found
+            </div>
+          )}
         </div>
       </div>
 

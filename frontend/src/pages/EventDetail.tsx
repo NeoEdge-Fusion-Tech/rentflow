@@ -528,28 +528,99 @@ export function EventDetail() {
             No expenses logged yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                  <th className="py-2 pr-4 font-bold">Expense</th>
-                  <th className="py-2 pr-4 font-bold">Type</th>
-                  <th className="py-2 pr-4 font-bold">Date</th>
-                  <th className="py-2 pr-4 font-bold">Description</th>
-                  <th className="py-2 pr-4 font-bold text-right">Amount</th>
-                  <th className="py-2 pr-0 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {expenses.map((exp: any) => (
-                  <tr key={exp.expense_id}>
-                    <td className="py-3 pr-4 font-bold text-[var(--text-main)]">
-                      {exp.name}
-                    </td>
-                    <td className="py-3 pr-4">
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                    <th className="py-2 pr-4 font-bold">Expense</th>
+                    <th className="py-2 pr-4 font-bold">Type</th>
+                    <th className="py-2 pr-4 font-bold">Date</th>
+                    <th className="py-2 pr-4 font-bold">Description</th>
+                    <th className="py-2 pr-4 font-bold text-right">Amount</th>
+                    <th className="py-2 pr-0 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {expenses.map((exp: any) => (
+                    <tr key={exp.expense_id}>
+                      <td className="py-3 pr-4 font-bold text-[var(--text-main)]">
+                        {exp.name}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                            exp.expense_type === "vendor"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                          )}
+                        >
+                          {exp.expense_type}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-[var(--text-muted)]">
+                        {exp.date
+                          ? new Date(exp.date).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">
+                        {exp.description || "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            exp.amount,
+                          )}`}
+                        />
+                      </td>
+                      <td className="py-3 pr-0 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() =>
+                              handleDuplicateExpense(exp.expense_id)
+                            }
+                            className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
+                            title="Duplicate"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditExpense(exp)}
+                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExpense(exp.expense_id)}
+                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+              {expenses.map((exp: any) => (
+                <div
+                  key={exp.expense_id}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                      <p className="font-bold text-[var(--text-main)] text-sm">
+                        {exp.name}
+                      </p>
                       <span
                         className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                          "inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
                           exp.expense_type === "vendor"
                             ? "bg-blue-500/10 text-blue-500"
                             : "bg-[var(--bg-app)] text-[var(--text-muted)]",
@@ -557,50 +628,52 @@ export function EventDetail() {
                       >
                         {exp.expense_type}
                       </span>
-                    </td>
-                    <td className="py-3 pr-4 text-[var(--text-muted)]">
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            exp.amount,
+                          )}`}
+                        />
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mb-2">
+                    {exp.description || "—"}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">
-                      {exp.description || "—"}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
-                      <RevenueDisplay
-                        amount={`${defaultCurrencySymbol}${formatCurrency(
-                          exp.amount,
-                        )}`}
-                      />
-                    </td>
-                    <td className="py-3 pr-0 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleDuplicateExpense(exp.expense_id)}
-                          className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
-                          title="Duplicate"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openEditExpense(exp)}
-                          className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteExpense(exp.expense_id)}
-                          className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDuplicateExpense(exp.expense_id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openEditExpense(exp)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExpense(exp.expense_id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -635,20 +708,20 @@ export function EventDetail() {
                 <p className="text-xs text-[var(--text-muted)] mb-3">
                   Created: {new Date(pf.created_at).toLocaleDateString()}
                 </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-xs font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md w-fit">
                     Active Link
                   </span>
-                  <div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <button
                       onClick={() => handleViewResponses(pf)}
-                      className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary mr-4 transition-colors"
+                      className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary transition-colors"
                     >
                       View Responses
                     </button>
                     <button
                       onClick={() => copyPublicLink(pf.public_id)}
-                      className="text-sm font-bold text-brand-primary hover:underline mr-4"
+                      className="text-sm font-bold text-brand-primary hover:underline"
                     >
                       Copy Link
                     </button>

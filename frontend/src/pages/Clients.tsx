@@ -465,133 +465,245 @@ export function Clients() {
           ))}
         </div>
       ) : (
-        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] overflow-x-auto shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                <th className="py-4 px-6 font-bold">Client / Business</th>
-                <th className="py-4 px-6 font-bold">Contact Info</th>
-                <th className="py-4 px-6 font-bold">Type</th>
-                <th className="py-4 px-6 font-bold text-center">Bookings</th>
-                <th className="py-4 px-6 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {displayedClients.map((client) => (
-                <tr
-                  key={client.client_id}
-                  className="hover:bg-[var(--bg-app)] transition-colors group"
-                >
-                  <td className="py-4 px-6 font-bold text-[var(--text-main)]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
-                        {client.logo ? (
-                          <img
-                            src={client.logo}
-                            alt={client.business_name || client.first_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : client.business_name ? (
-                          client.business_name.substring(0, 2).toUpperCase()
-                        ) : (
-                          `${client.first_name?.[0] || ""}${
-                            client.last_name?.[0] || ""
-                          }`.toUpperCase() || <User size={16} />
-                        )}
-                      </div>
-                      <div>
-                        {client.client_type === "business" ? (
-                          <span className="flex flex-col">
-                            <span>{client.business_name}</span>
-                            {client.contact_name && (
-                              <span className="text-xs font-normal text-[var(--text-muted)]">
-                                {client.contact_name}
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <span>
-                            {client.first_name} {client.last_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex flex-col gap-1 text-[var(--text-muted)]">
-                      {(client.email || client.contact_email) && (
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Mail className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate max-w-[150px]">
-                            {client.client_type === "business"
-                              ? client.contact_email || client.email
-                              : client.email}
-                          </span>
-                        </div>
-                      )}
-                      {(client.phone_number || client.contact_phone) && (
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Phone className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate max-w-[150px]">
-                            {client.client_type === "business"
-                              ? client.contact_phone || client.phone_number
-                              : client.phone_number}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                        client.client_type === "business"
-                          ? "bg-purple-500/10 text-purple-600"
-                          : "bg-blue-500/10 text-blue-600",
-                      )}
-                    >
-                      {client.client_type}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
-                    {client.bookings_count || 0}
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openViewModal(client)}
-                        className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(client)}
-                        className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                        title="Edit Client"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(client.client_id)}
-                        className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Delete Client"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                  <th className="py-4 px-6 font-bold">Client / Business</th>
+                  <th className="py-4 px-6 font-bold">Contact Info</th>
+                  <th className="py-4 px-6 font-bold">Type</th>
+                  <th className="py-4 px-6 font-bold text-center">Bookings</th>
+                  <th className="py-4 px-6 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {displayedClients.map((client) => (
+                  <tr
+                    key={client.client_id}
+                    className="hover:bg-[var(--bg-app)] transition-colors group"
+                  >
+                    <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
+                          {client.logo ? (
+                            <img
+                              src={client.logo}
+                              alt={client.business_name || client.first_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : client.business_name ? (
+                            client.business_name.substring(0, 2).toUpperCase()
+                          ) : (
+                            `${client.first_name?.[0] || ""}${
+                              client.last_name?.[0] || ""
+                            }`.toUpperCase() || <User size={16} />
+                          )}
+                        </div>
+                        <div>
+                          {client.client_type === "business" ? (
+                            <span className="flex flex-col">
+                              <span>{client.business_name}</span>
+                              {client.contact_name && (
+                                <span className="text-xs font-normal text-[var(--text-muted)]">
+                                  {client.contact_name}
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span>
+                              {client.first_name} {client.last_name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                        {(client.email || client.contact_email) && (
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            <Mail className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {client.client_type === "business"
+                                ? client.contact_email || client.email
+                                : client.email}
+                            </span>
+                          </div>
+                        )}
+                        {(client.phone_number || client.contact_phone) && (
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            <Phone className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {client.client_type === "business"
+                                ? client.contact_phone || client.phone_number
+                                : client.phone_number}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                          client.client_type === "business"
+                            ? "bg-purple-500/10 text-purple-600"
+                            : "bg-blue-500/10 text-blue-600",
+                        )}
+                      >
+                        {client.client_type}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
+                      {client.bookings_count || 0}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setViewingClient(client)}
+                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(client)}
+                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                          title="Edit Client"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(client.client_id)}
+                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          title="Delete Client"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {displayedClients.map((client) => (
+              <div
+                key={client.client_id}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] border border-[var(--border-soft)] overflow-hidden shrink-0">
+                      {client.logo ? (
+                        <img
+                          src={client.logo}
+                          alt={client.business_name || client.first_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : client.business_name ? (
+                        client.business_name.substring(0, 2).toUpperCase()
+                      ) : (
+                        `${client.first_name?.[0] || ""}${
+                          client.last_name?.[0] || ""
+                        }`.toUpperCase() || <User size={16} />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-[var(--text-main)] truncate">
+                        {client.client_type === "business"
+                          ? client.business_name
+                          : `${client.first_name || ""} ${
+                              client.last_name || ""
+                            }`.trim()}
+                      </p>
+                      {client.client_type === "business" &&
+                        client.contact_name && (
+                          <p className="text-xs text-[var(--text-muted)] truncate">
+                            {client.contact_name}
+                          </p>
+                        )}
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0",
+                      client.client_type === "business"
+                        ? "bg-purple-500/10 text-purple-600"
+                        : "bg-blue-500/10 text-blue-600",
+                    )}
+                  >
+                    {client.client_type}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 text-xs text-[var(--text-muted)] pl-[52px] mb-3">
+                  {(client.email || client.contact_email) && (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Mail className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        {client.client_type === "business"
+                          ? client.contact_email || client.email
+                          : client.email}
+                      </span>
+                    </div>
+                  )}
+                  {(client.phone_number || client.contact_phone) && (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Phone className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        {client.client_type === "business"
+                          ? client.contact_phone || client.phone_number
+                          : client.phone_number}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pl-[52px]">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                    <History className="w-3.5 h-3.5" />
+                    <span className="font-bold text-[var(--text-main)]">
+                      {client.bookings_count || 0}
+                    </span>
+                    Bookings
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setViewingClient(client)}
+                      className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                      title="View Details"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => openEditModal(client)}
+                      className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                      title="Edit Client"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(client.client_id)}
+                      className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                      title="Delete Client"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Pagination Controls */}
       {!isLoading && filteredClients.length > 0 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="text-sm text-[var(--text-muted)]">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
               {Math.min(currentPage * itemsPerPage, filteredClients.length)} of{" "}

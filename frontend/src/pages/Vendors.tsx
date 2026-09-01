@@ -357,124 +357,220 @@ export function Vendors() {
           ))}
         </div>
       ) : (
-        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] overflow-x-auto shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                <th className="py-4 px-6 font-bold">Vendor Name</th>
-                <th className="py-4 px-6 font-bold">Contact Info</th>
-                <th className="py-4 px-6 font-bold">Service</th>
-                <th className="py-4 px-6 font-bold text-center">Projects</th>
-                <th className="py-4 px-6 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {displayedVendors.map((vendor) => (
-                <tr
-                  key={vendor.vendor_id}
-                  className="hover:bg-[var(--bg-app)] transition-colors group"
-                >
-                  <td className="py-4 px-6 font-bold text-[var(--text-main)]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
-                        {vendor.logo ? (
-                          <img
-                            src={vendor.logo}
-                            alt={vendor.business_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          (vendor.business_name?.[0] || "V").toUpperCase()
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                  <th className="py-4 px-6 font-bold">Vendor Name</th>
+                  <th className="py-4 px-6 font-bold">Contact Info</th>
+                  <th className="py-4 px-6 font-bold">Service</th>
+                  <th className="py-4 px-6 font-bold text-center">Projects</th>
+                  <th className="py-4 px-6 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {displayedVendors.map((vendor) => (
+                  <tr
+                    key={vendor.vendor_id}
+                    className="hover:bg-[var(--bg-app)] transition-colors group"
+                  >
+                    <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
+                          {vendor.logo ? (
+                            <img
+                              src={vendor.logo}
+                              alt={vendor.business_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            (vendor.business_name?.[0] || "V").toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span>{vendor.business_name}</span>
+                          <div className="flex gap-2 items-center mt-0.5">
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                                vendor.status === "active"
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "bg-rose-500/10 text-rose-500",
+                              )}
+                            >
+                              {vendor.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                        {vendor.contact_name && (
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            <User className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {vendor.contact_name}
+                            </span>
+                          </div>
+                        )}
+                        {vendor.contact_email && (
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            <Mail className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {vendor.contact_email}
+                            </span>
+                          </div>
+                        )}
+                        {vendor.contact_phone && (
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            <Phone className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {vendor.contact_phone}
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <div className="flex flex-col">
-                        <span>{vendor.business_name}</span>
-                        <div className="flex gap-2 items-center mt-0.5">
-                          <span
-                            className={cn(
-                              "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
-                              vendor.status === "active"
-                                ? "bg-emerald-500/10 text-emerald-500"
-                                : "bg-rose-500/10 text-rose-500",
-                            )}
-                          >
-                            {vendor.status}
-                          </span>
-                        </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        {vendor.service || "General"}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
+                      {vendor.projects_count || 0}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setViewingVendor(vendor)}
+                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(vendor)}
+                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                          title="Edit Vendor"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(vendor.vendor_id)}
+                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          title="Delete Vendor"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex flex-col gap-1 text-[var(--text-muted)]">
-                      {vendor.contact_name && (
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <User className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate max-w-[150px]">
-                            {vendor.contact_name}
-                          </span>
-                        </div>
-                      )}
-                      {vendor.contact_email && (
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Mail className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate max-w-[150px]">
-                            {vendor.contact_email}
-                          </span>
-                        </div>
-                      )}
-                      {vendor.contact_phone && (
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <Phone className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate max-w-[150px]">
-                            {vendor.contact_phone}
-                          </span>
-                        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {displayedVendors.map((vendor) => (
+              <div
+                key={vendor.vendor_id}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] border border-[var(--border-soft)] overflow-hidden shrink-0">
+                      {vendor.logo ? (
+                        <img
+                          src={vendor.logo}
+                          alt={vendor.business_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        (vendor.business_name?.[0] || "V").toUpperCase()
                       )}
                     </div>
-                  </td>
-                  <td className="py-4 px-6">
+                    <div>
+                      <p className="font-bold text-[var(--text-main)] text-sm">
+                        {vendor.business_name}
+                      </p>
+                      <span
+                        className={cn(
+                          "inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                          vendor.status === "active"
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : "bg-rose-500/10 text-rose-500",
+                        )}
+                      >
+                        {vendor.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
                     <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
                       {vendor.service || "General"}
                     </span>
-                  </td>
-                  <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
-                    {vendor.projects_count || 0}
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openViewModal(vendor)}
-                        className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(vendor)}
-                        className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                        title="Edit Vendor"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vendor.vendor_id)}
-                        className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Delete Vendor"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1 text-xs text-[var(--text-muted)] pl-12">
+                  {vendor.contact_name && (
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{vendor.contact_name}</span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  )}
+                  {vendor.contact_email && (
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{vendor.contact_email}</span>
+                    </div>
+                  )}
+                  {vendor.contact_phone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{vendor.contact_phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 shrink-0" />
+                    <span>{vendor.projects_count || 0} projects</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-1 mt-2">
+                  <button
+                    onClick={() => setViewingVendor(vendor)}
+                    className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                    title="View Details"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => openEditModal(vendor)}
+                    className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                    title="Edit Vendor"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(vendor.vendor_id)}
+                    className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    title="Delete Vendor"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {!isLoading && filteredVendors.length > 0 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="text-sm text-[var(--text-muted)]">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
               {Math.min(currentPage * itemsPerPage, filteredVendors.length)} of{" "}

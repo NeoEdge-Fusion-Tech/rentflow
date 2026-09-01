@@ -68,7 +68,7 @@ export function Subscriptions() {
               Organizations & Plans
             </h2>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
                 <tr>
@@ -114,6 +114,42 @@ export function Subscriptions() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {filteredOrgs.length === 0 ? (
+              <div className="p-8 text-center text-[var(--text-muted)]">
+                No organizations found
+              </div>
+            ) : (
+              filteredOrgs.map((org) => (
+                <div
+                  key={org.id}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors flex items-center justify-between gap-3"
+                >
+                  <div>
+                    <p className="font-medium text-[var(--text-main)] text-sm">
+                      {org.name}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] capitalize mt-0.5">
+                      {org.subscription?.plan_name ||
+                        org.subscription_plan ||
+                        "Free"}
+                    </p>
+                  </div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium shrink-0 ${
+                      org.subscription_plan !== "free"
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : "bg-gray-500/10 text-gray-500"
+                    }`}
+                  >
+                    {org.subscription_plan !== "free" ? "Active" : "Free"}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
@@ -122,7 +158,7 @@ export function Subscriptions() {
               Recent Subscription Payments
             </h2>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
                 <tr>
@@ -163,6 +199,41 @@ export function Subscriptions() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {payments.length === 0 ? (
+              <div className="p-8 text-center text-[var(--text-muted)]">
+                No recent payments
+              </div>
+            ) : (
+              payments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors flex items-center justify-between gap-3"
+                >
+                  <div>
+                    <p className="font-medium text-[var(--text-main)] text-sm">
+                      {payment.organization}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      {payment.created_at
+                        ? format(new Date(payment.created_at), "MMM d, yyyy")
+                        : "-"}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-medium text-[var(--text-main)] text-sm">
+                      {payment.amount}
+                    </p>
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-500 mt-1">
+                      {payment.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

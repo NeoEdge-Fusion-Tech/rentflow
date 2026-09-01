@@ -690,8 +690,11 @@ export function QuotationEditor() {
                   key={i}
                   className="flex flex-col gap-3 bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]"
                 >
-                  <div className="grid grid-cols-12 gap-3 items-start">
-                    <div className="relative col-span-12 md:col-span-5">
+                  <div className="flex flex-wrap gap-3 items-start">
+                    <div className="relative w-full md:flex-1 md:min-w-[140px]">
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">
+                        Item
+                      </label>
                       <input
                         type="text"
                         placeholder="Item Name (Search Products...)"
@@ -784,7 +787,10 @@ export function QuotationEditor() {
                         </div>
                       )}
                     </div>
-                    <div className="col-span-4 md:col-span-2">
+                    <div className="w-[calc(50%-0.375rem)] md:w-24 md:shrink-0">
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">
+                        Qty
+                      </label>
                       <input
                         type="number"
                         step="any"
@@ -796,7 +802,10 @@ export function QuotationEditor() {
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
                       />
                     </div>
-                    <div className="col-span-4 md:col-span-2">
+                    <div className="w-[calc(50%-0.375rem)] md:w-32 md:shrink-0">
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">
+                        Unit Price
+                      </label>
                       <div className="relative">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-xs font-bold">
                           {currencySymbol}
@@ -813,17 +822,23 @@ export function QuotationEditor() {
                         />
                       </div>
                     </div>
-                    <div className="col-span-3 md:col-span-2 flex items-center justify-end h-10 text-sm font-bold text-[var(--text-main)]">
-                      {currencySymbol}{" "}
-                      {formatCurrency(
-                        (Number(item.quantity) || 0) *
-                          (Number(item.unit_price) || 0),
-                      )}
-                    </div>
-                    <div className="col-span-1 flex items-center justify-end h-10">
+                    <div className="flex items-center justify-between gap-3 w-full md:w-auto md:ml-auto md:shrink-0 pt-1 md:pt-0">
+                      <div className="flex items-baseline gap-1.5 text-sm font-bold text-[var(--text-main)]">
+                        <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] md:hidden">
+                          Total
+                        </span>
+                        <span>
+                          {currencySymbol}{" "}
+                          {formatCurrency(
+                            (Number(item.quantity) || 0) *
+                              (Number(item.unit_price) || 0),
+                          )}
+                        </span>
+                      </div>
                       <button
                         onClick={() => removeLineItem(i)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                        className="p-2 -m-1 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                        aria-label="Remove item"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

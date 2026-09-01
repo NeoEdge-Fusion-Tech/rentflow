@@ -838,13 +838,13 @@ export function Bookings() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px">
+      <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px overflow-x-auto">
         {["All", "pending", "confirmed", "picked_up", "returned"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "px-4 py-2 text-sm font-medium transition-all relative capitalize",
+              "px-4 py-2 text-sm font-medium transition-all relative capitalize whitespace-nowrap",
               activeTab === tab
                 ? "text-[var(--text-link)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
@@ -1171,8 +1171,8 @@ export function Bookings() {
 
       {/* Pagination */}
       {bookings.length > 0 && (
-        <div className="flex items-center justify-between mt-4 border-t border-[var(--border-soft)] pt-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 border-t border-[var(--border-soft)] pt-4">
+          <div className="flex flex-wrap items-center gap-4">
             <p className="text-sm text-[var(--text-muted)]">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
               {Math.min(currentPage * itemsPerPage, bookings.length)} of{" "}
@@ -1425,7 +1425,7 @@ export function Bookings() {
                                   className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold text-[var(--text-main)] transition-all"
                                 />
                                 {activeDropdown === i && (
-                                  <div className="absolute z-50 left-0 top-full mt-1 min-w-[32rem] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                                  <div className="absolute z-50 left-0 right-0 sm:right-auto top-full mt-1 w-auto sm:min-w-[32rem] max-w-[calc(100vw-3rem)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
                                     {products
                                       .flatMap((p) =>
                                         (p.units || []).map((u: any) => ({
@@ -1955,7 +1955,7 @@ export function Bookings() {
       {(isViewingDetails || isManagingBooking) && selectedBooking && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
           <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
-            <div className="px-8 py-6 border-b border-[var(--border-soft)] flex items-center justify-between">
+            <div className="px-4 sm:px-8 py-6 border-b border-[var(--border-soft)] flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-[var(--text-main)]">
                   Booking #{selectedBooking.booking_id}
@@ -1969,7 +1969,7 @@ export function Bookings() {
               <div className="flex items-center gap-4 print:hidden">
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-main)] rounded-xl font-bold text-sm hover:border-brand-primary transition-all shadow-sm"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--text-main)] rounded-xl font-bold text-sm hover:border-brand-primary transition-all shadow-sm whitespace-nowrap"
                 >
                   <Printer className="w-4 h-4 text-brand-primary" /> Print
                   Waybill
@@ -2755,7 +2755,7 @@ export function Bookings() {
                                         className="w-full h-10 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-bold transition-all text-[var(--text-main)]"
                                       />
                                       {activeEditDropdown === i && (
-                                        <div className="absolute z-50 left-0 top-full mt-1 min-w-[32rem] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                                        <div className="absolute z-50 left-0 right-0 sm:right-auto top-full mt-1 w-auto sm:min-w-[32rem] max-w-[calc(100vw-3rem)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl shadow-xl max-h-64 overflow-y-auto">
                                           {products
                                             .flatMap((p) =>
                                               (p.units || []).map((u: any) => ({

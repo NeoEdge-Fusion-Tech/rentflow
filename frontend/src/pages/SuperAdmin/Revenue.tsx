@@ -101,7 +101,7 @@ export function Revenue() {
             Recent Global Transactions (Tenants)
           </h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
               <tr>
@@ -155,6 +155,49 @@ export function Revenue() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {metrics?.recent_payments?.length ? (
+            metrics.recent_payments.map((payment: any) => (
+              <div
+                key={payment.subscription_payment_id || payment.id}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="font-bold text-[var(--text-main)] text-sm">
+                      {payment.organization_name || payment.organization}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      #{payment.subscription_payment_id || payment.id}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-[var(--text-main)]">
+                      <RevenueDisplay amount={payment.amount} />
+                    </p>
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-500 mt-1">
+                      {payment.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-[var(--text-muted)]">
+                  {payment.payment_date || payment.created_at
+                    ? format(
+                        new Date(payment.payment_date || payment.created_at),
+                        "MMM d, yyyy",
+                      )
+                    : "-"}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-[var(--text-muted)]">
+              No recent transactions
+            </div>
+          )}
         </div>
       </div>
     </div>

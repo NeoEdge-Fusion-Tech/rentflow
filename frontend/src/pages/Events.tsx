@@ -361,52 +361,148 @@ export function Events() {
           })}
         </div>
       ) : (
-        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] overflow-x-auto shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                <th className="py-4 px-6 font-bold">Project Name</th>
-                <th className="py-4 px-6 font-bold">Client</th>
-                <th className="py-4 px-6 font-bold">Dates</th>
-                <th className="py-4 px-6 font-bold">Status</th>
-                <th className="py-4 px-6 font-bold text-right">Revenue</th>
-                <th className="py-4 px-6 font-bold text-right">Expenses</th>
-                <th className="py-4 px-6 font-bold text-right">
-                  Profit / Loss
-                </th>
-                <th className="py-4 px-6 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {events.map((ev) => {
-                const profit = parseFloat(ev.profit) || 0;
-                return (
-                  <tr
-                    key={ev.event_id}
-                    onClick={() => navigate(`/events/${ev.event_id}`)}
-                    className="hover:bg-[var(--bg-app)] transition-colors cursor-pointer group"
-                  >
-                    <td className="py-4 px-6 font-bold text-[var(--text-main)]">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary shrink-0">
-                          <Briefcase size={16} />
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                  <th className="py-4 px-6 font-bold">Project Name</th>
+                  <th className="py-4 px-6 font-bold">Client</th>
+                  <th className="py-4 px-6 font-bold">Dates</th>
+                  <th className="py-4 px-6 font-bold">Status</th>
+                  <th className="py-4 px-6 font-bold text-right">Revenue</th>
+                  <th className="py-4 px-6 font-bold text-right">Expenses</th>
+                  <th className="py-4 px-6 font-bold text-right">
+                    Profit / Loss
+                  </th>
+                  <th className="py-4 px-6 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {events.map((ev) => {
+                  const profit = parseFloat(ev.profit) || 0;
+                  return (
+                    <tr
+                      key={ev.event_id}
+                      onClick={() => navigate(`/events/${ev.event_id}`)}
+                      className="hover:bg-[var(--bg-app)] transition-colors cursor-pointer group"
+                    >
+                      <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary shrink-0">
+                            <Briefcase size={16} />
+                          </div>
+                          {ev.name}
                         </div>
-                        {ev.name}
+                      </td>
+                      <td className="py-4 px-6 text-[var(--text-muted)]">
+                        {ev.client_details?.business_name || "—"}
+                      </td>
+                      <td className="py-4 px-6 text-[var(--text-muted)] whitespace-nowrap">
+                        {ev.start_date
+                          ? new Date(ev.start_date).toLocaleDateString()
+                          : "—"}{" "}
+                        -{" "}
+                        {ev.end_date
+                          ? new Date(ev.end_date).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={cn(
+                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
+                            ev.status === "ongoing"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : ev.status === "completed"
+                                ? "bg-emerald-500/10 text-emerald-500"
+                                : ev.status === "cancelled"
+                                  ? "bg-rose-500/10 text-rose-500"
+                                  : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                          )}
+                        >
+                          {ev.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
+                        <div className="flex items-center justify-end">
+                          <RevenueDisplay
+                            amount={`${defaultCurrencySymbol}${formatCurrency(
+                              ev.revenue,
+                            )}`}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
+                        <div className="flex items-center justify-end">
+                          <RevenueDisplay
+                            amount={`${defaultCurrencySymbol}${formatCurrency(
+                              ev.total_expenses,
+                            )}`}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right font-bold whitespace-nowrap">
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-1.5",
+                            profit >= 0 ? "text-emerald-500" : "text-rose-500",
+                          )}
+                        >
+                          {profit >= 0 ? (
+                            <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                          ) : (
+                            <TrendingDown className="w-3.5 h-3.5 shrink-0" />
+                          )}
+                          <RevenueDisplay
+                            amount={`${defaultCurrencySymbol}${formatCurrency(
+                              Math.abs(profit),
+                            )}`}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(ev.event_id);
+                          }}
+                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {events.map((ev) => {
+              const profit = parseFloat(ev.profit) || 0;
+              return (
+                <div
+                  key={ev.event_id}
+                  onClick={() => navigate(`/events/${ev.event_id}`)}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary shrink-0">
+                        <Briefcase size={16} />
                       </div>
-                    </td>
-                    <td className="py-4 px-6 text-[var(--text-muted)]">
-                      {ev.client_details?.business_name || "—"}
-                    </td>
-                    <td className="py-4 px-6 text-[var(--text-muted)] whitespace-nowrap">
-                      {ev.start_date
-                        ? new Date(ev.start_date).toLocaleDateString()
-                        : "—"}{" "}
-                      -{" "}
-                      {ev.end_date
-                        ? new Date(ev.end_date).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td className="py-4 px-6">
+                      <div className="min-w-0">
+                        <p className="font-bold text-[var(--text-main)] text-sm truncate">
+                          {ev.name}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] truncate">
+                          {ev.client_details?.business_name || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
                       <span
                         className={cn(
                           "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
@@ -421,67 +517,92 @@ export function Events() {
                       >
                         {ev.status}
                       </span>
-                    </td>
-                    <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
-                      <div className="flex items-center justify-end">
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)] pl-11 mb-3">
+                    <span>
+                      {ev.start_date
+                        ? new Date(ev.start_date).toLocaleDateString()
+                        : "—"}{" "}
+                      -{" "}
+                      {ev.end_date
+                        ? new Date(ev.end_date).toLocaleDateString()
+                        : "—"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pl-11 pt-2 border-t border-[var(--border-subtle)]">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                        Revenue
+                      </p>
+                      <p className="text-sm font-bold text-[var(--text-main)] truncate">
                         <RevenueDisplay
                           amount={`${defaultCurrencySymbol}${formatCurrency(
                             ev.revenue,
                           )}`}
                         />
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
-                      <div className="flex items-center justify-end">
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                        Expenses
+                      </p>
+                      <p className="text-sm font-bold text-[var(--text-main)] truncate">
                         <RevenueDisplay
                           amount={`${defaultCurrencySymbol}${formatCurrency(
                             ev.total_expenses,
                           )}`}
                         />
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right font-bold whitespace-nowrap">
-                      <div
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                        {profit >= 0 ? "Profit" : "Loss"}
+                      </p>
+                      <p
                         className={cn(
-                          "flex items-center justify-end gap-1.5",
+                          "text-sm font-bold flex items-center gap-1 truncate",
                           profit >= 0 ? "text-emerald-500" : "text-rose-500",
                         )}
                       >
                         {profit >= 0 ? (
-                          <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                          <TrendingUp className="w-3 h-3 shrink-0" />
                         ) : (
-                          <TrendingDown className="w-3.5 h-3.5 shrink-0" />
+                          <TrendingDown className="w-3 h-3 shrink-0" />
                         )}
                         <RevenueDisplay
                           amount={`${defaultCurrencySymbol}${formatCurrency(
                             Math.abs(profit),
                           )}`}
                         />
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(ev.event_id);
-                        }}
-                        className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pl-11 pt-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(ev.event_id);
+                      }}
+                      className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {!isLoading && totalCount > 0 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+          <div className="flex flex-wrap items-center gap-4">
             <p className="text-sm text-[var(--text-muted)]">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
               {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}{" "}

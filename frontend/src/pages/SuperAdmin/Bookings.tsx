@@ -97,7 +97,7 @@ export function Bookings() {
       </div>
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] border-b border-[var(--border-soft)]">
               <tr>
@@ -188,6 +188,80 @@ export function Bookings() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {loading ? (
+            <div className="p-8 text-center text-[var(--text-muted)]">
+              <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              Loading bookings...
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="p-8 text-center text-[var(--text-muted)]">
+              No bookings found.
+            </div>
+          ) : (
+            bookings.map((booking) => (
+              <div
+                key={booking.booking_id}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[var(--bg-app)] rounded-lg text-[var(--text-muted)] border border-[var(--border-soft)] shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-[var(--text-main)] text-sm">
+                        #{booking.booking_id}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {booking.organization_name || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-[var(--text-main)]">
+                      <RevenueDisplay
+                        amount={`${currencySymbol}${formatCurrency(
+                          booking.total_amount,
+                        )}`}
+                      />
+                    </p>
+                    <span
+                      className={cn(
+                        "inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border mt-1",
+                        booking.status === "confirmed"
+                          ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                          : booking.status === "picked_up"
+                            ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                            : booking.status === "returned"
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : booking.status === "cancelled"
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                      )}
+                    >
+                      {booking.status.replace("_", " ")}
+                    </span>
+                  </div>
+                </div>
+                <div className="pl-11">
+                  <p className="font-medium text-[var(--text-main)] text-sm truncate">
+                    {booking.booking_title || "Generic Event"}
+                  </p>
+                  <div className="flex gap-4 text-xs text-[var(--text-muted)] mt-1">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(booking.booking_date).toLocaleDateString()}
+                    </span>
+                    <span>{booking.client_name}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
