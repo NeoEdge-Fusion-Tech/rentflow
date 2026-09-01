@@ -1756,7 +1756,7 @@ export function Bookings() {
                         </div>
 
                         <div className="space-y-4 pt-6 border-t border-[var(--border-soft)]">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                               <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">
                                 Discount ({currencySymbol})
@@ -2071,53 +2071,55 @@ export function Bookings() {
                   <h3 className="font-bold uppercase tracking-widest text-xs text-gray-500 mb-6 border-b border-gray-200 pb-3">
                     Items Booked
                   </h3>
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b-2 border-black">
-                        <th className="py-3 font-bold uppercase tracking-widest text-xs text-black w-12 text-center">
-                          #
-                        </th>
-                        <th className="py-3 font-bold uppercase tracking-widest text-xs text-black">
-                          Product Details
-                        </th>
-                        <th className="py-3 font-bold uppercase tracking-widest text-xs text-black text-center w-32">
-                          Qty
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {selectedBooking.items.map((item: any, idx: number) => (
-                        <tr
-                          key={item.booking_item_id || idx}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="py-5 text-center text-gray-400 font-bold text-sm">
-                            {idx + 1}
-                          </td>
-                          <td className="py-5 pr-4">
-                            <p className="font-bold text-base text-black">
-                              {item.product_name}
-                            </p>
-                            {item.units && item.units.length > 0 && (
-                              <div className="mt-2.5 flex flex-wrap gap-2">
-                                {item.units.map((u: any) => (
-                                  <span
-                                    key={u.product_unit_id || u.product_unit}
-                                    className="text-[11px] font-bold font-mono tracking-tight bg-gray-100 px-2.5 py-1 rounded-md text-gray-700 border border-gray-200"
-                                  >
-                                    {u.serial_number || u.name || "Bulk Unit"}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-5 text-center font-black text-lg text-black">
-                            {item.quantity}
-                          </td>
+                  <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-black">
+                          <th className="py-3 font-bold uppercase tracking-widest text-xs text-black w-12 text-center">
+                            #
+                          </th>
+                          <th className="py-3 font-bold uppercase tracking-widest text-xs text-black">
+                            Product Details
+                          </th>
+                          <th className="py-3 font-bold uppercase tracking-widest text-xs text-black text-center w-32">
+                            Qty
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {selectedBooking.items.map((item: any, idx: number) => (
+                          <tr
+                            key={item.booking_item_id || idx}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-5 text-center text-gray-400 font-bold text-sm">
+                              {idx + 1}
+                            </td>
+                            <td className="py-5 pr-4">
+                              <p className="font-bold text-base text-black">
+                                {item.product_name}
+                              </p>
+                              {item.units && item.units.length > 0 && (
+                                <div className="mt-2.5 flex flex-wrap gap-2">
+                                  {item.units.map((u: any) => (
+                                    <span
+                                      key={u.product_unit_id || u.product_unit}
+                                      className="text-[11px] font-bold font-mono tracking-tight bg-gray-100 px-2.5 py-1 rounded-md text-gray-700 border border-gray-200"
+                                    >
+                                      {u.serial_number || u.name || "Bulk Unit"}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-5 text-center font-black text-lg text-black">
+                              {item.quantity}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 <div className="mt-24 pt-12 border-t-2 border-gray-200 break-inside-avoid">
@@ -2131,7 +2133,7 @@ export function Bookings() {
                     the rental period.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-20 px-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-20 px-8">
                     <div>
                       <div className="border-b-2 border-gray-400 h-10 mb-3"></div>
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest text-center">
@@ -2165,7 +2167,7 @@ export function Bookings() {
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 pl-11">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-11">
                     <div className="col-span-full">
                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
                         Booking Title
@@ -2334,7 +2336,7 @@ export function Bookings() {
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 pl-11">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-11">
                     <div>
                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
                         Amount Paid ({currencySymbol})
@@ -2477,7 +2479,7 @@ export function Bookings() {
                             )}
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4 pb-1">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-1">
                             <div>
                               <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
                                 Point of Contact
@@ -3112,7 +3114,7 @@ export function Bookings() {
                                               {unit.unit_type}
                                             </span>
                                           </div>
-                                          <div className="grid grid-cols-4 gap-2 mt-1">
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 mt-1">
                                             <div className="text-center p-1.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
                                               <p className="text-[7px] font-black text-[var(--text-muted)] uppercase leading-tight">
                                                 Booked
@@ -4069,7 +4071,7 @@ export function Bookings() {
             </div>
 
             <div className="p-8 max-h-[60vh] overflow-y-auto space-y-8">
-              <div className="grid grid-cols-2 gap-8 pb-8 border-b border-[var(--border-soft)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-[var(--border-soft)]">
                 <div>
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">
                     Received From

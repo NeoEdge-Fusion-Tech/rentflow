@@ -39,7 +39,7 @@ export function GeneralExpenses() {
     expense_type: "item",
     vendor: "" as number | string,
     name: "",
-    amount: 0,
+    amount: 0 as number | string,
     description: "",
     date: "",
   });
@@ -86,7 +86,7 @@ export function GeneralExpenses() {
       expense_type: "item",
       vendor: "",
       name: "",
-      amount: 0,
+      amount: 0 as number | string,
       description: "",
       date: "",
     });
@@ -443,7 +443,7 @@ export function GeneralExpenses() {
               onSubmit={handleSubmit}
               className="p-6 space-y-4 overflow-y-auto"
             >
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -482,6 +482,7 @@ export function GeneralExpenses() {
                   <input
                     required
                     type="number"
+                    step="any"
                     value={formData.vendor}
                     onChange={(e) =>
                       setFormData({ ...formData, vendor: e.target.value })
@@ -513,15 +514,13 @@ export function GeneralExpenses() {
                 <input
                   required
                   type="number"
+                  step="any"
                   step="0.01"
                   value={formData.amount || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      amount:
-                        e.target.value === ""
-                          ? ("" as any)
-                          : parseFloat(e.target.value) || 0,
+                      amount: e.target.value,
                     })
                   }
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"

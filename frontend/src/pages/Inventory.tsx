@@ -1086,7 +1086,7 @@ export function Inventory() {
                   placeholder="e.g. Sony A7III"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
                     Category
@@ -1344,7 +1344,7 @@ export function Inventory() {
                           </div>
                         </div>
                         {/* Derived read-only stats */}
-                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]">
                           <div className="flex flex-col items-center">
                             <span className="text-[9px] font-black uppercase text-emerald-500">
                               Good

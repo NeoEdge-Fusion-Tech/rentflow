@@ -258,7 +258,7 @@ export function SubscriptionPlans() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
                     Price ($)
@@ -298,7 +298,7 @@ export function SubscriptionPlans() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
                     Max Invoices/Month (-1 = unltd)
@@ -369,7 +369,7 @@ export function SubscriptionPlans() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div className="flex items-center">
                   <input
                     type="checkbox"

@@ -65,7 +65,7 @@ class Payment(models.Model):
         blank=True,
         related_name="payments",
     )
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
     status = models.CharField(
         max_length=20,
         choices=[
@@ -153,13 +153,13 @@ class Invoice(models.Model):
         ("cancelled", "Cancelled"),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default="draft")
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    amount_paid = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     notes = models.TextField(blank=True, null=True)
     paystack_reference = models.CharField(
         max_length=100, blank=True, null=True, unique=True
@@ -221,9 +221,9 @@ class InvoiceLineItem(models.Model):
     )
     name = models.CharField(max_length=500)
     description = models.TextField(blank=True, null=True)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    quantity = models.DecimalField(max_digits=20, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     position = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -275,12 +275,12 @@ class Quotation(models.Model):
         ("cancelled", "Cancelled"),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default="draft")
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     notes = models.TextField(blank=True, null=True)
     converted_invoice = models.ForeignKey(
         Invoice,
@@ -316,9 +316,9 @@ class QuotationLineItem(models.Model):
     )
     name = models.CharField(max_length=500)
     description = models.TextField(blank=True, null=True)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    quantity = models.DecimalField(max_digits=20, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     position = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -341,7 +341,7 @@ class Receipt(models.Model):
     issue_date = models.DateTimeField(auto_now_add=True)
     status_choices = [("issued", "Issued"), ("cancelled", "Cancelled")]
     status = models.CharField(max_length=20, choices=status_choices, default="issued")
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
     notes = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -392,7 +392,7 @@ class SubscriptionPayment(models.Model):
         blank=True,
         related_name="payments",
     )
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(max_digits=20, decimal_places=2)
     currency = models.CharField(max_length=10, default="NGN")
     status_choices = [
         ("pending", "Pending"),
@@ -429,7 +429,7 @@ class GeneralExpense(models.Model):
         related_name="general_expenses",
     )
     name = models.CharField(max_length=255)
-    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     description = models.TextField(blank=True, null=True)
     date = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

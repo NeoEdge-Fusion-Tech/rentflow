@@ -27,8 +27,8 @@ interface LineItem {
   line_item_id?: number;
   name: string;
   description: string;
-  quantity: number;
-  unit_price: number;
+  quantity: number | string;
+  unit_price: number | string;
 }
 
 export function InvoiceEditor() {
@@ -62,9 +62,9 @@ export function InvoiceEditor() {
     currency: "" as number | string,
     bank_account: "" as number | string,
     show_bank_details: true,
-    discount_amount: 0,
-    discount_percentage: 0,
-    tax_percentage: 0,
+    discount_amount: 0 as number | string,
+    discount_percentage: 0 as number | string,
+    tax_percentage: 0 as number | string,
     notes: "",
     title: "Invoice",
   });
@@ -272,11 +272,12 @@ export function InvoiceEditor() {
     0,
   );
   const discountValue =
-    formData.discount_percentage > 0
+    Number(formData.discount_percentage) > 0
       ? subtotal * (formData.discount_percentage / 100)
-      : formData.discount_amount || 0;
+      : Number(formData.discount_amount) || 0;
   const taxableAmount = Math.max(0, subtotal - discountValue);
-  const taxValue = taxableAmount * ((formData.tax_percentage || 0) / 100);
+  const taxValue =
+    taxableAmount * ((Number(formData.tax_percentage) || 0) / 100);
   const grandTotal = Math.max(0, taxableAmount + taxValue);
 
   const selectedCurrency = currencies.find(
@@ -309,7 +310,7 @@ export function InvoiceEditor() {
       : null,
     show_bank_details: formData.show_bank_details,
     discount_amount:
-      formData.discount_percentage > 0 ? 0 : formData.discount_amount,
+      Number(formData.discount_percentage) > 0 ? 0 : formData.discount_amount,
     discount_percentage: formData.discount_percentage,
     tax_percentage: formData.tax_percentage,
     notes: formData.notes,
@@ -580,7 +581,7 @@ export function InvoiceEditor() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
                   Event / Job Date
@@ -820,16 +821,11 @@ export function InvoiceEditor() {
                     <div className="col-span-4 md:col-span-2">
                       <input
                         type="number"
+                        step="any"
                         placeholder="Qty"
                         value={item.quantity === 0 ? "" : item.quantity}
                         onChange={(e) =>
-                          updateLineItem(
-                            i,
-                            "quantity",
-                            e.target.value === ""
-                              ? ("" as any)
-                              : parseFloat(e.target.value) || 0,
-                          )
+                          updateLineItem(i, "quantity", e.target.value)
                         }
                         className="w-full h-10 px-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-center"
                       />
@@ -841,16 +837,11 @@ export function InvoiceEditor() {
                         </span>
                         <input
                           type="number"
+                          step="any"
                           placeholder="Price"
                           value={item.unit_price === 0 ? "" : item.unit_price}
                           onChange={(e) =>
-                            updateLineItem(
-                              i,
-                              "unit_price",
-                              e.target.value === ""
-                                ? ("" as any)
-                                : parseFloat(e.target.value) || 0,
-                            )
+                            updateLineItem(i, "unit_price", e.target.value)
                           }
                           className="w-full h-10 pl-12 pr-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] text-right"
                         />
@@ -923,22 +914,20 @@ export function InvoiceEditor() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-1">
                   Discount ({currencySymbol})
                 </label>
                 <input
                   type="number"
+                  step="any"
                   value={formData.discount_amount || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      discount_amount:
-                        e.target.value === ""
-                          ? ("" as any)
-                          : parseFloat(e.target.value) || 0,
-                      discount_percentage: 0,
+                      discount_amount: e.target.value,
+                      discount_percentage: 0 as number | string,
                     })
                   }
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
@@ -950,15 +939,13 @@ export function InvoiceEditor() {
                 </label>
                 <input
                   type="number"
+                  step="any"
                   value={formData.discount_percentage || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      discount_percentage:
-                        e.target.value === ""
-                          ? ("" as any)
-                          : parseFloat(e.target.value) || 0,
-                      discount_amount: 0,
+                      discount_percentage: e.target.value,
+                      discount_amount: 0 as number | string,
                     })
                   }
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"
@@ -983,14 +970,12 @@ export function InvoiceEditor() {
               </label>
               <input
                 type="number"
+                step="any"
                 value={formData.tax_percentage || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    tax_percentage:
-                      e.target.value === ""
-                        ? ("" as any)
-                        : parseFloat(e.target.value) || 0,
+                    tax_percentage: e.target.value,
                   })
                 }
                 className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg p-2 text-sm outline-none focus:border-brand-primary font-bold text-[var(--text-main)]"

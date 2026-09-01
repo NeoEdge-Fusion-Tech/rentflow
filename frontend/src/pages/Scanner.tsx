@@ -407,7 +407,7 @@ export function Scanner() {
                   <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
                     Item Condition
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <label
                       className={cn(
                         "flex items-center gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all",

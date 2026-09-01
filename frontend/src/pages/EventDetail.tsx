@@ -59,7 +59,7 @@ export function EventDetail() {
     expense_type: "item",
     vendor: "" as number | string,
     name: "",
-    amount: 0,
+    amount: 0 as number | string,
     description: "",
     date: "",
   });
@@ -172,7 +172,7 @@ export function EventDetail() {
       expense_type: "item",
       vendor: "",
       name: "",
-      amount: 0,
+      amount: 0 as number | string,
       description: "",
       date: "",
     });
@@ -452,7 +452,7 @@ export function EventDetail() {
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
           <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
             Revenue
@@ -712,7 +712,7 @@ export function EventDetail() {
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
                     Start Date
@@ -819,7 +819,7 @@ export function EventDetail() {
               onSubmit={handleAddExpense}
               className="p-6 space-y-4 overflow-y-auto"
             >
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -896,15 +896,13 @@ export function EventDetail() {
                 <input
                   required
                   type="number"
+                  step="any"
                   step="0.01"
                   value={expenseForm.amount || ""}
                   onChange={(e) =>
                     setExpenseForm({
                       ...expenseForm,
-                      amount:
-                        e.target.value === ""
-                          ? ("" as any)
-                          : parseFloat(e.target.value) || 0,
+                      amount: e.target.value,
                     })
                   }
                   className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"

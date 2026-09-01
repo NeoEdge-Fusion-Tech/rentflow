@@ -520,6 +520,7 @@ export function Invoices() {
                   </label>
                   <input
                     type="number"
+                    step="any"
                     step="0.01"
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}

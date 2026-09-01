@@ -326,7 +326,7 @@ export function Dashboard() {
                     <h3 className="text-sm font-bold text-[var(--text-main)] mb-3 bg-[var(--bg-app)] inline-block px-3 py-1 rounded-full border border-[var(--border-soft)]">
                       Currency: {sym}
                     </h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-soft)]">
                         <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
                           Total Revenue
