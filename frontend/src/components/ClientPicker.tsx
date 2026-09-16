@@ -19,6 +19,9 @@ export function ClientPicker({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
+    client_type: "business",
+    first_name: "",
+    last_name: "",
     business_name: "",
     email: "",
     phone_number: "",
@@ -33,7 +36,14 @@ export function ClientPicker({
       onClientCreated?.(res.data);
       onChange(res.data.client_id);
       setIsModalOpen(false);
-      setFormData({ business_name: "", email: "", phone_number: "" });
+      setFormData({
+        client_type: "business",
+        first_name: "",
+        last_name: "",
+        business_name: "",
+        email: "",
+        phone_number: "",
+      });
     } catch (err: any) {
       setError(err.response?.data?.email?.[0] || "Failed to create client.");
     } finally {
@@ -52,7 +62,9 @@ export function ClientPicker({
           <option value="">Choose a client...</option>
           {clients.map((c) => (
             <option key={c.client_id} value={String(c.client_id)}>
-              {c.business_name}
+              {c.client_type === "individual"
+                ? `${c.first_name || ""} ${c.last_name || ""}`.trim()
+                : c.business_name}
             </option>
           ))}
         </select>
@@ -88,21 +100,88 @@ export function ClientPicker({
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Business Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.business_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, business_name: e.target.value })
+              <div className="flex gap-4 p-1 bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)] w-fit mb-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, client_type: "business" })
                   }
-                  placeholder="Business Name"
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                />
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    formData.client_type === "business"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)]"
+                  }`}
+                >
+                  Business
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, client_type: "individual" })
+                  }
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    formData.client_type === "individual"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)]"
+                  }`}
+                >
+                  Individual
+                </button>
               </div>
+
+              {formData.client_type === "business" ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Business Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.business_name}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        business_name: e.target.value,
+                      })
+                    }
+                    placeholder="Business Name"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      First Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.first_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, first_name: e.target.value })
+                      }
+                      placeholder="First Name"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Last Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.last_name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, last_name: e.target.value })
+                      }
+                      placeholder="Last Name"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[var(--text-muted)]">

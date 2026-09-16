@@ -545,7 +545,9 @@ export function EventDetail() {
                   {expenses.map((exp: any) => (
                     <tr key={exp.expense_id}>
                       <td className="py-3 pr-4 font-bold text-[var(--text-main)]">
-                        {exp.name}
+                        {exp.expense_type === "vendor"
+                          ? exp.vendor_details?.business_name
+                          : exp.name}
                       </td>
                       <td className="py-3 pr-4">
                         <span
@@ -616,7 +618,9 @@ export function EventDetail() {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
                       <p className="font-bold text-[var(--text-main)] text-sm">
-                        {exp.name}
+                        {exp.expense_type === "vendor"
+                          ? exp.vendor_details?.business_name
+                          : exp.name}
                       </p>
                       <span
                         className={cn(
