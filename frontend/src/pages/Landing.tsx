@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CheckSquare,
   MessageSquare,
+  TrendingUp,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
@@ -152,6 +153,19 @@ export function Landing() {
             <p className="text-[var(--text-muted)] leading-relaxed">
               Collect and manage client feedback seamlessly. Improve your
               services and build stronger relationships.
+            </p>
+          </div>
+
+          <div className="p-8 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-soft)] shadow-sm text-left group hover:border-brand-primary/30 transition-colors">
+            <div className="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-[var(--text-main)] mb-3">
+              Expense/Profit and Loss Management
+            </h3>
+            <p className="text-[var(--text-muted)] leading-relaxed">
+              Track project expenses, monitor profit margins, and gain deep
+              insights into your business's financial health.
             </p>
           </div>
         </div>
