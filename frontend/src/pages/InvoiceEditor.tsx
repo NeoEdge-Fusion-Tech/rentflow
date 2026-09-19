@@ -13,6 +13,7 @@ import {
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { ClientPicker } from "../components/ClientPicker";
+import { ProductSelectorModal } from "../components/ProductSelectorModal";
 import {
   InvoiceService,
   ClientService,
@@ -50,6 +51,7 @@ export function InvoiceEditor() {
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const [invoiceMeta, setInvoiceMeta] = useState<any>(null);
   const [lastInvoiceMeta, setLastInvoiceMeta] = useState<any>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     client: "" as number | string,
@@ -263,6 +265,27 @@ export function InvoiceEditor() {
       ...prev,
       { name: "", description: "", quantity: 1, unit_price: 0 },
     ]);
+
+  const handleProductsSelected = (selectedUnits: any[]) => {
+    const newItems = selectedUnits.map((u) => ({
+      name: u.displayName,
+      description: "",
+      quantity: 1,
+      unit_price: u.price,
+    }));
+
+    // If the only line item is empty, replace it
+    if (
+      lineItems.length === 1 &&
+      !lineItems[0].name &&
+      !lineItems[0].unit_price
+    ) {
+      setLineItems(newItems);
+    } else {
+      setLineItems((prev) => [...prev, ...newItems]);
+    }
+  };
+
   const removeLineItem = (index: number) =>
     setLineItems((prev) => prev.filter((_, i) => i !== index));
 
@@ -439,7 +462,7 @@ export function InvoiceEditor() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="hidden sm:flex items-center gap-2 flex-wrap">
           <button
             onClick={handlePreview}
             disabled={isSaving}
@@ -703,20 +726,29 @@ export function InvoiceEditor() {
 
           {/* Line Items */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
               <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
                 Line Items
               </h3>
-              <button
-                onClick={addLineItem}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm"
-                style={{
-                  backgroundColor:
-                    org?.primary_color || "var(--color-brand-primary, #7c3aed)",
-                }}
-              >
-                <Plus className="w-3 h-3" /> ADD ITEM
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={addLineItem}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors shadow-sm"
+                >
+                  <Plus className="w-3 h-3" /> CUSTOM ITEM
+                </button>
+                <button
+                  onClick={() => setIsProductModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                  style={{
+                    backgroundColor:
+                      org?.primary_color ||
+                      "var(--color-brand-primary, #7c3aed)",
+                  }}
+                >
+                  <Search className="w-3 h-3" /> SELECT PRODUCTS
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
               {lineItems.map((item, i) => (
@@ -724,7 +756,7 @@ export function InvoiceEditor() {
                   key={i}
                   className="flex flex-col gap-3 bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-subtle)]"
                 >
-                  <div className="flex flex-wrap gap-3 items-start">
+                  <div className="flex flex-wrap md:flex-nowrap gap-3 items-start">
                     <div className="relative w-full md:flex-1 md:min-w-[140px]">
                       <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">
                         Item
@@ -856,7 +888,7 @@ export function InvoiceEditor() {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3 w-full md:w-auto md:ml-auto md:shrink-0 pt-1 md:pt-0">
+                    <div className="flex items-center justify-between gap-3 w-full md:w-auto md:shrink-0 pt-2 border-t border-[var(--border-soft)] mt-1 md:pt-0 md:border-0 md:mt-0">
                       <div className="flex items-baseline gap-1.5 text-sm font-bold text-[var(--text-main)]">
                         <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] md:hidden">
                           Total
@@ -1051,6 +1083,55 @@ export function InvoiceEditor() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Action Bar */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-app)] border-t border-[var(--border-soft)] p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 flex items-center gap-2">
+        {!isEditMode ? (
+          <>
+            <button
+              onClick={() => handleSave("draft")}
+              disabled={isSaving}
+              className="flex-1 justify-center px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50"
+            >
+              Save Draft
+            </button>
+            <button
+              onClick={() => handleSave("issued")}
+              disabled={isSaving}
+              className="flex-1 justify-center px-4 py-3 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
+              style={{
+                backgroundColor:
+                  org?.primary_color || "var(--color-brand-primary, #7c3aed)",
+              }}
+            >
+              {isSaving ? "Saving..." : "Save & Issue"}
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => handleSave()}
+            disabled={isSaving}
+            className="w-full justify-center px-4 py-3 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
+            style={{
+              backgroundColor:
+                org?.primary_color || "var(--color-brand-primary, #7c3aed)",
+            }}
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
+          </button>
+        )}
+      </div>
+
+      {/* Spacer for mobile sticky bar */}
+      <div className="h-20 sm:hidden"></div>
+
+      <ProductSelectorModal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        products={products}
+        currencySymbol={currencySymbol}
+        onSelect={handleProductsSelected}
+      />
     </div>
   );
 }
