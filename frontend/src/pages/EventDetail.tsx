@@ -85,7 +85,7 @@ export function EventDetail() {
         status: res.data.status || "planned",
         start_date: res.data.start_date || "",
         end_date: res.data.end_date || "",
-        invoices: res.data.invoices || [],
+        invoices: (res.data.invoices || []).map(String),
       });
     } catch (e) {
       console.error("Failed to fetch event", e);
