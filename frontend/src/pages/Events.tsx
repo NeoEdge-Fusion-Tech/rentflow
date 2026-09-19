@@ -753,34 +753,81 @@ export function Events() {
                 <label className="text-sm font-bold text-[var(--text-muted)]">
                   Revenue Invoices (optional)
                 </label>
-                <select
-                  multiple
-                  value={formData.invoices as string[]}
-                  onChange={(e) => {
-                    const options = Array.from(e.target.selectedOptions);
-                    const selectedValues = options
-                      .map((opt) => opt.value)
-                      .filter((val) => val !== "");
-                    setFormData({ ...formData, invoices: selectedValues });
-                  }}
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all min-h-[120px]"
-                >
-                  <option
-                    value=""
-                    disabled
-                    className="text-[var(--text-muted)]"
-                  >
-                    Hold Ctrl/Cmd to select multiple
-                  </option>
-                  {invoices.map((inv: any) => (
-                    <option key={inv.invoice_id} value={inv.invoice_id}>
-                      {inv.invoice_number} —{" "}
-                      {inv.client_details?.business_name ||
-                        inv.client_name ||
-                        "No client"}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-full max-h-[160px] overflow-y-auto px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl space-y-2">
+                  {invoices.length === 0 ? (
+                    <div className="text-sm text-[var(--text-muted)] italic">
+                      No invoices available
+                    </div>
+                  ) : (
+                    invoices.map((inv: any) => {
+                      const isChecked = (
+                        formData.invoices as string[]
+                      ).includes(String(inv.invoice_id));
+                      return (
+                        <label
+                          key={inv.invoice_id}
+                          className="flex items-start gap-3 cursor-pointer group"
+                        >
+                          <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const currentInvoices =
+                                  formData.invoices as string[];
+                                if (e.target.checked) {
+                                  setFormData({
+                                    ...formData,
+                                    invoices: [
+                                      ...currentInvoices,
+                                      String(inv.invoice_id),
+                                    ],
+                                  });
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    invoices: currentInvoices.filter(
+                                      (id) => id !== String(inv.invoice_id),
+                                    ),
+                                  });
+                                }
+                              }}
+                              className="peer sr-only"
+                            />
+                            <div className="w-5 h-5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded group-hover:border-brand-primary peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-colors flex items-center justify-center">
+                              {isChecked && (
+                                <svg
+                                  className="w-3.5 h-3.5 text-white"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={3}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1 text-sm text-[var(--text-main)] font-medium">
+                            <span className="font-bold">
+                              {inv.invoice_number}
+                            </span>{" "}
+                            —{" "}
+                            <span className="text-[var(--text-muted)]">
+                              {inv.client_details?.business_name ||
+                                inv.client_name ||
+                                "No client"}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
