@@ -85,8 +85,9 @@ class ProjectFeedbackSerializer(serializers.ModelSerializer):
             logo_url = request.build_absolute_uri(logo_url)
 
         event_date = None
-        if obj.event.invoice and obj.event.invoice.event_date:
-            event_date = obj.event.invoice.event_date
+        first_invoice = obj.event.invoices.first()
+        if first_invoice and first_invoice.event_date:
+            event_date = first_invoice.event_date
         elif obj.event.end_date:
             event_date = obj.event.end_date
         else:
