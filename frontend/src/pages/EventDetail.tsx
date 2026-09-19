@@ -85,7 +85,7 @@ export function EventDetail() {
         status: res.data.status || "planned",
         start_date: res.data.start_date || "",
         end_date: res.data.end_date || "",
-        invoice: res.data.invoice || "",
+        invoices: res.data.invoices || [],
       });
     } catch (e) {
       console.error("Failed to fetch event", e);
@@ -152,7 +152,7 @@ export function EventDetail() {
         ...editForm,
         start_date: editForm.start_date || null,
         end_date: editForm.end_date || null,
-        invoice: editForm.invoice ? parseInt(String(editForm.invoice)) : null,
+        invoices: editForm.invoices.map((inv: any) => parseInt(String(inv))),
       });
       setIsEditOpen(false);
       showNotification("Project updated!", "success");
@@ -389,8 +389,10 @@ export function EventDetail() {
             </h1>
             <p className="text-[var(--text-muted)] text-sm capitalize">
               {event.status}
-              {event.invoice_number
-                ? ` · Linked to ${event.invoice_number}`
+              {event.invoices_data && event.invoices_data.length > 0
+                ? ` · Linked to ${event.invoices_data.length} invoice${
+                    event.invoices_data.length === 1 ? "" : "s"
+                  }`
                 : ""}
             </p>
           </div>
@@ -499,6 +501,43 @@ export function EventDetail() {
             />
           </p>
         </div>
+      </div>
+
+      {/* Invoices */}
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+            Invoices
+          </h3>
+        </div>
+        {!event.invoices_data || event.invoices_data.length === 0 ? (
+          <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
+            No invoices linked.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {event.invoices_data.map((inv: any) => (
+              <div
+                key={inv.invoice_id}
+                onClick={() => navigate(`/invoices/${inv.invoice_id}`)}
+                className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm cursor-pointer hover:border-brand-primary/50 transition-colors"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="font-bold text-[var(--text-main)] truncate">
+                    {inv.invoice_number}
+                  </h4>
+                  <span className="text-sm font-bold text-[var(--text-main)]">
+                    <RevenueDisplay
+                      amount={`${defaultCurrencySymbol}${formatCurrency(
+                        inv.total_amount,
+                      )}`}
+                    />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Profit & Loss */}
@@ -836,19 +875,33 @@ export function EventDetail() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Revenue Invoice
+                  Revenue Invoices
                 </label>
                 <select
-                  value={editForm.invoice}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, invoice: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  multiple
+                  value={editForm.invoices as string[]}
+                  onChange={(e) => {
+                    const options = Array.from(e.target.selectedOptions);
+                    const selectedValues = options
+                      .map((opt) => opt.value)
+                      .filter((val) => val !== "");
+                    setEditForm({ ...editForm, invoices: selectedValues });
+                  }}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all min-h-[120px]"
                 >
-                  <option value="">No invoice linked</option>
+                  <option
+                    value=""
+                    disabled
+                    className="text-[var(--text-muted)]"
+                  >
+                    Hold Ctrl/Cmd to select multiple
+                  </option>
                   {invoices.map((inv: any) => (
                     <option key={inv.invoice_id} value={inv.invoice_id}>
-                      {inv.invoice_number} — {inv.client_name || "No client"}
+                      {inv.invoice_number} —{" "}
+                      {inv.client_details?.business_name ||
+                        inv.client_name ||
+                        "No client"}
                     </option>
                   ))}
                 </select>

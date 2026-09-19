@@ -45,7 +45,7 @@ export function Events() {
     status: "planned",
     start_date: "",
     end_date: "",
-    invoice: "" as number | string,
+    invoices: [] as (number | string)[],
     feedback_template_id: "" as number | string,
   });
 
@@ -110,7 +110,7 @@ export function Events() {
       status: "planned",
       start_date: "",
       end_date: "",
-      invoice: "",
+      invoices: [],
       feedback_template_id: "",
     });
     setIsModalOpen(true);
@@ -145,7 +145,7 @@ export function Events() {
         ...formData,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
-        invoice: formData.invoice ? parseInt(String(formData.invoice)) : null,
+        invoices: formData.invoices.map((inv) => parseInt(String(inv))),
         feedback_template_id: formData.feedback_template_id
           ? parseInt(String(formData.feedback_template_id))
           : null,
@@ -751,19 +751,33 @@ export function Events() {
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Revenue Invoice (optional)
+                  Revenue Invoices (optional)
                 </label>
                 <select
-                  value={formData.invoice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, invoice: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  multiple
+                  value={formData.invoices as string[]}
+                  onChange={(e) => {
+                    const options = Array.from(e.target.selectedOptions);
+                    const selectedValues = options
+                      .map((opt) => opt.value)
+                      .filter((val) => val !== "");
+                    setFormData({ ...formData, invoices: selectedValues });
+                  }}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all min-h-[120px]"
                 >
-                  <option value="">No invoice linked</option>
+                  <option
+                    value=""
+                    disabled
+                    className="text-[var(--text-muted)]"
+                  >
+                    Hold Ctrl/Cmd to select multiple
+                  </option>
                   {invoices.map((inv: any) => (
                     <option key={inv.invoice_id} value={inv.invoice_id}>
-                      {inv.invoice_number} — {inv.client_name || "No client"}
+                      {inv.invoice_number} —{" "}
+                      {inv.client_details?.business_name ||
+                        inv.client_name ||
+                        "No client"}
                     </option>
                   ))}
                 </select>

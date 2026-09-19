@@ -45,16 +45,14 @@ class ExpenseLineItemSerializer(TenantSerializerMixin, serializers.ModelSerializ
 
 
 class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    invoice_number = serializers.CharField(
-        source="invoice.invoice_number", read_only=True
-    )
-    client_details = ClientSerializer(source="invoice.client", read_only=True)
+    client_details = serializers.SerializerMethodField()
     revenue = serializers.SerializerMethodField()
     total_expenses = serializers.SerializerMethodField()
     profit = serializers.SerializerMethodField()
     feedback_template_id = serializers.IntegerField(
         write_only=True, required=False, allow_null=True
     )
+    invoices_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -66,8 +64,8 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "status",
             "start_date",
             "end_date",
-            "invoice",
-            "invoice_number",
+            "invoices",
+            "invoices_data",
             "client_details",
             "revenue",
             "total_expenses",
@@ -77,9 +75,28 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "feedback_template_id",
         ]
         read_only_fields = ["created_at", "updated_at", "organization"]
+        extra_kwargs = {
+            "invoices": {"required": False},
+        }
+
+    def get_client_details(self, obj):
+        first_invoice = obj.invoices.first()
+        if first_invoice and first_invoice.client:
+            return ClientSerializer(first_invoice.client).data
+        return None
+
+    def get_invoices_data(self, obj):
+        return [
+            {
+                "invoice_id": inv.invoice_id,
+                "invoice_number": inv.invoice_number,
+                "total_amount": str(inv.total_amount),
+            }
+            for inv in obj.invoices.all()
+        ]
 
     def get_revenue(self, obj):
-        return obj.invoice.total_amount if obj.invoice else 0
+        return sum(inv.total_amount for inv in obj.invoices.all())
 
     def get_total_expenses(self, obj):
         return obj.expenses.aggregate(total=Sum("amount"))["total"] or 0
@@ -91,7 +108,10 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def create(self, validated_data):
         feedback_template_id = validated_data.pop("feedback_template_id", None)
+        invoices = validated_data.pop("invoices", [])
         event = super().create(validated_data)
+        if invoices:
+            event.invoices.set(invoices)
         if feedback_template_id:
             try:
                 form = FeedbackForm.objects.get(
@@ -101,6 +121,26 @@ class EventSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             except FeedbackForm.DoesNotExist:
                 pass
         return event
+
+    def update(self, instance, validated_data):
+        feedback_template_id = validated_data.pop("feedback_template_id", None)
+        invoices = validated_data.pop("invoices", None)
+        instance = super().update(instance, validated_data)
+        if invoices is not None:
+            instance.invoices.set(invoices)
+        if feedback_template_id:
+            try:
+                form = FeedbackForm.objects.get(
+                    id=feedback_template_id, organization=instance.organization
+                )
+                # Ensure it doesn't already exist
+                if not ProjectFeedback.objects.filter(
+                    event=instance, form=form
+                ).exists():
+                    ProjectFeedback.objects.create(event=instance, form=form)
+            except FeedbackForm.DoesNotExist:
+                pass
+        return instance
 
 
 class ChecklistTaskSerializer(TenantSerializerMixin, serializers.ModelSerializer):

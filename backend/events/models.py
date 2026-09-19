@@ -24,12 +24,11 @@ class Event(models.Model):
     status = models.CharField(max_length=20, choices=status_choices, default="planned")
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
-    invoice = models.ForeignKey(
+
+    invoices = models.ManyToManyField(
         "payment.Invoice",
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
-        related_name="pl_events",
+        related_name="events",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
