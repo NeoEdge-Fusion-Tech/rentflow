@@ -223,6 +223,21 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             qs = qs.exclude(status="cancelled")
         return qs
 
+    @action(detail=False, methods=["post"])
+    def upload_and_extract(self, request):
+        if "file" not in request.FILES:
+            return Response({"error": "No file uploaded"}, status=400)
+
+        file_obj = request.FILES["file"]
+        file_bytes = file_obj.read()
+        file_type = file_obj.content_type
+
+        from payment.utils import extract_invoice_data
+
+        extracted_data = extract_invoice_data(file_bytes, file_type)
+
+        return Response(extracted_data)
+
     def perform_create(self, serializer):
         user = self.request.user
         if (

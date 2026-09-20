@@ -25,6 +25,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Logo } from "./Logo";
+import { UserOrganizationSelector } from "./UserOrganizationSelector";
 import { cn } from "@/src/utils";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
@@ -112,8 +113,17 @@ export function Sidebar({
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="h-16 flex items-center px-6 border-b border-[var(--border-subtle)]">
-            <Logo className="h-9" dark={theme === "dark"} />
+          <div className="h-16 flex items-center px-4 border-b border-[var(--border-subtle)]">
+            {!isSuperuser && currentUser ? (
+              <div className="flex-1 min-w-0">
+                <UserOrganizationSelector
+                  organizations={currentUser?.organizations_list || []}
+                  currentOrgId={currentUser?.organization_id}
+                />
+              </div>
+            ) : (
+              <Logo className="h-9" dark={theme === "dark"} />
+            )}
             <button
               onClick={toggle}
               className="ml-auto lg:hidden p-2 text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)]"

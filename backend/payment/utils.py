@@ -1,5 +1,6 @@
 import io
 import os
+import re
 from decimal import Decimal
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -1152,3 +1153,62 @@ def generate_receipt_pdf(receipt):
     doc.build(elements)
     buffer.seek(0)
     return buffer
+
+
+try:
+    import pytesseract
+    from PIL import Image
+    from pdf2image import convert_from_bytes
+except ImportError:
+    pass
+
+
+def extract_invoice_data(file_bytes, file_type):
+    """
+    Extracts text using pytesseract and attempts to parse total amount and date.
+    Returns a dictionary of extracted data.
+    """
+    text = ""
+    try:
+        if file_type == "application/pdf":
+            images = convert_from_bytes(file_bytes)
+            for img in images:
+                text += pytesseract.image_to_string(img) + "\n"
+        else:
+            # Assume image
+            import io
+
+            image = Image.open(io.BytesIO(file_bytes))
+            text = pytesseract.image_to_string(image)
+    except Exception as e:
+        print(f"OCR Error: {e}")
+        return {"notes": f"OCR Failed: {e}"}
+
+    data = {"notes": text, "total_amount": 0, "issue_date": None, "line_items": []}
+
+    # Attempt to extract total amount
+    # Matches Total: 100.00 or $100.00
+    total_match = re.search(
+        r"(?:total|amount due).*?([\d,]+\.\d{2})", text, re.IGNORECASE
+    )
+    if total_match:
+        try:
+            val_str = total_match.group(1).replace(",", "")
+            data["total_amount"] = Decimal(val_str)
+        except:
+            pass
+
+    # Attempt to extract issue date
+    date_match = re.search(
+        r"(?:date|issue date).*?(\d{2,4}[-/]\d{1,2}[-/]\d{1,4})", text, re.IGNORECASE
+    )
+    if date_match:
+        try:
+            from dateutil import parser
+
+            dt = parser.parse(date_match.group(1))
+            data["issue_date"] = dt.strftime("%Y-%m-%d")
+        except:
+            pass
+
+    return data

@@ -348,6 +348,7 @@ export const BankAccountService = {
 
 export const OrganizationService = {
   get: (id: number | string) => api.get(`/users/organizations/${id}/`),
+  create: (data: any) => api.post(`/users/organizations/`, data),
   update: (id: number | string, data: any) =>
     api.put(`/users/organizations/${id}/`, data),
   patch: (id: number | string, data: any) =>
