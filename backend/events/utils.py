@@ -72,9 +72,9 @@ def compute_period_totals(organization, start, end):
     )
 
     revenue_by_event_qs = (
-        events_in_period.exclude(invoice__status="cancelled")
-        .values("event_id", "invoice__currency__symbol")
-        .annotate(total=Sum("invoice__total_amount"))
+        events_in_period.exclude(invoices__status="cancelled")
+        .values("event_id", "invoices__currency__symbol")
+        .annotate(total=Sum("invoices__total_amount"))
     )
 
     expenses_by_event = dict(
@@ -117,7 +117,7 @@ def compute_period_totals(organization, start, end):
     event_revenues = {}
     for item in revenue_by_event_qs:
         eid = item["event_id"]
-        sym = get_curr(item["invoice__currency__symbol"])
+        sym = get_curr(item["invoices__currency__symbol"])
         val = item["total"] or Decimal("0")
         if eid not in event_revenues:
             event_revenues[eid] = {}
