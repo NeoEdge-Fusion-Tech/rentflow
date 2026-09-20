@@ -247,10 +247,17 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         read_only_fields = ["is_active"]
 
     def get_organizations_list(self, obj):
-        # Return list of {id, name} for all organizations user has access to
+        orgs = []
         if hasattr(obj, "organizations"):
-            return [{"id": org.id, "name": org.name} for org in obj.organizations.all()]
-        return []
+            orgs = [
+                {"id": org.id, "name": org.name}
+                for org in obj.organizations.all()
+                if not getattr(org, "is_deleted", False)
+            ]
+        if obj.organization and not any(o["id"] == obj.organization.id for o in orgs):
+            if not getattr(obj.organization, "is_deleted", False):
+                orgs.append({"id": obj.organization.id, "name": obj.organization.name})
+        return orgs
 
     def get_active_role_permissions(self, obj):
         if obj.is_superuser or obj.role == "admin":
