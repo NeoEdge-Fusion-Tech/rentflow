@@ -296,6 +296,28 @@ class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        organization = serializer.save(created_by=user)
+
+        if not user.is_superuser:
+            # Add organization to user's list of organizations
+            user.organizations.add(organization)
+            if not user.organization:
+                user.organization = organization
+                user.save()
+
+            from .models import Role, OrganizationMembership
+
+            admin_role, _ = Role.objects.get_or_create(
+                organization=organization,
+                name="admin",
+                defaults={"permissions": {"_all": ["read", "write", "delete"]}},
+            )
+            OrganizationMembership.objects.create(
+                user=user, organization=organization, role=admin_role, is_active=True
+            )
+
 
 class SubscriptionViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Subscription.objects.all()

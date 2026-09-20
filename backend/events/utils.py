@@ -37,7 +37,7 @@ def compute_period_totals(organization, start, end):
             organization=organization,
             issue_date__gte=start,
             issue_date__lt=end,
-            pl_events__isnull=True,
+            events__isnull=True,
             booking__isnull=True,
             status="paid",
         )
