@@ -585,7 +585,6 @@ export function GeneralExpenses() {
                 <input
                   required
                   type="number"
-                  step="any"
                   step="0.01"
                   value={formData.amount || ""}
                   onChange={(e) =>

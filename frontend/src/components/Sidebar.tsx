@@ -87,7 +87,7 @@ export function Sidebar({
 }: SidebarProps) {
   const { theme } = useTheme();
   const { isRevenueHidden, toggleRevenueVisibility } = useVisibility();
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions(currentUser);
   const navigate = useNavigate();
 
   const handleLogout = () => {

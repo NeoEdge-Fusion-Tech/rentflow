@@ -1,10 +1,6 @@
-import { useAuth } from "./AuthContext";
-
 export type ActionType = "read" | "write" | "delete";
 
-export function usePermissions() {
-  const { currentUser } = useAuth();
-
+export function usePermissions(currentUser?: any) {
   const hasPermission = (module: string, action: ActionType) => {
     if (!currentUser) return false;
 

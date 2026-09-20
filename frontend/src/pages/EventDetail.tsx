@@ -1073,7 +1073,6 @@ export function EventDetail() {
                 <input
                   required
                   type="number"
-                  step="any"
                   step="0.01"
                   value={expenseForm.amount || ""}
                   onChange={(e) =>
