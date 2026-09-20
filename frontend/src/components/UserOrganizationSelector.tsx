@@ -16,8 +16,9 @@ export function UserOrganizationSelector({
   const [isCreating, setIsCreating] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const { showNotification } = useNotification();
-
-  const currentOrg = organizations?.find((o) => o.id === currentOrgId);
+  const currentOrg =
+    organizations?.find((o) => Number(o.id) === Number(currentOrgId)) ||
+    organizations?.[0];
 
   const handleSelect = async (id: number) => {
     if (id === currentOrgId) {
