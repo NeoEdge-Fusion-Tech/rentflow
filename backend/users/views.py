@@ -618,6 +618,32 @@ class SuperAdminStatsAPIView(APIView):
         total_orgs = Organization.objects.count()
         total_users = User.objects.count()
 
+        from payment.models import Payment
+
+        # Transactions logic
+        total_transactions = Payment.objects.filter(status="completed").count()
+
+        transaction_volume_qs = (
+            Payment.objects.filter(status="completed")
+            .values("organization__currency__symbol")
+            .annotate(total=Sum("amount"))
+        )
+
+        transaction_volumes_dict = {}
+        for v in transaction_volume_qs:
+            sym = v["organization__currency__symbol"] or "$"
+            transaction_volumes_dict[sym] = transaction_volumes_dict.get(
+                sym, 0.0
+            ) + float(v["total"] or 0)
+
+        transaction_volumes = [
+            {"symbol": sym, "total": total}
+            for sym, total in transaction_volumes_dict.items()
+        ]
+
+        if not transaction_volumes:
+            transaction_volumes = [{"symbol": "$", "total": 0}]
+
         # Total Platform Revenue grouped by Currency
         booking_revenue_qs = Booking.objects.values(
             "organization__currency__symbol"
@@ -719,6 +745,8 @@ class SuperAdminStatsAPIView(APIView):
             {
                 "total_organizations": total_orgs,
                 "total_users": total_users,
+                "total_transactions": total_transactions,
+                "transaction_volumes": transaction_volumes,
                 "platform_revenue": platform_revenue,
                 "active_bookings": active_bookings,
                 "chart_data": chart_data,

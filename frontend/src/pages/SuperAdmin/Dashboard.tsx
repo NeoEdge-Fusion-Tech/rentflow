@@ -91,6 +91,32 @@ export function Dashboard() {
       color: "text-amber-500",
       bg: "bg-amber-500/10",
     },
+    {
+      title: "Total Transactions",
+      value: stats.total_transactions?.toLocaleString() || "0",
+      icon: Activity,
+      color: "text-purple-500",
+      bg: "bg-purple-500/10",
+    },
+    {
+      title: "Transaction Volumes",
+      value: (
+        <div className="flex flex-col gap-1 max-h-24 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[var(--border-soft)]">
+          {stats.transaction_volumes?.map((rev: any, idx: number) => (
+            <RevenueDisplay
+              key={idx}
+              amount={`${rev.symbol}${rev.total.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`}
+            />
+          ))}
+        </div>
+      ),
+      icon: TrendingUp,
+      color: "text-teal-500",
+      bg: "bg-teal-500/10",
+    },
   ];
 
   return (
@@ -107,7 +133,7 @@ export function Dashboard() {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
         {statCards.map((card, idx) => (
           <div
             key={idx}
