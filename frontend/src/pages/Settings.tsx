@@ -36,8 +36,26 @@ export function Settings() {
 
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [roles, setRoles] = useState<any[]>([]);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<any>(null);
+  const [roleForm, setRoleForm] = useState({
+    name: "",
+    description: "",
+    permissions: {
+      can_view_dashboard: true,
+      can_manage_team: false,
+      can_manage_billing: false,
+      can_manage_bookings: false,
+      can_manage_inventory: false,
+      can_manage_settings: false,
+    },
+  });
+
+  const [showChangeRoleModal, setShowChangeRoleModal] = useState(false);
+  const [userToChangeRole, setUserToChangeRole] = useState<any>(null);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+
   const [newUser, setNewUser] = useState({
     first_name: "",
     last_name: "",
@@ -487,6 +505,91 @@ export function Settings() {
     }
   };
 
+  const handleSaveRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingRole) {
+        await RoleService.update(editingRole.id, roleForm);
+        showNotification("Role updated successfully", "success");
+      } else {
+        await RoleService.create(roleForm);
+        showNotification("Role created successfully", "success");
+      }
+      setShowRoleModal(false);
+      fetchRoles();
+    } catch (err: any) {
+      showNotification(
+        err.response?.data?.error || "Failed to save role",
+        "error",
+      );
+    }
+  };
+
+  const handleDeleteRole = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this role?")) return;
+    try {
+      await RoleService.delete(id);
+      showNotification("Role deleted", "success");
+      fetchRoles();
+    } catch (err: any) {
+      showNotification(
+        err.response?.data?.error || "Failed to delete role",
+        "error",
+      );
+    }
+  };
+
+  const handleOpenRoleModal = (role?: any) => {
+    if (role) {
+      setEditingRole(role);
+      setRoleForm({
+        name: role.name,
+        description: role.description || "",
+        permissions: role.permissions || {
+          can_view_dashboard: true,
+          can_manage_team: false,
+          can_manage_billing: false,
+          can_manage_bookings: false,
+          can_manage_inventory: false,
+          can_manage_settings: false,
+        },
+      });
+    } else {
+      setEditingRole(null);
+      setRoleForm({
+        name: "",
+        description: "",
+        permissions: {
+          can_view_dashboard: true,
+          can_manage_team: false,
+          can_manage_billing: false,
+          can_manage_bookings: false,
+          can_manage_inventory: false,
+          can_manage_settings: false,
+        },
+      });
+    }
+    setShowRoleModal(true);
+  };
+
+  const handleChangeRoleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userToChangeRole) return;
+    try {
+      await UserService.update(userToChangeRole.id, {
+        role: userToChangeRole.role_id_to_set,
+      });
+      showNotification("User role updated successfully", "success");
+      setShowChangeRoleModal(false);
+      fetchUsers();
+    } catch (err: any) {
+      showNotification(
+        err.response?.data?.error || "Failed to update role",
+        "error",
+      );
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
@@ -501,7 +604,7 @@ export function Settings() {
           "My Profile",
           "Workspace",
           ...(currentUser?.role === "admin" || currentUser?.is_superuser
-            ? ["Billing & Plans", "Team"]
+            ? ["Billing & Plans", "Team", "Roles & Permissions"]
             : []),
         ].map((tab) => (
           <button
@@ -1060,16 +1163,24 @@ export function Settings() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <span className="text-xs font-medium bg-[var(--bg-surface)] text-[var(--text-muted)] px-2.5 py-1 rounded-full border border-[var(--border-soft)] capitalize">
-                    {u.role === "staff"
-                      ? "Staff"
-                      : u.role === "validator"
-                        ? "Validator"
-                        : u.role === "admin"
-                          ? "Admin"
-                          : u.role || "Member"}
+                    {u.active_role?.name || "Member"}
                   </span>
 
                   <div className="flex flex-wrap gap-2 sm:ml-4">
+                    {u.id !== currentUser?.id && (
+                      <button
+                        onClick={() => {
+                          setUserToChangeRole({
+                            ...u,
+                            role_id_to_set: u.active_role?.id || "",
+                          });
+                          setShowChangeRoleModal(true);
+                        }}
+                        className="text-xs px-3 py-1.5 border border-[var(--border-soft)] rounded-lg hover:bg-[var(--bg-surface)] transition-colors shadow-sm text-[var(--text-muted)] font-medium"
+                      >
+                        Change Role
+                      </button>
+                    )}
                     {u.id !== currentUser?.id && (
                       <button
                         onClick={() => handleTriggerReset(u.id)}
@@ -1121,6 +1232,230 @@ export function Settings() {
             >
               <Plus className="w-4 h-4" /> Invite Team Member
             </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "Roles & Permissions" && (
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+              <Shield className="w-5 h-5" /> Roles & Permissions
+            </h2>
+            <button
+              onClick={() => handleOpenRoleModal()}
+              className="bg-brand-primary text-brand-accent px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-primary/20 hover:opacity-90 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Create Role
+            </button>
+          </div>
+          <div className="space-y-4">
+            {roles.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]"
+              >
+                <div>
+                  <p className="font-bold text-[var(--text-main)] text-sm">
+                    {r.name}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    {r.description || "No description provided."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenRoleModal(r)}
+                    className="text-xs px-3 py-1.5 border border-[var(--border-soft)] rounded-lg hover:bg-[var(--bg-surface)] transition-colors shadow-sm text-[var(--text-muted)] font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteRole(r.id)}
+                    className="text-xs px-3 py-1.5 border border-red-500/30 text-red-500 rounded-lg hover:bg-red-500/10 transition-colors shadow-sm font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+            {roles.length === 0 && (
+              <div className="p-8 text-center border-2 border-dashed border-[var(--border-soft)] rounded-xl">
+                <Shield className="w-8 h-8 mx-auto text-[var(--text-muted)] mb-3 opacity-50" />
+                <h3 className="text-[var(--text-main)] font-medium mb-1">
+                  No Roles Found
+                </h3>
+                <p className="text-sm text-[var(--text-muted)]">
+                  Create custom roles to assign granular permissions to your
+                  team members.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Role Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-lg w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] sticky top-0 bg-[var(--bg-surface)] z-10">
+              <h2 className="text-xl font-bold text-[var(--text-main)]">
+                {editingRole ? "Edit Role" : "Create Role"}
+              </h2>
+              <button
+                onClick={() => setShowRoleModal(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveRole} className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Role Name
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={roleForm.name}
+                    onChange={(e) =>
+                      setRoleForm({ ...roleForm, name: e.target.value })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                    placeholder="e.g. Support Manager"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    value={roleForm.description}
+                    onChange={(e) =>
+                      setRoleForm({ ...roleForm, description: e.target.value })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                    placeholder="Describe this role's purpose..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-[var(--text-main)] mb-3">
+                  Permissions
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[var(--bg-app)] p-4 rounded-xl border border-[var(--border-soft)]">
+                  {Object.keys(roleForm.permissions).map((permKey) => (
+                    <label
+                      key={permKey}
+                      className="flex items-center gap-3 p-2 hover:bg-[var(--bg-surface)] rounded-lg cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(roleForm.permissions as any)[permKey]}
+                        onChange={(e) =>
+                          setRoleForm({
+                            ...roleForm,
+                            permissions: {
+                              ...roleForm.permissions,
+                              [permKey]: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary bg-[var(--bg-surface)] border-[var(--border-soft)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--text-main)] capitalize">
+                        {permKey.replace(/_/g, " ")}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-[var(--bg-surface)]">
+                <button
+                  type="button"
+                  onClick={() => setShowRoleModal(false)}
+                  className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+                >
+                  Save Role
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {showChangeRoleModal && userToChangeRole && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-sm w-full shadow-xl border border-[var(--border-soft)]">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)]">
+              <h2 className="text-xl font-bold text-[var(--text-main)]">
+                Change Role
+              </h2>
+              <button
+                onClick={() => setShowChangeRoleModal(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleChangeRoleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Select new role for {userToChangeRole.first_name}
+                </label>
+                <select
+                  value={userToChangeRole.role_id_to_set || ""}
+                  onChange={(e) =>
+                    setUserToChangeRole({
+                      ...userToChangeRole,
+                      role_id_to_set: e.target.value,
+                    })
+                  }
+                  className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  required
+                >
+                  <option value="" disabled>
+                    Select a role...
+                  </option>
+                  {roles.map((r) => (
+                    <option
+                      key={r.id}
+                      value={r.id}
+                      className="bg-[var(--bg-surface)]"
+                    >
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowChangeRoleModal(false)}
+                  className="px-5 py-2.5 text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-semibold rounded-xl hover:opacity-90"
+                >
+                  Update Role
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

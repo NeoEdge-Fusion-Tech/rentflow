@@ -71,9 +71,14 @@ export function Dashboard() {
     {
       title: "Platform Revenue",
       value: (
-        <RevenueDisplay
-          amount={`$${stats.platform_revenue.toLocaleString()}`}
-        />
+        <div className="flex flex-col gap-1 max-h-24 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[var(--border-soft)]">
+          {stats.platform_revenue?.map((rev: any, idx: number) => (
+            <RevenueDisplay
+              key={idx}
+              amount={`${rev.symbol}${rev.total.toLocaleString()}`}
+            />
+          ))}
+        </div>
       ),
       icon: CreditCard,
       color: "text-emerald-500",

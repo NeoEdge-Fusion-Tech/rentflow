@@ -77,6 +77,7 @@ const superAdminItems = [
     path: "/superadmin/subscription-plans",
   },
   { icon: Coins, label: "Revenue & Payments", path: "/superadmin/revenue" },
+  { icon: Settings, label: "Global Config", path: "/superadmin/global-config" },
 ];
 
 export function Sidebar({

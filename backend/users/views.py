@@ -618,16 +618,32 @@ class SuperAdminStatsAPIView(APIView):
         total_orgs = Organization.objects.count()
         total_users = User.objects.count()
 
-        # Total Platform Revenue (global sum of amount_paid)
-        platform_revenue_agg = Booking.objects.aggregate(total=Sum("amount_paid"))
-        booking_revenue = platform_revenue_agg["total"] or 0
+        # Total Platform Revenue grouped by Currency
+        booking_revenue_qs = Booking.objects.values(
+            "organization__currency__symbol"
+        ).annotate(total=Sum("amount_paid"))
 
-        invoice_revenue_agg = Invoice.objects.filter(
-            status="paid", booking__isnull=True
-        ).aggregate(total=Sum("total_amount"))
-        invoice_revenue = invoice_revenue_agg["total"] or 0
+        invoice_revenue_qs = (
+            Invoice.objects.filter(status="paid", booking__isnull=True)
+            .values("organization__currency__symbol")
+            .annotate(total=Sum("total_amount"))
+        )
 
-        platform_revenue = float(booking_revenue) + float(invoice_revenue)
+        revenue_dict = {}
+        for b in booking_revenue_qs:
+            sym = b["organization__currency__symbol"] or "$"
+            revenue_dict[sym] = revenue_dict.get(sym, 0.0) + float(b["total"] or 0)
+
+        for i in invoice_revenue_qs:
+            sym = i["organization__currency__symbol"] or "$"
+            revenue_dict[sym] = revenue_dict.get(sym, 0.0) + float(i["total"] or 0)
+
+        platform_revenue = [
+            {"symbol": sym, "total": total} for sym, total in revenue_dict.items()
+        ]
+
+        if not platform_revenue:
+            platform_revenue = [{"symbol": "$", "total": 0}]
 
         # Global booking volume
         active_bookings = Booking.objects.exclude(
@@ -703,7 +719,7 @@ class SuperAdminStatsAPIView(APIView):
             {
                 "total_organizations": total_orgs,
                 "total_users": total_users,
-                "platform_revenue": float(platform_revenue),
+                "platform_revenue": platform_revenue,
                 "active_bookings": active_bookings,
                 "chart_data": chart_data,
                 "recent_activity": recent_activity,
