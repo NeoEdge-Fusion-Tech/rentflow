@@ -21,6 +21,7 @@ import {
   CurrencyService,
   BankAccountService,
   PaymentService,
+  RoleService,
 } from "../api";
 import { format } from "date-fns";
 
@@ -36,12 +37,13 @@ export function Settings() {
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [roles, setRoles] = useState<any[]>([]);
   const [newUser, setNewUser] = useState({
     first_name: "",
     last_name: "",
     email: "",
     password: "",
-    role: "admin",
+    role: "",
   });
 
   // Password Reset Modal state
@@ -126,7 +128,24 @@ export function Settings() {
     fetchCurrencies();
     fetchCurrentUser();
     fetchBankAccounts();
+    fetchRoles();
   }, []);
+
+  const fetchRoles = async () => {
+    try {
+      const res = await RoleService.getAll();
+      const fetchedRoles = res.data.results || res.data;
+      setRoles(fetchedRoles);
+      if (fetchedRoles.length > 0) {
+        setNewUser((prev) => ({
+          ...prev,
+          role: fetchedRoles[0].id.toString(),
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to fetch roles", e);
+    }
+  };
 
   const fetchBankAccounts = async () => {
     try {
@@ -1195,21 +1214,16 @@ export function Settings() {
                   }
                   className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
                 >
-                  <option value="admin" className="bg-[var(--bg-surface)]">
-                    Admin
-                  </option>
-                  <option
-                    value="team_member"
-                    className="bg-[var(--bg-surface)]"
-                  >
-                    Team Member
-                  </option>
-                  <option value="staff" className="bg-[var(--bg-surface)]">
-                    Staff
-                  </option>
-                  <option value="validator" className="bg-[var(--bg-surface)]">
-                    Validator
-                  </option>
+                  {roles.map((r) => (
+                    <option
+                      key={r.id}
+                      value={r.id}
+                      className="bg-[var(--bg-surface)]"
+                    >
+                      {r.name.charAt(0).toUpperCase() +
+                        r.name.slice(1).replace("_", " ")}
+                    </option>
+                  ))}
                 </select>
               </div>
 

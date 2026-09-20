@@ -240,13 +240,6 @@ function AppLayout() {
               {/* Global search could go here */}
             </div>
             {currentUser?.is_superuser && <OrganizationSelector />}
-            {!currentUser?.is_superuser &&
-              currentUser?.organizations_list?.length > 1 && (
-                <UserOrganizationSelector
-                  organizations={currentUser.organizations_list}
-                  currentOrgId={currentUser.organization_id}
-                />
-              )}
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />

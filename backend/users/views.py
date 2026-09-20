@@ -8,6 +8,7 @@ from .models import OTP
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
+from django.db import transaction
 from inventory.models import Booking
 import django_filters.rest_framework as django_filters
 from dateutil.relativedelta import relativedelta
@@ -382,6 +383,92 @@ class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = StandardResultsSetPagination
+
+    def create(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        role_id_or_name = request.data.get("role")
+
+        org = request.user.organization
+        if not org:
+            return Response(
+                {"error": "Active organization required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        role = None
+        if role_id_or_name:
+            if str(role_id_or_name).isdigit():
+                role = Role.objects.filter(id=role_id_or_name, organization=org).first()
+            else:
+                role = Role.objects.filter(
+                    name=role_id_or_name, organization=org
+                ).first()
+
+            if not role:
+                return Response(
+                    {"error": "Invalid role specified."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        user = User.objects.filter(email=email).first()
+
+        with transaction.atomic():
+            if not user:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user = serializer.save()
+
+                password = request.data.get("password")
+                if password:
+                    user.set_password(password)
+                    user.save()
+
+            if org not in user.organizations.all():
+                user.organizations.add(org)
+
+            if not user.organization:
+                user.organization = org
+                user.save()
+
+            if role:
+                OrganizationMembership.objects.update_or_create(
+                    user=user,
+                    organization=org,
+                    defaults={"role": role, "is_active": True},
+                )
+
+            resp_serializer = self.get_serializer(user)
+            return Response(resp_serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+
+        # Check if email is changing and prevent duplicates manually to avoid crashing on existing logic if we want to
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        role_id_or_name = request.data.get("role")
+        if role_id_or_name:
+            org = request.user.organization
+            role = None
+            if str(role_id_or_name).isdigit():
+                role = Role.objects.filter(id=role_id_or_name, organization=org).first()
+            else:
+                role = Role.objects.filter(
+                    name=role_id_or_name, organization=org
+                ).first()
+
+            if role:
+                OrganizationMembership.objects.update_or_create(
+                    user=instance, organization=org, defaults={"role": role}
+                )
+
+        if getattr(instance, "_prefetched_objects_cache", None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     @action(
         detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
