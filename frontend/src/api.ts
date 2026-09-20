@@ -79,6 +79,18 @@ api.interceptors.response.use(
         window.location.href = "/login";
       }
     }
+
+    // Globally format DRF field validation errors into error.response.data.error
+    if (error.response?.data && typeof error.response.data === "object") {
+      const data = error.response.data;
+      if (!data.error && !data.detail) {
+        const firstKey = Object.keys(data)[0];
+        if (firstKey && Array.isArray(data[firstKey])) {
+          data.error = `${firstKey.replace("_", " ")}: ${data[firstKey][0]}`;
+        }
+      }
+    }
+
     return Promise.reject(error);
   },
 );

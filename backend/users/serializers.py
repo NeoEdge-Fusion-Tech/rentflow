@@ -114,6 +114,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
         source="currency",
         write_only=True,
         required=False,
+        allow_null=True,
     )
     revenue = serializers.SerializerMethodField()
     financials_by_currency = serializers.SerializerMethodField()
