@@ -245,3 +245,4 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@rentflow.com"
 
 # Free Tier Quotas
 FREE_TIER_MONTHLY_QUOTA = config("FREE_TIER_MONTHLY_QUOTA", default=10, cast=int)
+MAX_ORGANIZATIONS_PER_USER = config("MAX_ORGANIZATIONS_PER_USER", default=5, cast=int)

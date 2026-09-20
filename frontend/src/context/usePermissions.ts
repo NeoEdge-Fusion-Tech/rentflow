@@ -4,8 +4,8 @@ export function usePermissions(currentUser?: any) {
   const hasPermission = (module: string, action: ActionType) => {
     if (!currentUser) return false;
 
-    // Superusers and legacy admins have full access
-    if (currentUser.is_superuser || currentUser.role === "admin") {
+    // Superusers have full access across the entire platform
+    if (currentUser.is_superuser) {
       return true;
     }
 

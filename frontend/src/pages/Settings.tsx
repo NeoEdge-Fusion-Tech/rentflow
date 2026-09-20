@@ -1198,6 +1198,12 @@ export function Settings() {
                   <option value="admin" className="bg-[var(--bg-surface)]">
                     Admin
                   </option>
+                  <option
+                    value="team_member"
+                    className="bg-[var(--bg-surface)]"
+                  >
+                    Team Member
+                  </option>
                   <option value="staff" className="bg-[var(--bg-surface)]">
                     Staff
                   </option>

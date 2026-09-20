@@ -1,4 +1,4 @@
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, serializers
 from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework.decorators import action
@@ -21,10 +21,12 @@ from .models import (
     User,
     Client,
     Vendor,
-    Currency,
     Feedback,
+    GlobalConfig,
+    Currency,
 )
 from .serializers import (
+    GlobalConfigSerializer,
     OrganizationSerializer,
     SubscriptionSerializer,
     SubscriptionPlanSerializer,
@@ -292,12 +294,43 @@ class FeedbackAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class GlobalConfigAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+
+    def get(self, request):
+        config = GlobalConfig.get_settings()
+        serializer = GlobalConfigSerializer(config)
+        return Response(serializer.data)
+
+    def put(self, request):
+        config = GlobalConfig.get_settings()
+        serializer = GlobalConfigSerializer(config, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
     def perform_create(self, serializer):
         user = self.request.user
+
+        from users.models import GlobalConfig
+
+        config = GlobalConfig.get_settings()
+        max_orgs = config.max_organizations_per_user
+
+        # Count organizations where the user is the owner (creator)
+        if Organization.objects.filter(created_by=user).count() >= max_orgs:
+            raise serializers.ValidationError(
+                {
+                    "error": f"You have reached the maximum limit of {max_orgs} businesses."
+                }
+            )
+
         organization = serializer.save(created_by=user)
 
         if not user.is_superuser:

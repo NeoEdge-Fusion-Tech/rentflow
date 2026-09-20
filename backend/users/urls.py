@@ -25,6 +25,7 @@ from .views import (
     SwitchOrganizationAPIView,
     RoleViewSet,
     OrganizationMembershipViewSet,
+    GlobalConfigAPIView,
 )
 
 router = DefaultRouter()
@@ -94,5 +95,6 @@ urlpatterns = [
         "superadmin/stats/", SuperAdminStatsAPIView.as_view(), name="superadmin-stats"
     ),
     path("feedback/", FeedbackAPIView.as_view(), name="feedback"),
+    path("global-config/", GlobalConfigAPIView.as_view(), name="global_config"),
     path("", include(router.urls)),
 ]

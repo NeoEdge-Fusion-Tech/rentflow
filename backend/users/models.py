@@ -409,3 +409,21 @@ class OrganizationMembership(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.organization.name}"
+
+
+class GlobalConfig(models.Model):
+    free_tier_monthly_quota = models.IntegerField(
+        default=10, help_text="Default monthly invoice/booking quota for free users."
+    )
+    max_organizations_per_user = models.IntegerField(
+        default=5, help_text="Maximum number of businesses a single user can create."
+    )
+
+    class Meta:
+        verbose_name = "Global Configuration"
+        verbose_name_plural = "Global Configuration"
+
+    @classmethod
+    def get_settings(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj

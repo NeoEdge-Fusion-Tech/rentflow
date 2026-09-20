@@ -114,6 +114,8 @@ export const UserService = {
     api.post(`/users/team/${id}/admin_change_password/`, data),
   adminTriggerReset: (id: number | string) =>
     api.post(`/users/team/${id}/admin_trigger_reset/`),
+  getGlobalConfig: () => api.get("/users/global-config/"),
+  updateGlobalConfig: (data: any) => api.put("/users/global-config/", data),
   deactivate: (id: number | string) =>
     api.post(`/users/team/${id}/deactivate/`),
 };

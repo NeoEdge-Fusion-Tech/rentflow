@@ -11,7 +11,14 @@ from .models import (
     Vendor,
     Currency,
     Feedback,
+    GlobalConfig,
 )
+
+
+class GlobalConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GlobalConfig
+        fields = ["free_tier_monthly_quota", "max_organizations_per_user"]
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -248,30 +255,51 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         read_only_fields = ["is_active"]
 
     def get_organizations_list(self, obj):
-        orgs = []
+        orgs_dict = {}
+
         if hasattr(obj, "organizations"):
-            orgs = [
-                {"id": org.id, "name": org.name}
-                for org in obj.organizations.all()
-                if not getattr(org, "is_deleted", False)
-            ]
-        if obj.organization and not any(o["id"] == obj.organization.id for o in orgs):
-            if not getattr(obj.organization, "is_deleted", False):
-                orgs.append({"id": obj.organization.id, "name": obj.organization.name})
-        return orgs
+            for org in obj.organizations.all():
+                if not getattr(org, "is_deleted", False):
+                    orgs_dict[org.id] = {"id": org.id, "name": org.name}
+
+        if obj.organization and not getattr(obj.organization, "is_deleted", False):
+            orgs_dict[obj.organization.id] = {
+                "id": obj.organization.id,
+                "name": obj.organization.name,
+            }
+
+        from .models import OrganizationMembership
+
+        for membership in OrganizationMembership.objects.filter(
+            user=obj, organization__is_deleted=False
+        ):
+            orgs_dict[membership.organization.id] = {
+                "id": membership.organization.id,
+                "name": membership.organization.name,
+            }
+
+        return list(orgs_dict.values())
 
     def get_active_role_permissions(self, obj):
-        if obj.is_superuser or obj.role == "admin":
+        if obj.is_superuser:
             return {"_all": ["read", "write", "delete"]}
+
         org = obj.organization
         if not org:
             return {}
+
         try:
             membership = obj.memberships.get(organization=org, is_active=True)
             if membership.role:
                 return membership.role.permissions
         except:
             pass
+
+        # Legacy fallback: If no membership exists, but this is their primary legacy org
+        # and they were a global admin, grant them admin access for backwards compatibility.
+        if obj.role == "admin" and getattr(obj, "organization_id", None) == org.id:
+            return {"_all": ["read", "write", "delete"]}
+
         return {}
 
     def get_currency_symbol(self, obj):
