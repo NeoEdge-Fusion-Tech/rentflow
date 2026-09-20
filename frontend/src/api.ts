@@ -188,6 +188,8 @@ export const AuthService = {
   updateMe: (data: any) => api.patch("/users/me/", data),
   deleteMe: () => api.delete("/users/me/"),
   changePassword: (data: any) => api.post("/users/change-password/", data),
+  switchOrganization: (data: { organization_id: string | number }) =>
+    api.post("/users/switch-organization/", data),
 };
 
 export const PaymentService = {
@@ -357,6 +359,29 @@ export const OrganizationService = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+};
+
+export const RoleService = {
+  getAll: (params?: any) => api.get("/users/roles/", { params }),
+  get: (id: number | string) => api.get(`/users/roles/${id}/`),
+  create: (data: any) => api.post("/users/roles/", data),
+  update: (id: number | string, data: any) =>
+    api.put(`/users/roles/${id}/`, data),
+  patch: (id: number | string, data: any) =>
+    api.patch(`/users/roles/${id}/`, data),
+  delete: (id: number | string) => api.delete(`/users/roles/${id}/`),
+};
+
+export const OrganizationMembershipService = {
+  getAll: (params?: any) =>
+    api.get("/users/organization-memberships/", { params }),
+  get: (id: number | string) =>
+    api.get(`/users/organization-memberships/${id}/`),
+  create: (data: any) => api.post("/users/organization-memberships/", data),
+  update: (id: number | string, data: any) =>
+    api.patch(`/users/organization-memberships/${id}/`, data),
+  delete: (id: number | string) =>
+    api.delete(`/users/organization-memberships/${id}/`),
 };
 
 export const SuperAdminService = {

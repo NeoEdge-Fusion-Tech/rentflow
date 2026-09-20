@@ -22,6 +22,9 @@ from .views import (
     ResendVerificationEmailAPIView,
     ChangePasswordAPIView,
     FeedbackAPIView,
+    SwitchOrganizationAPIView,
+    RoleViewSet,
+    OrganizationMembershipViewSet,
 )
 
 router = DefaultRouter()
@@ -38,6 +41,12 @@ router.register(
 )
 router.register(r"bank-accounts", BankAccountViewSet, basename="bankaccount")
 router.register(r"team", UserViewSet, basename="team")
+router.register(r"roles", RoleViewSet, basename="role")
+router.register(
+    r"organization-memberships",
+    OrganizationMembershipViewSet,
+    basename="organizationmembership",
+)
 router.register(r"clients", ClientViewSet, basename="client")
 router.register(r"vendors", VendorViewSet, basename="vendor")
 router.register(
@@ -74,6 +83,11 @@ urlpatterns = [
         name="set-password-reset",
     ),
     path("change-password/", ChangePasswordAPIView.as_view(), name="change-password"),
+    path(
+        "switch-organization/",
+        SwitchOrganizationAPIView.as_view(),
+        name="switch-organization",
+    ),
     path("token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path(

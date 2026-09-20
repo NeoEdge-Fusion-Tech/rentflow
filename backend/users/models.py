@@ -240,6 +240,11 @@ class User(AbstractUser):
         null=True,
         blank=True,
     )
+    organizations = models.ManyToManyField(
+        Organization,
+        related_name="members",
+        blank=True,
+    )
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email_verified = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
@@ -362,3 +367,45 @@ class OTP(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.purpose} - {self.code}"
+
+
+class Role(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="roles"
+    )
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    permissions = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("organization", "name")
+
+    def __str__(self):
+        return f"{self.name} - {self.organization.name}"
+
+
+class OrganizationMembership(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="memberships"
+    )
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="memberships"
+    )
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="memberships",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "organization")
+
+    def __str__(self):
+        return f"{self.user.email} - {self.organization.name}"

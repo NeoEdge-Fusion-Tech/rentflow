@@ -213,6 +213,8 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_name = serializers.CharField(
         source="organization.name", read_only=True
     )
+    organizations_list = serializers.SerializerMethodField()
+    active_role_permissions = serializers.SerializerMethodField()
     subscription_plan = serializers.CharField(
         source="organization.subscription_plan", read_only=True
     )
@@ -232,6 +234,8 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "role",
             "organization_id",
             "organization_name",
+            "organizations_list",
+            "active_role_permissions",
             "subscription_plan",
             "currency_symbol",
             "has_booking",
@@ -241,6 +245,26 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "is_superuser",
         ]
         read_only_fields = ["is_active"]
+
+    def get_organizations_list(self, obj):
+        # Return list of {id, name} for all organizations user has access to
+        if hasattr(obj, "organizations"):
+            return [{"id": org.id, "name": org.name} for org in obj.organizations.all()]
+        return []
+
+    def get_active_role_permissions(self, obj):
+        if obj.is_superuser or obj.role == "admin":
+            return {"_all": ["read", "write", "delete"]}
+        org = obj.organization
+        if not org:
+            return {}
+        try:
+            membership = obj.memberships.get(organization=org, is_active=True)
+            if membership.role:
+                return membership.role.permissions
+        except:
+            pass
+        return {}
 
     def get_currency_symbol(self, obj):
         if (
@@ -508,3 +532,45 @@ class AdminChangePasswordSerializer(serializers.Serializer):
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)
+
+
+from .models import Role, OrganizationMembership
+
+
+class RoleSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = [
+            "id",
+            "organization",
+            "name",
+            "description",
+            "permissions",
+            "created_at",
+        ]
+        read_only_fields = ["organization", "created_at"]
+
+
+class OrganizationMembershipSerializer(
+    TenantSerializerMixin, serializers.ModelSerializer
+):
+    user_email = serializers.CharField(source="user.email", read_only=True)
+    user_first_name = serializers.CharField(source="user.first_name", read_only=True)
+    user_last_name = serializers.CharField(source="user.last_name", read_only=True)
+    role_name = serializers.CharField(source="role.name", read_only=True)
+
+    class Meta:
+        model = OrganizationMembership
+        fields = [
+            "id",
+            "user",
+            "organization",
+            "role",
+            "is_active",
+            "created_at",
+            "user_email",
+            "user_first_name",
+            "user_last_name",
+            "role_name",
+        ]
+        read_only_fields = ["organization", "created_at"]

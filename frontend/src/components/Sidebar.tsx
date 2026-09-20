@@ -29,6 +29,7 @@ import { cn } from "@/src/utils";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useVisibility } from "../context/VisibilityContext";
+import { usePermissions } from "../context/usePermissions";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -85,6 +86,7 @@ export function Sidebar({
 }: SidebarProps) {
   const { theme } = useTheme();
   const { isRevenueHidden, toggleRevenueVisibility } = useVisibility();
+  const { hasPermission } = usePermissions();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -136,13 +138,33 @@ export function Sidebar({
                 }
                 if (
                   item.label === "Inventory" &&
-                  currentUser?.has_booking === false
+                  (currentUser?.has_booking === false ||
+                    !hasPermission("inventory", "read"))
                 ) {
                   return false;
                 }
                 if (
                   item.label === "Bookings" &&
-                  currentUser?.has_booking === false
+                  (currentUser?.has_booking === false ||
+                    !hasPermission("bookings", "read"))
+                ) {
+                  return false;
+                }
+                if (
+                  item.label === "Clients" &&
+                  !hasPermission("clients", "read")
+                ) {
+                  return false;
+                }
+                if (
+                  item.label === "Vendors" &&
+                  !hasPermission("vendors", "read")
+                ) {
+                  return false;
+                }
+                if (
+                  item.label === "Projects" &&
+                  !hasPermission("events", "read")
                 ) {
                   return false;
                 }

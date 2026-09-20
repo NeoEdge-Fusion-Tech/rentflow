@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework.decorators import action
 from django.utils import timezone
+from .permissions import HasModulePermission
 from .models import OTP
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -242,6 +243,37 @@ class ChangePasswordAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class SwitchOrganizationAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        organization_id = request.data.get("organization_id")
+        if not organization_id:
+            return Response(
+                {"error": "organization_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        try:
+            org = user.organizations.get(id=organization_id)
+            user.organization = org
+            user.save()
+            return Response(
+                {
+                    "message": "Organization switched successfully.",
+                    "organization_id": org.id,
+                    "organization_name": org.name,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Organization.DoesNotExist:
+            return Response(
+                {"error": "You do not have access to this organization."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+
 class FeedbackAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -373,6 +405,8 @@ class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
+    permission_classes = [permissions.IsAuthenticated, HasModulePermission]
+    required_module = "clients"
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["status"]
     search_fields = ["first_name", "last_name", "email", "phone_number", "company_name"]
@@ -403,6 +437,8 @@ class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class VendorViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Vendor.objects.all()
     serializer_class = VendorSerializer
+    permission_classes = [permissions.IsAuthenticated, HasModulePermission]
+    required_module = "vendors"
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["status"]
     search_fields = ["business_name", "contact_name", "contact_email", "service"]
@@ -675,3 +711,31 @@ class CurrencyViewSet(viewsets.ModelViewSet):
         if self.action == "list" and self.request.query_params.get("all") != "true":
             qs = qs.filter(status="active")
         return qs
+
+
+from .models import Role, OrganizationMembership
+from .serializers import RoleSerializer, OrganizationMembershipSerializer
+
+
+class RoleViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {}
+        if not user.is_superuser:
+            kwargs["organization"] = user.organization
+        serializer.save(**kwargs)
+
+
+class OrganizationMembershipViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    queryset = OrganizationMembership.objects.all()
+    serializer_class = OrganizationMembershipSerializer
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {}
+        if not user.is_superuser:
+            kwargs["organization"] = user.organization
+        serializer.save(**kwargs)

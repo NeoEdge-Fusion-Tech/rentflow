@@ -31,12 +31,18 @@ from rest_framework.response import Response
 from users.models import Client, Vendor
 from users.mixins import TenantIsolationMixin
 from payment.models import Payment, Invoice
+from users.permissions import HasModulePermission
 
 
 class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ProductCategory.objects.all()
     serializer_class = ProductCategorySerializer
-    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "inventory"
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -69,7 +75,12 @@ class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "inventory"
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["category", "is_active"]
     search_fields = ["name", "slug", "description"]
@@ -165,7 +176,12 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class ProductUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ProductUnit.objects.all()
     serializer_class = ProductUnitSerializer
-    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "inventory"
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -196,7 +212,12 @@ class BookingFilter(django_filters.FilterSet):
 class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
-    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "bookings"
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
     filterset_class = BookingFilter
     search_fields = [
@@ -265,7 +286,12 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class BookingItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BookingItem.objects.all()
     serializer_class = BookingItemSerializer
-    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "bookings"
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)
@@ -277,7 +303,12 @@ class BookingItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class BookingItemUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = BookingItemUnit.objects.all()
     serializer_class = BookingItemUnitSerializer
-    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "bookings"
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, updated_by=self.request.user)

@@ -44,6 +44,7 @@ import { Subscriptions as SuperAdminSubscriptions } from "./pages/SuperAdmin/Sub
 import { SubscriptionPlans as SuperAdminSubscriptionPlans } from "./pages/SuperAdmin/SubscriptionPlans";
 import { Revenue as SuperAdminRevenue } from "./pages/SuperAdmin/Revenue";
 import { OrganizationSelector } from "./components/OrganizationSelector";
+import { UserOrganizationSelector } from "./components/UserOrganizationSelector";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Onboarding } from "./pages/Onboarding";
@@ -239,6 +240,13 @@ function AppLayout() {
               {/* Global search could go here */}
             </div>
             {currentUser?.is_superuser && <OrganizationSelector />}
+            {!currentUser?.is_superuser &&
+              currentUser?.organizations_list?.length > 1 && (
+                <UserOrganizationSelector
+                  organizations={currentUser.organizations_list}
+                  currentOrgId={currentUser.organization_id}
+                />
+              )}
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />
