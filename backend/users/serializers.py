@@ -268,7 +268,11 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 "name": obj.organization.name,
             }
 
-        from .models import OrganizationMembership
+        from .models import OrganizationMembership, Organization
+
+        # Include organizations they own/created
+        for org in Organization.objects.filter(created_by=obj, is_deleted=False):
+            orgs_dict[org.id] = {"id": org.id, "name": org.name}
 
         for membership in OrganizationMembership.objects.filter(
             user=obj, organization__is_deleted=False
