@@ -39,16 +39,27 @@ export function Settings() {
   const [roles, setRoles] = useState<any[]>([]);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState<any>(null);
-  const [roleForm, setRoleForm] = useState({
+  const [roleForm, setRoleForm] = useState<{
+    name: string;
+    description: string;
+    permissions: Record<
+      string,
+      { read: boolean; write: boolean; delete: boolean }
+    >;
+  }>({
     name: "",
     description: "",
     permissions: {
-      can_view_dashboard: true,
-      can_manage_team: false,
-      can_manage_billing: false,
-      can_manage_bookings: false,
-      can_manage_inventory: false,
-      can_manage_settings: false,
+      dashboard: { read: true, write: false, delete: false },
+      bookings: { read: false, write: false, delete: false },
+      invoices: { read: false, write: false, delete: false },
+      inventory: { read: false, write: false, delete: false },
+      projects: { read: false, write: false, delete: false },
+      payments: { read: false, write: false, delete: false },
+      team: { read: false, write: false, delete: false },
+      settings: { read: false, write: false, delete: false },
+      reports: { read: false, write: false, delete: false },
+      validator_app: { read: false, write: false, delete: false },
     },
   });
 
@@ -539,34 +550,38 @@ export function Settings() {
     }
   };
 
+  const DEFAULT_PERMISSIONS = (): Record<
+    string,
+    { read: boolean; write: boolean; delete: boolean }
+  > => ({
+    dashboard: { read: true, write: false, delete: false },
+    bookings: { read: false, write: false, delete: false },
+    invoices: { read: false, write: false, delete: false },
+    inventory: { read: false, write: false, delete: false },
+    projects: { read: false, write: false, delete: false },
+    payments: { read: false, write: false, delete: false },
+    team: { read: false, write: false, delete: false },
+    settings: { read: false, write: false, delete: false },
+    reports: { read: false, write: false, delete: false },
+    validator_app: { read: false, write: false, delete: false },
+  });
+
   const handleOpenRoleModal = (role?: any) => {
     if (role) {
       setEditingRole(role);
+      // Merge saved permissions with defaults so new modules always appear
+      const merged = { ...DEFAULT_PERMISSIONS(), ...(role.permissions || {}) };
       setRoleForm({
         name: role.name,
         description: role.description || "",
-        permissions: role.permissions || {
-          can_view_dashboard: true,
-          can_manage_team: false,
-          can_manage_billing: false,
-          can_manage_bookings: false,
-          can_manage_inventory: false,
-          can_manage_settings: false,
-        },
+        permissions: merged,
       });
     } else {
       setEditingRole(null);
       setRoleForm({
         name: "",
         description: "",
-        permissions: {
-          can_view_dashboard: true,
-          can_manage_team: false,
-          can_manage_billing: false,
-          can_manage_bookings: false,
-          can_manage_inventory: false,
-          can_manage_settings: false,
-        },
+        permissions: DEFAULT_PERMISSIONS(),
       });
     }
     setShowRoleModal(true);
@@ -1347,32 +1362,111 @@ export function Settings() {
                 <h3 className="text-sm font-bold text-[var(--text-main)] mb-3">
                   Permissions
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[var(--bg-app)] p-4 rounded-xl border border-[var(--border-soft)]">
-                  {Object.keys(roleForm.permissions).map((permKey) => (
-                    <label
-                      key={permKey}
-                      className="flex items-center gap-3 p-2 hover:bg-[var(--bg-surface)] rounded-lg cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={(roleForm.permissions as any)[permKey]}
-                        onChange={(e) =>
-                          setRoleForm({
-                            ...roleForm,
-                            permissions: {
-                              ...roleForm.permissions,
-                              [permKey]: e.target.checked,
-                            },
-                          })
-                        }
-                        className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary bg-[var(--bg-surface)] border-[var(--border-soft)]"
-                      />
-                      <span className="text-sm font-medium text-[var(--text-main)] capitalize">
-                        {permKey.replace(/_/g, " ")}
-                      </span>
-                    </label>
-                  ))}
+                <div className="rounded-xl border border-[var(--border-soft)] overflow-hidden">
+                  {/* Header row */}
+                  <div className="grid grid-cols-[1fr_auto_auto_auto] bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
+                    <div className="px-4 py-2.5 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                      Module
+                    </div>
+                    {["Read", "Write", "Delete"].map((a) => (
+                      <div
+                        key={a}
+                        className="px-4 py-2.5 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center w-16"
+                      >
+                        {a}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Module rows */}
+                  {Object.keys(roleForm.permissions).map((mod, idx) => {
+                    const modPerms = (roleForm.permissions as any)[mod] as {
+                      read: boolean;
+                      write: boolean;
+                      delete: boolean;
+                    };
+                    const toggle = (
+                      action: "read" | "write" | "delete",
+                      val: boolean,
+                    ) => {
+                      const updated = { ...modPerms, [action]: val };
+                      // write implies read; delete implies read+write
+                      if (action === "write" && val) updated.read = true;
+                      if (action === "delete" && val) {
+                        updated.read = true;
+                        updated.write = true;
+                      }
+                      if (action === "read" && !val) {
+                        updated.write = false;
+                        updated.delete = false;
+                      }
+                      if (action === "write" && !val) updated.delete = false;
+                      setRoleForm({
+                        ...roleForm,
+                        permissions: {
+                          ...roleForm.permissions,
+                          [mod]: updated,
+                        },
+                      });
+                    };
+                    return (
+                      <div
+                        key={mod}
+                        className={`grid grid-cols-[1fr_auto_auto_auto] items-center ${
+                          idx % 2 === 0
+                            ? "bg-[var(--bg-surface)]"
+                            : "bg-[var(--bg-app)]"
+                        } hover:bg-brand-primary/5 transition-colors`}
+                      >
+                        <div className="px-4 py-3 text-sm font-medium text-[var(--text-main)] capitalize">
+                          {mod}
+                        </div>
+                        {(["read", "write", "delete"] as const).map(
+                          (action) => (
+                            <div
+                              key={action}
+                              className="flex items-center justify-center w-16 py-3"
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  toggle(action, !modPerms[action])
+                                }
+                                className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all ${
+                                  modPerms[action]
+                                    ? action === "delete"
+                                      ? "bg-red-500 border-red-500 text-white"
+                                      : action === "write"
+                                        ? "bg-amber-500 border-amber-500 text-white"
+                                        : "bg-brand-primary border-brand-primary text-brand-accent"
+                                    : "border-[var(--border-soft)] bg-transparent"
+                                }`}
+                              >
+                                {modPerms[action] && (
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={3}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                <p className="text-xs text-[var(--text-muted)] mt-2">
+                  Write implies Read. Delete implies Read + Write.
+                </p>
               </div>
 
               <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-[var(--bg-surface)]">
