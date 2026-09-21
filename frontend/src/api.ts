@@ -244,6 +244,13 @@ export const InvoiceService = {
   generatePaymentLink: (id: number | string) =>
     api.post(`/payment/invoices/${id}/generate_payment_link/`),
   emptyTrash: () => api.delete("/payment/invoices/empty_trash/"),
+  parseUpload: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post("/payment/invoices/upload_and_extract/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export const QuotationService = {

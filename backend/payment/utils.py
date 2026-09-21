@@ -1157,58 +1157,437 @@ def generate_receipt_pdf(receipt):
 
 try:
     import pytesseract
-    from PIL import Image
+    from PIL import Image, ImageFilter, ImageOps
     from pdf2image import convert_from_bytes
 except ImportError:
     pass
 
 
-def extract_invoice_data(file_bytes, file_type):
+# ─────────────────────────────────────────────────────────────────────────────
+# TEXT EXTRACTION
+# Strategy:
+#   1. Native PDF (pdfplumber) → best quality, no OCR needed
+#   2. Scanned PDF            → pdf2image + enhanced pytesseract OCR
+#   3. Image file             → enhanced pytesseract OCR
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _preprocess_image_for_ocr(img: "Image.Image") -> "Image.Image":
     """
-    Extracts text using pytesseract and attempts to parse total amount and date.
-    Returns a dictionary of extracted data.
+    Apply standard preprocessing to improve pytesseract accuracy:
+    - Convert to grayscale
+    - Resize to 300 DPI equivalent if small
+    - Sharpen + enhance contrast
+    - Binarise with Otsu threshold via point()
     """
-    text = ""
+    img = img.convert("L")  # grayscale
+
+    # Upscale small images so Tesseract has enough resolution
+    w, h = img.size
+    if w < 1000:
+        scale = max(1000 / w, 1)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+
+    img = img.filter(ImageFilter.SHARPEN)
+    img = ImageOps.autocontrast(img, cutoff=2)
+
+    # Simple binary threshold at mid-point (mimics Otsu for most invoices)
+    img = img.point(lambda p: 255 if p > 128 else 0, "1").convert("L")
+    return img
+
+
+def _ocr_image(img: "Image.Image") -> str:
+    """Run Tesseract on a PIL image with invoice-optimised config."""
+    processed = _preprocess_image_for_ocr(img)
+    # PSM 6 = uniform block of text; best for invoices laid out as pages
+    custom_cfg = "--oem 3 --psm 6"
+    return pytesseract.image_to_string(processed, config=custom_cfg)
+
+
+def _extract_text_pdfplumber(file_bytes: bytes) -> str:
+    """
+    Extract text from a native (text-based) PDF using pdfplumber.
+    Returns the full text if the PDF contains selectable text, else empty string.
+    """
     try:
-        if file_type == "application/pdf":
-            images = convert_from_bytes(file_bytes)
-            for img in images:
-                text += pytesseract.image_to_string(img) + "\n"
-        else:
-            # Assume image
-            import io
+        import pdfplumber
+        import io
 
-            image = Image.open(io.BytesIO(file_bytes))
-            text = pytesseract.image_to_string(image)
-    except Exception as e:
-        print(f"OCR Error: {e}")
-        return {"notes": f"OCR Failed: {e}"}
+        text_parts = []
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text(x_tolerance=3, y_tolerance=3) or ""
+                text_parts.append(page_text)
 
-    data = {"notes": text, "total_amount": 0, "issue_date": None, "line_items": []}
+                # Also extract tables and flatten them into text rows
+                for table in page.extract_tables():
+                    for row in table:
+                        row_cells = [str(cell or "").strip() for cell in row]
+                        non_empty = [c for c in row_cells if c]
+                        if non_empty:
+                            text_parts.append("\t".join(non_empty))
 
-    # Attempt to extract total amount
-    # Matches Total: 100.00 or $100.00
-    total_match = re.search(
-        r"(?:total|amount due).*?([\d,]+\.\d{2})", text, re.IGNORECASE
-    )
-    if total_match:
+        return "\n".join(text_parts).strip()
+    except Exception:
+        return ""
+
+
+def _extract_text_from_file(file_bytes: bytes, file_type: str) -> str:
+    """
+    Master text extraction:
+    - PDFs: try pdfplumber first; if too short fall back to OCR
+    - Images: run enhanced pytesseract directly
+    """
+    import io
+
+    if file_type == "application/pdf":
+        # Attempt 1: native text extraction (fast, accurate)
+        native_text = _extract_text_pdfplumber(file_bytes)
+        if len(native_text) >= 50:  # meaningful content found
+            return native_text
+
+        # Attempt 2: scanned PDF → rasterise then OCR
         try:
-            val_str = total_match.group(1).replace(",", "")
-            data["total_amount"] = Decimal(val_str)
-        except:
-            pass
+            images = convert_from_bytes(file_bytes, dpi=300)
+            pages = [_ocr_image(img) for img in images]
+            return "\n".join(pages).strip()
+        except Exception as e:
+            raise RuntimeError(f"PDF OCR failed: {e}")
 
-    # Attempt to extract issue date
-    date_match = re.search(
-        r"(?:date|issue date).*?(\d{2,4}[-/]\d{1,2}[-/]\d{1,4})", text, re.IGNORECASE
-    )
-    if date_match:
+    else:
+        # Image file
         try:
-            from dateutil import parser
+            img = Image.open(io.BytesIO(file_bytes))
+            return _ocr_image(img).strip()
+        except Exception as e:
+            raise RuntimeError(f"Image OCR failed: {e}")
 
-            dt = parser.parse(date_match.group(1))
-            data["issue_date"] = dt.strftime("%Y-%m-%d")
-        except:
-            pass
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STRUCTURED REGEX PARSER
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Currency symbols we recognise
+_CCY = r"(?:[\$€£₦₹¥₩]|\b(?:USD|EUR|GBP|NGN|INR|CAD|AUD)\b)?"
+
+# Date patterns: 2024-01-31 | 01/31/2024 | 31 Jan 2024 | January 31, 2024
+_DATE_PAT = (
+    r"(\d{4}[-/]\d{1,2}[-/]\d{1,2}"  # ISO: 2024-01-31
+    r"|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}"  # US/EU: 01/31/24
+    r"|\d{1,2}\s+\w{3,9}\s+\d{4}"  # 31 January 2024
+    r"|\w{3,9}\s+\d{1,2},?\s+\d{4})"  # January 31, 2024
+)
+
+
+def _parse_date(raw: str) -> "str | None":
+    from dateutil import parser as dp
+
+    try:
+        return dp.parse(raw.strip(), dayfirst=True).strftime("%Y-%m-%d")
+    except Exception:
+        return None
+
+
+def _parse_amount(raw: str) -> "float | None":
+    cleaned = re.sub(r"[^\d.]", "", raw.replace(",", ""))
+    try:
+        return float(cleaned) if cleaned else None
+    except Exception:
+        return None
+
+
+def _extract_field_date(text: str, *label_patterns: str) -> "str | None":
+    """Find first date after any of the label_patterns."""
+    for label in label_patterns:
+        pattern = rf"(?i){label}[\s:]*{_DATE_PAT}"
+        m = re.search(pattern, text)
+        if m:
+            result = _parse_date(m.group(1))
+            if result:
+                return result
+    return None
+
+
+def _extract_field_amount(text: str, *label_patterns: str) -> "float | None":
+    """Find first amount after any of the label_patterns."""
+    for label in label_patterns:
+        pattern = rf"(?i){label}[\s:]*{_CCY}\s*([\d,]+\.?\d*)"
+        m = re.search(pattern, text)
+        if m:
+            return _parse_amount(m.group(1))
+    return None
+
+
+def _extract_title(text: str) -> "str | None":
+    """
+    Look for a prominent invoice type keyword near the top of the document.
+    """
+    for kw in [
+        "TAX INVOICE",
+        "INVOICE",
+        "PROFORMA INVOICE",
+        "SALES INVOICE",
+        "CREDIT NOTE",
+        "DEBIT NOTE",
+        "RECEIPT",
+        "QUOTATION",
+        "ESTIMATE",
+    ]:
+        if re.search(rf"(?i)\b{re.escape(kw)}\b", text[:600]):
+            return kw.title()
+    return "Invoice"
+
+
+def _extract_client_name(text: str) -> "str | None":
+    """
+    Try several common 'Bill To' / 'Client' block formats.
+    Takes the first non-blank line after the label.
+    """
+    patterns = [
+        r"(?i)(?:bill(?:ed)?\s+to|invoice\s+to|client|customer|sold\s+to|to)\s*:?\s*\n+([^\n]{3,80})",
+        r"(?i)(?:bill(?:ed)?\s+to|invoice\s+to|client|customer)\s*:?\s+([A-Za-z][^\n]{2,79})",
+        r"(?i)to\s*:\s*([A-Za-z][^\n]{2,79})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            name = m.group(1).strip()
+            # Skip lines that look like headings or labels
+            if not re.match(r"(?i)^(address|email|phone|date|invoice|amount)", name):
+                return name[:100]
+    return None
+
+
+def _extract_line_items(text: str) -> list:
+    """
+    Detect tabular line items from the extracted text.
+
+    Strategy:
+    1. Look for a table header row containing keywords like
+       "description", "item", "qty", "quantity", "price", "amount"
+    2. Parse lines between that header and a footer row (subtotal/total)
+    3. Each line must have ≥2 numeric-looking tokens at the right side
+
+    Returns a list of dicts with keys: name, description, quantity, unit_price
+    """
+    items = []
+
+    # ── Attempt 1: find structured table section ──────────────────────────
+    # Locate header line
+    header_match = re.search(
+        r"(?i)^.*(description|item|service|particulars).*(qty|quantity|units?).*(price|rate|unit\s*price|amount).*$",
+        text,
+        re.MULTILINE,
+    )
+
+    if header_match:
+        header_end = header_match.end()
+        # Extract everything up to the first subtotal/total line
+        after_header = text[header_end:]
+        footer_match = re.search(
+            r"(?i)^\s*(?:sub\s*total|subtotal|total amount|total due|amount due|grand total)",
+            after_header,
+            re.MULTILINE,
+        )
+        table_block = (
+            after_header[: footer_match.start()]
+            if footer_match
+            else after_header[:3000]
+        )
+
+        for line in table_block.splitlines():
+            line = line.strip()
+            if not line or len(line) < 5:
+                continue
+            # Must contain at least two numbers (qty + price or price + total)
+            numbers = re.findall(r"[\d,]+\.?\d*", line)
+            if len(numbers) < 2:
+                continue
+
+            # Take the last two numbers as unit_price and total (or qty and price)
+            nums = [_parse_amount(n) for n in numbers[-3:]]
+            nums = [n for n in nums if n is not None and n > 0]
+            if len(nums) < 2:
+                continue
+
+            # Heuristic: if 3 nums, treat as qty / unit_price / total
+            if len(nums) >= 3:
+                qty = nums[0]
+                unit_price = nums[1]
+            else:
+                qty = 1
+                unit_price = nums[0]
+
+            # The item name is the text before the first number
+            first_num_pos = re.search(r"[\d,]+\.?\d*", line)
+            name = line[: first_num_pos.start()].strip() if first_num_pos else line
+            name = re.sub(r"[\t|]+", " ", name).strip()
+
+            if name and len(name) >= 2:
+                items.append(
+                    {
+                        "name": name[:200],
+                        "description": "",
+                        "quantity": qty,
+                        "unit_price": unit_price,
+                    }
+                )
+
+    # ── Attempt 2: loose line-item detection (qty × price pattern) ────────
+    if not items:
+        # Pattern: "Some Service Name  2  150.00  300.00"
+        loose_pat = re.compile(
+            r"^(.{3,60?}?)\s+(\d+(?:\.\d+)?)\s+"
+            + _CCY
+            + r"\s*([\d,]+\.\d{2})\s+"
+            + _CCY
+            + r"\s*([\d,]+\.\d{2})\s*$",
+            re.MULTILINE,
+        )
+        for m in loose_pat.finditer(text):
+            name = m.group(1).strip()
+            qty = float(m.group(2))
+            unit_price = _parse_amount(m.group(3))
+            if name and unit_price:
+                items.append(
+                    {
+                        "name": name[:200],
+                        "description": "",
+                        "quantity": qty,
+                        "unit_price": unit_price,
+                    }
+                )
+
+    return items[:50]  # sanity cap
+
+
+def _extract_tax_percentage(text: str) -> "float | None":
+    """Try to extract a tax/VAT/GST percentage."""
+    patterns = [
+        r"(?i)(?:vat|gst|tax|hst|pst)\s*(?:@|at|rate)?\s*(\d{1,2}(?:\.\d{1,2})?)%",
+        r"(?i)(?:vat|gst|tax)\s*[\(:@]\s*(\d{1,2}(?:\.\d{1,2})?)%?\s*[):]?",
+        r"(?i)(\d{1,2}(?:\.\d{1,2})?)%\s*(?:vat|gst|tax)",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            try:
+                val = float(m.group(1))
+                if 0 < val <= 100:
+                    return val
+            except Exception:
+                pass
+    return None
+
+
+def _extract_invoice_number(text: str) -> "str | None":
+    """Extract the invoice reference number."""
+    patterns = [
+        r"(?i)invoice\s*#?\s*:?\s*([A-Z0-9][-A-Z0-9/]{2,30})",
+        r"(?i)inv(?:oice)?\s*(?:no|num|number|#)\s*[:\-]?\s*([A-Z0-9][-A-Z0-9/]{2,30})",
+        r"(?i)ref(?:erence)?\s*(?:no|#)?\s*[:\-]\s*([A-Z0-9][-A-Z0-9/]{2,30})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def _structured_parse(text: str) -> dict:
+    """
+    Full structured parser — extracts all invoice fields from plain text
+    without any GenAI dependency.
+    """
+    data = {
+        "client_name": _extract_client_name(text),
+        "title": _extract_title(text),
+        "invoice_number_hint": _extract_invoice_number(text),  # informational only
+        "issue_date": _extract_field_date(
+            text,
+            r"invoice\s+date",
+            r"date\s+issued",
+            r"issue\s+date",
+            r"date\s+of\s+invoice",
+            r"(?<!\w)date",
+        ),
+        "due_date": _extract_field_date(
+            text, r"due\s+date", r"payment\s+due", r"pay\s+by", r"payable\s+by"
+        ),
+        "subtotal": _extract_field_amount(
+            text, r"sub\s*total", r"net\s+amount", r"before\s+tax"
+        ),
+        "tax_percentage": _extract_tax_percentage(text),
+        "discount_amount": _extract_field_amount(
+            text, r"discount", r"rebate", r"deduction"
+        ),
+        "total_amount": _extract_field_amount(
+            text,
+            r"total\s+amount\s+due",
+            r"amount\s+due",
+            r"grand\s+total",
+            r"total\s+due",
+            r"balance\s+due",
+            r"(?<!\w)total",
+        ),
+        "notes": None,
+        "line_items": _extract_line_items(text),
+        "parse_method": "ocr",
+    }
+
+    # Extract payment terms / notes block
+    notes_match = re.search(
+        r"(?i)(?:notes?|terms?|payment\s+terms?|remarks?)\s*:?\s*\n?(.{10,500}?)(?:\n\n|\Z)",
+        text,
+        re.DOTALL,
+    )
+    if notes_match:
+        data["notes"] = notes_match.group(1).strip()[:500]
 
     return data
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC ENTRY POINT
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def extract_invoice_data(file_bytes: bytes, file_type: str) -> dict:
+    """
+    Extract structured invoice data from a PDF or image file.
+
+    Pipeline:
+      1. pdfplumber  → native text extraction for digital PDFs (highest accuracy)
+      2. pytesseract → OCR with image preprocessing for scanned docs / images
+      3. Structured regex parser → derives all invoice fields from the text
+
+    Returns a dict with keys:
+      client_name, title, issue_date, due_date, subtotal, tax_percentage,
+      discount_amount, total_amount, notes, line_items, raw_text, parse_method
+    """
+    # Step 1: extract raw text
+    try:
+        raw_text = _extract_text_from_file(file_bytes, file_type)
+    except RuntimeError as e:
+        return {
+            "error": str(e),
+            "raw_text": "",
+            "parse_method": "failed",
+            "line_items": [],
+        }
+
+    if not raw_text or len(raw_text) < 10:
+        return {
+            "error": (
+                "Could not extract any text from the file. "
+                "Please ensure the image is clear and not rotated."
+            ),
+            "raw_text": "",
+            "parse_method": "failed",
+            "line_items": [],
+        }
+
+    # Step 2: structured parse
+    result = _structured_parse(raw_text)
+    result["raw_text"] = raw_text
+    return result

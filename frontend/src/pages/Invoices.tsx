@@ -21,6 +21,7 @@ import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { InvoiceService, AuthService } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
+import { UploadInvoiceModal } from "../components/UploadInvoiceModal";
 
 export function Invoices() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export function Invoices() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const defaultCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   useEffect(() => {
     AuthService.getMe()
@@ -219,7 +221,7 @@ export function Invoices() {
             </button>
           )}
           <button
-            onClick={() => navigate("/scanner")}
+            onClick={() => setUploadModalOpen(true)}
             className="flex items-center justify-center gap-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] px-4 py-2.5 rounded-xl font-bold hover:bg-[var(--bg-app)] transition-colors shadow-sm"
           >
             <Upload className="w-5 h-5" />
@@ -555,6 +557,12 @@ export function Invoices() {
           </div>
         </div>
       )}
+
+      {/* Upload Invoice Modal */}
+      <UploadInvoiceModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+      />
     </div>
   );
 }
