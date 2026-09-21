@@ -15,6 +15,7 @@ import {
   Copy,
   CreditCard,
   X,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -217,6 +218,13 @@ export function Invoices() {
               Empty Trash
             </button>
           )}
+          <button
+            onClick={() => navigate("/scanner")}
+            className="flex items-center justify-center gap-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] px-4 py-2.5 rounded-xl font-bold hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+          >
+            <Upload className="w-5 h-5" />
+            Upload Invoice
+          </button>
           <button
             onClick={() => navigate("/invoices/new")}
             className="flex items-center justify-center gap-2 bg-brand-primary text-brand-accent px-4 py-2.5 rounded-xl font-bold hover:opacity-90 transition-colors shadow-sm shadow-brand-primary/20"
