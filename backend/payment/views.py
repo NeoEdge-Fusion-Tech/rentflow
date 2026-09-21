@@ -153,12 +153,25 @@ class SuperAdminRevenueAPIView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        total_revenue = (
-            SubscriptionPayment.objects.filter(status="successful").aggregate(
-                Sum("amount")
-            )["amount__sum"]
-            or 0
+        # Group revenue by the organization's currency symbol
+        revenue_qs = (
+            SubscriptionPayment.objects.filter(status="successful")
+            .values("organization__currency__symbol", "currency")
+            .annotate(total=Sum("amount"))
         )
+
+        revenue_dict = {}
+        for row in revenue_qs:
+            # Prefer the linked currency symbol, fall back to the stored currency code
+            sym = row["organization__currency__symbol"] or row["currency"] or "$"
+            revenue_dict[sym] = revenue_dict.get(sym, 0.0) + float(row["total"] or 0)
+
+        total_revenue_by_currency = [
+            {"symbol": sym, "total": total} for sym, total in revenue_dict.items()
+        ]
+        if not total_revenue_by_currency:
+            total_revenue_by_currency = [{"symbol": "$", "total": 0}]
+
         active_subscriptions = Subscription.objects.filter(status="active").count()
 
         # Breakdown by plan
@@ -177,7 +190,7 @@ class SuperAdminRevenueAPIView(APIView):
 
         return Response(
             {
-                "total_revenue": total_revenue,
+                "total_revenue_by_currency": total_revenue_by_currency,
                 "active_subscriptions": active_subscriptions,
                 "plan_breakdown": plan_breakdown,
                 "recent_payments": recent_payments,

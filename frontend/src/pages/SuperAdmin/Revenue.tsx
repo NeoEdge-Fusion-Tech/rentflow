@@ -49,15 +49,19 @@ export function Revenue() {
           <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">
             Total SaaS Revenue
           </h3>
-          <p className="text-2xl font-bold text-[var(--text-main)]">
-            <RevenueDisplay
-              amount={`₦${
-                metrics?.total_revenue?.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                }) || "0.00"
-              }`}
-            />
-          </p>
+          <div className="flex flex-col gap-1 mt-1 max-h-28 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[var(--border-soft)]">
+            {metrics?.total_revenue_by_currency?.map(
+              (rev: any, idx: number) => (
+                <RevenueDisplay
+                  key={idx}
+                  amount={`${rev.symbol}${rev.total.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
+                />
+              ),
+            )}
+          </div>
         </div>
 
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
@@ -83,15 +87,19 @@ export function Revenue() {
           <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">
             Estimated MRR
           </h3>
-          <p className="text-2xl font-bold text-[var(--text-main)]">
-            <RevenueDisplay
-              amount={`₦${
-                metrics?.total_revenue?.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                }) || "0.00"
-              }`}
-            />
-          </p>
+          <div className="flex flex-col gap-1 mt-1 max-h-28 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[var(--border-soft)]">
+            {metrics?.total_revenue_by_currency?.map(
+              (rev: any, idx: number) => (
+                <RevenueDisplay
+                  key={idx}
+                  amount={`${rev.symbol}${rev.total.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
+                />
+              ),
+            )}
+          </div>
         </div>
       </div>
 
