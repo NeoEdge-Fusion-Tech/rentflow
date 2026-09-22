@@ -261,10 +261,16 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                     return Image(local_path, size, size)
     except Exception as e:
         print(f"Error loading logo: {e}")
+        import traceback
+
+        tb = traceback.format_exc()
+
         from reportlab.platypus import Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
 
-        return Paragraph(f"Logo Err: {e}", getSampleStyleSheet()["Normal"])
+        return Paragraph(
+            f"Logo Err: {e}<br/>{tb[:500]}", getSampleStyleSheet()["Normal"]
+        )
 
     return None
 
