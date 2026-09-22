@@ -214,10 +214,16 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                 url = "https:" + url
 
             if url.startswith("http"):
-                response = requests.get(url, timeout=10)
-                if response.status_code == 200:
-                    image_stream = io.BytesIO(response.content)
-                    return Image(image_stream, size, size)
+                # Cache the downloaded logo in /tmp to avoid ReportLab BytesIO EOF bugs
+                # and to speed up subsequent PDF generations for the same organization
+                tmp_logo_path = f"/tmp/org_logo_{organization.id}.png"
+                if not os.path.exists(tmp_logo_path):
+                    response = requests.get(url, timeout=10)
+                    if response.status_code == 200:
+                        with open(tmp_logo_path, "wb") as f:
+                            f.write(response.content)
+                if os.path.exists(tmp_logo_path):
+                    return Image(tmp_logo_path, size, size)
             else:
                 # Relative local URL — resolve via MEDIA_ROOT
                 from django.conf import settings as django_settings
