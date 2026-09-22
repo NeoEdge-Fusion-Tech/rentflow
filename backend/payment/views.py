@@ -541,14 +541,21 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
         invoice = self.get_object()
+        org = invoice.organization
+        logo_name = org.company_logo.name if org and org.company_logo else "NO LOGO"
+        logger.debug(
+            f"Generating invoice PDF: {invoice.invoice_number} | org={org} | logo={logo_name}"
+        )
         pdf_buffer = generate_invoice_pdf(invoice)
         filename = f"invoice_{invoice.invoice_number}.pdf"
-        return FileResponse(
+        response = FileResponse(
             pdf_buffer,
-            as_attachment=True,
+            as_attachment=False,
             filename=filename,
             content_type="application/pdf",
         )
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
 
 
 class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
@@ -654,14 +661,21 @@ class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
         quotation = self.get_object()
+        org = quotation.organization
+        logo_name = org.company_logo.name if org and org.company_logo else "NO LOGO"
+        logger.debug(
+            f"Generating quotation PDF: {quotation.quotation_number} | org={org} | logo={logo_name}"
+        )
         pdf_buffer = generate_quotation_pdf(quotation)
         filename = f"quotation_{quotation.quotation_number}.pdf"
-        return FileResponse(
+        response = FileResponse(
             pdf_buffer,
-            as_attachment=True,
+            as_attachment=False,
             filename=filename,
             content_type="application/pdf",
         )
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
 
     @action(detail=True, methods=["post"])
     def convert_to_invoice(self, request, pk=None):
@@ -760,12 +774,14 @@ class ReceiptViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         receipt = self.get_object()
         pdf_buffer = generate_receipt_pdf(receipt)
         filename = f"receipt_{receipt.receipt_number}.pdf"
-        return FileResponse(
+        response = FileResponse(
             pdf_buffer,
-            as_attachment=True,
+            as_attachment=False,
             filename=filename,
             content_type="application/pdf",
         )
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
 
 
 from django.conf import settings

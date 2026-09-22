@@ -536,16 +536,7 @@ export function InvoiceEditor() {
               <div className="w-14 h-14 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 {org?.company_logo && (
                   <img
-                    src={
-                      org.company_logo.startsWith("http")
-                        ? org.company_logo
-                        : `${
-                            import.meta.env.VITE_API_URL?.replace("/api", "") ||
-                            ""
-                          }${org.company_logo.startsWith("/") ? "" : "/"}${
-                            org.company_logo
-                          }`
-                    }
+                    src={org.company_logo}
                     alt="logo"
                     className="w-full h-full object-contain"
                   />

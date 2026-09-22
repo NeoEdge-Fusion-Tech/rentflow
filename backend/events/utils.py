@@ -160,6 +160,8 @@ def _load_logo_flowable(organization, size=1.1 * inch):
     try:
         if not organization.company_logo:
             return None
+
+        # Try local file path first (works when MEDIA_ROOT is used)
         try:
             if hasattr(organization.company_logo, "path"):
                 path = organization.company_logo.path
@@ -167,15 +169,38 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                     return Image(path, size, size)
         except Exception:
             pass
+
+        # Fallback to URL (Cloudinary, S3, etc)
         if hasattr(organization.company_logo, "url"):
             url = organization.company_logo.url
+
+            # Normalise protocol-relative URLs (//res.cloudinary.com/...)
+            if url.startswith("//"):
+                url = "https:" + url
+
             if url.startswith("http"):
-                response = requests.get(url, timeout=5)
+                response = requests.get(url, timeout=10)
                 if response.status_code == 200:
                     image_stream = io.BytesIO(response.content)
                     return Image(image_stream, size, size)
+            else:
+                # Relative local URL — resolve via MEDIA_ROOT
+                from django.conf import settings as django_settings
+
+                relative = url.lstrip("/")
+                media_root = str(getattr(django_settings, "MEDIA_ROOT", ""))
+                # Strip the MEDIA_URL prefix if present
+                media_url_prefix = getattr(
+                    django_settings, "MEDIA_URL", "/media/"
+                ).lstrip("/")
+                if relative.startswith(media_url_prefix):
+                    relative = relative[len(media_url_prefix) :]
+                local_path = os.path.join(media_root, relative)
+                if os.path.exists(local_path):
+                    return Image(local_path, size, size)
     except Exception as e:
         print(f"Error loading logo: {e}")
+
     return None
 
 

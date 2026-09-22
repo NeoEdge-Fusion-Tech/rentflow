@@ -376,7 +376,7 @@ export const OrganizationService = {
     api.patch(`/users/organizations/${id}/`, data),
   uploadLogo: (id: number | string, file: File) => {
     const formData = new FormData();
-    formData.append("company_logo", file);
+    formData.append("company_logo_upload", file);
     return api.patch(`/users/organizations/${id}/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });

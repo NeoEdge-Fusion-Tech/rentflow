@@ -129,12 +129,18 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     total_invoices = serializers.SerializerMethodField()
     expenses = serializers.SerializerMethodField()
 
+    company_logo = serializers.SerializerMethodField()
+    company_logo_upload = serializers.ImageField(
+        source="company_logo", write_only=True, required=False, allow_null=True
+    )
+
     class Meta:
         model = Organization
         fields = [
             "id",
             "name",
             "company_logo",
+            "company_logo_upload",
             "address",
             "phone_number",
             "email",
@@ -154,6 +160,26 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "financials_by_currency",
         ]
         read_only_fields = ["created_at"]
+
+    def get_company_logo(self, obj):
+        """Return the full absolute URL for the logo (works with Cloudinary, S3, and local storage)."""
+        if not obj.company_logo:
+            return None
+        try:
+            url = obj.company_logo.url
+            # Already a full URL (Cloudinary, S3)
+            if url.startswith("http"):
+                return url
+            # Protocol-relative (//res.cloudinary.com/...)
+            if url.startswith("//"):
+                return "https:" + url
+            # Relative URL — build absolute using request context
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        except Exception:
+            return None
 
     def get_revenue(self, obj):
         return getattr(obj, "revenue", 0.00)
