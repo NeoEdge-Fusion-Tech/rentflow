@@ -193,6 +193,8 @@ def _currency_label(currency):
 def _load_logo_flowable(organization, size=1.1 * inch):
     """Loads the organization's uploaded logo from local path or URL."""
     try:
+        from reportlab.platypus import Image as RLImage
+
         if not organization.company_logo:
             return None
 
@@ -201,7 +203,7 @@ def _load_logo_flowable(organization, size=1.1 * inch):
             if hasattr(organization.company_logo, "path"):
                 path = organization.company_logo.path
                 if os.path.exists(path):
-                    return Image(path, size, size)
+                    return RLImage(path, size, size)
         except Exception:
             pass
 
@@ -243,7 +245,7 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                         )
 
                 if os.path.exists(tmp_logo_path) and os.path.getsize(tmp_logo_path) > 0:
-                    return Image(tmp_logo_path, size, size)
+                    return RLImage(tmp_logo_path, size, size)
             else:
                 # Relative local URL — resolve via MEDIA_ROOT
                 from django.conf import settings as django_settings
@@ -258,7 +260,7 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                     relative = relative[len(media_url_prefix) :]
                 local_path = os.path.join(media_root, relative)
                 if os.path.exists(local_path):
-                    return Image(local_path, size, size)
+                    return RLImage(local_path, size, size)
     except Exception as e:
         print(f"Error loading logo: {e}")
         import traceback
