@@ -215,14 +215,23 @@ def _load_logo_flowable(organization, size=1.1 * inch):
 
             if url.startswith("http"):
                 # Cache the downloaded logo in /tmp to avoid ReportLab BytesIO EOF bugs
-                # and to speed up subsequent PDF generations for the same organization
-                tmp_logo_path = f"/tmp/org_logo_{organization.id}.png"
-                if not os.path.exists(tmp_logo_path):
+                # Hash the URL to ensure we download a new logo if the URL changes
+                import hashlib
+
+                url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+                tmp_logo_path = f"/tmp/org_logo_{organization.id}_{url_hash}.png"
+
+                # Check if file exists and has content
+                if (
+                    not os.path.exists(tmp_logo_path)
+                    or os.path.getsize(tmp_logo_path) == 0
+                ):
                     response = requests.get(url, timeout=10)
                     if response.status_code == 200:
                         with open(tmp_logo_path, "wb") as f:
                             f.write(response.content)
-                if os.path.exists(tmp_logo_path):
+
+                if os.path.exists(tmp_logo_path) and os.path.getsize(tmp_logo_path) > 0:
                     return Image(tmp_logo_path, size, size)
             else:
                 # Relative local URL — resolve via MEDIA_ROOT
