@@ -216,8 +216,15 @@ def _load_logo_flowable(organization, size=1.1 * inch):
             if url.startswith("http"):
                 response = requests.get(url, timeout=10)
                 if response.status_code == 200:
-                    image_stream = io.BytesIO(response.content)
-                    return Image(image_stream, size, size)
+                    # Keep the bytes in a variable so the BytesIO isn't GC'd
+                    # before ReportLab lazily renders the Image.
+                    img_bytes = response.content
+                    image_stream = io.BytesIO(img_bytes)
+                    img = Image(image_stream, size, size)
+                    # Force ReportLab to read the image data now so it
+                    # doesn't depend on the stream being open later.
+                    img._img = img._image  # touch the internal reader
+                    return img
             else:
                 # Relative local URL — resolve via MEDIA_ROOT
                 from django.conf import settings as django_settings
@@ -328,11 +335,12 @@ def generate_invoice_pdf(invoice):
                 Paragraph(invoice.due_date.strftime("%b %d, %Y"), meta_val_style),
             ]
         )
+    status_color = "#16a34a" if invoice.status == "paid" else "#2563eb"
     left_meta.append(
         [
             Paragraph("Status", meta_label_style),
             Paragraph(
-                f"<font color='#2563eb'>{invoice.get_status_display()}</font>",
+                f"<font color='{status_color}'>{invoice.get_status_display()}</font>",
                 meta_val_style,
             ),
         ]
@@ -350,10 +358,22 @@ def generate_invoice_pdf(invoice):
 
     header_left = [Paragraph(invoice.title or "Invoice", title_style), meta_table]
 
-    header_right = []
+    # Build the right-side header cell — wrap logo in a nested table
+    # so ReportLab right-aligns it correctly and the Image is eagerly resolved.
     logo = _load_logo_flowable(organization, size=1.4 * inch)
     if logo:
-        header_right.append(logo)
+        logo_table = Table([[logo]], colWidths=[2.2 * inch])
+        logo_table.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (0, 0), "RIGHT"),
+                    ("VALIGN", (0, 0), (0, 0), "TOP"),
+                ]
+            )
+        )
+        header_right = logo_table
+    else:
+        header_right = Spacer(1, 1)
 
     top_table = Table([[header_left, header_right]], colWidths=[5 * inch, 2.2 * inch])
     top_table.setStyle(
@@ -754,11 +774,12 @@ def generate_quotation_pdf(quotation):
                 Paragraph(quotation.expiry_date.strftime("%b %d, %Y"), meta_val_style),
             ]
         )
+    status_color = "#16a34a" if quotation.status in ("converted", "paid") else "#2563eb"
     left_meta.append(
         [
             Paragraph("Status", meta_label_style),
             Paragraph(
-                f"<font color='#2563eb'>{quotation.get_status_display()}</font>",
+                f"<font color='{status_color}'>{quotation.get_status_display()}</font>",
                 meta_val_style,
             ),
         ]
@@ -776,10 +797,22 @@ def generate_quotation_pdf(quotation):
 
     header_left = [Paragraph(quotation.title or "Quotation", title_style), meta_table]
 
-    header_right = []
+    # Build the right-side header cell — wrap logo in a nested table
+    # so ReportLab right-aligns it correctly and the Image is eagerly resolved.
     logo = _load_logo_flowable(organization, size=1.4 * inch)
     if logo:
-        header_right.append(logo)
+        logo_table = Table([[logo]], colWidths=[2.2 * inch])
+        logo_table.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (0, 0), "RIGHT"),
+                    ("VALIGN", (0, 0), (0, 0), "TOP"),
+                ]
+            )
+        )
+        header_right = logo_table
+    else:
+        header_right = Spacer(1, 1)
 
     top_table = Table([[header_left, header_right]], colWidths=[5 * inch, 2.2 * inch])
     top_table.setStyle(
