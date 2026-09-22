@@ -216,15 +216,8 @@ def _load_logo_flowable(organization, size=1.1 * inch):
             if url.startswith("http"):
                 response = requests.get(url, timeout=10)
                 if response.status_code == 200:
-                    # Keep the bytes in a variable so the BytesIO isn't GC'd
-                    # before ReportLab lazily renders the Image.
-                    img_bytes = response.content
-                    image_stream = io.BytesIO(img_bytes)
-                    img = Image(image_stream, size, size)
-                    # Force ReportLab to read the image data now so it
-                    # doesn't depend on the stream being open later.
-                    img._img = img._image  # touch the internal reader
-                    return img
+                    image_stream = io.BytesIO(response.content)
+                    return Image(image_stream, size, size)
             else:
                 # Relative local URL — resolve via MEDIA_ROOT
                 from django.conf import settings as django_settings
