@@ -555,6 +555,9 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             content_type="application/pdf",
         )
         response["Content-Disposition"] = f'inline; filename="{filename}"'
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
         return response
 
 

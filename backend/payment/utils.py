@@ -226,10 +226,21 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                     not os.path.exists(tmp_logo_path)
                     or os.path.getsize(tmp_logo_path) == 0
                 ):
-                    response = requests.get(url, timeout=10)
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                    }
+                    response = requests.get(url, timeout=10, headers=headers)
                     if response.status_code == 200:
                         with open(tmp_logo_path, "wb") as f:
                             f.write(response.content)
+                    else:
+                        from reportlab.platypus import Paragraph
+                        from reportlab.lib.styles import getSampleStyleSheet
+
+                        return Paragraph(
+                            f"HTTP {response.status_code}",
+                            getSampleStyleSheet()["Normal"],
+                        )
 
                 if os.path.exists(tmp_logo_path) and os.path.getsize(tmp_logo_path) > 0:
                     return Image(tmp_logo_path, size, size)
@@ -250,6 +261,10 @@ def _load_logo_flowable(organization, size=1.1 * inch):
                     return Image(local_path, size, size)
     except Exception as e:
         print(f"Error loading logo: {e}")
+        from reportlab.platypus import Paragraph
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        return Paragraph(f"Logo Err: {e}", getSampleStyleSheet()["Normal"])
 
     return None
 
