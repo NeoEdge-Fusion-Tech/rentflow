@@ -295,6 +295,7 @@ class Client(models.Model):
         choices=[("active", "Active"), ("inactive", "Inactive")],
         default="active",
     )
+    password = models.CharField(max_length=128, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -330,6 +331,7 @@ class Vendor(models.Model):
         choices=[("active", "Active"), ("inactive", "Inactive")],
         default="active",
     )
+    password = models.CharField(max_length=128, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(

@@ -142,6 +142,7 @@ export function Inventory() {
     name: "",
     category_id: "",
     is_active: true,
+    available_for_rental: false,
   });
 
   React.useEffect(() => {
@@ -164,6 +165,7 @@ export function Inventory() {
       name: product.name,
       category_id: product.category.toString(),
       is_active: product.is_active,
+      available_for_rental: product.available_for_rental || false,
     });
     setUnits(
       product.units && product.units.length > 0
@@ -197,6 +199,7 @@ export function Inventory() {
               rental_price: "0.00",
               unit: "per_day",
               description: "",
+              image_file: null,
             },
           ],
     );
@@ -228,6 +231,7 @@ export function Inventory() {
         name: newProduct.name,
         category: parseInt(newProduct.category_id),
         is_active: newProduct.is_active,
+        available_for_rental: newProduct.available_for_rental,
         units: units.map((u) => ({
           ...((u as any).product_unit_id
             ? { product_unit_id: (u as any).product_unit_id }
@@ -245,17 +249,74 @@ export function Inventory() {
         })),
       };
 
+      let finalProductId = editingProductId;
       if (editingProductId) {
         await ProductService.update(editingProductId, productData);
         showNotification("Product updated successfully!", "success");
       } else {
-        await ProductService.create(productData);
+        const res = await ProductService.create(productData);
+        finalProductId = res.data.product_id;
         showNotification("Product created successfully!", "success");
+      }
+
+      if (finalProductId && (newProduct as any).image_file) {
+        const formData = new FormData();
+        formData.append("image", (newProduct as any).image_file);
+        await ProductService.uploadImage(finalProductId, formData);
+      }
+
+      // Upload unit images
+      if (savedProductData && savedProductData.units) {
+        for (let i = 0; i < units.length; i++) {
+          const u: any = units[i];
+          if (u.image_file) {
+            // Find corresponding saved unit
+            // If editing, use product_unit_id, if creating, match by serial_number or index
+            const savedUnit = u.product_unit_id
+              ? savedProductData.units.find(
+                  (su: any) => su.product_unit_id === u.product_unit_id,
+                )
+              : savedProductData.units.find(
+                  (su: any) => su.serial_number === u.serial_number,
+                );
+
+            const unitId = savedUnit
+              ? savedUnit.product_unit_id
+              : savedProductData.units[i]
+                ? savedProductData.units[i].product_unit_id
+                : null;
+
+            if (unitId) {
+              const formData = new FormData();
+              formData.append("image", u.image_file);
+              try {
+                // Use imported api instead of creating new axios instance
+                await (
+                  await import("../api")
+                ).api.post(
+                  `/inventory/product-units/${unitId}/upload_image/`,
+                  formData,
+                  {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  },
+                );
+              } catch (err) {
+                console.error("Failed to upload unit image", err);
+              }
+            }
+          }
+        }
       }
 
       setShowAddModal(false);
       setEditingProductId(null);
-      setNewProduct({ name: "", category_id: "", is_active: true });
+      setNewProduct({
+        name: "",
+        category_id: "",
+        is_active: true,
+        available_for_rental: false,
+        image_file: null,
+      } as any);
       setUnits([
         {
           name: "",
@@ -1475,6 +1536,39 @@ export function Inventory() {
                     {newProduct.is_active ? "Active" : "Inactive"}
                   </span>
                 </label>
+                <label className="flex items-center gap-3 p-2.5 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer hover:bg-[var(--bg-surface)] transition-colors mt-2">
+                  <input
+                    type="checkbox"
+                    checked={newProduct.available_for_rental}
+                    onChange={(e) =>
+                      setNewProduct({
+                        ...newProduct,
+                        available_for_rental: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5 text-brand-primary rounded focus:ring-brand-primary accent-brand-primary cursor-pointer border-[var(--border-soft)]"
+                  />
+                  <span className="text-sm font-medium text-[var(--text-main)]">
+                    Available for Public Rental
+                  </span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                  Product Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setNewProduct({
+                      ...newProduct,
+                      image_file: e.target.files ? e.target.files[0] : null,
+                    } as any)
+                  }
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary text-[var(--text-main)] text-sm transition-all"
+                />
               </div>
 
               <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
@@ -1551,6 +1645,25 @@ export function Inventory() {
                             setUnits(newUnits);
                           }}
                           className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                        />
+                      </div>
+
+                      <div className="col-span-1">
+                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                          Unit Image
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const newUnits = [...units];
+                              newUnits[i].image_file = file;
+                              setUnits(newUnits);
+                            }
+                          }}
+                          className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20"
                         />
                       </div>
 
@@ -1876,7 +1989,12 @@ export function Inventory() {
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingProductId(null);
-                  setNewProduct({ name: "", category_id: "", is_active: true });
+                  setNewProduct({
+                    name: "",
+                    category_id: "",
+                    is_active: true,
+                    available_for_rental: false,
+                  });
                   setUnits([
                     {
                       name: "",

@@ -25,7 +25,6 @@ def seed_free_plan_and_organizations(apps, schema_editor):
             "billing_cycle": "monthly",
             "max_invoices_per_month": 10,
             "max_inventory_booking_per_month": 10,
-            "has_booking": True,
             "has_invoice": True,
             "is_active": True,
         },

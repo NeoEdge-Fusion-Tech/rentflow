@@ -6,9 +6,23 @@ from .models import (
     Booking,
     BookingItem,
     BookingItemUnit,
+    OrganizationBookingSettings,
 )
 
 from users.mixins import TenantSerializerMixin
+
+
+class OrganizationBookingSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrganizationBookingSettings
+        fields = [
+            "available_days",
+            "open_time",
+            "close_time",
+            "is_accepting_requests",
+            "public_url_slug",
+            "storefront_name",
+        ]
 
 
 class ProductCategorySerializer(TenantSerializerMixin, serializers.ModelSerializer):
@@ -35,6 +49,7 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "serial_number",
             "status",
             "description",
+            "image",
             "unit_cost_price",
             "quantity",
             "cost_price",
@@ -123,12 +138,14 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "name",
             "slug",
             "description",
+            "image",
             "total_quantity",
             "total_quantity_good_condition",
             "total_quantity_good_condition_available",
             "total_quantity_damaged_condition",
             "is_active",
             "total_cost_price",
+            "available_for_rental",
             "units",
             "created_by_name",
             "updated_by_name",

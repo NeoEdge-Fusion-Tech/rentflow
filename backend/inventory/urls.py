@@ -9,6 +9,7 @@ from .views import (
     BookingItemUnitViewSet,
     TenantStatsAPIView,
     ScanItemAPIView,
+    OrganizationBookingSettingsAPIView,
 )
 
 router = DefaultRouter()
@@ -22,5 +23,10 @@ router.register(r"booking-item-units", BookingItemUnitViewSet)
 urlpatterns = [
     path("stats/", TenantStatsAPIView.as_view(), name="tenant-stats"),
     path("scan/", ScanItemAPIView.as_view(), name="scan-item"),
+    path(
+        "booking-settings/",
+        OrganizationBookingSettingsAPIView.as_view(),
+        name="booking-settings",
+    ),
     path("", include(router.urls)),
 ]

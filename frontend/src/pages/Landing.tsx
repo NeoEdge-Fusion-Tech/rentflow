@@ -11,6 +11,8 @@ import {
   CheckSquare,
   MessageSquare,
   TrendingUp,
+  Search,
+  Building2,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
@@ -26,14 +28,21 @@ export function Landing() {
         <div className="flex items-center gap-4">
           <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />
           <button
+            onClick={() => navigate("/marketplace")}
+            className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all gap-2 items-center shadow-sm"
+          >
+            <Package className="w-4 h-4" />
+            Event Marketplace
+          </button>
+          <button
             onClick={() => navigate("/pricing")}
-            className="px-4 py-2 text-sm font-bold text-[var(--text-main)] hover:text-brand-primary transition-colors"
+            className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm"
           >
             Pricing
           </button>
           <button
             onClick={() => navigate("/login")}
-            className="px-4 py-2 text-sm font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] rounded-xl transition-colors"
+            className="px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--border-soft)] rounded-xl transition-all shadow-sm"
           >
             Sign In
           </button>
@@ -73,20 +82,72 @@ export function Landing() {
             oversee operations all in one clean, powerful platform.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col items-center justify-center pt-8 space-y-6 w-full max-w-2xl mx-auto">
+            {/* Search UX for End Users */}
+            <div className="w-full bg-white/5 backdrop-blur-xl border border-[var(--border-soft)] rounded-3xl p-2 sm:p-3 shadow-2xl flex items-center focus-within:border-brand-primary/50 focus-within:ring-4 focus-within:ring-brand-primary/10 transition-all group">
+              <div className="pl-4 pr-2 text-brand-primary">
+                <Search className="w-6 h-6" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search for cameras, lighting, sound systems..."
+                className="flex-1 bg-transparent border-none outline-none text-lg text-[var(--text-main)] placeholder:text-[var(--text-muted)] w-full py-3"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    navigate(
+                      `/marketplace?q=${encodeURIComponent(
+                        e.currentTarget.value,
+                      )}`,
+                    );
+                  }
+                }}
+              />
+              <button
+                onClick={(e) => {
+                  const input = e.currentTarget
+                    .previousElementSibling as HTMLInputElement;
+                  navigate(`/marketplace?q=${encodeURIComponent(input.value)}`);
+                }}
+                className="hidden sm:flex px-8 py-4 bg-brand-primary text-white font-bold rounded-2xl hover:bg-brand-accent transition-colors shadow-lg shadow-brand-primary/20"
+              >
+                Find Rentals
+              </button>
+            </div>
+            {/* Mobile search button */}
             <button
-              onClick={() => navigate("/register")}
-              className="w-full sm:w-auto px-8 py-4 bg-brand-primary text-brand-accent rounded-2xl font-black text-sm uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-brand-primary/20 flex items-center justify-center gap-2 group"
+              onClick={() => {
+                const input = document.querySelector(
+                  'input[placeholder="Search for cameras, lighting, sound systems..."]',
+                ) as HTMLInputElement;
+                navigate(
+                  `/marketplace?q=${encodeURIComponent(input?.value || "")}`,
+                );
+              }}
+              className="sm:hidden w-full py-4 bg-brand-primary text-white font-bold rounded-2xl hover:bg-brand-accent transition-colors shadow-lg shadow-brand-primary/20"
             >
-              Start for free
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              Find Rentals
             </button>
-            <button
-              onClick={() => navigate("/login")}
-              className="w-full sm:w-auto px-8 py-4 bg-[var(--bg-surface)] text-[var(--text-main)] rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-[var(--border-subtle)] transition-all border border-[var(--border-soft)]"
-            >
-              Sign In
-            </button>
+
+            <div className="pt-8 border-t border-[var(--border-soft)] w-full flex flex-col sm:flex-row items-center justify-center gap-4">
+              <p className="text-sm font-medium text-[var(--text-muted)] w-full sm:w-auto text-center">
+                Are you a rental company?
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => navigate("/register")}
+                  className="px-6 py-2.5 bg-[var(--bg-surface)] text-[var(--text-main)] rounded-xl font-bold text-sm border border-[var(--border-soft)] hover:border-brand-primary/30 transition-all flex items-center gap-2"
+                >
+                  <Building2 className="w-4 h-4 text-brand-primary" />
+                  Start for free
+                </button>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-6 py-2.5 bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] font-bold text-sm transition-colors"
+                >
+                  Sign In
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

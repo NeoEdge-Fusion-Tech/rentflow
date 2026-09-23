@@ -250,6 +250,7 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         model = Quotation
         fields = [
             "quotation_id",
+            "booking",
             "client",
             "client_name",
             "client_details",

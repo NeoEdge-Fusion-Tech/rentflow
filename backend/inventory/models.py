@@ -57,11 +57,13 @@ class Product(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to="product_images/", null=True, blank=True)
     total_quantity = models.PositiveIntegerField(default=0)
     total_quantity_good_condition = models.PositiveIntegerField(default=0)
     total_quantity_good_condition_available = models.PositiveIntegerField(default=0)
     total_quantity_damaged_condition = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    available_for_rental = models.BooleanField(default=False)
     total_cost_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00
     )
@@ -221,6 +223,7 @@ class ProductUnit(models.Model):
     )
 
     # --- Quantity breakdown tracking ---
+    image = models.ImageField(upload_to="product_units/", null=True, blank=True)
     quantity_available = models.PositiveIntegerField(default=0)
     quantity_rented = models.PositiveIntegerField(default=0)
     quantity_good = models.PositiveIntegerField(default=0)
@@ -338,17 +341,36 @@ class Booking(models.Model):
     )
     booking_title = models.CharField(max_length=255)
     event_location = models.TextField(blank=True, null=True)
+
+    # Rental / Public Form fields
+    setup_date = models.DateTimeField(null=True, blank=True)
+    set_down_date = models.DateTimeField(null=True, blank=True)
+    event_type = models.CharField(max_length=100, blank=True, null=True)
+    COUNTRY_CHOICES = [
+        ("Nigeria", "Nigeria"),
+        ("Kenya", "Kenya"),
+        ("Rwanda", "Rwanda"),
+        ("USA", "USA"),
+        ("UK", "UK"),
+    ]
+    country = models.CharField(
+        max_length=100, choices=COUNTRY_CHOICES, default="Nigeria"
+    )
+    city = models.CharField(max_length=100, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    note_for_org = models.TextField(blank=True, null=True)
+
     contact_name = models.CharField(max_length=255, blank=True, null=True)
     contact_phone = models.CharField(max_length=50, blank=True, null=True)
     status_choices = [
-        ("pending", "Pending Approval"),
+        ("request", "Request"),
         ("confirmed", "Confirmed"),
         ("picked_up", "Picked Up"),
         ("returned", "Returned"),
         ("completed", "Completed"),
         ("cancelled", "Cancelled"),
     ]
-    status = models.CharField(max_length=20, choices=status_choices, default="pending")
+    status = models.CharField(max_length=20, choices=status_choices, default="request")
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     comments = models.TextField(blank=True, null=True)
     payment_status = models.CharField(
@@ -528,3 +550,33 @@ def update_booking_and_item_status(sender, instance, **kwargs):
                 if booking.status != "completed":
                     booking.status = "completed"
                     booking.save(update_fields=["status"])
+
+
+class OrganizationBookingSettings(models.Model):
+    organization = models.OneToOneField(
+        Organization, on_delete=models.CASCADE, related_name="booking_settings"
+    )
+    available_days = models.JSONField(
+        default=list, help_text='List of available days, e.g., ["Monday", "Tuesday"]'
+    )
+    open_time = models.TimeField(null=True, blank=True)
+    close_time = models.TimeField(null=True, blank=True)
+    is_accepting_requests = models.BooleanField(default=True)
+    storefront_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Custom name for the storefront",
+    )
+    public_url_slug = models.SlugField(
+        max_length=255,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="Custom slug for public marketplace URL",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Booking Settings for {self.organization.name}"

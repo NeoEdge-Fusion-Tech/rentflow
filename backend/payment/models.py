@@ -236,6 +236,13 @@ class InvoiceLineItem(models.Model):
 
 class Quotation(models.Model):
     quotation_id = models.AutoField(primary_key=True)
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="quotations",
+    )
     client = models.ForeignKey(
         "users.Client",
         on_delete=models.SET_NULL,

@@ -1,5 +1,6 @@
 from django.db import models
 from rest_framework import viewsets, permissions, filters, status
+from rest_framework.parsers import MultiPartParser, FormParser
 from .permissions import HasPaidSubscription
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from .models import (
     Booking,
     BookingItem,
     BookingItemUnit,
+    OrganizationBookingSettings,
 )
 from .serializers import (
     ProductCategorySerializer,
@@ -20,6 +22,7 @@ from .serializers import (
     BookingItemSerializer,
     BookingItemUnitSerializer,
     ProductAvailabilitySerializer,
+    OrganizationBookingSettingsSerializer,
 )
 from django.utils.dateparse import parse_datetime
 import datetime
@@ -32,6 +35,39 @@ from users.models import Client, Vendor
 from users.mixins import TenantIsolationMixin
 from payment.models import Payment, Invoice
 from users.permissions import HasModulePermission
+
+
+class OrganizationBookingSettingsAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
+
+    def get(self, request):
+        if not hasattr(request.user, "organization") or not request.user.organization:
+            return Response(
+                {"error": "No organization associated with user"}, status=400
+            )
+
+        settings, _ = OrganizationBookingSettings.objects.get_or_create(
+            organization=request.user.organization
+        )
+        serializer = OrganizationBookingSettingsSerializer(settings)
+        return Response(serializer.data)
+
+    def put(self, request):
+        if not hasattr(request.user, "organization") or not request.user.organization:
+            return Response(
+                {"error": "No organization associated with user"}, status=400
+            )
+
+        settings, _ = OrganizationBookingSettings.objects.get_or_create(
+            organization=request.user.organization
+        )
+        serializer = OrganizationBookingSettingsSerializer(
+            settings, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
@@ -172,6 +208,20 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         }
         return Response(data)
 
+    @action(detail=True, methods=["post"], parser_classes=[MultiPartParser, FormParser])
+    def upload_image(self, request, pk=None):
+        product = self.get_object()
+        if "image" in request.FILES:
+            product.image = request.FILES["image"]
+            product.save()
+            return Response(
+                {
+                    "status": "Image uploaded successfully",
+                    "image_url": product.image.url,
+                }
+            )
+        return Response({"error": "No image provided"}, status=400)
+
 
 class ProductUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = ProductUnit.objects.all()
@@ -188,6 +238,17 @@ class ProductUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if self.action == "list" and self.request.query_params.get("all") != "true":
             qs = qs.filter(product__is_active=True)
         return qs
+
+    @action(detail=True, methods=["post"], parser_classes=[MultiPartParser, FormParser])
+    def upload_image(self, request, pk=None):
+        unit = self.get_object()
+        if "image" in request.FILES:
+            unit.image = request.FILES["image"]
+            unit.save()
+            return Response(
+                {"status": "Image uploaded successfully", "image_url": unit.image.url}
+            )
+        return Response({"error": "No image provided"}, status=400)
 
 
 class BookingFilter(django_filters.FilterSet):
@@ -353,7 +414,7 @@ class TenantStatsAPIView(APIView):
             organization_id=organization.id
         ).aggregate(
             total=Count("booking_id"),
-            pending=Count("booking_id", filter=Q(status="pending")),
+            request=Count("booking_id", filter=Q(status="request")),
             confirmed=Count("booking_id", filter=Q(status="confirmed")),
             picked_up=Count("booking_id", filter=Q(status="picked_up")),
             returned=Count("booking_id", filter=Q(status="returned")),

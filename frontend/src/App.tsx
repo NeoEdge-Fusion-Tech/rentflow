@@ -31,6 +31,7 @@ import { Support } from "./pages/Support";
 import { Payments } from "./pages/Payments";
 import { Scanner } from "./pages/Scanner";
 import { Settings } from "./pages/Settings";
+import { BookingSettings } from "./pages/BookingSettings";
 import { Validation } from "./pages/Validation";
 import { BookingValidation } from "./pages/Validation/BookingValidation";
 import { Organizations } from "./pages/SuperAdmin/Organizations";
@@ -72,6 +73,11 @@ import { Pricing } from "./pages/Pricing";
 import { FeedbackForms } from "./pages/FeedbackForms";
 import { PublicFeedback } from "./pages/PublicFeedback";
 import { Landing } from "./pages/Landing";
+import { PublicRentals } from "./pages/PublicRentals";
+import { PublicRentalCheckout } from "./pages/PublicRentalCheckout";
+import { ClientPortalLogin } from "./pages/ClientPortalLogin";
+import { ClientPortalDashboard } from "./pages/ClientPortalDashboard";
+import { Marketplace } from "./pages/Marketplace";
 import { Footer } from "./components/Footer";
 
 function AppLayout() {
@@ -102,7 +108,11 @@ function AppLayout() {
       "/verify-email",
       "/forgot-password",
       "/reset-password",
-    ].includes(location.pathname) || location.pathname.startsWith("/f/");
+    ].includes(location.pathname) ||
+    location.pathname.startsWith("/f/") ||
+    location.pathname.startsWith("/marketplace") ||
+    location.pathname.startsWith("/public/store/") ||
+    location.pathname.startsWith("/public/organizations/");
 
   useEffect(() => {
     const token =
@@ -211,6 +221,34 @@ function AppLayout() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/f/:uuid" element={<PublicFeedback />} />
+
+            {/* Public Rentals */}
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route
+              path="/public/store/:identifier"
+              element={<PublicRentals />}
+            />
+            <Route
+              path="/public/store/:identifier/checkout"
+              element={<PublicRentalCheckout />}
+            />
+            <Route
+              path="/public/store/:identifier/login"
+              element={<ClientPortalLogin />}
+            />
+            <Route
+              path="/public/store/:identifier/portal"
+              element={<ClientPortalDashboard />}
+            />
+            {/* Backward compatibility */}
+            <Route
+              path="/public/organizations/:org_id/rentals"
+              element={<PublicRentals />}
+            />
+            <Route
+              path="/public/organizations/:org_id/checkout"
+              element={<PublicRentalCheckout />}
+            />
           </Routes>
         </div>
         {location.pathname !== "/" && <Footer />}
@@ -409,6 +447,7 @@ function AppLayout() {
               <Route path="/payments" element={<Payments />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/rental-settings" element={<BookingSettings />} />
               <Route path="/validation" element={<Validation />} />
               <Route path="/validation/:id" element={<BookingValidation />} />
 

@@ -27,8 +27,10 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { StatsService, AuthService, EventService } from "../api";
+import { StatsService, AuthService, EventService, api } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
+import { useNotification } from "../context/NotificationContext";
+import { Link } from "react-router-dom";
 
 const StatCard = ({ title, value, change, icon: Icon, trend }: any) => (
   <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
@@ -57,6 +59,7 @@ const StatCard = ({ title, value, change, icon: Icon, trend }: any) => (
 );
 
 export function Dashboard() {
+  const { showNotification } = useNotification();
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [orgs, setOrgs] = useState<any[]>([]);
@@ -65,6 +68,7 @@ export function Dashboard() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [bookingSettings, setBookingSettings] = useState<any>(null);
 
   const currentYear = new Date().getFullYear();
   const [plPeriod, setPlPeriod] = useState<"today" | "month" | "year">("month");
@@ -171,6 +175,12 @@ export function Dashboard() {
         if (tenantResponse.data.currency_symbol) {
           setCurrencySymbol(tenantResponse.data.currency_symbol);
         }
+        try {
+          const settingsRes = await api.get("/inventory/booking-settings/");
+          setBookingSettings(settingsRes.data);
+        } catch (se) {
+          console.error("Failed fetching booking settings", se);
+        }
       } catch (tenantError) {
         console.error("Failed fetching tenant stats", tenantError);
       }
@@ -196,6 +206,46 @@ export function Dashboard() {
           Welcome back, here's what's happening today.
         </p>
       </div>
+
+      {!isAdmin && currentUser && (
+        <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-brand-primary flex items-center gap-2">
+              <Building2 className="w-4 h-4" /> Your Public Marketplace Store
+            </h3>
+            <p className="text-xs text-brand-primary/80 mt-1">
+              Share this link with your customers so they can view and rent your
+              products online.
+            </p>
+          </div>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl px-3 py-2 text-xs font-medium text-[var(--text-main)] flex-1 sm:flex-initial truncate max-w-[250px]">
+              {window.location.origin}/public/store/
+              {bookingSettings?.public_url_slug || currentUser?.organization_id}
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `${window.location.origin}/public/store/${
+                    bookingSettings?.public_url_slug ||
+                    currentUser?.organization_id
+                  }`,
+                );
+                showNotification("Store link copied to clipboard!", "success");
+              }}
+              className="px-4 py-2 bg-brand-primary text-white text-xs font-bold rounded-xl hover:bg-brand-accent transition-colors shrink-0"
+            >
+              Copy Link
+            </button>
+            <Link
+              to="/rental-settings"
+              className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] text-xs font-bold rounded-xl hover:border-brand-primary/50 transition-colors shrink-0"
+            >
+              Customize
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -589,7 +639,7 @@ export function Dashboard() {
                 let colorClass = "text-emerald-500";
                 let bgClass = "bg-emerald-500/10";
 
-                if (item.title.toLowerCase().includes("pending")) {
+                if (item.title.toLowerCase().includes("request")) {
                   Icon = Clock;
                   colorClass = "text-amber-500";
                   bgClass = "bg-amber-500/10";

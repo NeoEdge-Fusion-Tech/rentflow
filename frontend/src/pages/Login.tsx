@@ -60,8 +60,26 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex bg-[var(--bg-app)] relative">
-      <div className="absolute top-6 right-6 z-50">
-        <ThemeToggle />
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
+        <button
+          onClick={() => navigate("/")}
+          className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm"
+        >
+          Home
+        </button>
+        <button
+          onClick={() => navigate("/marketplace")}
+          className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm"
+        >
+          Event Marketplace
+        </button>
+        <button
+          onClick={() => navigate("/pricing")}
+          className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm"
+        >
+          Pricing
+        </button>
+        <ThemeToggle className="bg-[var(--bg-surface)] border border-[var(--border-soft)] shadow-sm p-2 rounded-xl hover:bg-[var(--border-subtle)]" />
       </div>
 
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">

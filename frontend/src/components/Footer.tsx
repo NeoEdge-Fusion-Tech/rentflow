@@ -43,6 +43,12 @@ export function Footer({ className = "" }: FooterProps) {
         >
           Pricing
         </Link>
+        <span className="text-[var(--border-strong)] hidden sm:inline px-2">
+          |
+        </span>
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">
+          v1.1
+        </span>
       </div>
     </div>
   );

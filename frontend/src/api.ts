@@ -144,10 +144,18 @@ export const ProductService = {
     condition?: string;
     condition_submitted?: boolean;
   }) => api.post("/inventory/scan/", data),
+  uploadImage: (id: number | string, formData: FormData) =>
+    api.post(`/inventory/products/${id}/upload_image/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 };
 
 export const ProductUnitService = {
   create: (data: any) => api.post("/inventory/units/", data),
+  uploadImage: (id: number | string, formData: FormData) =>
+    api.post(`/inventory/product-units/${id}/upload_image/`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 };
 
 export const BookingService = {

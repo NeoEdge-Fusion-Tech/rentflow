@@ -255,7 +255,7 @@ export function Bookings() {
     contact_name: "",
     contact_phone: "",
     booking_title: "",
-    status: "pending",
+    status: "request",
     amount_paid: 0,
     discount_amount: 0,
     discount_percentage: 0,
@@ -491,7 +491,7 @@ export function Bookings() {
       contact_name: "",
       contact_phone: "",
       booking_title: "",
-      status: "pending",
+      status: "request",
       discount_amount: 0,
       discount_percentage: 0,
     });
@@ -792,8 +792,8 @@ export function Bookings() {
             color: "slate",
           },
           {
-            label: "Pending",
-            value: stats?.booking_stats?.pending,
+            label: "Request",
+            value: stats?.booking_stats?.request,
             color: "amber",
           },
           {
@@ -839,7 +839,7 @@ export function Bookings() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px overflow-x-auto">
-        {["All", "pending", "confirmed", "picked_up", "returned"].map((tab) => (
+        {["All", "request", "confirmed", "picked_up", "returned"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -948,9 +948,16 @@ export function Bookings() {
                                     : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
                           )}
                         >
-                          {booking.status === "pending"
-                            ? "Pending Approval"
-                            : booking.status.replace("_", " ")}
+                          {booking.status === "request"
+                            ? "Request"
+                            : booking.status
+                                .split("_")
+                                .map(
+                                  (word: string) =>
+                                    word.charAt(0).toUpperCase() +
+                                    word.slice(1),
+                                )
+                                .join(" ")}
                         </span>
                       </div>
                       <h3 className="text-lg font-bold text-[var(--text-main)] mt-0.5">
@@ -1880,10 +1887,10 @@ export function Bookings() {
                             className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-brand-accent/30 focus:border-brand-accent transition-all font-bold text-[var(--text-main)] cursor-pointer"
                           >
                             <option
-                              value="pending"
+                              value="request"
                               className="bg-[var(--bg-surface)] text-[var(--text-main)]"
                             >
-                              Pending
+                              Request
                             </option>
                             <option
                               value="confirmed"
@@ -2216,7 +2223,7 @@ export function Bookings() {
                           )}
                         >
                           {selectedBooking.status?.replace("_", " ") ||
-                            "Pending"}
+                            "Request"}
                         </span>
                         {/* Payment Status Badge */}
                         <span
@@ -3432,10 +3439,10 @@ export function Bookings() {
                                 className="flex-1 text-xs font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl px-3 py-2 outline-none focus:border-brand-primary transition-all text-[var(--text-main)] cursor-pointer"
                               >
                                 <option
-                                  value="pending"
+                                  value="request"
                                   className="bg-[var(--bg-surface)]"
                                 >
-                                  Pending
+                                  Request
                                 </option>
                                 <option
                                   value="confirmed"
