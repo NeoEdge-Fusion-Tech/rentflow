@@ -1,6 +1,7 @@
 import io
 import os
 import re
+from loguru import logger
 from decimal import Decimal
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -1336,7 +1337,10 @@ def _extract_text_from_file(file_bytes: bytes, file_type: str) -> str:
             pages = [_ocr_image(img) for img in images]
             return "\n".join(pages).strip()
         except Exception as e:
-            raise RuntimeError(f"PDF OCR failed: {e}")
+            logger.exception("PDF OCR failed")
+            raise RuntimeError(
+                "Could not extract text from the PDF document. Please ensure it is a clear, legible document."
+            )
 
     else:
         # Image file
@@ -1344,7 +1348,10 @@ def _extract_text_from_file(file_bytes: bytes, file_type: str) -> str:
             img = Image.open(io.BytesIO(file_bytes))
             return _ocr_image(img).strip()
         except Exception as e:
-            raise RuntimeError(f"Image OCR failed: {e}")
+            logger.exception("Image OCR failed")
+            raise RuntimeError(
+                "Could not extract text from the image. Please ensure it is a clear, legible image."
+            )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
