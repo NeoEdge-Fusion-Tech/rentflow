@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0006_product_price_per_hour'),
+        ("inventory", "0006_product_price_per_hour"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='product',
-            old_name='price_per_hour',
-            new_name='price_per_day',
+            model_name="product",
+            old_name="price_per_hour",
+            new_name="price_per_day",
         ),
         migrations.AddField(
-            model_name='booking',
-            name='discount_amount',
+            model_name="booking",
+            name="discount_amount",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='booking',
-            name='discount_percentage',
+            model_name="booking",
+            name="discount_percentage",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=5),
         ),
         migrations.AddField(
-            model_name='booking',
-            name='total_amount',
+            model_name="booking",
+            name="total_amount",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='bookingitem',
-            name='total_price',
+            model_name="bookingitem",
+            name="total_price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=12),
         ),
         migrations.AddField(
-            model_name='bookingitem',
-            name='unit_price',
+            model_name="bookingitem",
+            name="unit_price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
     ]

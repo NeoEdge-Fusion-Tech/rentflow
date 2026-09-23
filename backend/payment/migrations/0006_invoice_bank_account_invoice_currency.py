@@ -7,19 +7,31 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0005_backfill_invoice_line_items'),
-        ('users', '0009_bankaccount'),
+        ("payment", "0005_backfill_invoice_line_items"),
+        ("users", "0009_bankaccount"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='invoice',
-            name='bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='invoices', to='users.bankaccount'),
+            model_name="invoice",
+            name="bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="invoices",
+                to="users.bankaccount",
+            ),
         ),
         migrations.AddField(
-            model_name='invoice',
-            name='currency',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='invoices', to='users.currency'),
+            model_name="invoice",
+            name="currency",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="invoices",
+                to="users.currency",
+            ),
         ),
     ]

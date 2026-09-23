@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0020_remove_client_account_details_client_account_name_and_more'),
+        ("users", "0020_remove_client_account_details_client_account_name_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('admin', 'Admin'), ('operator_web', 'Operator (Web)'), ('operator_mobile', 'Operator (Mobile)'), ('validator', 'Validator'), ('customer', 'Customer')], default='operator_web', max_length=20),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("admin", "Admin"),
+                    ("operator_web", "Operator (Web)"),
+                    ("operator_mobile", "Operator (Mobile)"),
+                    ("validator", "Validator"),
+                    ("customer", "Customer"),
+                ],
+                default="operator_web",
+                max_length=20,
+            ),
         ),
     ]

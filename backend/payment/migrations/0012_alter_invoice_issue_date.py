@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0011_invoice_title'),
+        ("payment", "0011_invoice_title"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='invoice',
-            name='issue_date',
+            model_name="invoice",
+            name="issue_date",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]
