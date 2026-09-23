@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { RevenueDisplay } from "../components/RevenueDisplay";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import {
   ArrowLeft,
   Download,
@@ -39,6 +44,8 @@ export function InvoiceEditor() {
   const [searchParams] = useSearchParams();
   const bookingIdParam = searchParams.get("booking_id");
   const duplicateFromParam = searchParams.get("duplicate_from");
+  const location = useLocation();
+  const ocrData = location.state?.ocrData;
   const isEditMode = !!id;
   const { showNotification } = useNotification();
 
@@ -55,25 +62,33 @@ export function InvoiceEditor() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
-    client: "" as number | string,
+    client: (ocrData?.client_id || "") as number | string,
     booking: bookingIdParam || "",
-    invoice_number: "",
-    issue_date: new Date().toISOString().slice(0, 10),
-    due_date: "",
+    invoice_number: ocrData?.invoice_number_hint || "",
+    issue_date: ocrData?.issue_date || new Date().toISOString().slice(0, 10),
+    due_date: ocrData?.due_date || "",
     event_date: "",
     status: "draft",
     currency: "" as number | string,
     bank_account: "" as number | string,
     show_bank_details: true,
-    discount_amount: 0 as number | string,
+    discount_amount: (ocrData?.discount_amount || 0) as number | string,
     discount_percentage: 0 as number | string,
-    tax_percentage: 0 as number | string,
-    notes: "",
-    title: "Invoice",
+    tax_percentage: (ocrData?.tax_percentage || 0) as number | string,
+    notes: ocrData?.notes || "",
+    title: ocrData?.title || "Invoice",
   });
-  const [lineItems, setLineItems] = useState<LineItem[]>([
-    { name: "", description: "", quantity: 1, unit_price: 0 },
-  ]);
+  const [lineItems, setLineItems] = useState<LineItem[]>(() => {
+    if (ocrData?.line_items?.length) {
+      return ocrData.line_items.map((item: any) => ({
+        name: item.name,
+        description: item.description || "",
+        quantity: parseFloat(String(item.quantity)) || 1,
+        unit_price: parseFloat(String(item.unit_price)) || 0,
+      }));
+    }
+    return [{ name: "", description: "", quantity: 1, unit_price: 0 }];
+  });
 
   const fetchClients = async () => {
     try {

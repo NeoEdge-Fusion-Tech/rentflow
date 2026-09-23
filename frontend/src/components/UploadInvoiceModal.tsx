@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -16,9 +16,10 @@ import {
   DollarSign,
   ListChecks,
 } from "lucide-react";
-import { InvoiceService } from "../api";
+import { InvoiceService, ClientService } from "../api";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
+import { ClientPicker } from "./ClientPicker";
 
 interface ExtractedData {
   client_name?: string | null;
@@ -40,6 +41,7 @@ interface ExtractedData {
   parse_method?: string;
   error?: string;
   invoice_number_hint?: string | null;
+  client_id?: number | string | null;
 }
 
 interface Props {
@@ -62,6 +64,16 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extracted, setExtracted] = useState<ExtractedData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<number | string>("");
+
+  useEffect(() => {
+    if (step === "confirm") {
+      ClientService.getAll()
+        .then((res) => setClients(res.data.results || res.data))
+        .catch(console.error);
+    }
+  }, [step]);
 
   const resetState = () => {
     setStep("upload");
@@ -129,50 +141,12 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
     e.target.value = "";
   };
 
-  const handleCreateDraft = async () => {
-    setIsSaving(true);
-    try {
-      const payload: any = { status: "draft" };
-
-      if (extracted?.title) payload.title = extracted.title;
-      if (extracted?.issue_date) payload.issue_date = extracted.issue_date;
-      if (extracted?.due_date) payload.due_date = extracted.due_date;
-      if (extracted?.notes) payload.notes = extracted.notes;
-      if (extracted?.tax_percentage)
-        payload.tax_percentage = extracted.tax_percentage;
-      if (extracted?.discount_amount)
-        payload.discount_amount = extracted.discount_amount;
-
-      const validItems = (extracted?.line_items || []).filter(
-        (item) => item.name?.trim(),
-      );
-      if (validItems.length > 0) {
-        payload.line_items = validItems.map((item, idx) => ({
-          name: item.name,
-          description: item.description || "",
-          quantity: parseFloat(String(item.quantity)) || 1,
-          unit_price: parseFloat(String(item.unit_price)) || 0,
-          position: idx,
-        }));
-      }
-
-      const res = await InvoiceService.create(payload);
-      showNotification(
-        "Draft invoice created! Complete the details below.",
-        "success",
-      );
-      handleClose();
-      navigate(`/invoices/${res.data.invoice_id}/edit`);
-    } catch (e: any) {
-      showNotification(
-        e?.response?.data?.detail ||
-          e?.response?.data?.error ||
-          "Failed to create draft invoice.",
-        "error",
-      );
-    } finally {
-      setIsSaving(false);
+  const handleCreateDraft = () => {
+    if (extracted && selectedClientId) {
+      extracted.client_id = selectedClientId;
     }
+    handleClose();
+    navigate("/invoices/new", { state: { ocrData: extracted } });
   };
 
   if (!open) return null;
@@ -421,17 +395,26 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
             </div>
 
             <div className="p-6 space-y-4">
+              <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-4">
+                <h4 className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider mb-3">
+                  Link Client (Optional)
+                </h4>
+                <ClientPicker
+                  clients={clients}
+                  value={selectedClientId}
+                  onChange={setSelectedClientId}
+                  onClientCreated={(client) =>
+                    setClients((prev) => [...prev, client])
+                  }
+                />
+              </div>
+
               {/* Extracted summary */}
               <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] px-4 py-1">
                 <SummaryRow
                   icon={FileText}
                   label="Title"
                   value={extracted.title}
-                />
-                <SummaryRow
-                  icon={User}
-                  label="Client"
-                  value={extracted.client_name}
                 />
                 <SummaryRow
                   icon={Hash}
@@ -476,12 +459,8 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
               )}
 
               <p className="text-xs text-[var(--text-muted)] text-center leading-relaxed">
-                A{" "}
-                <span className="font-bold text-[var(--text-main)]">
-                  draft invoice
-                </span>{" "}
-                will be created with the values above. You'll be taken directly
-                to the editor to complete any missing details.
+                You'll be taken directly to the editor to complete any missing
+                details.
               </p>
             </div>
 
@@ -495,18 +474,9 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
               </button>
               <button
                 onClick={handleCreateDraft}
-                disabled={isSaving}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary text-white rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary text-white rounded-xl font-bold hover:opacity-90 transition-opacity"
               >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Creating…
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" /> Create Draft &amp; Edit
-                  </>
-                )}
+                <CheckCircle className="w-4 h-4" /> Continue to Editor
               </button>
             </div>
           </div>
