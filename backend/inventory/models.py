@@ -364,6 +364,7 @@ class Booking(models.Model):
     contact_phone = models.CharField(max_length=50, blank=True, null=True)
     status_choices = [
         ("request", "Request"),
+        ("processed", "Processed"),
         ("confirmed", "Confirmed"),
         ("picked_up", "Picked Up"),
         ("returned", "Returned"),
@@ -371,6 +372,7 @@ class Booking(models.Model):
         ("cancelled", "Cancelled"),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default="request")
+    last_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     comments = models.TextField(blank=True, null=True)
     payment_status = models.CharField(

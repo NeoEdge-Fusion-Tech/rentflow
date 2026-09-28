@@ -184,6 +184,12 @@ class Invoice(models.Model):
             elif self.amount_paid == 0 and self.status in ["paid", "partially_paid"]:
                 self.status = "issued"
 
+        # Move booking to processed if invoice is issued
+        if self.status == "issued" and self.booking_id:
+            if self.booking.status == "request":
+                self.booking.status = "processed"
+                self.booking.save(update_fields=["status"])
+
         if not self.invoice_number:
             max_retries = 3
             for attempt in range(max_retries):
@@ -310,10 +316,22 @@ class Quotation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.quotation_number:
-            self.quotation_number = _next_document_number(
-                Quotation, self.organization, "quotation_number", "QUO"
-            )
-        super().save(*args, **kwargs)
+            max_retries = 3
+            for attempt in range(max_retries):
+                self.quotation_number = _next_document_number(
+                    Quotation, self.organization, "quotation_number", "QUO"
+                )
+                try:
+                    with transaction.atomic():
+                        super().save(*args, **kwargs)
+                    break
+                except IntegrityError as e:
+                    if "quotation_number" in str(e) and attempt < max_retries - 1:
+                        self.quotation_number = None
+                        continue
+                    raise
+        else:
+            super().save(*args, **kwargs)
 
 
 class QuotationLineItem(models.Model):

@@ -56,10 +56,10 @@ export function Quotations() {
       setIsLoading(true);
       const params: any = {};
       if (activeTab !== "All") {
-        if (activeTab === "Trash") {
+        if (activeTab.toLowerCase() === "trash") {
           params.status = "cancelled";
         } else {
-          params.status = activeTab;
+          params.status = activeTab.toLowerCase();
         }
       }
       if (searchQuery) params.search = searchQuery;

@@ -435,6 +435,8 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             {
                 "booking": booking.booking_id,
                 "client": booking.client_id,
+                "client_name": booking.client.business_name
+                or f"{booking.client.first_name} {booking.client.last_name}".strip(),
                 "line_items": line_items,
                 "discount_amount": booking.discount_amount,
                 "discount_percentage": booking.discount_percentage,

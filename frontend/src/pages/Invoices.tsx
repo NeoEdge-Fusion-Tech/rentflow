@@ -64,7 +64,7 @@ export function Invoices() {
       const params: any = { page };
       if (searchQuery) params.search = searchQuery;
       if (activeTab !== "All") {
-        if (activeTab === "Trash") {
+        if (activeTab.toLowerCase() === "trash") {
           params.status = "cancelled";
         } else {
           params.status = activeTab.toLowerCase();

@@ -94,6 +94,27 @@ class PublicBookingRequestView(APIView):
                 },
             )
 
+            if not created:
+                # Update client details if it already exists
+                updated = False
+                if contact_name and not client.business_name:
+                    client.business_name = contact_name
+                    client.first_name = contact_name.split()[0]
+                    client.last_name = " ".join(contact_name.split()[1:])
+                    updated = True
+                if phone and not client.phone_number:
+                    client.phone_number = phone
+                    updated = True
+                if updated:
+                    client.save(
+                        update_fields=[
+                            "business_name",
+                            "first_name",
+                            "last_name",
+                            "phone_number",
+                        ]
+                    )
+
             items_data = serializer.validated_data.pop("items")
 
             # Create booking

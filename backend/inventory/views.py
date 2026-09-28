@@ -264,6 +264,12 @@ class BookingFilter(django_filters.FilterSet):
     return_before = django_filters.DateTimeFilter(
         field_name="return_date", lookup_expr="lte"
     )
+    booking_date_after = django_filters.DateTimeFilter(
+        field_name="booking_date", lookup_expr="gte"
+    )
+    booking_date_before = django_filters.DateTimeFilter(
+        field_name="booking_date", lookup_expr="lte"
+    )
 
     class Meta:
         model = Booking
@@ -342,6 +348,50 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(updated_by=self.request.user)
+
+    @action(detail=False, methods=["post"])
+    def send_reminders(self, request):
+        booking_ids = request.data.get("booking_ids", [])
+        if not booking_ids:
+            return Response(
+                {"error": "No booking IDs provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        bookings = Booking.objects.filter(
+            booking_id__in=booking_ids, organization=request.user.organization
+        )
+        if not bookings.exists():
+            return Response(
+                {"error": "No valid bookings found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        import resend
+        from django.conf import settings
+
+        resend.api_key = getattr(settings, "RESEND_API_KEY", "")
+
+        sent_count = 0
+        now = timezone.now()
+        for booking in bookings:
+            if not booking.client or not booking.client.email:
+                continue
+
+            try:
+                resend.Emails.send(
+                    {
+                        "from": f"{booking.organization.name} <noreply@rentflow.com>",
+                        "to": booking.client.email,
+                        "subject": f"Reminder for your booking #{booking.booking_id}",
+                        "html": f"<p>Dear {booking.client.first_name},</p><p>This is a reminder regarding your booking {booking.booking_title}.</p>",
+                    }
+                )
+                booking.last_reminder_sent_at = now
+                booking.save(update_fields=["last_reminder_sent_at"])
+                sent_count += 1
+            except Exception as e:
+                pass
+
+        return Response({"message": f"Successfully sent {sent_count} reminders."})
 
 
 class BookingItemViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
