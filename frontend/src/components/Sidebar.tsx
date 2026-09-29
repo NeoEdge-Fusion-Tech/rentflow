@@ -129,7 +129,7 @@ export function Sidebar({
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="h-16 flex items-center px-4 border-b border-[var(--border-subtle)] justify-between overflow-hidden">
+          <div className="h-16 flex items-center px-4 border-b border-[var(--border-subtle)] justify-between">
             <button
               onClick={toggleCollapse}
               className="hidden lg:flex p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-lg border border-transparent hover:border-[var(--border-soft)] transition-colors shrink-0"
