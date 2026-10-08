@@ -6,63 +6,79 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0010_booking_event_name'),
+        ("inventory", "0010_booking_event_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity',
+            model_name="bookingitemunit",
+            name="quantity",
             field=models.PositiveIntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity_picked_up',
+            model_name="bookingitemunit",
+            name="quantity_picked_up",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='quantity_returned',
+            model_name="bookingitemunit",
+            name="quantity_returned",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='product',
-            name='total_cost_price',
+            model_name="product",
+            name="total_cost_price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='cost_price',
+            model_name="productunit",
+            name="cost_price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='quantity',
+            model_name="productunit",
+            name="quantity",
             field=models.PositiveIntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='rental_price',
+            model_name="productunit",
+            name="rental_price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='rental_unit_label',
-            field=models.CharField(blank=True, choices=[('pcs', 'Pieces'), ('per_hour', 'Per Hour'), ('per_day', 'Per Day'), ('per_week', 'Per Week'), ('per_year', 'Per Year')], default='per_day', max_length=20, null=True),
+            model_name="productunit",
+            name="rental_unit_label",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("pcs", "Pieces"),
+                    ("per_hour", "Per Hour"),
+                    ("per_day", "Per Day"),
+                    ("per_week", "Per Week"),
+                    ("per_year", "Per Year"),
+                ],
+                default="per_day",
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='unit_cost_price',
+            model_name="productunit",
+            name="unit_cost_price",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='unit_type',
-            field=models.CharField(choices=[('single', 'Single (SN)'), ('bulk', 'Bulk')], default='single', max_length=10),
+            model_name="productunit",
+            name="unit_type",
+            field=models.CharField(
+                choices=[("single", "Single (SN)"), ("bulk", "Bulk")],
+                default="single",
+                max_length=10,
+            ),
         ),
         migrations.AlterField(
-            model_name='productunit',
-            name='serial_number',
+            model_name="productunit",
+            name="serial_number",
             field=models.CharField(blank=True, max_length=100, null=True, unique=True),
         ),
     ]

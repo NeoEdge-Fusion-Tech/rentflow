@@ -7,7 +7,11 @@ class Currency(models.Model):
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=10, unique=True)
     symbol = models.CharField(max_length=10)
-    status = models.CharField(max_length=20, choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active')
+    status = models.CharField(
+        max_length=20,
+        choices=[("active", "Active"), ("inactive", "Inactive")],
+        default="active",
+    )
 
     def __str__(self):
         return f"{self.code} - {self.name}"
@@ -15,15 +19,34 @@ class Currency(models.Model):
 
 class Organization(models.Model):
     name = models.CharField(max_length=255)
-    company_logo = models.ImageField(upload_to='logos/', blank=True, null=True)
+    company_logo = models.ImageField(upload_to="logos/", blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
-    tax_id = models.CharField(max_length=100, blank=True, null=True, help_text="VAT/Tax Identification Number")
-    payout_account_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Connect Account ID or similar")
-    currency = models.ForeignKey(Currency, on_delete=models.SET_NULL, null=True, blank=True)
-    primary_color = models.CharField(max_length=7, blank=True, null=True, default='#7c3aed', help_text="Hex color code for invoices and branding")
-    subscription_plan = models.CharField(max_length=50, choices=[('free', 'Free'), ('basic', 'Basic'), ('pro', 'Pro')], default='free')
+    tax_id = models.CharField(
+        max_length=100, blank=True, null=True, help_text="VAT/Tax Identification Number"
+    )
+    payout_account_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Stripe Connect Account ID or similar",
+    )
+    currency = models.ForeignKey(
+        Currency, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    primary_color = models.CharField(
+        max_length=7,
+        blank=True,
+        null=True,
+        default="#7c3aed",
+        help_text="Hex color code for invoices and branding",
+    )
+    subscription_plan = models.CharField(
+        max_length=50,
+        choices=[("free", "Free"), ("basic", "Basic"), ("pro", "Pro")],
+        default="free",
+    )
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -31,17 +54,25 @@ class Organization(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     # Activity tracking (self-referential — set during create/update)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='created_organizations'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_organizations",
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='updated_organizations'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_organizations",
     )
 
 
 class OrganizationAccountDetails(models.Model):
-    organization = models.OneToOneField(Organization, on_delete=models.CASCADE, related_name='account_details')
+    organization = models.OneToOneField(
+        Organization, on_delete=models.CASCADE, related_name="account_details"
+    )
     account_name = models.CharField(max_length=255, blank=True, null=True)
     account_number = models.CharField(max_length=255, blank=True, null=True)
     bank_name = models.CharField(max_length=255, blank=True, null=True)
@@ -49,12 +80,18 @@ class OrganizationAccountDetails(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='created_org_account_details'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_org_account_details",
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='updated_org_account_details'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_org_account_details",
     )
 
 
@@ -65,107 +102,177 @@ class BankAccount(models.Model):
     Distinct from OrganizationAccountDetails, which is the single payout account
     used for Paystack transfer reconciliation.
     """
+
     bank_account_id = models.AutoField(primary_key=True)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='bank_accounts')
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="bank_accounts"
+    )
     bank_name = models.CharField(max_length=255)
     account_number = models.CharField(max_length=50)
     account_name = models.CharField(max_length=255)
     account_type = models.CharField(
-        max_length=20, choices=[('savings', 'Savings'), ('current', 'Current')], default='savings'
+        max_length=20,
+        choices=[("savings", "Savings"), ("current", "Current")],
+        default="savings",
     )
     swift_code = models.CharField(max_length=20, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='created_bank_accounts'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_bank_accounts",
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='updated_bank_accounts'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_bank_accounts",
     )
+
 
 class SubscriptionPlan(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     billing_cycle = models.CharField(
-        max_length=20, 
-        choices=[('monthly', 'Monthly'), ('yearly', 'Yearly')], 
-        default='monthly'
+        max_length=20,
+        choices=[("monthly", "Monthly"), ("yearly", "Yearly")],
+        default="monthly",
     )
     max_invoices_per_month = models.IntegerField(
-        default=10, 
-        help_text="Set to -1 for unlimited."
+        default=10, help_text="Set to -1 for unlimited."
     )
     max_inventory_booking_per_month = models.IntegerField(
-        default=10,
-        help_text="Set to -1 for unlimited."
+        default=10, help_text="Set to -1 for unlimited."
     )
     has_booking = models.BooleanField(default=True)
     has_invoice = models.BooleanField(default=True)
     has_inventory = models.BooleanField(default=True)
     is_free = models.BooleanField(default=False)
-    
+
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if self.is_free:
-            SubscriptionPlan.objects.filter(is_free=True).exclude(pk=self.pk).update(is_free=False)
+            SubscriptionPlan.objects.filter(is_free=True).exclude(pk=self.pk).update(
+                is_free=False
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} (${self.price}/{self.billing_cycle})"
 
 
+class Feedback(models.Model):
+    TYPE_CHOICES = [
+        ("feedback", "Product Feedback"),
+        ("contact", "Contact Support"),
+        ("rating", "App Rating"),
+    ]
+    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="feedbacks")
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="feedbacks",
+        null=True,
+        blank=True,
+    )
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="feedback")
+    rating = models.PositiveIntegerField(null=True, blank=True)
+    subject = models.CharField(max_length=255, null=True, blank=True)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.type} by {self.user.email}"
+
+
 class Subscription(models.Model):
-    organization = models.OneToOneField(Organization, on_delete=models.CASCADE, related_name='subscription')
+    organization = models.OneToOneField(
+        Organization, on_delete=models.CASCADE, related_name="subscription"
+    )
     subscription_id = models.CharField(max_length=255, blank=True, null=True)
     plan_name = models.CharField(max_length=50)
-    status = models.CharField(max_length=50, default='active')
-    max_invoices_per_month = models.IntegerField(default=10, help_text="Maximum number of invoices this subscription can generate per month. Set to -1 for unlimited.")
+    status = models.CharField(max_length=50, default="active")
+    max_invoices_per_month = models.IntegerField(
+        default=10,
+        help_text="Maximum number of invoices this subscription can generate per month. Set to -1 for unlimited.",
+    )
     current_period_end = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='created_subscriptions'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_subscriptions",
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='updated_subscriptions'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_subscriptions",
     )
 
 
 class User(AbstractUser):
     ROLE_CHOICES = (
-        ('admin', 'Admin'),
-        ('staff', 'Staff'),
-        ('validator', 'Validator'),
-        ('customer', 'Customer'),
+        ("admin", "Admin"),
+        ("staff", "Staff"),
+        ("validator", "Validator"),
+        ("customer", "Customer"),
     )
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff')
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="staff")
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="users",
+        null=True,
+        blank=True,
+    )
+    organizations = models.ManyToManyField(
+        Organization,
+        related_name="members",
+        blank=True,
+    )
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email_verified = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
     # Track who last modified this user
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='modified_users'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="modified_users",
     )
 
 
 class Client(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='clients')
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="clients"
+    )
     client_id = models.AutoField(primary_key=True)
-    logo = models.ImageField(upload_to='client_logos/', blank=True, null=True)
-    business_name = models.CharField(max_length=255)
+    client_type = models.CharField(
+        max_length=20,
+        choices=[("business", "Business"), ("individual", "Individual")],
+        default="business",
+    )
+    logo = models.ImageField(upload_to="client_logos/", blank=True, null=True)
+    business_name = models.CharField(max_length=255, blank=True, null=True)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     contact_name = models.CharField(max_length=255, blank=True, null=True)
@@ -183,29 +290,142 @@ class Client(models.Model):
     account_number = models.CharField(max_length=255, blank=True, null=True)
     bank_name = models.CharField(max_length=255, blank=True, null=True)
     bank_code = models.CharField(max_length=255, blank=True, null=True)
-    status = models.CharField(max_length=20, choices=[('active', 'Active'), ('inactive', 'Inactive')], default='active')
+    status = models.CharField(
+        max_length=20,
+        choices=[("active", "Active"), ("inactive", "Inactive")],
+        default="active",
+    )
+    password = models.CharField(max_length=128, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='created_clients'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_clients",
     )
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='updated_clients'
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_clients",
     )
+
+
+class Vendor(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="vendors"
+    )
+    vendor_id = models.AutoField(primary_key=True)
+    logo = models.ImageField(upload_to="vendor_logos/", blank=True, null=True)
+    business_name = models.CharField(max_length=255)
+    contact_name = models.CharField(max_length=255, blank=True, null=True)
+    contact_email = models.EmailField(blank=True, null=True)
+    contact_phone = models.CharField(max_length=20, blank=True, null=True)
+    service = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[("active", "Active"), ("inactive", "Inactive")],
+        default="active",
+    )
+    password = models.CharField(max_length=128, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_vendors",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_vendors",
+    )
+
+    def __str__(self):
+        return self.business_name
 
 
 class OTP(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otps')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="otps")
     code = models.CharField(max_length=6)
-    purpose = models.CharField(max_length=50, choices=[
-        ('email_verification', 'Email Verification'),
-        ('password_reset', 'Password Reset')
-    ])
+    purpose = models.CharField(
+        max_length=50,
+        choices=[
+            ("email_verification", "Email Verification"),
+            ("password_reset", "Password Reset"),
+        ],
+    )
     is_used = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
     def __str__(self):
         return f"{self.user.email} - {self.purpose} - {self.code}"
+
+
+class Role(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="roles"
+    )
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    permissions = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("organization", "name")
+
+    def __str__(self):
+        return f"{self.name} - {self.organization.name}"
+
+
+class OrganizationMembership(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="memberships"
+    )
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name="memberships"
+    )
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="memberships",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "organization")
+
+    def __str__(self):
+        return f"{self.user.email} - {self.organization.name}"
+
+
+class GlobalConfig(models.Model):
+    free_tier_monthly_quota = models.IntegerField(
+        default=10, help_text="Default monthly invoice/booking quota for free users."
+    )
+    max_organizations_per_user = models.IntegerField(
+        default=5, help_text="Maximum number of businesses a single user can create."
+    )
+
+    class Meta:
+        verbose_name = "Global Configuration"
+        verbose_name_plural = "Global Configuration"
+
+    @classmethod
+    def get_settings(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj

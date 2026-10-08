@@ -1,8 +1,9 @@
+from django.apps import apps
 from django.contrib import admin
-from .models import Notification
 
-@admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('user', 'title', 'is_read', 'created_at')
-    search_fields = ('user__email', 'title', 'message')
-    list_filter = ('is_read',)
+app = apps.get_app_config("notification")
+for model_name, model in app.models.items():
+    try:
+        admin.site.register(model)
+    except admin.sites.AlreadyRegistered:
+        pass

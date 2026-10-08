@@ -1,50 +1,157 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #F8FAFC; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 40px auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #E2E8F0; }
-        .header { background-color: #001C3D; padding: 30px 20px; text-align: center; color: #FFA652; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
-        .content { padding: 40px 30px; color: #0F172A; font-size: 16px; line-height: 1.6; }
-        .footer { background-color: #F8FAFC; padding: 20px; text-align: center; color: #64748B; font-size: 14px; border-top: 1px solid #E2E8F0; }
-        .otp-code { display: inline-block; background-color: #F1F5F9; padding: 16px 24px; border-radius: 8px; font-size: 32px; font-weight: 700; letter-spacing: 0.25em; color: #001C3D; margin: 24px 0; border: 1px dashed #E2E8F0; }
-        .btn { display: inline-block; background-color: #001C3D; color: #FFA652; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin-top: 20px; }
-        .credit-alert { background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 16px; margin: 20px 0; border-radius: 4px; color: #991b1b; }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background-color: #f8fafc;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+      }
+      .header {
+        background-color: #001c3d;
+        padding: 30px 20px;
+        text-align: center;
+        color: #ffa652;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+      .content {
+        padding: 40px 30px;
+        color: #0f172a;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      .footer {
+        background-color: #f8fafc;
+        padding: 20px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+        border-top: 1px solid #e2e8f0;
+      }
+      .otp-code {
+        display: inline-block;
+        background-color: #f1f5f9;
+        padding: 16px 24px;
+        border-radius: 8px;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        color: #001c3d;
+        margin: 24px 0;
+        border: 1px dashed #e2e8f0;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #001c3d;
+        color: #ffa652;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 600;
+        margin-top: 20px;
+      }
+      .credit-alert {
+        background-color: #fee2e2;
+        border-left: 4px solid #ef4444;
+        padding: 16px;
+        margin: 20px 0;
+        border-radius: 4px;
+        color: #991b1b;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <div class="header">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td align="center">
+              <table
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                style="margin: 0 auto"
+              >
                 <tr>
-                    <td align="center">
-                        <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-                            <tr>
-                                <td style="padding-right: 12px; vertical-align: middle;">
-                                    <svg viewBox="0 0 100 100" width="40" height="40" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-                                        <circle cx="50" cy="28" r="14" fill="#FFA652" />
-                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M50 88C72.0914 88 90 70.0914 90 48H10C10 70.0914 27.9086 88 50 88Z" fill="#FFA652" />
-                                    </svg>
-                                </td>
-                                <td style="vertical-align: middle; text-align: left;">
-                                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.025em; color: #FFFFFF; line-height: 1;">Neo</h1>
-                                    <div style="font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; color: #FFA652; margin-top: 4px; line-height: 1;">Inventory</div>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
+                  <td style="padding-right: 12px; vertical-align: middle">
+                    <svg
+                      viewBox="0 0 100 100"
+                      width="40"
+                      height="40"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style="display: block"
+                    >
+                      <circle cx="50" cy="28" r="14" fill="#FFA652" />
+                      <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M50 88C72.0914 88 90 70.0914 90 48H10C10 70.0914 27.9086 88 50 88Z"
+                        fill="#FFA652"
+                      />
+                    </svg>
+                  </td>
+                  <td style="vertical-align: middle; text-align: left">
+                    <h1
+                      style="
+                        margin: 0;
+                        font-size: 28px;
+                        font-weight: 700;
+                        letter-spacing: -0.025em;
+                        color: #ffffff;
+                        line-height: 1;
+                      "
+                    >
+                      Neo
+                    </h1>
+                    <div
+                      style="
+                        font-size: 10px;
+                        font-weight: 900;
+                        letter-spacing: 0.2em;
+                        text-transform: uppercase;
+                        color: #ffa652;
+                        margin-top: 4px;
+                        line-height: 1;
+                      "
+                    >
+                      Inventory
+                    </div>
+                  </td>
                 </tr>
-            </table>
-        </div>
-        <div class="content">
-            {% block content %}{% endblock %}
-        </div>
-        <div class="footer">
-            <p>&copy; {% now "Y" %} Neo Inventory. All rights reserved.</p>
-            <p>If you have any questions, reply to this email.</p>
-        </div>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="content">{% block content %}{% endblock %}</div>
+      <div class="footer">
+        <p>&copy; {% now "Y" %} Neo Inventory. All rights reserved.</p>
+        <p>If you have any questions, reply to this email.</p>
+      </div>
     </div>
-</body>
+  </body>
 </html>

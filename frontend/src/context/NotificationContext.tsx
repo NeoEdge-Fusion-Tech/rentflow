@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle2, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
+import React, { createContext, useContext, useState, useCallback } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 
-type NotificationType = 'success' | 'error' | 'info' | 'warning';
+type NotificationType = "success" | "error" | "info" | "warning";
 
 interface Notification {
   id: string;
@@ -18,35 +24,48 @@ interface ConfirmOptions {
   onCancel?: () => void;
   confirmText?: string;
   cancelText?: string;
-  type?: 'danger' | 'info';
+  type?: "danger" | "info";
 }
 
 interface NotificationContextType {
-  showNotification: (message: string, type?: NotificationType, duration?: number) => void;
+  showNotification: (
+    message: string,
+    type?: NotificationType,
+    duration?: number,
+  ) => void;
   hideNotification: (id: string) => void;
   showConfirm: (options: ConfirmOptions) => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined,
+);
 
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [confirmOptions, setConfirmOptions] = useState<ConfirmOptions | null>(null);
+  const [confirmOptions, setConfirmOptions] = useState<ConfirmOptions | null>(
+    null,
+  );
 
   const hideNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  const showNotification = useCallback((message: string, type: NotificationType = 'info', duration = 5000) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setNotifications((prev) => [...prev, { id, type, message, duration }]);
+  const showNotification = useCallback(
+    (message: string, type: NotificationType = "info", duration = 5000) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      setNotifications((prev) => [...prev, { id, type, message, duration }]);
 
-    if (duration > 0) {
-      setTimeout(() => {
-        hideNotification(id);
-      }, duration);
-    }
-  }, [hideNotification]);
+      if (duration > 0) {
+        setTimeout(() => {
+          hideNotification(id);
+        }, duration);
+      }
+    },
+    [hideNotification],
+  );
 
   const showConfirm = useCallback((options: ConfirmOptions) => {
     setConfirmOptions(options);
@@ -67,46 +86,55 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   return (
-    <NotificationContext.Provider value={{ showNotification, hideNotification, showConfirm }}>
+    <NotificationContext.Provider
+      value={{ showNotification, hideNotification, showConfirm }}
+    >
       {children}
-      <NotificationContainer notifications={notifications} onHide={hideNotification} />
+      <NotificationContainer
+        notifications={notifications}
+        onHide={hideNotification}
+      />
 
       <AnimatePresence>
         {confirmOptions && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={handleCancel}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-sm bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-3xl shadow-2xl overflow-hidden"
             >
               <div className="p-6">
-                <h3 className="text-lg font-bold text-[var(--text-main)] mb-2">{confirmOptions.title}</h3>
-                <p className="text-sm text-[var(--text-muted)] leading-relaxed">{confirmOptions.message}</p>
+                <h3 className="text-lg font-bold text-[var(--text-main)] mb-2">
+                  {confirmOptions.title}
+                </h3>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                  {confirmOptions.message}
+                </p>
               </div>
               <div className="p-4 bg-[var(--bg-app)]/50 border-t border-[var(--border-soft)] flex gap-3">
-                <button 
+                <button
                   onClick={handleCancel}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text-muted)] hover:bg-[var(--border-subtle)] transition-colors"
                 >
-                  {confirmOptions.cancelText || 'Cancel'}
+                  {confirmOptions.cancelText || "Cancel"}
                 </button>
-                <button 
+                <button
                   onClick={handleConfirm}
                   className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${
-                    confirmOptions.type === 'danger' 
-                      ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20' 
-                      : 'bg-brand-primary hover:opacity-90 shadow-brand-primary/20'
+                    confirmOptions.type === "danger"
+                      ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
+                      : "bg-brand-primary hover:opacity-90 shadow-brand-primary/20"
                   }`}
                 >
-                  {confirmOptions.confirmText || 'Confirm'}
+                  {confirmOptions.confirmText || "Confirm"}
                 </button>
               </div>
             </motion.div>
@@ -120,24 +148,36 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider');
+    throw new Error(
+      "useNotification must be used within a NotificationProvider",
+    );
   }
   return context;
 };
 
-const NotificationContainer: React.FC<{ notifications: Notification[], onHide: (id: string) => void }> = ({ notifications, onHide }) => {
+const NotificationContainer: React.FC<{
+  notifications: Notification[];
+  onHide: (id: string) => void;
+}> = ({ notifications, onHide }) => {
   return (
     <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none min-w-[320px] max-w-[420px]">
       <AnimatePresence mode="popLayout">
         {notifications.map((notification) => (
-          <NotificationItem key={notification.id} notification={notification} onHide={onHide} />
+          <NotificationItem
+            key={notification.id}
+            notification={notification}
+            onHide={onHide}
+          />
         ))}
       </AnimatePresence>
     </div>
   );
 };
 
-const NotificationItem: React.FC<{ notification: Notification, onHide: (id: string) => void }> = ({ notification, onHide }) => {
+const NotificationItem: React.FC<{
+  notification: Notification;
+  onHide: (id: string) => void;
+}> = ({ notification, onHide }) => {
   const icons = {
     success: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
     error: <AlertCircle className="w-5 h-5 text-rose-500" />,
@@ -146,10 +186,13 @@ const NotificationItem: React.FC<{ notification: Notification, onHide: (id: stri
   };
 
   const bgColors = {
-    success: 'bg-[var(--bg-surface)] border-l-4 border-l-emerald-500 border-y border-r border-[var(--border-soft)]',
-    error: 'bg-[var(--bg-surface)] border-l-4 border-l-rose-500 border-y border-r border-[var(--border-soft)]',
-    info: 'bg-[var(--bg-surface)] border-l-4 border-l-blue-500 border-y border-r border-[var(--border-soft)]',
-    warning: 'bg-[var(--bg-surface)] border-l-4 border-l-amber-500 border-y border-r border-[var(--border-soft)]',
+    success:
+      "bg-[var(--bg-surface)] border-l-4 border-l-emerald-500 border-y border-r border-[var(--border-soft)]",
+    error:
+      "bg-[var(--bg-surface)] border-l-4 border-l-rose-500 border-y border-r border-[var(--border-soft)]",
+    info: "bg-[var(--bg-surface)] border-l-4 border-l-blue-500 border-y border-r border-[var(--border-soft)]",
+    warning:
+      "bg-[var(--bg-surface)] border-l-4 border-l-amber-500 border-y border-r border-[var(--border-soft)]",
   };
 
   return (
@@ -158,7 +201,9 @@ const NotificationItem: React.FC<{ notification: Notification, onHide: (id: stri
       initial={{ opacity: 0, x: 50, scale: 0.9 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-sm ${bgColors[notification.type]}`}
+      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-sm ${
+        bgColors[notification.type]
+      }`}
     >
       <div className="mt-0.5">{icons[notification.type]}</div>
       <div className="flex-1 text-sm font-medium text-[var(--text-main)]">

@@ -8,23 +8,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0008_organization_address_organization_email_and_more'),
+        ("users", "0008_organization_address_organization_email_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BankAccount',
+            name="BankAccount",
             fields=[
-                ('bank_account_id', models.AutoField(primary_key=True, serialize=False)),
-                ('bank_name', models.CharField(max_length=255)),
-                ('account_number', models.CharField(max_length=50)),
-                ('account_name', models.CharField(max_length=255)),
-                ('account_type', models.CharField(choices=[('savings', 'Savings'), ('current', 'Current')], default='savings', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_bank_accounts', to=settings.AUTH_USER_MODEL)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bank_accounts', to='users.organization')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='updated_bank_accounts', to=settings.AUTH_USER_MODEL)),
+                (
+                    "bank_account_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("bank_name", models.CharField(max_length=255)),
+                ("account_number", models.CharField(max_length=50)),
+                ("account_name", models.CharField(max_length=255)),
+                (
+                    "account_type",
+                    models.CharField(
+                        choices=[("savings", "Savings"), ("current", "Current")],
+                        default="savings",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_bank_accounts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="bank_accounts",
+                        to="users.organization",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="updated_bank_accounts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

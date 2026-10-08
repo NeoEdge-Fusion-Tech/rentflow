@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0016_subscriptionplan_has_inventory'),
+        ("users", "0016_subscriptionplan_has_inventory"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bankaccount',
-            name='notes',
+            model_name="bankaccount",
+            name="notes",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='bankaccount',
-            name='swift_code',
+            model_name="bankaccount",
+            name="swift_code",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
     ]

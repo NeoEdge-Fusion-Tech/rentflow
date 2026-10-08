@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0007_rename_price_per_hour_product_price_per_day_and_more'),
+        ("inventory", "0007_rename_price_per_hour_product_price_per_day_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='productunit',
-            name='name',
+            model_name="productunit",
+            name="name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]

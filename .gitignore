@@ -94,4 +94,3 @@ backend/staticfiles/
 htmlcov/
 .mypy_cache/
 .vscode/
-

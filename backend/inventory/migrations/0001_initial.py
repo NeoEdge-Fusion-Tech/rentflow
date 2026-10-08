@@ -7,74 +7,143 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Booking',
+            name="Booking",
             fields=[
-                ('booking_id', models.AutoField(primary_key=True, serialize=False)),
-                ('booking_date', models.DateTimeField(auto_now_add=True)),
-                ('status', models.CharField(choices=[('pending', 'Pending Approval'), ('confirmed', 'Confirmed'), ('picked_up', 'Picked Up'), ('returned', 'Returned'), ('cancelled', 'Cancelled')], default='pending', max_length=20)),
-                ('payment_status', models.CharField(choices=[('pending', 'Pending'), ('partial', 'Partial'), ('paid', 'Paid')], default='pending', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("booking_id", models.AutoField(primary_key=True, serialize=False)),
+                ("booking_date", models.DateTimeField(auto_now_add=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending Approval"),
+                            ("confirmed", "Confirmed"),
+                            ("picked_up", "Picked Up"),
+                            ("returned", "Returned"),
+                            ("cancelled", "Cancelled"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "payment_status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("partial", "Partial"),
+                            ("paid", "Paid"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='BookingItem',
+            name="BookingItem",
             fields=[
-                ('booking_item_id', models.AutoField(primary_key=True, serialize=False)),
-                ('quantity_booked', models.PositiveIntegerField()),
-                ('total_picked_up', models.PositiveIntegerField(default=0)),
-                ('total_returned', models.PositiveIntegerField(default=0)),
+                (
+                    "booking_item_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("quantity_booked", models.PositiveIntegerField()),
+                ("total_picked_up", models.PositiveIntegerField(default=0)),
+                ("total_returned", models.PositiveIntegerField(default=0)),
             ],
         ),
         migrations.CreateModel(
-            name='BookingItemUnit',
+            name="BookingItemUnit",
             fields=[
-                ('booking_item_unit_id', models.AutoField(primary_key=True, serialize=False)),
-                ('pickup_date', models.DateTimeField(blank=True, null=True)),
-                ('return_date', models.DateTimeField(blank=True, null=True)),
-                ('return_condition', models.CharField(blank=True, choices=[('good', 'Good'), ('damaged', 'Damaged')], max_length=20, null=True)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('picked_up', 'Picked Up'), ('returned', 'Returned')], default='pending', max_length=20)),
+                (
+                    "booking_item_unit_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("pickup_date", models.DateTimeField(blank=True, null=True)),
+                ("return_date", models.DateTimeField(blank=True, null=True)),
+                (
+                    "return_condition",
+                    models.CharField(
+                        blank=True,
+                        choices=[("good", "Good"), ("damaged", "Damaged")],
+                        max_length=20,
+                        null=True,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("picked_up", "Picked Up"),
+                            ("returned", "Returned"),
+                        ],
+                        default="pending",
+                        max_length=20,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Product',
+            name="Product",
             fields=[
-                ('product_id', models.AutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('slug', models.SlugField(max_length=255)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('total_quantity', models.PositiveIntegerField(default=0)),
-                ('total_quantity_good_condition', models.PositiveIntegerField(default=0)),
-                ('total_quantity_damaged_condition', models.PositiveIntegerField(default=0)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                ("product_id", models.AutoField(primary_key=True, serialize=False)),
+                ("name", models.CharField(max_length=255)),
+                ("slug", models.SlugField(max_length=255)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("total_quantity", models.PositiveIntegerField(default=0)),
+                (
+                    "total_quantity_good_condition",
+                    models.PositiveIntegerField(default=0),
+                ),
+                (
+                    "total_quantity_damaged_condition",
+                    models.PositiveIntegerField(default=0),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='ProductCategory',
+            name="ProductCategory",
             fields=[
-                ('category_id', models.AutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=100)),
-                ('slug', models.SlugField(max_length=100)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ("category_id", models.AutoField(primary_key=True, serialize=False)),
+                ("name", models.CharField(max_length=100)),
+                ("slug", models.SlugField(max_length=100)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='ProductUnit',
+            name="ProductUnit",
             fields=[
-                ('product_unit_id', models.AutoField(primary_key=True, serialize=False)),
-                ('serial_number', models.CharField(max_length=100, unique=True)),
-                ('status', models.CharField(choices=[('available', 'Available'), ('rented', 'Rented'), ('damaged', 'Damaged'), ('maintenance', 'Maintenance')], default='available', max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "product_unit_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("serial_number", models.CharField(max_length=100, unique=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("available", "Available"),
+                            ("rented", "Rented"),
+                            ("damaged", "Damaged"),
+                            ("maintenance", "Maintenance"),
+                        ],
+                        default="available",
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
     ]

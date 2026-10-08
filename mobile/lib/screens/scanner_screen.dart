@@ -13,7 +13,7 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen> {
   String _actionType = 'pickup';
   String _unitType = 'single';
-  
+
   final TextEditingController _serialController = TextEditingController();
   int _quantity = 1;
   int _qtyDamaged = 0;
@@ -148,7 +148,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
 
     _showResultSnackBar(res['message'] ?? 'Action successful', isError: false);
-    
+
     // Reset Form
     setState(() {
       _serialController.clear();
@@ -542,7 +542,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 4,
                   ),
-                  child: _isLoading 
+                  child: _isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : Text('SUBMIT ${_actionType.toUpperCase()}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                 ),
@@ -550,7 +550,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               ],
             ),
           ),
-          
+
           if (_isLoading)
             Container(
               color: Colors.white.withOpacity(0.5),

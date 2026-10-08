@@ -1,0 +1,1386 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
+  ListChecks,
+  ArrowUpRight,
+  Building2,
+  Mail,
+  Phone,
+  User,
+  Copy,
+} from "lucide-react";
+import { cn } from "@/src/utils";
+import { useNotification } from "../context/NotificationContext";
+import {
+  EventService,
+  ExpenseService,
+  VendorService,
+  InvoiceService,
+  ProjectFeedbackService,
+  FeedbackService,
+} from "../api";
+import { RevenueDisplay } from "../components/RevenueDisplay";
+
+export function EventDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { showNotification, showConfirm } = useNotification();
+
+  const [event, setEvent] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const defaultCurrencySymbol = localStorage.getItem("currencySymbol") || "$";
+
+  // Edit event modal
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditSaving, setIsEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
+
+  // Expenses
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isExpenseSaving, setIsExpenseSaving] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
+
+  const [isCloneExpenseOpen, setIsCloneExpenseOpen] = useState(false);
+  const [availableEvents, setAvailableEvents] = useState<any[]>([]);
+  const [selectedSourceEvent, setSelectedSourceEvent] = useState<string>("");
+  const [isCloningExpense, setIsCloningExpense] = useState(false);
+
+  const [expenseForm, setExpenseForm] = useState({
+    expense_type: "item",
+    vendor: "" as number | string,
+    name: "",
+    amount: 0 as number | string,
+    description: "",
+    date: "",
+  });
+
+  // Feedback
+  const [projectFeedbacks, setProjectFeedbacks] = useState<any[]>([]);
+  const [availableForms, setAvailableForms] = useState<any[]>([]);
+  const [isAttachFeedbackOpen, setIsAttachFeedbackOpen] = useState(false);
+  const [selectedForm, setSelectedForm] = useState<string>("");
+
+  const [viewingResponsesFor, setViewingResponsesFor] = useState<any>(null);
+  const [responses, setResponses] = useState<any[]>([]);
+  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
+
+  const fetchEvent = async () => {
+    if (!id) return;
+    try {
+      const res = await EventService.get(id);
+      setEvent(res.data);
+      setEditForm({
+        name: res.data.name || "",
+        description: res.data.description || "",
+        status: res.data.status || "planned",
+        start_date: res.data.start_date || "",
+        end_date: res.data.end_date || "",
+        invoices: (res.data.invoices || []).map(String),
+      });
+    } catch (e) {
+      console.error("Failed to fetch event", e);
+    }
+  };
+
+  const fetchExpenses = async () => {
+    if (!id) return;
+    try {
+      const res = await ExpenseService.getAll({ event: id });
+      setExpenses(res.data.results || res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchProjectFeedbacks = async () => {
+    if (!id) return;
+    try {
+      const res = await ProjectFeedbackService.getAll({ event: id });
+      setProjectFeedbacks(res.data.results || res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      setIsLoading(true);
+      await Promise.all([
+        fetchEvent(),
+        fetchExpenses(),
+        fetchProjectFeedbacks(),
+        VendorService.getAll()
+          .then((res) => setVendors(res.data.results || res.data))
+          .catch(console.error),
+        InvoiceService.getAll()
+          .then((res) => setInvoices(res.data.results || res.data))
+          .catch(console.error),
+        FeedbackService.getForms()
+          .then((res) => setAvailableForms(res.data.results || res.data))
+          .catch(console.error),
+      ]);
+      setIsLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const formatCurrency = (amount: number | string) => {
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+    return (num || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // --- Event edit ---
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || isEditSaving) return;
+    try {
+      setIsEditSaving(true);
+      await EventService.patch(id, {
+        ...editForm,
+        start_date: editForm.start_date || null,
+        end_date: editForm.end_date || null,
+        invoices: editForm.invoices.map((inv: any) => parseInt(String(inv))),
+      });
+      setIsEditOpen(false);
+      showNotification("Project updated!", "success");
+      fetchEvent();
+    } catch (err) {
+      console.error("Failed to update project", err);
+      showNotification("Failed to update project", "error");
+    } finally {
+      setIsEditSaving(false);
+    }
+  };
+
+  // --- Expenses ---
+  const openAddExpense = () => {
+    setEditingExpense(null);
+    setExpenseForm({
+      expense_type: "item",
+      vendor: "",
+      name: "",
+      amount: 0 as number | string,
+      description: "",
+      date: "",
+    });
+    setIsAddExpenseOpen(true);
+  };
+
+  const openEditExpense = (expense: any) => {
+    setEditingExpense(expense);
+    setExpenseForm({
+      expense_type: expense.expense_type,
+      vendor: expense.vendor || "",
+      name: expense.expense_type === "item" ? expense.name : "",
+      amount: parseFloat(expense.amount) || 0,
+      description: expense.description || "",
+      date: expense.date || "",
+    });
+    setIsAddExpenseOpen(true);
+  };
+
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || isExpenseSaving) return;
+    try {
+      setIsExpenseSaving(true);
+      const payload = {
+        event: parseInt(id),
+        expense_type: expenseForm.expense_type,
+        vendor:
+          expenseForm.expense_type === "vendor"
+            ? parseInt(String(expenseForm.vendor))
+            : null,
+        name:
+          expenseForm.expense_type === "item" ? expenseForm.name : undefined,
+        amount: expenseForm.amount,
+        description: expenseForm.description,
+        date: expenseForm.date || null,
+      };
+      if (editingExpense) {
+        await ExpenseService.update(editingExpense.expense_id, payload);
+      } else {
+        await ExpenseService.create(payload);
+      }
+      setIsAddExpenseOpen(false);
+      setEditingExpense(null);
+      showNotification(
+        editingExpense ? "Expense updated!" : "Expense added!",
+        "success",
+      );
+      fetchExpenses();
+      fetchEvent();
+    } catch (err: any) {
+      console.error("Failed to save expense", err);
+      showNotification(
+        err.response?.data?.vendor?.[0] ||
+          err.response?.data?.name?.[0] ||
+          "Failed to save expense",
+        "error",
+      );
+    } finally {
+      setIsExpenseSaving(false);
+    }
+  };
+
+  const handleDeleteExpense = (expenseId: number) => {
+    showConfirm({
+      title: "Delete Expense",
+      message: "Remove this expense from the project?",
+      type: "danger",
+      confirmText: "Delete",
+      onConfirm: async () => {
+        try {
+          await ExpenseService.delete(expenseId);
+          showNotification("Expense removed", "success");
+          fetchExpenses();
+          fetchEvent();
+        } catch (err) {
+          console.error("Failed to delete expense", err);
+          showNotification("Failed to delete expense", "error");
+        }
+      },
+    });
+  };
+
+  const handleDuplicateExpense = async (expenseId: number) => {
+    if (!id || isExpenseSaving) return;
+    try {
+      setIsExpenseSaving(true);
+      await ExpenseService.duplicate({
+        target_event: parseInt(id),
+        source_expense: expenseId,
+      });
+      showNotification("Expense duplicated!", "success");
+      fetchExpenses();
+      fetchEvent();
+    } catch (err) {
+      console.error("Failed to duplicate expense", err);
+      showNotification("Failed to duplicate expense", "error");
+    } finally {
+      setIsExpenseSaving(false);
+    }
+  };
+
+  const openCloneExpenseModal = async () => {
+    setIsCloneExpenseOpen(true);
+    try {
+      const res = await EventService.getAll();
+      setAvailableEvents(res.data.results || res.data);
+    } catch (e) {
+      console.error(e);
+      showNotification("Failed to load previous projects", "error");
+    }
+  };
+
+  const handleCloneExpenses = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !selectedSourceEvent) return;
+    try {
+      setIsCloningExpense(true);
+      await ExpenseService.duplicate({
+        target_event: parseInt(id),
+        source_event: parseInt(selectedSourceEvent),
+      });
+      showNotification("Expenses cloned successfully!", "success");
+      setIsCloneExpenseOpen(false);
+      fetchExpenses();
+      fetchEvent();
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to clone expenses", "error");
+    } finally {
+      setIsCloningExpense(false);
+    }
+  };
+
+  // --- Feedback ---
+  const handleAttachFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !selectedForm) return;
+    try {
+      const res = await ProjectFeedbackService.create({
+        event_id: parseInt(id),
+        form_id: parseInt(selectedForm),
+      });
+      setProjectFeedbacks((prev) => [...prev, res.data]);
+      setIsAttachFeedbackOpen(false);
+      showNotification("Feedback form attached", "success");
+      fetchProjectFeedbacks();
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to attach feedback form", "error");
+    }
+  };
+
+  const handleRemoveFeedback = async (pfId: number) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this feedback form from the project?",
+      )
+    )
+      return;
+    try {
+      await ProjectFeedbackService.delete(pfId);
+      setProjectFeedbacks((prev) => prev.filter((pf) => pf.id !== pfId));
+      showNotification("Feedback form removed.", "success");
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to remove feedback form.", "error");
+    }
+  };
+
+  const copyPublicLink = (publicId: string) => {
+    const url = `${window.location.origin}/f/${publicId}`;
+    navigator.clipboard.writeText(url);
+    showNotification("Public link copied to clipboard", "success");
+  };
+
+  const handleViewResponses = async (pf: any) => {
+    setViewingResponsesFor(pf);
+    setIsLoadingResponses(true);
+    try {
+      const res = await ProjectFeedbackService.getResponses(pf.id);
+      setResponses(res.data);
+    } catch (err) {
+      showNotification("Failed to load responses", "error");
+    } finally {
+      setIsLoadingResponses(false);
+    }
+  };
+
+  if (isLoading || !event) {
+    return (
+      <div className="bg-[var(--bg-surface)] p-12 text-center text-[var(--text-muted)] rounded-2xl border border-[var(--border-soft)]">
+        Loading project...
+      </div>
+    );
+  }
+
+  const profit = parseFloat(event.profit) || 0;
+  const isProfit = profit >= 0;
+
+  return (
+    <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/events")}
+            className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--text-main)]">
+              {event.name}
+            </h1>
+            <p className="text-[var(--text-muted)] text-sm capitalize">
+              {event.status}
+              {event.invoices_data && event.invoices_data.length > 0
+                ? ` · Linked to ${event.invoices_data.length} invoice${
+                    event.invoices_data.length === 1 ? "" : "s"
+                  }`
+                : ""}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => navigate(`/task-checklist?event=${id}`)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm"
+          >
+            <ListChecks className="w-4 h-4" /> Task Checklist{" "}
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setIsEditOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-app)] transition-colors text-sm"
+          >
+            <Edit2 className="w-4 h-4" /> Edit Project
+          </button>
+        </div>
+      </div>
+
+      {/* Client details (from the linked invoice) */}
+      {event.client_details && (
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-5">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">
+            Client
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="font-bold text-[var(--text-main)]">
+                {event.client_details.business_name}
+              </span>
+            </div>
+            {event.client_details.contact_name && (
+              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <User className="w-4 h-4" />
+                {event.client_details.contact_name}
+              </div>
+            )}
+            {(event.client_details.email ||
+              event.client_details.contact_email) && (
+              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <Mail className="w-4 h-4" />
+                {event.client_details.email ||
+                  event.client_details.contact_email}
+              </div>
+            )}
+            {(event.client_details.phone_number ||
+              event.client_details.contact_phone) && (
+              <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <Phone className="w-4 h-4" />
+                {event.client_details.phone_number ||
+                  event.client_details.contact_phone}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+            Revenue
+          </p>
+          <p className="text-xl font-black text-[var(--text-main)]">
+            <RevenueDisplay
+              amount={`${defaultCurrencySymbol}${formatCurrency(
+                event.revenue,
+              )}`}
+            />
+          </p>
+        </div>
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+            Total Expenses
+          </p>
+          <p className="text-xl font-black text-[var(--text-main)]">
+            <RevenueDisplay
+              amount={`${defaultCurrencySymbol}${formatCurrency(
+                event.total_expenses,
+              )}`}
+            />
+          </p>
+        </div>
+        <div className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] shadow-sm">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+            {isProfit ? "Profit" : "Loss"}
+          </p>
+          <p
+            className={cn(
+              "text-xl font-black flex items-center gap-1.5",
+              isProfit ? "text-emerald-500" : "text-rose-500",
+            )}
+          >
+            {isProfit ? (
+              <TrendingUp className="w-4 h-4 shrink-0" />
+            ) : (
+              <TrendingDown className="w-4 h-4 shrink-0" />
+            )}
+            <RevenueDisplay
+              amount={`${defaultCurrencySymbol}${formatCurrency(
+                Math.abs(profit),
+              )}`}
+            />
+          </p>
+        </div>
+      </div>
+
+      {/* Invoices */}
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+            Invoices
+          </h3>
+        </div>
+        {!event.invoices_data || event.invoices_data.length === 0 ? (
+          <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
+            No invoices linked.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {event.invoices_data.map((inv: any) => (
+              <div
+                key={inv.invoice_id}
+                onClick={() => navigate(`/invoices/${inv.invoice_id}`)}
+                className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm cursor-pointer hover:border-brand-primary/50 transition-colors"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="font-bold text-[var(--text-main)] truncate">
+                    {inv.invoice_number}
+                  </h4>
+                  <span className="text-sm font-bold text-[var(--text-main)]">
+                    <RevenueDisplay
+                      amount={`${defaultCurrencySymbol}${formatCurrency(
+                        inv.total_amount,
+                      )}`}
+                    />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Profit & Loss */}
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+            Expenses
+          </h3>
+          <div className="flex gap-2">
+            <button
+              onClick={openCloneExpenseModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl hover:bg-[var(--bg-surface)] transition-colors shadow-sm"
+            >
+              <Plus className="w-3 h-3" /> Clone from Project
+            </button>
+            <button
+              onClick={openAddExpense}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary"
+            >
+              <Plus className="w-3 h-3" /> Add Expense
+            </button>
+          </div>
+        </div>
+
+        {expenses.length === 0 ? (
+          <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
+            No expenses logged yet.
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                    <th className="py-2 pr-4 font-bold">Expense</th>
+                    <th className="py-2 pr-4 font-bold">Type</th>
+                    <th className="py-2 pr-4 font-bold">Date</th>
+                    <th className="py-2 pr-4 font-bold">Description</th>
+                    <th className="py-2 pr-4 font-bold text-right">Amount</th>
+                    <th className="py-2 pr-0 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {expenses.map((exp: any) => (
+                    <tr key={exp.expense_id}>
+                      <td className="py-3 pr-4 font-bold text-[var(--text-main)]">
+                        {exp.expense_type === "vendor"
+                          ? exp.vendor_details?.business_name
+                          : exp.name}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                            exp.expense_type === "vendor"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                          )}
+                        >
+                          {exp.expense_type}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-[var(--text-muted)]">
+                        {exp.date
+                          ? new Date(exp.date).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-[var(--text-muted)] max-w-xs truncate">
+                        {exp.description || "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-right font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            exp.amount,
+                          )}`}
+                        />
+                      </td>
+                      <td className="py-3 pr-0 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() =>
+                              handleDuplicateExpense(exp.expense_id)
+                            }
+                            className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
+                            title="Duplicate"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditExpense(exp)}
+                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExpense(exp.expense_id)}
+                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+              {expenses.map((exp: any) => (
+                <div
+                  key={exp.expense_id}
+                  className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                      <p className="font-bold text-[var(--text-main)] text-sm">
+                        {exp.expense_type === "vendor"
+                          ? exp.vendor_details?.business_name
+                          : exp.name}
+                      </p>
+                      <span
+                        className={cn(
+                          "inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                          exp.expense_type === "vendor"
+                            ? "bg-blue-500/10 text-blue-500"
+                            : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                        )}
+                      >
+                        {exp.expense_type}
+                      </span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-[var(--text-main)] flex items-center justify-end">
+                        <RevenueDisplay
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            exp.amount,
+                          )}`}
+                        />
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mb-2">
+                    {exp.description || "—"}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDuplicateExpense(exp.expense_id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openEditExpense(exp)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExpense(exp.expense_id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Feedback Section */}
+      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
+            Client Feedback Forms
+          </h3>
+          <button
+            onClick={() => setIsAttachFeedbackOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary"
+          >
+            <Plus className="w-3 h-3" /> Attach Form
+          </button>
+        </div>
+
+        {projectFeedbacks.length === 0 ? (
+          <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
+            No feedback forms attached to this project.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {projectFeedbacks.map((pf: any) => (
+              <div
+                key={pf.id}
+                className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm"
+              >
+                <h4 className="font-bold text-[var(--text-main)] mb-1 truncate">
+                  {pf.form?.title || "Unknown Form"}
+                </h4>
+                <p className="text-xs text-[var(--text-muted)] mb-3">
+                  Created: {new Date(pf.created_at).toLocaleDateString()}
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-xs font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md w-fit">
+                    Active Link
+                  </span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <button
+                      onClick={() => handleViewResponses(pf)}
+                      className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary transition-colors"
+                    >
+                      View Responses
+                    </button>
+                    <button
+                      onClick={() => copyPublicLink(pf.public_id)}
+                      className="text-sm font-bold text-brand-primary hover:underline"
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      onClick={() => handleRemoveFeedback(pf.id)}
+                      className="text-sm font-bold text-rose-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Edit Project Modal */}
+      {isEditOpen && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Edit Project
+              </h2>
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={handleEditSubmit}
+              className="p-6 space-y-4 overflow-y-auto"
+            >
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Project / Event Name
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.start_date}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, start_date: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.end_date}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, end_date: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Status
+                </label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, status: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
+                  <option value="planned">Planned</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Revenue Invoices
+                </label>
+                <div className="w-full max-h-[160px] overflow-y-auto px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl space-y-2">
+                  {invoices.length === 0 ? (
+                    <div className="text-sm text-[var(--text-muted)] italic">
+                      No invoices available
+                    </div>
+                  ) : (
+                    invoices.map((inv: any) => {
+                      const isChecked = (
+                        editForm.invoices as string[]
+                      ).includes(String(inv.invoice_id));
+                      return (
+                        <label
+                          key={inv.invoice_id}
+                          className="flex items-start gap-3 cursor-pointer group"
+                        >
+                          <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const currentInvoices =
+                                  editForm.invoices as string[];
+                                if (e.target.checked) {
+                                  setEditForm({
+                                    ...editForm,
+                                    invoices: [
+                                      ...currentInvoices,
+                                      String(inv.invoice_id),
+                                    ],
+                                  });
+                                } else {
+                                  setEditForm({
+                                    ...editForm,
+                                    invoices: currentInvoices.filter(
+                                      (id) => id !== String(inv.invoice_id),
+                                    ),
+                                  });
+                                }
+                              }}
+                              className="peer sr-only"
+                            />
+                            <div className="w-5 h-5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded group-hover:border-brand-primary peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-colors flex items-center justify-center">
+                              {isChecked && (
+                                <svg
+                                  className="w-3.5 h-3.5 text-white"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={3}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1 text-sm text-[var(--text-main)] font-medium">
+                            <span className="font-bold">
+                              {inv.invoice_number}
+                            </span>{" "}
+                            —{" "}
+                            <span className="text-[var(--text-muted)]">
+                              {inv.client_details?.business_name ||
+                                inv.client_name ||
+                                "No client"}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSaving}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isEditSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Expense Modal */}
+      {isAddExpenseOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                {editingExpense ? "Edit Expense" : "Add Expense"}
+              </h2>
+              <button
+                onClick={() => {
+                  setIsAddExpenseOpen(false);
+                  setEditingExpense(null);
+                }}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={handleAddExpense}
+              className="p-6 space-y-4 overflow-y-auto"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpenseForm({ ...expenseForm, expense_type: "item" })
+                  }
+                  className={cn(
+                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                    expenseForm.expense_type === "item"
+                      ? "bg-brand-primary text-white border-brand-primary"
+                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                  )}
+                >
+                  Item
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpenseForm({ ...expenseForm, expense_type: "vendor" })
+                  }
+                  className={cn(
+                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                    expenseForm.expense_type === "vendor"
+                      ? "bg-brand-primary text-white border-brand-primary"
+                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                  )}
+                >
+                  Vendor
+                </button>
+              </div>
+
+              {expenseForm.expense_type === "vendor" ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Vendor <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={expenseForm.vendor}
+                    onChange={(e) =>
+                      setExpenseForm({ ...expenseForm, vendor: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  >
+                    <option value="">Select a vendor...</option>
+                    {vendors.map((v: any) => (
+                      <option key={v.vendor_id} value={v.vendor_id}>
+                        {v.business_name} — {v.service}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Item Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={expenseForm.name}
+                    onChange={(e) =>
+                      setExpenseForm({ ...expenseForm, name: e.target.value })
+                    }
+                    placeholder="e.g. Chairs & Tables Rental"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Amount <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  value={expenseForm.amount || ""}
+                  onChange={(e) =>
+                    setExpenseForm({
+                      ...expenseForm,
+                      amount: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={expenseForm.description}
+                  onChange={(e) =>
+                    setExpenseForm({
+                      ...expenseForm,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Date (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={expenseForm.date || ""}
+                  onChange={(e) =>
+                    setExpenseForm({ ...expenseForm, date: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddExpenseOpen(false);
+                    setEditingExpense(null);
+                  }}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isExpenseSaving}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExpenseSaving
+                    ? "Saving..."
+                    : editingExpense
+                      ? "Save Changes"
+                      : "Add Expense"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Clone Expense Modal */}
+      {isCloneExpenseOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Clone Expenses
+              </h2>
+              <button
+                onClick={() => setIsCloneExpenseOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCloneExpenses} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Select Source Project <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedSourceEvent}
+                  onChange={(e) => setSelectedSourceEvent(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
+                  <option value="">Select a previous project...</option>
+                  {availableEvents
+                    .filter((ev: any) => ev.event_id !== parseInt(id!))
+                    .map((ev: any) => (
+                      <option key={ev.event_id} value={ev.event_id}>
+                        {ev.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  This will copy all expenses from the selected project to this
+                  one.
+                </p>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCloneExpenseOpen(false)}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedSourceEvent || isCloningExpense}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCloningExpense ? "Cloning..." : "Clone Expenses"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Attach Feedback Modal */}
+      {isAttachFeedbackOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-lg font-bold text-[var(--text-main)]">
+                Attach Feedback Form
+              </h2>
+              <button
+                onClick={() => setIsAttachFeedbackOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAttachFeedback} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[var(--text-muted)]">
+                  Select Template <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedForm}
+                  onChange={(e) => setSelectedForm(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                >
+                  <option value="">Select a form...</option>
+                  {availableForms.map((f: any) => (
+                    <option key={f.id} value={f.id}>
+                      {f.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAttachFeedbackOpen(false)}
+                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedForm}
+                  className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Attach
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Responses Modal */}
+      {viewingResponsesFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--text-main)]">
+                  Responses
+                </h2>
+                <p className="text-sm text-[var(--text-muted)]">
+                  {viewingResponsesFor.form?.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingResponsesFor(null)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-[var(--bg-app)]">
+              {isLoadingResponses ? (
+                <div className="text-center py-10 text-[var(--text-muted)]">
+                  Loading responses...
+                </div>
+              ) : responses.length === 0 ? (
+                <div className="text-center py-12 text-[var(--text-muted)] border-2 border-dashed border-[var(--border-soft)] rounded-2xl bg-[var(--bg-surface)]">
+                  No one has submitted feedback yet.
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {responses.map((response: any) => (
+                    <div
+                      key={response.id}
+                      className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-4 border-b border-[var(--border-soft)] pb-4">
+                        <div>
+                          <p className="font-bold text-[var(--text-main)]">
+                            {response.client_name || "Anonymous"}
+                          </p>
+                          {response.client_email && (
+                            <p className="text-sm text-[var(--text-muted)]">
+                              {response.client_email}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {new Date(response.submitted_at).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="space-y-4">
+                        {response.answers.map((ans: any, idx: number) => {
+                          // Find question text if possible
+                          const q = viewingResponsesFor.form?.questions?.find(
+                            (q: any) => q.id === ans.question,
+                          );
+                          const qText = q
+                            ? q.question_text
+                            : `Question ${ans.question}`;
+                          const qType = q ? q.question_type : "TEXT";
+
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-subtle)]"
+                            >
+                              <p className="text-sm font-bold text-[var(--text-main)] mb-1">
+                                {qText}
+                              </p>
+                              {qType === "TEXT" && (
+                                <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">
+                                  {ans.answer_text || "—"}
+                                </p>
+                              )}
+                              {qType === "RATING" && (
+                                <div className="text-amber-400 font-bold">
+                                  {ans.answer_rating
+                                    ? "★".repeat(ans.answer_rating)
+                                    : "—"}
+                                  <span className="text-[var(--border-soft)] ml-1">
+                                    {ans.answer_rating
+                                      ? "★".repeat(5 - ans.answer_rating)
+                                      : ""}
+                                  </span>
+                                </div>
+                              )}
+                              {qType === "BOOLEAN" && (
+                                <span
+                                  className={cn(
+                                    "text-xs font-bold px-2 py-1 rounded-md",
+                                    ans.answer_boolean === true
+                                      ? "bg-emerald-500/10 text-emerald-500"
+                                      : ans.answer_boolean === false
+                                        ? "bg-rose-500/10 text-rose-500"
+                                        : "bg-[var(--bg-surface)] text-[var(--text-muted)]",
+                                  )}
+                                >
+                                  {ans.answer_boolean === true
+                                    ? "Yes"
+                                    : ans.answer_boolean === false
+                                      ? "No"
+                                      : "—"}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

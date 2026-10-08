@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notification', '0002_initial'),
+        ("notification", "0002_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='notification',
-            options={'ordering': ['-created_at']},
+            name="notification",
+            options={"ordering": ["-created_at"]},
         ),
         migrations.AddField(
-            model_name='notification',
-            name='title',
-            field=models.CharField(default='', max_length=255),
+            model_name="notification",
+            name="title",
+            field=models.CharField(default="", max_length=255),
         ),
     ]

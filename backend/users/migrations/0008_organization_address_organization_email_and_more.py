@@ -6,28 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0007_client_created_by_client_updated_by_and_more'),
+        ("users", "0007_client_created_by_client_updated_by_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='organization',
-            name='address',
+            model_name="organization",
+            name="address",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='organization',
-            name='email',
+            model_name="organization",
+            name="email",
             field=models.EmailField(blank=True, max_length=254, null=True),
         ),
         migrations.AddField(
-            model_name='organization',
-            name='phone_number',
+            model_name="organization",
+            name="phone_number",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
         migrations.AddField(
-            model_name='organization',
-            name='tax_id',
-            field=models.CharField(blank=True, help_text='VAT/Tax Identification Number', max_length=100, null=True),
+            model_name="organization",
+            name="tax_id",
+            field=models.CharField(
+                blank=True,
+                help_text="VAT/Tax Identification Number",
+                max_length=100,
+                null=True,
+            ),
         ),
     ]

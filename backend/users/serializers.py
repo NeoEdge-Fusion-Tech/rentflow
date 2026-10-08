@@ -1,96 +1,362 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Organization, OrganizationAccountDetails, BankAccount, Subscription, SubscriptionPlan, User, Client, Currency
+from .models import (
+    Organization,
+    OrganizationAccountDetails,
+    BankAccount,
+    Subscription,
+    SubscriptionPlan,
+    User,
+    Client,
+    Vendor,
+    Currency,
+    Feedback,
+    GlobalConfig,
+)
+
+
+class GlobalConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GlobalConfig
+        fields = ["free_tier_monthly_quota", "max_organizations_per_user"]
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         if not self.user.email_verified:
-            raise serializers.ValidationError({"email": "Please verify your email address before logging in."})
+            raise serializers.ValidationError(
+                {"email": "Please verify your email address before logging in."}
+            )
         return data
+
 
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = Currency
-        fields = ['id', 'name', 'code', 'symbol', 'status']
+        fields = ["id", "name", "code", "symbol", "status"]
+
+
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionPlan
-        fields = ['id', 'name', 'description', 'price', 'billing_cycle', 'max_invoices_per_month', 'max_inventory_booking_per_month', 'has_booking', 'has_invoice', 'is_free', 'is_active', 'created_at']
+        fields = [
+            "id",
+            "name",
+            "description",
+            "price",
+            "billing_cycle",
+            "max_invoices_per_month",
+            "max_inventory_booking_per_month",
+            "has_booking",
+            "has_invoice",
+            "is_free",
+            "is_active",
+            "created_at",
+        ]
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = [
+            "id",
+            "user",
+            "organization",
+            "type",
+            "rating",
+            "subject",
+            "message",
+            "created_at",
+        ]
+        read_only_fields = ["id", "user", "organization", "created_at"]
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
-        fields = ['id', 'subscription_id', 'plan_name', 'status', 'current_period_end', 'max_invoices_per_month']
-        read_only_fields = ['status', 'current_period_end']
-        
+        fields = [
+            "id",
+            "subscription_id",
+            "plan_name",
+            "status",
+            "current_period_end",
+            "max_invoices_per_month",
+        ]
+        read_only_fields = ["status", "current_period_end"]
+
+
 class OrganizationAccountDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrganizationAccountDetails
-        fields = ['account_name', 'account_number', 'bank_name', 'bank_code']
+        fields = ["account_name", "account_number", "bank_name", "bank_code"]
+
 
 from users.mixins import TenantSerializerMixin
+
 
 class BankAccountSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = BankAccount
-        fields = ['bank_account_id', 'bank_name', 'account_number', 'account_name', 'account_type', 'swift_code', 'notes', 'created_at', 'updated_at']
-        read_only_fields = ['created_at', 'updated_at']
+        fields = [
+            "bank_account_id",
+            "bank_name",
+            "account_number",
+            "account_name",
+            "account_type",
+            "swift_code",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
 
 class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     subscription = SubscriptionSerializer(read_only=True)
     account_details = OrganizationAccountDetailsSerializer(read_only=True)
     currency = CurrencySerializer(read_only=True)
     currency_id = serializers.PrimaryKeyRelatedField(
-        queryset=Currency.objects.all(), source='currency', write_only=True, required=False
+        queryset=Currency.objects.all(),
+        source="currency",
+        write_only=True,
+        required=False,
+        allow_null=True,
     )
     revenue = serializers.SerializerMethodField()
+    financials_by_currency = serializers.SerializerMethodField()
     total_bookings = serializers.SerializerMethodField()
-    
+    total_invoices = serializers.SerializerMethodField()
+    expenses = serializers.SerializerMethodField()
+
+    company_logo = serializers.SerializerMethodField()
+    company_logo_upload = serializers.ImageField(
+        source="company_logo", write_only=True, required=False, allow_null=True
+    )
+
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'company_logo', 'address', 'phone_number', 'email', 'tax_id', 'payout_account_id', 'subscription', 'account_details', 'currency', 'currency_id', 'primary_color', 'is_active', 'created_at', 'revenue', 'total_bookings']
-        read_only_fields = ['created_at']
+        fields = [
+            "id",
+            "name",
+            "company_logo",
+            "company_logo_upload",
+            "address",
+            "phone_number",
+            "email",
+            "tax_id",
+            "payout_account_id",
+            "subscription",
+            "account_details",
+            "currency",
+            "currency_id",
+            "primary_color",
+            "is_active",
+            "created_at",
+            "revenue",
+            "total_bookings",
+            "total_invoices",
+            "expenses",
+            "financials_by_currency",
+        ]
+        read_only_fields = ["created_at"]
+
+    def get_company_logo(self, obj):
+        """Return the full absolute URL for the logo (works with Cloudinary, S3, and local storage)."""
+        if not obj.company_logo:
+            return None
+        try:
+            url = obj.company_logo.url
+            # Already a full URL (Cloudinary, S3)
+            if url.startswith("http"):
+                return url
+            # Protocol-relative (//res.cloudinary.com/...)
+            if url.startswith("//"):
+                return "https:" + url
+            # Relative URL — build absolute using request context
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        except Exception:
+            return None
 
     def get_revenue(self, obj):
-        return getattr(obj, 'revenue', 0.00)
+        return getattr(obj, "revenue", 0.00)
+
+    def get_financials_by_currency(self, obj):
+        from django.db.models import Sum
+        from payment.models import Invoice
+
+        default_currency_code = obj.currency.code if obj.currency else "NGN"
+        default_currency_symbol = obj.currency.symbol if obj.currency else "₦"
+        expenses = getattr(obj, "expenses", 0.00) or 0.00
+
+        # Try to avoid N+1 if we don't strictly need to.
+        # But for SuperAdmin paginated list, 10 queries is fine.
+        invoices = (
+            Invoice.objects.filter(organization=obj)
+            .values("currency__code", "currency__symbol")
+            .annotate(revenue=Sum("total_amount"))
+        )
+
+        results = {}
+        for inv in invoices:
+            code = inv["currency__code"] or default_currency_code
+            symbol = inv["currency__symbol"] or default_currency_symbol
+            results[code] = {
+                "currency_code": code,
+                "currency_symbol": symbol,
+                "revenue": float(inv["revenue"] or 0.00),
+                "expenses": 0.0,
+            }
+
+        if expenses > 0:
+            if default_currency_code not in results:
+                results[default_currency_code] = {
+                    "currency_code": default_currency_code,
+                    "currency_symbol": default_currency_symbol,
+                    "revenue": 0.0,
+                    "expenses": float(expenses),
+                }
+            else:
+                results[default_currency_code]["expenses"] = float(expenses)
+
+        if not results:
+            results[default_currency_code] = {
+                "currency_code": default_currency_code,
+                "currency_symbol": default_currency_symbol,
+                "revenue": 0.0,
+                "expenses": 0.0,
+            }
+
+        return list(results.values())
 
     def get_total_bookings(self, obj):
-        return getattr(obj, 'total_bookings', 0)
+        return getattr(obj, "total_bookings", 0)
+
+    def get_total_invoices(self, obj):
+        return getattr(obj, "total_invoices", 0)
+
+    def get_expenses(self, obj):
+        return getattr(obj, "expenses", 0.00)
+
 
 class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
-    organization_id = serializers.IntegerField(source='organization.id', read_only=True)
-    organization_name = serializers.CharField(source='organization.name', read_only=True)
-    subscription_plan = serializers.CharField(source='organization.subscription_plan', read_only=True)
+    organization_id = serializers.IntegerField(source="organization.id", read_only=True)
+    organization_name = serializers.CharField(
+        source="organization.name", read_only=True
+    )
+    organizations_list = serializers.SerializerMethodField()
+    active_role_permissions = serializers.SerializerMethodField()
+    subscription_plan = serializers.CharField(
+        source="organization.subscription_plan", read_only=True
+    )
     currency_symbol = serializers.SerializerMethodField()
     has_booking = serializers.SerializerMethodField()
     has_invoice = serializers.SerializerMethodField()
     subscription_usage = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'organization_id', 'organization_name', 'subscription_plan', 'currency_symbol', 'has_booking', 'has_invoice', 'subscription_usage', 'is_active', 'is_superuser']
-        read_only_fields = ['is_active']
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "organization_id",
+            "organization_name",
+            "organizations_list",
+            "active_role_permissions",
+            "subscription_plan",
+            "currency_symbol",
+            "has_booking",
+            "has_invoice",
+            "subscription_usage",
+            "is_active",
+            "is_superuser",
+        ]
+        read_only_fields = ["is_active"]
+
+    def get_organizations_list(self, obj):
+        orgs_dict = {}
+
+        if hasattr(obj, "organizations"):
+            for org in obj.organizations.all():
+                if not getattr(org, "is_deleted", False):
+                    orgs_dict[org.id] = {"id": org.id, "name": org.name}
+
+        if obj.organization and not getattr(obj.organization, "is_deleted", False):
+            orgs_dict[obj.organization.id] = {
+                "id": obj.organization.id,
+                "name": obj.organization.name,
+            }
+
+        from .models import OrganizationMembership, Organization
+
+        # Include organizations they own/created
+        for org in Organization.objects.filter(created_by=obj, is_deleted=False):
+            orgs_dict[org.id] = {"id": org.id, "name": org.name}
+
+        for membership in OrganizationMembership.objects.filter(
+            user=obj, organization__is_deleted=False
+        ):
+            orgs_dict[membership.organization.id] = {
+                "id": membership.organization.id,
+                "name": membership.organization.name,
+            }
+
+        return list(orgs_dict.values())
+
+    def get_active_role_permissions(self, obj):
+        if obj.is_superuser:
+            return {"_all": ["read", "write", "delete"]}
+
+        org = obj.organization
+        if not org:
+            return {}
+
+        try:
+            membership = obj.memberships.get(organization=org, is_active=True)
+            if membership.role:
+                return membership.role.permissions
+        except:
+            pass
+
+        # Legacy fallback: If no membership exists, but this is their primary legacy org
+        # and they were a global admin, grant them admin access for backwards compatibility.
+        if obj.role == "admin" and getattr(obj, "organization_id", None) == org.id:
+            return {"_all": ["read", "write", "delete"]}
+
+        return {}
 
     def get_currency_symbol(self, obj):
-        if hasattr(obj, 'organization') and obj.organization and obj.organization.currency:
+        if (
+            hasattr(obj, "organization")
+            and obj.organization
+            and obj.organization.currency
+        ):
             return obj.organization.currency.symbol
-        return '$'
+        return "$"
 
     def get_has_booking(self, obj):
-        if hasattr(obj, 'organization') and obj.organization:
+        if hasattr(obj, "organization") and obj.organization:
             org = obj.organization
             plan_name = None
-            if hasattr(org, 'subscription') and org.subscription:
+            if hasattr(org, "subscription") and org.subscription:
                 plan_name = org.subscription.plan_name
             elif org.subscription_plan:
                 plan_name = org.subscription_plan
-            
+
             if plan_name:
-                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+                plan = SubscriptionPlan.objects.filter(
+                    name__iexact=plan_name, is_active=True
+                ).first()
                 if plan:
                     return plan.has_booking
-                
+
             # Fallback to free plan if we don't find it or if plan_name is empty
             free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
             if free_plan:
@@ -98,19 +364,21 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return False
 
     def get_has_invoice(self, obj):
-        if hasattr(obj, 'organization') and obj.organization:
+        if hasattr(obj, "organization") and obj.organization:
             org = obj.organization
             plan_name = None
-            if hasattr(org, 'subscription') and org.subscription:
+            if hasattr(org, "subscription") and org.subscription:
                 plan_name = org.subscription.plan_name
             elif org.subscription_plan:
                 plan_name = org.subscription_plan
-            
+
             if plan_name:
-                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
+                plan = SubscriptionPlan.objects.filter(
+                    name__iexact=plan_name, is_active=True
+                ).first()
                 if plan:
                     return plan.has_invoice
-                    
+
             # Fallback to free plan if we don't find it or if plan_name is empty
             free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
             if free_plan:
@@ -122,46 +390,50 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "invoices_used": 0,
             "invoices_limit": 10,
             "bookings_used": 0,
-            "bookings_limit": 10
+            "bookings_limit": 10,
         }
-        if hasattr(obj, 'organization') and obj.organization:
+        if hasattr(obj, "organization") and obj.organization:
             org = obj.organization
             plan_name = None
-            if hasattr(org, 'subscription') and org.subscription:
+            if hasattr(org, "subscription") and org.subscription:
                 plan_name = org.subscription.plan_name
             elif org.subscription_plan:
                 plan_name = org.subscription_plan
-            
+
             plan = None
             if plan_name:
-                plan = SubscriptionPlan.objects.filter(name__iexact=plan_name, is_active=True).first()
-            
+                plan = SubscriptionPlan.objects.filter(
+                    name__iexact=plan_name, is_active=True
+                ).first()
+
             if not plan:
                 plan = SubscriptionPlan.objects.filter(is_free=True).first()
-            
+
             if plan:
                 usage["invoices_limit"] = plan.max_invoices_per_month
                 usage["bookings_limit"] = plan.max_inventory_booking_per_month
-            
+
             from django.utils import timezone
+
             now = timezone.now()
-            
+
             from payment.models import Invoice
+
             usage["invoices_used"] = Invoice.objects.filter(
                 organization=org,
                 booking__isnull=True,
                 created_at__year=now.year,
-                created_at__month=now.month
+                created_at__month=now.month,
             ).count()
-            
+
             from inventory.models import Booking
+
             usage["bookings_used"] = Booking.objects.filter(
-                organization=org,
-                created_at__year=now.year,
-                created_at__month=now.month
+                organization=org, created_at__year=now.year, created_at__month=now.month
             ).count()
-            
+
         return usage
+
 
 class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     bookings_count = serializers.IntegerField(read_only=True)
@@ -171,26 +443,101 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def get_created_by_name(self, obj):
         if obj.created_by:
-            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+            return (
+                f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
+                or obj.created_by.email
+            )
         return None
 
     def get_updated_by_name(self, obj):
         if obj.updated_by:
-            return f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip() or obj.updated_by.email
+            return (
+                f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip()
+                or obj.updated_by.email
+            )
         return None
 
     class Meta:
         model = Client
         fields = [
-            'client_id', 'organization', 'business_name', 'email', 'phone_number',
-            'contact_name', 'contact_email', 'contact_phone', 'industry',
-            'address', 'city', 'state', 'country', 'tax_information', 'shipping_details',
-            'additional_details', 'account_name', 'account_number', 'bank_name', 'bank_code', 'logo',
-            'status', 'bookings_count', 'standalone_invoices_count', 'created_by_name', 'updated_by_name', 'created_at', 'updated_at'
+            "client_id",
+            "organization",
+            "client_type",
+            "first_name",
+            "last_name",
+            "business_name",
+            "email",
+            "phone_number",
+            "contact_name",
+            "contact_email",
+            "contact_phone",
+            "industry",
+            "address",
+            "city",
+            "state",
+            "country",
+            "tax_information",
+            "shipping_details",
+            "additional_details",
+            "account_name",
+            "account_number",
+            "bank_name",
+            "bank_code",
+            "logo",
+            "status",
+            "bookings_count",
+            "standalone_invoices_count",
+            "created_by_name",
+            "updated_by_name",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['created_at', 'updated_at', 'organization']
+        read_only_fields = ["created_at", "updated_at", "organization"]
+
+
+class VendorSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+    updated_by_name = serializers.SerializerMethodField()
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return (
+                f"{obj.created_by.first_name} {obj.created_by.last_name}".strip()
+                or obj.created_by.email
+            )
+        return None
+
+    def get_updated_by_name(self, obj):
+        if obj.updated_by:
+            return (
+                f"{obj.updated_by.first_name} {obj.updated_by.last_name}".strip()
+                or obj.updated_by.email
+            )
+        return None
+
+    class Meta:
+        model = Vendor
+        fields = [
+            "vendor_id",
+            "organization",
+            "business_name",
+            "contact_name",
+            "contact_email",
+            "contact_phone",
+            "service",
+            "description",
+            "logo",
+            "status",
+            "created_by_name",
+            "updated_by_name",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at", "organization"]
+
 
 from django.db import transaction
+
 
 class RegisterSerializer(serializers.Serializer):
     company_name = serializers.CharField(max_length=255)
@@ -206,42 +553,90 @@ class RegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         with transaction.atomic():
-            currency_id = validated_data.get('currency_id')
+            currency_id = validated_data.get("currency_id")
             currency_obj = None
             if currency_id:
-                try: 
+                try:
                     currency_obj = Currency.objects.get(id=currency_id)
                 except Currency.DoesNotExist:
                     pass
-            organization = Organization.objects.create(name=validated_data['company_name'], currency=currency_obj)
-            
-            names = validated_data['full_name'].split(' ', 1)
+            organization = Organization.objects.create(
+                name=validated_data["company_name"], currency=currency_obj
+            )
+
+            names = validated_data["full_name"].split(" ", 1)
             first_name = names[0]
-            last_name = names[1] if len(names) > 1 else ''
+            last_name = names[1] if len(names) > 1 else ""
 
             user = User.objects.create_user(
-                username=validated_data['email'],
-                email=validated_data['email'],
-                password=validated_data['password'],
+                username=validated_data["email"],
+                email=validated_data["email"],
+                password=validated_data["password"],
                 first_name=first_name,
                 last_name=last_name,
-                role='admin',
-                organization=organization
+                role="admin",
+                organization=organization,
             )
             return user
+
 
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)
+
 
 class SetNewPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)
     new_password = serializers.CharField(write_only=True)
 
+
 class AdminChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True)
+
 
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)
+
+
+from .models import Role, OrganizationMembership
+
+
+class RoleSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = [
+            "id",
+            "organization",
+            "name",
+            "description",
+            "permissions",
+            "created_at",
+        ]
+        read_only_fields = ["organization", "created_at"]
+
+
+class OrganizationMembershipSerializer(
+    TenantSerializerMixin, serializers.ModelSerializer
+):
+    user_email = serializers.CharField(source="user.email", read_only=True)
+    user_first_name = serializers.CharField(source="user.first_name", read_only=True)
+    user_last_name = serializers.CharField(source="user.last_name", read_only=True)
+    role_name = serializers.CharField(source="role.name", read_only=True)
+
+    class Meta:
+        model = OrganizationMembership
+        fields = [
+            "id",
+            "user",
+            "organization",
+            "role",
+            "is_active",
+            "created_at",
+            "user_email",
+            "user_first_name",
+            "user_last_name",
+            "role_name",
+        ]
+        read_only_fields = ["organization", "created_at"]
