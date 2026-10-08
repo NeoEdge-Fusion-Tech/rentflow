@@ -466,9 +466,9 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             product = item.get("product")
             qty = item.get("quantity_booked", 0)
             first_unit = product.units.first() if product else None
-            price = item.get("unit_price") or (
-                first_unit.rental_price if first_unit else 0
-            )
+            price = item.get("unit_price")
+            if price is None:
+                price = first_unit.rental_price if first_unit else 0
             total += price * qty
 
         # Apply discount logic
@@ -485,7 +485,7 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         for item_data in items_data:
             units_data = item_data.pop("units", [])
             # Ensure price is set
-            if not item_data.get("unit_price"):
+            if item_data.get("unit_price") is None:
                 first_unit = item_data["product"].units.first()
                 item_data["unit_price"] = first_unit.rental_price if first_unit else 0
             item_data["total_price"] = (
@@ -525,7 +525,7 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 units_data = item_data.pop("units", [])
 
                 # Default price
-                if not item_data.get("unit_price"):
+                if item_data.get("unit_price") is None:
                     first_unit = item_data["product"].units.first()
                     item_data["unit_price"] = (
                         first_unit.rental_price if first_unit else 0
