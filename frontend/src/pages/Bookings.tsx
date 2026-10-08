@@ -182,26 +182,46 @@ export function Bookings() {
     docType: "invoice" | "receipt",
     id: any,
     fileName: string,
+    action: "view" | "download" = "view",
   ) => {
+    let newWindow: Window | null = null;
+    if (action === "view") {
+      newWindow = window.open("", "_blank");
+      if (newWindow) {
+        newWindow.document.write("Loading document...");
+      }
+    }
+
     try {
       const response =
         docType === "invoice"
           ? await InvoiceService.download(id)
           : await ReceiptService.download(id);
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+
+      if (action === "view") {
+        if (newWindow) {
+          newWindow.location.href = url;
+        } else {
+          window.location.href = url;
+        }
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute(
+          "download",
+          fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
     } catch (err) {
-      console.error("Failed to download document", err);
-      showNotification("Failed to download document", "error");
+      console.error(`Failed to ${action} document`, err);
+      showNotification(`Failed to load document`, "error");
+      if (newWindow) newWindow.close();
     }
   };
   const [isManagingBooking, setIsManagingBooking] = useState(false);
@@ -1156,7 +1176,7 @@ export function Bookings() {
                             );
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 rounded-lg text-xs font-bold border border-blue-500/10 transition-all"
-                          title={`Download Invoice ${inv.invoice_number}`}
+                          title={`View Invoice ${inv.invoice_number}`}
                         >
                           <FileText className="w-3.5 h-3.5 shrink-0" />
                           {inv.invoice_number}
@@ -1175,7 +1195,7 @@ export function Bookings() {
                             );
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 rounded-lg text-xs font-bold border border-emerald-500/10 transition-all"
-                          title={`Download Receipt ${r.receipt_number}`}
+                          title={`View Receipt ${r.receipt_number}`}
                         >
                           <Receipt className="w-3.5 h-3.5 shrink-0" />
                           {r.receipt_number}
