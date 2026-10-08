@@ -1993,6 +1993,21 @@ export function Bookings() {
                   <Printer className="w-4 h-4 text-brand-primary" /> Print
                   Waybill
                 </button>
+                {isManagingBooking && (
+                  <button
+                    onClick={handleSaveBookingEdits}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-5 py-2 bg-brand-primary text-brand-accent rounded-xl font-black text-sm hover:bg-brand-primary/90 transition-all shadow-sm whitespace-nowrap"
+                  >
+                    {isLoading ? (
+                      <div className="w-4 h-4 border-2 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" /> Save Changes
+                      </>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setIsViewingDetails(false);
