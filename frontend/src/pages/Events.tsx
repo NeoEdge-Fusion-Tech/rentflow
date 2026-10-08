@@ -822,6 +822,22 @@ export function Events() {
                                 inv.client_name ||
                                 "No client"}
                             </span>
+                            {(inv.title || inv.event_date) && (
+                              <span className="text-[var(--text-muted)] ml-1.5 text-xs opacity-80">
+                                (
+                                {[
+                                  inv.title,
+                                  inv.event_date
+                                    ? new Date(
+                                        inv.event_date,
+                                      ).toLocaleDateString()
+                                    : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" • ")}
+                                )
+                              </span>
+                            )}
                           </div>
                         </label>
                       );

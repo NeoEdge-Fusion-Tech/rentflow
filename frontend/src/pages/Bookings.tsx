@@ -274,6 +274,12 @@ export function Bookings() {
 
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isValidDate = (dateString: string) => {
+    if (!dateString) return false;
+    const d = new Date(dateString);
+    return d instanceof Date && !isNaN(d.getTime()) && d.getFullYear() > 2000;
+  };
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
 
@@ -927,13 +933,13 @@ export function Bookings() {
                 key={booking.booking_id}
                 className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                  <div className="flex-1 flex items-start gap-4">
-                    <div className="p-3 bg-[var(--bg-app)] rounded-xl text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-[var(--text-link)] transition-colors">
+                <div className="flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center">
+                  <div className="flex-1 flex items-start gap-4 min-w-0">
+                    <div className="p-3 bg-[var(--bg-app)] rounded-2xl text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-colors shrink-0">
                       <Calendar className="w-6 h-6" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
                         <span
                           className={cn(
                             "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border",
@@ -960,34 +966,51 @@ export function Bookings() {
                                 .join(" ")}
                         </span>
                       </div>
-                      <h3 className="text-lg font-bold text-[var(--text-main)] mt-0.5">
+                      <h3
+                        className="text-lg font-bold text-[var(--text-main)] truncate"
+                        title={
+                          booking.booking_title ||
+                          (booking.contact_name
+                            ? `${booking.contact_name} Event`
+                            : booking.client_name || "Generic Event")
+                        }
+                      >
                         {booking.booking_title ||
                           (booking.contact_name
                             ? `${booking.contact_name} Event`
                             : booking.client_name || "Generic Event")}
                       </h3>
-                      <div className="flex items-center gap-4 mt-2">
-                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                          <Clock className="w-3.5 h-3.5" />
-                          {new Date(
-                            booking.pickup_date,
-                          ).toLocaleDateString()} -{" "}
-                          {new Date(booking.return_date).toLocaleDateString()}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            {isValidDate(booking.pickup_date)
+                              ? new Date(
+                                  booking.pickup_date,
+                                ).toLocaleDateString()
+                              : "TBD"}{" "}
+                            -{" "}
+                            {isValidDate(booking.return_date)
+                              ? new Date(
+                                  booking.return_date,
+                                ).toLocaleDateString()
+                              : "TBD"}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                          <Package className="w-3.5 h-3.5" />
-                          {booking.items?.length || 0} items
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+                          <Package className="w-3.5 h-3.5 shrink-0" />
+                          <span>{booking.items?.length || 0} items</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:min-w-[200px]">
+                  <div className="flex items-center gap-6 xl:border-l border-[var(--border-subtle)] xl:pl-6 shrink-0 w-full xl:w-auto overflow-x-auto custom-scrollbar pb-2 xl:pb-0">
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
-                        Total Amount
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+                        Total
                       </p>
-                      <p className="text-xl font-black text-[var(--text-main)]">
+                      <p className="text-lg font-black text-[var(--text-main)] whitespace-nowrap">
                         <RevenueDisplay
                           amount={`${currencySymbol}${formatCurrency(
                             booking.total_amount,
@@ -995,18 +1018,24 @@ export function Bookings() {
                         />
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
-                        Paid:{" "}
-                        <RevenueDisplay
-                          amount={`${currencySymbol}${formatCurrency(
-                            booking.amount_paid,
-                          )}`}
-                        />
+                    <div className="text-right border-l border-[var(--border-subtle)] pl-6">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+                        Paid
                       </p>
+                      <div className="flex items-center justify-end gap-2">
+                        <p className="text-lg font-black text-[var(--text-main)] whitespace-nowrap">
+                          <RevenueDisplay
+                            amount={`${currencySymbol}${formatCurrency(
+                              booking.amount_paid,
+                            )}`}
+                          />
+                        </p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 pt-3">
                       <span
                         className={cn(
-                          "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm border block mt-1",
+                          "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm border",
                           booking.payment_status === "paid"
                             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                             : booking.payment_status === "partial"
@@ -1019,158 +1048,141 @@ export function Bookings() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6 relative">
-                    <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 shrink-0 xl:border-l border-[var(--border-subtle)] xl:pl-6 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setSelectedBooking(booking);
+                        setIsViewingDetails(true);
+                      }}
+                      className="px-5 py-2.5 bg-[var(--bg-app)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm"
+                    >
+                      Details
+                    </button>
+                    {booking.has_invoice ? (
                       <button
-                        onClick={() => {
-                          setSelectedBooking(booking);
-                          setIsViewingDetails(true);
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setIsLoading(true);
+                          try {
+                            const res = await InvoiceService.getAll({
+                              booking: booking.booking_id,
+                            });
+                            const inv = res.data.results?.[0] || res.data[0];
+                            if (inv)
+                              navigate(`/invoices/${inv.invoice_id}/edit`);
+                          } finally {
+                            setIsLoading(false);
+                          }
                         }}
-                        className="px-4 py-2 bg-[var(--bg-app)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm"
+                        className="px-5 py-2.5 bg-blue-500/10 text-blue-600 border border-blue-500/20 font-bold rounded-xl hover:bg-blue-500/20 transition-colors text-sm flex items-center gap-2"
                       >
-                        Details
+                        <FileText className="w-4 h-4" />
+                        Invoice
                       </button>
-                      {booking.has_invoice ? (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            setIsLoading(true);
-                            try {
-                              const res = await InvoiceService.getAll({
-                                booking: booking.booking_id,
-                              });
-                              const inv = res.data.results?.[0] || res.data[0];
-                              if (inv)
-                                navigate(`/invoices/${inv.invoice_id}/edit`);
-                            } finally {
-                              setIsLoading(false);
-                            }
-                          }}
-                          className="px-4 py-2 bg-blue-500/10 text-blue-600 border border-blue-500/20 font-bold rounded-xl hover:bg-blue-500/20 transition-colors text-sm flex items-center gap-2"
-                        >
-                          <FileText className="w-4 h-4" />
-                          Invoice
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(
-                              `/invoices/new?booking_id=${booking.booking_id}`,
-                            );
-                          }}
-                          className="px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/20 font-bold rounded-xl hover:bg-amber-500/20 transition-colors text-sm flex items-center gap-2"
-                        >
-                          <FileText className="w-4 h-4" />
-                          Generate
-                        </button>
-                      )}
+                    ) : (
                       <button
-                        onClick={() => {
-                          setSelectedBooking(booking);
-                          setIsManagingBooking(true);
-                          const initialItems = booking.items.map(
-                            (item: any) => ({
-                              ...item,
-                              selected_unit_ids: item.units.map(
-                                (u: any) => u.product_unit_id || u.product_unit,
-                              ),
-                            }),
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(
+                            `/invoices/new?booking_id=${booking.booking_id}`,
                           );
-                          setEditFormData({
-                            pickup_date: formatDateForInput(
-                              booking.pickup_date,
-                            ),
-                            return_date: formatDateForInput(
-                              booking.return_date,
-                            ),
-                            event_location: booking.event_location || "",
-                            contact_name: booking.contact_name || "",
-                            contact_phone: booking.contact_phone || "",
-                            booking_title: booking.booking_title || "",
-                            delivery_mode: booking.delivery_mode || "pickup",
-                            items: initialItems,
-                          });
-                          // Fetch available units for each product
-                          booking.items.forEach((item: any) => {
-                            fetchAvailableUnitsForManage(
-                              item.product,
-                              booking.booking_id,
-                              booking.pickup_date,
-                              booking.return_date,
-                            );
-                          });
                         }}
-                        className="p-2.5 bg-brand-primary text-brand-accent rounded-xl hover:shadow-lg hover:shadow-brand-primary/20 transition-all active:scale-95"
+                        className="px-5 py-2.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 font-bold rounded-xl hover:bg-amber-500/20 transition-colors text-sm flex items-center gap-2"
                       >
-                        <MoreVertical className="w-5 h-5" />
+                        <FileText className="w-4 h-4" />
+                        Generate
                       </button>
-                    </div>
-
-                    {/* Documents Row (Invoices & Receipts) */}
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                      {/* Invoices List */}
-                      {booking.invoices_summary &&
-                        booking.invoices_summary.map((inv: any) => (
-                          <button
-                            key={inv.invoice_id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadDocument(
-                                "invoice",
-                                inv.invoice_id,
-                                `invoice_${inv.invoice_number}`,
-                              );
-                            }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 rounded-lg text-[10px] font-black border border-blue-500/10 transition-all"
-                            title={`Download Invoice ${inv.invoice_number}`}
-                          >
-                            <FileText className="w-3 h-3" />
-                            {inv.invoice_number}
-                          </button>
-                        ))}
-
-                      {/* Receipts List */}
-                      {booking.receipts_summary &&
-                        booking.receipts_summary.map((r: any) => (
-                          <button
-                            key={r.receipt_id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadDocument(
-                                "receipt",
-                                r.receipt_id,
-                                `receipt_${r.receipt_number}`,
-                              );
-                            }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 rounded-lg text-[10px] font-black border border-emerald-500/10 transition-all"
-                            title={`Download Receipt ${r.receipt_number}`}
-                          >
-                            <Receipt className="w-3 h-3" />
-                            {r.receipt_number}
-                          </button>
-                        ))}
-
-                      {/* Empty State / Prompt */}
-                      {!booking.has_invoice &&
-                        (!booking.receipts_summary ||
-                          booking.receipts_summary.length === 0) && (
-                          <p className="text-[10px] text-[var(--text-muted)] italic font-medium">
-                            No documents issued yet
-                          </p>
-                        )}
-                    </div>
-                    <div className="relative">
-                      <button
-                        onClick={() => handleDelete(booking.booking_id)}
-                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        title="Delete Booking"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedBooking(booking);
+                        setIsManagingBooking(true);
+                        const initialItems = booking.items.map((item: any) => ({
+                          ...item,
+                          selected_unit_ids: item.units.map(
+                            (u: any) => u.product_unit_id || u.product_unit,
+                          ),
+                        }));
+                        setEditFormData({
+                          pickup_date: formatDateForInput(booking.pickup_date),
+                          return_date: formatDateForInput(booking.return_date),
+                          event_location: booking.event_location || "",
+                          contact_name: booking.contact_name || "",
+                          contact_phone: booking.contact_phone || "",
+                          booking_title: booking.booking_title || "",
+                          delivery_mode: booking.delivery_mode || "pickup",
+                          items: initialItems,
+                        });
+                        // Fetch available units for each product
+                        booking.items.forEach((item: any) => {
+                          fetchAvailableUnitsForManage(
+                            item.product,
+                            booking.booking_id,
+                            booking.pickup_date,
+                            booking.return_date,
+                          );
+                        });
+                      }}
+                      className="p-2.5 bg-brand-primary text-brand-accent rounded-xl hover:shadow-lg hover:shadow-brand-primary/20 transition-all active:scale-95"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(booking.booking_id)}
+                      className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
+                      title="Delete Booking"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
+
+                {(booking.invoices_summary?.length > 0 ||
+                  booking.receipts_summary?.length > 0) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-[var(--border-subtle)]">
+                    <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mr-2 shrink-0">
+                      Documents:
+                    </span>
+                    {booking.invoices_summary &&
+                      booking.invoices_summary.map((inv: any) => (
+                        <button
+                          key={inv.invoice_id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadDocument(
+                              "invoice",
+                              inv.invoice_id,
+                              `invoice_${inv.invoice_number}`,
+                            );
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 rounded-lg text-xs font-bold border border-blue-500/10 transition-all"
+                          title={`Download Invoice ${inv.invoice_number}`}
+                        >
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
+                          {inv.invoice_number}
+                        </button>
+                      ))}
+                    {booking.receipts_summary &&
+                      booking.receipts_summary.map((r: any) => (
+                        <button
+                          key={r.receipt_id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadDocument(
+                              "receipt",
+                              r.receipt_id,
+                              `receipt_${r.receipt_number}`,
+                            );
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 rounded-lg text-xs font-bold border border-emerald-500/10 transition-all"
+                          title={`Download Receipt ${r.receipt_number}`}
+                        >
+                          <Receipt className="w-3.5 h-3.5 shrink-0" />
+                          {r.receipt_number}
+                        </button>
+                      ))}
+                  </div>
+                )}
               </div>
             ))
         )}
