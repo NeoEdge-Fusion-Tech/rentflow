@@ -209,11 +209,14 @@ class Invoice(models.Model):
             super().save(*args, **kwargs)
 
         if self.booking_id:
-            invoices = self.booking.invoices.exclude(status="cancelled")
-            total_paid = sum(inv.amount_paid for inv in invoices)
-            if self.booking.amount_paid != total_paid:
-                self.booking.amount_paid = total_paid
-                self.booking.save(update_fields=["amount_paid", "payment_status"])
+            update_fields = kwargs.get("update_fields")
+            # Only sync if amount_paid is being explicitly updated, or if we are doing a full save
+            if update_fields is None or "amount_paid" in update_fields:
+                invoices = self.booking.invoices.exclude(status="cancelled")
+                total_paid = sum(inv.amount_paid for inv in invoices)
+                if self.booking.amount_paid != total_paid:
+                    self.booking.amount_paid = total_paid
+                    self.booking.save(update_fields=["amount_paid", "payment_status"])
 
     @property
     def amount_left(self):

@@ -39,6 +39,10 @@ def create_invoice_on_booking_creation(sender, instance, created, **kwargs):
                 )
                 updated_fields.append("status")
 
+            if invoice.amount_paid != instance.amount_paid:
+                invoice.amount_paid = instance.amount_paid
+                updated_fields.append("amount_paid")
+
             if updated_fields:
                 invoice.save(update_fields=updated_fields)
 
