@@ -234,7 +234,11 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         status_param = self.request.query_params.get("status")
         if not status_param:
             qs = qs.exclude(status="cancelled")
-        return qs
+        return qs.select_related(
+            "client", "organization", "currency", "bank_account"
+        ).prefetch_related(
+            "line_items", "recorded_payments__receipt", "recorded_payments__created_by"
+        )
 
     @action(detail=False, methods=["post"])
     def upload_and_extract(self, request):

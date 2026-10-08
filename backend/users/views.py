@@ -414,7 +414,9 @@ class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
         with transaction.atomic():
             if not user:
-                serializer = self.get_serializer(data=request.data)
+                data_copy = request.data.copy()
+                data_copy.pop("role", None)
+                serializer = self.get_serializer(data=data_copy)
                 serializer.is_valid(raise_exception=True)
                 user = serializer.save()
 
@@ -445,7 +447,9 @@ class UserViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         instance = self.get_object()
 
         # Check if email is changing and prevent duplicates manually to avoid crashing on existing logic if we want to
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        data_copy = request.data.copy()
+        data_copy.pop("role", None)
+        serializer = self.get_serializer(instance, data=data_copy, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 

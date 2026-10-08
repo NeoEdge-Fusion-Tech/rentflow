@@ -213,7 +213,7 @@ class Invoice(models.Model):
             total_paid = sum(inv.amount_paid for inv in invoices)
             if self.booking.amount_paid != total_paid:
                 self.booking.amount_paid = total_paid
-                self.booking.save()
+                self.booking.save(update_fields=["amount_paid", "payment_status"])
 
     @property
     def amount_left(self):

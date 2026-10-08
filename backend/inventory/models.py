@@ -510,6 +510,11 @@ def update_product_availability_on_item_change(sender, instance, **kwargs):
 
 @receiver([post_save, post_delete], sender=Booking)
 def update_product_availability_on_booking_change(sender, instance, **kwargs):
+    # Skip expensive product availability recalculation if the booking status hasn't changed
+    update_fields = kwargs.get("update_fields")
+    if update_fields is not None and "status" not in update_fields:
+        return
+
     # This might be expensive, but necessary for the availability field to be current
     for item in instance.items.all():
         if item.product:
