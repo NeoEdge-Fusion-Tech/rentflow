@@ -23,6 +23,12 @@ import { InvoiceService, AuthService } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { UploadInvoiceModal } from "../components/UploadInvoiceModal";
 import { ActionMenu } from "../components/ActionMenu";
+import {
+  DateFilterBar,
+  DEFAULT_DATE_FILTER,
+  DateFilterValue,
+  dateFilterParams,
+} from "../components/DateFilterBar";
 
 export function Invoices() {
   const navigate = useNavigate();
@@ -38,6 +44,8 @@ export function Invoices() {
   const [paymentAmount, setPaymentAmount] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] =
+    useState<DateFilterValue>(DEFAULT_DATE_FILTER);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -62,7 +70,7 @@ export function Invoices() {
   const fetchInvoices = async (page = 1) => {
     try {
       setIsLoading(true);
-      const params: any = { page };
+      const params: any = { page, ...dateFilterParams(dateFilter) };
       if (searchQuery) params.search = searchQuery;
       if (activeTab !== "All") {
         if (activeTab.toLowerCase() === "trash") {
@@ -83,7 +91,7 @@ export function Invoices() {
 
   useEffect(() => {
     fetchInvoices(currentPage);
-  }, [currentPage, searchQuery, activeTab]);
+  }, [currentPage, searchQuery, activeTab, dateFilter]);
 
   const handleDownload = async (invoice: any) => {
     try {
@@ -278,6 +286,14 @@ export function Invoices() {
           className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
         />
       </div>
+
+      <DateFilterBar
+        value={dateFilter}
+        onChange={(v) => {
+          setDateFilter(v);
+          setCurrentPage(1);
+        }}
+      />
 
       {/* List */}
       <div className="grid grid-cols-1 gap-4">

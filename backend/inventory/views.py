@@ -1,3 +1,4 @@
+from config.filters import DateRangeOrderingFilter
 from django.db import models
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -394,7 +395,16 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         HasModulePermission,
     ]
     required_module = "bookings"
-    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        DateRangeOrderingFilter,
+    ]
+    date_filter_fields = {
+        "created": {"field": "created_at"},
+        "updated": {"field": "updated_at"},
+        "paid": {"payments": "payments"},
+    }
     filterset_class = BookingFilter
     search_fields = [
         "event_location",

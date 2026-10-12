@@ -19,6 +19,12 @@ import { useNotification } from "../context/NotificationContext";
 import { QuotationService, AuthService } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { ActionMenu } from "../components/ActionMenu";
+import {
+  DateFilterBar,
+  DEFAULT_DATE_FILTER,
+  DateFilterValue,
+  dateFilterParams,
+} from "../components/DateFilterBar";
 
 export function Quotations() {
   const navigate = useNavigate();
@@ -33,6 +39,8 @@ export function Quotations() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] =
+    useState<DateFilterValue>(DEFAULT_DATE_FILTER);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [itemsPerPage, setItemsPerPage] = useState(8);
@@ -55,7 +63,7 @@ export function Quotations() {
   const fetchQuotations = async () => {
     try {
       setIsLoading(true);
-      const params: any = {};
+      const params: any = { ...dateFilterParams(dateFilter) };
       if (activeTab !== "All") {
         if (activeTab.toLowerCase() === "trash") {
           params.status = "cancelled";
@@ -67,7 +75,12 @@ export function Quotations() {
       const res = await QuotationService.getAll(params);
       const data = res.data.results || res.data;
       setQuotations(data);
-      if (activeTab === "All" && !searchQuery) {
+      if (
+        activeTab === "All" &&
+        !searchQuery &&
+        !dateFilter.from &&
+        !dateFilter.to
+      ) {
         setQuotationStats({
           total: data.length,
           draft: data.filter((q: any) => q.status === "draft").length,
@@ -85,7 +98,7 @@ export function Quotations() {
 
   useEffect(() => {
     fetchQuotations();
-  }, [activeTab]);
+  }, [activeTab, dateFilter]);
 
   useEffect(() => {
     const handler = setTimeout(() => fetchQuotations(), 400);
@@ -292,6 +305,12 @@ export function Quotations() {
           className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
         />
       </div>
+
+      <DateFilterBar
+        value={dateFilter}
+        onChange={setDateFilter}
+        allowPaid={false}
+      />
 
       {/* List */}
       <div className="grid grid-cols-1 gap-4">

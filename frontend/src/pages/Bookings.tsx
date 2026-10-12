@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { ActionMenu } from "../components/ActionMenu";
+import {
+  DateFilterBar,
+  DEFAULT_DATE_FILTER,
+  DateFilterValue,
+  dateFilterParams,
+  isDateFilterActive,
+} from "../components/DateFilterBar";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -251,6 +258,8 @@ export function Bookings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [dateFilter, setDateFilter] =
+    useState<DateFilterValue>(DEFAULT_DATE_FILTER);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const formatDateForInput = (dateString: string) => {
@@ -325,7 +334,7 @@ export function Bookings() {
     fetchProducts();
     fetchStats();
     fetchCurrentUser();
-  }, [activeTab, startDate, endDate]);
+  }, [activeTab, startDate, endDate, dateFilter]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -596,7 +605,7 @@ export function Bookings() {
   const fetchBookings = async () => {
     try {
       setIsLoading(true);
-      let params: any = {};
+      let params: any = { ...dateFilterParams(dateFilter) };
       if (activeTab !== "All") params.status = activeTab;
       if (searchQuery) params.search = searchQuery;
       if (startDate) params.pickup_after = startDate;
@@ -982,12 +991,16 @@ export function Bookings() {
           </div>
         </div>
 
-        {(searchQuery || startDate || endDate) && (
+        {(searchQuery ||
+          startDate ||
+          endDate ||
+          isDateFilterActive(dateFilter)) && (
           <button
             onClick={() => {
               setSearchQuery("");
               setStartDate("");
               setEndDate("");
+              setDateFilter(DEFAULT_DATE_FILTER);
             }}
             className="h-11 px-4 text-rose-500 font-bold rounded-xl hover:bg-rose-50 transition-all text-xs flex items-center gap-2 whitespace-nowrap"
           >
@@ -995,6 +1008,8 @@ export function Bookings() {
           </button>
         )}
       </div>
+
+      <DateFilterBar value={dateFilter} onChange={setDateFilter} />
 
       {/* Booking Cards */}
       <div className="grid grid-cols-1 gap-4">

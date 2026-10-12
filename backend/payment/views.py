@@ -39,6 +39,7 @@ from .utils import (
 from inventory.models import Booking
 from users.mixins import TenantIsolationMixin
 from config.pagination import StandardResultsSetPagination
+from config.filters import DateRangeOrderingFilter
 
 
 class PaymentViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
@@ -225,7 +226,16 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        DateRangeOrderingFilter,
+    ]
+    date_filter_fields = {
+        "created": {"field": "created_at"},
+        "updated": {"field": "updated_at"},
+        "paid": {"payments": "recorded_payments"},
+    }
     filterset_fields = ["booking", "client", "status"]
     search_fields = ["invoice_number"]
 
@@ -568,7 +578,15 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Quotation.objects.all()
     serializer_class = QuotationSerializer
-    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        DateRangeOrderingFilter,
+    ]
+    date_filter_fields = {
+        "created": {"field": "created_at"},
+        "updated": {"field": "updated_at"},
+    }
     filterset_fields = ["client", "status"]
     search_fields = ["quotation_number"]
 
