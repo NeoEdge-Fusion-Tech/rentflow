@@ -363,6 +363,8 @@ export function Settings() {
         const payload = {
           name: org.name,
           address: org.address,
+          country: org.country || "",
+          city: org.city || "",
           phone_number: org.phone_number,
           email: org.email,
           tax_id: org.tax_id,
@@ -790,6 +792,38 @@ export function Settings() {
                   rows={2}
                   className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary resize-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    value={org?.country || ""}
+                    onChange={(e) =>
+                      setOrg({ ...org, country: e.target.value })
+                    }
+                    placeholder="e.g. Nigeria"
+                    className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={org?.city || ""}
+                    onChange={(e) => setOrg({ ...org, city: e.target.value })}
+                    placeholder="e.g. Lagos"
+                    className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary"
+                  />
+                </div>
+                <p className="sm:col-span-2 text-xs text-[var(--text-muted)] -mt-2">
+                  Customers can filter the event marketplace by location.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

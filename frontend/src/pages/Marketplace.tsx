@@ -29,6 +29,74 @@ const tagLabel = (product: any) => {
     : tags.map((t) => t.name).join(" · ");
 };
 
+const priceOf = (p: any): number | null =>
+  p.min_rental_price != null ? Number(p.min_rental_price) : null;
+
+const formatPrice = (p: any, amount: number | string | null | undefined) => {
+  if (amount == null || Number(amount) === 0) return "Price on request";
+  const symbol = p.currency_symbol || "";
+  return `${symbol}${Number(amount).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+function FilterCheckbox({
+  checked,
+  disabled,
+  onChange,
+  label,
+  count,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  count?: number;
+}) {
+  return (
+    <label
+      className={`flex items-center gap-3 group ${
+        disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+      }`}
+    >
+      <input
+        type="checkbox"
+        className="sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span
+        className={`w-5 h-5 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors ${
+          checked
+            ? "bg-brand-primary border-brand-primary"
+            : "border-[var(--border-soft)] group-hover:border-brand-primary/60"
+        }`}
+      >
+        {checked && <Check className="w-3 h-3 text-white" />}
+      </span>
+      <span
+        className={`flex-1 text-sm font-medium transition-colors ${
+          checked
+            ? "text-[var(--text-main)]"
+            : "text-[var(--text-muted)] group-hover:text-[var(--text-main)]"
+        }`}
+      >
+        {label}
+      </span>
+      {count !== undefined && (
+        <span className="text-xs text-[var(--text-muted)] tabular-nums">
+          {count}
+        </span>
+      )}
+    </label>
+  );
+}
+
+const toggleIn = (list: string[], value: string, on: boolean) =>
+  on ? [...list, value] : list.filter((v) => v !== value);
+
 export function Marketplace() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -45,6 +113,10 @@ export function Marketplace() {
   >([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [selectedCurrencies, setSelectedCurrencies] = useState<string[]>([]);
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
@@ -74,8 +146,14 @@ export function Marketplace() {
   const productTagSlugs = (p: any): string[] =>
     (p.marketplace_tags || []).map((t: any) => t.slug);
 
-  // Global tags (in the order super admins set) that at least one listed
-  // product uses, plus "Other" for products not tagged yet.
+  const countBy = (values: (string | null | undefined)[]) =>
+    values.reduce<Record<string, number>>((acc, v) => {
+      if (v) acc[v] = (acc[v] || 0) + 1;
+      return acc;
+    }, {});
+
+  // Every active tag (in super-admin order) is listed so customers can see
+  // the full range; tags with no products yet are shown but disabled.
   const tagCounts = products.reduce<Record<string, number>>((acc, p) => {
     const slugs = productTagSlugs(p);
     if (slugs.length === 0) acc[UNTAGGED] = (acc[UNTAGGED] || 0) + 1;
@@ -83,17 +161,60 @@ export function Marketplace() {
     return acc;
   }, {});
   const filterOptions = [
-    ...tags
-      .filter((t) => tagCounts[t.slug])
-      .map((t) => ({ key: t.slug, label: t.name, count: tagCounts[t.slug] })),
+    ...tags.map((t) => ({
+      key: t.slug,
+      label: t.name,
+      count: tagCounts[t.slug] || 0,
+    })),
     ...(tagCounts[UNTAGGED]
       ? [{ key: UNTAGGED, label: "Other", count: tagCounts[UNTAGGED] }]
       : []),
   ];
 
+  const currencyCounts = countBy(products.map((p) => p.currency_code));
+  const currencySymbols: Record<string, string> = {};
+  products.forEach((p) => {
+    if (p.currency_code) currencySymbols[p.currency_code] = p.currency_symbol;
+  });
+  const countryCounts = countBy(products.map((p) => p.organization_country));
+  const cityCounts = countBy(
+    products
+      .filter((p) => !country || p.organization_country === country)
+      .map((p) => p.organization_city),
+  );
+
+  // Prices are only comparable within one currency.
+  const allCurrencies = Object.keys(currencyCounts);
+  const priceCurrency =
+    selectedCurrencies.length === 1
+      ? selectedCurrencies[0]
+      : allCurrencies.length === 1
+        ? allCurrencies[0]
+        : null;
+  const priceEnabled = priceCurrency !== null;
+
+  const activeFilterCount =
+    selectedCategories.length +
+    selectedCurrencies.length +
+    (inStockOnly ? 1 : 0) +
+    (country ? 1 : 0) +
+    (city ? 1 : 0) +
+    (priceEnabled && (minPrice || maxPrice) ? 1 : 0);
+
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedCurrencies([]);
+    setInStockOnly(false);
+    setCountry("");
+    setCity("");
+    setMinPrice("");
+    setMaxPrice("");
+  };
+
   const filteredProducts = products.filter((p) => {
     const term = searchTerm.toLowerCase();
     const matchesSearch =
+      !term ||
       p.name.toLowerCase().includes(term) ||
       (p.category_name && p.category_name.toLowerCase().includes(term)) ||
       (p.marketplace_tags || []).some((t: any) =>
@@ -101,37 +222,43 @@ export function Marketplace() {
       ) ||
       (p.organization_name &&
         p.organization_name.toLowerCase().includes(term)) ||
+      (p.organization_city &&
+        p.organization_city.toLowerCase().includes(term)) ||
       (p.description && p.description.toLowerCase().includes(term)) ||
       (p.units &&
         p.units.some(
           (u: any) =>
-            (u.unit_name && u.unit_name.toLowerCase().includes(term)) ||
+            (u.name && u.name.toLowerCase().includes(term)) ||
             (u.serial_number &&
-              String(u.serial_number).toLowerCase().includes(term)) ||
-            (u.rental_price && String(u.rental_price).includes(term)),
+              String(u.serial_number).toLowerCase().includes(term)),
         ));
+    if (!matchesSearch) return false;
 
     const slugs = productTagSlugs(p);
-    const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.some((key) =>
+    if (
+      selectedCategories.length > 0 &&
+      !selectedCategories.some((key) =>
         key === UNTAGGED ? slugs.length === 0 : slugs.includes(key),
-      );
+      )
+    )
+      return false;
 
-    // Find min price among units
-    const productMinPrice =
-      p.units && p.units.length > 0
-        ? Math.min(...p.units.map((u: any) => Number(u.rental_price)))
-        : 0;
+    if (inStockOnly && !(Number(p.quantity_available) > 0)) return false;
+    if (
+      selectedCurrencies.length > 0 &&
+      !selectedCurrencies.includes(p.currency_code)
+    )
+      return false;
+    if (country && p.organization_country !== country) return false;
+    if (city && p.organization_city !== city) return false;
 
-    const matchesMinPrice =
-      minPrice === "" || productMinPrice >= Number(minPrice);
-    const matchesMaxPrice =
-      maxPrice === "" || productMinPrice <= Number(maxPrice);
-
-    return (
-      matchesSearch && matchesCategory && matchesMinPrice && matchesMaxPrice
-    );
+    if (priceEnabled && (minPrice !== "" || maxPrice !== "")) {
+      const price = priceOf(p);
+      if (price == null || p.currency_code !== priceCurrency) return false;
+      if (minPrice !== "" && price < Number(minPrice)) return false;
+      if (maxPrice !== "" && price > Number(maxPrice)) return false;
+    }
+    return true;
   });
 
   return (
@@ -225,76 +352,171 @@ export function Marketplace() {
             showMobileFilters ? "block" : "hidden"
           } md:block w-full md:w-64 shrink-0 space-y-8 bg-[var(--bg-surface)] p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm h-fit md:sticky md:top-28`}
         >
-          <div>
-            <h3 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
+          <div className="flex items-center justify-between -mb-4">
+            <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2">
               <Filter className="w-4 h-4 text-brand-primary" />
-              Categories
+              Filters
             </h3>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-bold text-brand-primary hover:underline"
+              >
+                Clear all ({activeFilterCount})
+              </button>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+              Categories
+            </h4>
             <div className="space-y-3">
-              {filterOptions.map(({ key: cat, label, count }) => (
-                <label
-                  key={cat}
-                  className="flex items-center gap-3 cursor-pointer group"
-                >
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      className="peer sr-only"
-                      checked={selectedCategories.includes(cat as string)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCategories([
-                            ...selectedCategories,
-                            cat as string,
-                          ]);
-                        } else {
-                          setSelectedCategories(
-                            selectedCategories.filter((c) => c !== cat),
-                          );
-                        }
-                      }}
-                    />
-                    <div className="w-5 h-5 border-2 border-[var(--border-soft)] rounded md:rounded-xl peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-all flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <span className="flex-1 text-sm font-medium text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors">
-                    {label}
-                  </span>
-                  <span className="text-xs text-[var(--text-muted)] tabular-nums">
-                    {count}
-                  </span>
-                </label>
+              {filterOptions.map(({ key, label, count }) => (
+                <React.Fragment key={key}>
+                  <FilterCheckbox
+                    label={label}
+                    count={count}
+                    disabled={count === 0 && !selectedCategories.includes(key)}
+                    checked={selectedCategories.includes(key)}
+                    onChange={(on) =>
+                      setSelectedCategories(
+                        toggleIn(selectedCategories, key, on),
+                      )
+                    }
+                  />
+                </React.Fragment>
               ))}
               {filterOptions.length === 0 && (
                 <p className="text-xs text-[var(--text-muted)]">
-                  No categories found.
+                  No categories yet.
                 </p>
               )}
             </div>
           </div>
 
           <div className="pt-6 border-t border-[var(--border-soft)]">
-            <h3 className="font-bold text-[var(--text-main)] mb-4">
-              Price Range
-            </h3>
+            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+              Availability
+            </h4>
+            <FilterCheckbox
+              label="In stock now"
+              count={
+                products.filter((p) => Number(p.quantity_available) > 0).length
+              }
+              checked={inStockOnly}
+              onChange={setInStockOnly}
+            />
+          </div>
+
+          <div className="pt-6 border-t border-[var(--border-soft)]">
+            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+              Location
+            </h4>
+            {Object.keys(countryCounts).length === 0 ? (
+              <p className="text-xs text-[var(--text-muted)]">
+                Vendors haven't added their location yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <select
+                  value={country}
+                  onChange={(e) => {
+                    setCountry(e.target.value);
+                    setCity("");
+                  }}
+                  aria-label="Country"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2.5 text-sm focus:border-brand-primary outline-none text-[var(--text-main)]"
+                >
+                  <option value="">All countries</option>
+                  {Object.entries(countryCounts)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([c, n]) => (
+                      <option key={c} value={c}>
+                        {c} ({n})
+                      </option>
+                    ))}
+                </select>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  aria-label="City"
+                  disabled={Object.keys(cityCounts).length === 0}
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2.5 text-sm focus:border-brand-primary outline-none text-[var(--text-main)] disabled:opacity-50"
+                >
+                  <option value="">All cities</option>
+                  {Object.entries(cityCounts)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([c, n]) => (
+                      <option key={c} value={c}>
+                        {c} ({n})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {allCurrencies.length > 1 && (
+            <div className="pt-6 border-t border-[var(--border-soft)]">
+              <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+                Currency
+              </h4>
+              <div className="space-y-3">
+                {allCurrencies.sort().map((code) => (
+                  <React.Fragment key={code}>
+                    <FilterCheckbox
+                      label={`${currencySymbols[code] || ""} ${code}`.trim()}
+                      count={currencyCounts[code]}
+                      checked={selectedCurrencies.includes(code)}
+                      onChange={(on) =>
+                        setSelectedCurrencies(
+                          toggleIn(selectedCurrencies, code, on),
+                        )
+                      }
+                    />
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-6 border-t border-[var(--border-soft)]">
+            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">
+              Price per rental
+              {priceCurrency && (
+                <span className="normal-case font-semibold">
+                  {" "}
+                  ({currencySymbols[priceCurrency] || priceCurrency})
+                </span>
+              )}
+            </h4>
             <div className="flex items-center gap-2">
               <input
                 type="number"
+                min="0"
                 placeholder="Min"
                 value={minPrice}
+                disabled={!priceEnabled}
                 onChange={(e) => setMinPrice(e.target.value)}
-                className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] disabled:opacity-50"
               />
               <span className="text-[var(--text-muted)]">-</span>
               <input
                 type="number"
+                min="0"
                 placeholder="Max"
                 value={maxPrice}
+                disabled={!priceEnabled}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
+                className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 text-sm focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] disabled:opacity-50"
               />
             </div>
+            {!priceEnabled && (
+              <p className="text-xs text-[var(--text-muted)] mt-2">
+                Pick one currency above to filter by price.
+              </p>
+            )}
           </div>
         </aside>
 
@@ -331,7 +553,13 @@ export function Marketplace() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filteredProducts.map((product) => {
-                const price = Number(product.units?.[0]?.rental_price || 0);
+                const price = priceOf(product);
+                const location = [
+                  product.organization_city,
+                  product.organization_country,
+                ]
+                  .filter(Boolean)
+                  .join(", ");
                 return (
                   <div
                     key={product.product_id}
@@ -384,12 +612,18 @@ export function Marketplace() {
                           <p className="text-xs font-bold text-[var(--text-muted)] opacity-70 uppercase tracking-wider mb-1">
                             Starting From
                           </p>
-                          <p className="font-black text-2xl text-[var(--text-main)] leading-none">
-                            ${Number(price).toFixed(2)}
-                            <span className="text-sm text-[var(--text-muted)] font-medium">
-                              /day
-                            </span>
+                          <p
+                            className="font-black text-2xl text-[var(--text-main)] leading-none"
+                            style={{ fontFamily: "'Noto Sans', sans-serif" }}
+                          >
+                            {formatPrice(product, price)}
                           </p>
+                          {location && (
+                            <p className="text-xs text-[var(--text-muted)] mt-1.5 flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {location}
+                            </p>
+                          )}
                         </div>
                         <div className="w-10 h-10 rounded-full bg-[var(--bg-app)] flex items-center justify-center group-hover:bg-brand-primary group-hover:text-white transition-colors text-[var(--text-muted)] border border-[var(--border-soft)] group-hover:border-transparent">
                           <ArrowRightIcon className="w-5 h-5" />
@@ -524,10 +758,20 @@ export function Marketplace() {
                                   SN: {unit.serial_number}
                                 </p>
                               )}
-                              <p className="font-black text-brand-primary mt-2">
-                                ${Number(unit.rental_price).toFixed(2)}
+                              <p
+                                className="font-black text-brand-primary mt-2"
+                                style={{
+                                  fontFamily: "'Noto Sans', sans-serif",
+                                }}
+                              >
+                                {formatPrice(
+                                  selectedProduct,
+                                  unit.rental_price,
+                                )}
                                 <span className="text-xs text-[var(--text-muted)] font-medium">
-                                  /day
+                                  {Number(unit.rental_price) > 0 && unit.unit
+                                    ? ` / ${unit.unit.replace("per_", "")}`
+                                    : ""}
                                 </span>
                               </p>
                               {unit.quantity_available !== undefined && (
