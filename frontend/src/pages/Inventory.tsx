@@ -26,8 +26,10 @@ import {
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import Barcode from "react-barcode";
+import { compressImage } from "../utils/compressImage";
 import {
   ProductService,
+  ProductUnitService,
   CategoryService,
   MarketplaceTagService,
   AuthService,
@@ -617,10 +619,26 @@ export function Inventory() {
         finalProductId = res.data.product_id;
       }
 
+      // Images upload after the product is saved. A failed upload must not
+      // undo a successful save, so collect problems and warn instead.
+      const imageProblems: string[] = [];
+      const uploadReason = (err: any) =>
+        err?.response?.status === 413
+          ? "file too large"
+          : err?.response?.data?.error || err?.message || "upload failed";
+
       if (finalProductId && (newProduct as any).image_file) {
-        const formData = new FormData();
-        formData.append("image", (newProduct as any).image_file);
-        await ProductService.uploadImage(finalProductId, formData);
+        try {
+          const formData = new FormData();
+          formData.append(
+            "image",
+            await compressImage((newProduct as any).image_file),
+          );
+          await ProductService.uploadImage(finalProductId, formData);
+        } catch (err: any) {
+          console.error("Failed to upload product image", err);
+          imageProblems.push(`product image (${uploadReason(err)})`);
+        }
       }
 
       // Upload unit images
@@ -645,21 +663,17 @@ export function Inventory() {
                 : null;
 
             if (unitId) {
-              const formData = new FormData();
-              formData.append("image", u.image_file);
               try {
-                // Use imported api instead of creating new axios instance
-                await (
-                  await import("../api")
-                ).api.post(
-                  `/inventory/product-units/${unitId}/upload_image/`,
-                  formData,
-                  {
-                    headers: { "Content-Type": "multipart/form-data" },
-                  },
-                );
-              } catch (err) {
+                const formData = new FormData();
+                formData.append("image", await compressImage(u.image_file));
+                await ProductUnitService.uploadImage(unitId, formData);
+              } catch (err: any) {
                 console.error("Failed to upload unit image", err);
+                imageProblems.push(
+                  `image for unit ${
+                    u.name || u.serial_number || i + 1
+                  } (${uploadReason(err)})`,
+                );
               }
             }
           }
@@ -698,6 +712,14 @@ export function Inventory() {
           : "Product created successfully!",
         "success",
       );
+      if (imageProblems.length) {
+        showNotification(
+          `Product saved, but some images didn't upload: ${imageProblems.join(
+            "; ",
+          )}. You can add them by editing the product.`,
+          "warning",
+        );
+      }
       if (savedProductData?.product_id) {
         setRecentlyAdded((prev) =>
           editingProductId

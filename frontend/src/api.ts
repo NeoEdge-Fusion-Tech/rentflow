@@ -249,7 +249,7 @@ export const ProductService = {
 export const ProductUnitService = {
   create: (data: any) => api.post("/inventory/units/", data),
   uploadImage: (id: number | string, formData: FormData) =>
-    api.post(`/inventory/product-units/${id}/upload_image/`, formData, {
+    api.post(`/inventory/units/${id}/upload_image/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
 };

@@ -15,6 +15,31 @@ from users.models import Organization, Subscription
 from users.serializers import ClientSerializer, BankAccountSerializer
 
 
+def client_display_name(client):
+    """Business name, else full name, else contact name/email."""
+    if client is None:
+        return None
+    for value in (
+        client.business_name,
+        " ".join(p for p in [client.first_name, client.last_name] if p),
+        client.contact_name,
+        client.email,
+    ):
+        if value and str(value).strip() and str(value).strip() != "None":
+            return str(value).strip()
+    return None
+
+
+def document_client_name(obj):
+    """Who an invoice/quotation is billed to: its client, else the linked
+    booking's client or contact."""
+    name = client_display_name(getattr(obj, "client", None))
+    booking = getattr(obj, "booking", None)
+    if not name and booking is not None:
+        name = client_display_name(booking.client) or booking.contact_name
+    return name or None
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
@@ -116,9 +141,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return None
 
     def get_client_name(self, obj):
-        if obj.client:
-            return f"{obj.client.business_name}"
-        return None
+        return document_client_name(obj)
 
     def get_currency_symbol(self, obj):
         currency = obj.currency or (
@@ -294,9 +317,7 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return None
 
     def get_client_name(self, obj):
-        if obj.client:
-            return f"{obj.client.business_name}"
-        return None
+        return document_client_name(obj)
 
     def get_currency_symbol(self, obj):
         currency = obj.currency or (
@@ -385,6 +406,34 @@ class ReceiptSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     organization_name = serializers.CharField(
         source="organization.name", read_only=True
     )
+    breakdown = serializers.SerializerMethodField()
+
+    def get_breakdown(self, obj):
+        """Payment position as of this receipt (see payment.utils)."""
+        from .utils import receipt_breakdown
+
+        try:
+            b = receipt_breakdown(obj)
+        except Exception:
+            return None
+        cur = obj.organization.currency if obj.organization_id else None
+        return {
+            "invoice_number": b["invoice_number"],
+            "booking_id": b["booking_id"],
+            "client_name": b["client_name"],
+            "total": str(b["total"]),
+            "previously_paid": str(b["previously_paid"]),
+            "this_payment": str(b["this_payment"]),
+            "paid_to_date": str(b["paid_to_date"]),
+            "balance": str(b["balance"]),
+            "is_full": b["is_full"],
+            "payment_date": b["payment_date"],
+            "currency_symbol": cur.symbol if cur else "",
+            "history": [
+                {"date": h["date"], "amount": str(h["amount"]), "is_this": h["is_this"]}
+                for h in b["history"]
+            ],
+        }
 
     class Meta:
         model = Receipt
@@ -397,6 +446,7 @@ class ReceiptSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "amount",
             "notes",
             "organization_name",
+            "breakdown",
         ]
         read_only_fields = ["receipt_number", "issue_date"]
 
@@ -411,10 +461,14 @@ class PaymentSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     currency_symbol = serializers.SerializerMethodField()
 
     def get_client_name(self, obj):
-        if obj.booking and obj.booking.client:
-            return obj.booking.client.business_name
-        if obj.invoice_record and obj.invoice_record.client:
-            return obj.invoice_record.client.business_name
+        if obj.booking:
+            name = client_display_name(obj.booking.client) or obj.booking.contact_name
+            if name:
+                return name
+        if obj.invoice_record:
+            name = document_client_name(obj.invoice_record)
+            if name:
+                return name
         return "System Generated"
 
     def get_currency_symbol(self, obj):

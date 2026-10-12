@@ -17,6 +17,7 @@ from reportlab.platypus import (
 )
 from reportlab.lib.units import inch
 from django.conf import settings
+from django.db.models import Q as models_Q
 import requests
 import json
 
@@ -1142,6 +1143,83 @@ def generate_quotation_pdf(quotation):
     return buffer
 
 
+def receipt_breakdown(receipt):
+    """Payment position *as of this receipt*: what's owed, what was paid
+    before, this payment, paid to date, and the balance — for invoice-only
+    payments as well as booking payments. Payments are matched on the
+    invoice when there is one, else on the booking."""
+    from .models import Payment, Invoice
+
+    payment = receipt.payment
+    booking = payment.booking
+    invoice = payment.invoice_record or (
+        Invoice.objects.filter(booking=booking).first() if booking else None
+    )
+
+    if invoice is not None:
+        total = Decimal(str(invoice.total_amount or 0))
+        related = Payment.objects.filter(status="completed").filter(
+            models_Q(invoice_record=invoice)
+            | (models_Q(booking=booking) if booking else models_Q(pk__in=[]))
+        )
+    elif booking is not None:
+        total = Decimal(str(booking.total_amount or 0))
+        related = Payment.objects.filter(status="completed", booking=booking)
+    else:
+        total = Decimal(str(receipt.amount or 0))
+        related = Payment.objects.filter(pk=payment.pk)
+
+    history = list(related.distinct().order_by("payment_date", "payment_id"))
+    # Everything up to and including this payment.
+    upto = []
+    for p in history:
+        upto.append(p)
+        if p.pk == payment.pk:
+            break
+    else:
+        upto.append(payment)
+    this_amount = Decimal(str(receipt.amount or 0))
+    paid_to_date = sum((Decimal(str(p.amount)) for p in upto), Decimal("0"))
+    previously_paid = paid_to_date - this_amount
+    balance = max(total - paid_to_date, Decimal("0"))
+
+    client = (invoice.client if invoice is not None and invoice.client else None) or (
+        booking.client if booking is not None else None
+    )
+    client_name = None
+    if client is not None:
+        client_name = (
+            client.business_name
+            or " ".join(p for p in [client.first_name, client.last_name] if p)
+            or client.email
+        )
+    if not client_name and booking is not None:
+        client_name = booking.contact_name
+
+    return {
+        "invoice_number": invoice.invoice_number if invoice is not None else None,
+        "booking_id": booking.booking_id if booking is not None else None,
+        "booking_title": booking.booking_title if booking is not None else None,
+        "client_name": client_name or "—",
+        "total": total,
+        "previously_paid": max(previously_paid, Decimal("0")),
+        "this_payment": this_amount,
+        "paid_to_date": paid_to_date,
+        "balance": balance,
+        "is_full": balance <= 0,
+        "payment_date": payment.payment_date,
+        "reference": payment.invoice_id or "",
+        "history": [
+            {
+                "date": p.payment_date,
+                "amount": Decimal(str(p.amount)),
+                "is_this": p.pk == payment.pk,
+            }
+            for p in upto
+        ],
+    }
+
+
 def generate_receipt_pdf(receipt):
     """
     Generates a PDF for a receipt.
@@ -1171,33 +1249,34 @@ def generate_receipt_pdf(receipt):
     )
     elements.append(Spacer(1, 0.5 * inch))
 
+    b = receipt_breakdown(receipt)
+    money = lambda v: f"{currency_symbol}{v:,.2f}"  # noqa: E731
+
     # Client Info
     elements.append(Paragraph("<b>Received From:</b>", styles["Normal"]))
-    client_name = f"{receipt.payment.booking.client.business_name}"
-    elements.append(Paragraph(client_name, styles["Normal"]))
+    elements.append(Paragraph(b["client_name"], styles["Normal"]))
     elements.append(Spacer(1, 0.3 * inch))
 
-    # Payment Details
-    booking = receipt.payment.booking
-    total_amount = booking.total_amount
-    amount_paid_now = receipt.amount
-    total_paid_to_date = booking.amount_paid
-    balance_left = max(0, total_amount - total_paid_to_date)
+    payment_type = "Paid in full" if b["is_full"] else "Partial payment"
 
-    is_full_payment = total_paid_to_date >= total_amount
-    payment_type = "Full Payment" if is_full_payment else "Partial Payment"
-
-    data = [
-        ["Description", "Value"],
-        ["Booking ID", f"#{booking.booking_id}"],
-        ["Booking Title", booking.booking_title or "N/A"],
-        ["Payment Method", "Completed Transaction"],
-        ["Total Booking Amount", f"{currency_symbol}{total_amount:,.2f}"],
-        ["Amount Paid in this Transaction", f"{currency_symbol}{amount_paid_now:,.2f}"],
-        ["Total Amount Paid to Date", f"{currency_symbol}{total_paid_to_date:,.2f}"],
-        ["Balance Remaining", f"{currency_symbol}{balance_left:,.2f}"],
-        ["Payment Status", payment_type],
+    data = [["Payment breakdown", ""]]
+    if b["invoice_number"]:
+        data.append(["Invoice", b["invoice_number"]])
+    if b["booking_id"]:
+        data.append(["Booking ID", f"#{b['booking_id']}"])
+    if b["booking_title"]:
+        data.append(["Booking", b["booking_title"]])
+    data += [
+        ["Payment date", b["payment_date"].strftime("%d %b %Y, %H:%M")],
+        ["Invoice total", money(b["total"])],
+        ["Previously paid", money(b["previously_paid"])],
+        ["This payment", money(b["this_payment"])],
+        ["Total paid to date", money(b["paid_to_date"])],
+        ["Balance remaining", money(b["balance"])],
+        ["Status", payment_type],
     ]
+    if b["reference"] and not b["reference"].startswith("AUTO-"):
+        data.append(["Reference", b["reference"]])
 
     table = Table(data, colWidths=[2.5 * inch, 3 * inch])
     table.setStyle(
@@ -1214,6 +1293,33 @@ def generate_receipt_pdf(receipt):
         )
     )
     elements.append(table)
+
+    # Payment history (all payments up to this one)
+    if len(b["history"]) > 1:
+        elements.append(Spacer(1, 0.35 * inch))
+        elements.append(Paragraph("<b>Payment history</b>", styles["Normal"]))
+        elements.append(Spacer(1, 0.1 * inch))
+        hist = [["#", "Date", "Amount"]]
+        for idx, h in enumerate(b["history"], start=1):
+            hist.append(
+                [
+                    f"{idx}{' (this receipt)' if h['is_this'] else ''}",
+                    h["date"].strftime("%d %b %Y"),
+                    money(h["amount"]),
+                ]
+            )
+        htable = Table(hist, colWidths=[2 * inch, 2 * inch, 1.5 * inch])
+        htable.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
+                    ("ALIGN", (2, 0), (2, -1), "RIGHT"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ]
+            )
+        )
+        elements.append(htable)
 
     # Footer
     if receipt.notes:

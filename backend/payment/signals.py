@@ -15,6 +15,7 @@ def create_invoice_on_booking_creation(sender, instance, created, **kwargs):
             booking=instance,
             organization=instance.organization,
             defaults={
+                "client": instance.client,
                 "total_amount": instance.total_amount,
                 "status": "issued",
                 "created_by": instance.created_by,

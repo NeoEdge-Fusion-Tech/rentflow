@@ -299,9 +299,8 @@ export function QuotationEditor() {
         "success",
       );
       if (!skipNavigate) {
-        navigate(`/quotations/${res.data.quotation_id}/edit`, {
-          replace: true,
-        });
+        navigate("/quotations", { replace: true });
+        return res.data.quotation_id;
       }
       if (isEditMode) await loadQuotation(id!);
       return res.data.quotation_id;
@@ -600,7 +599,7 @@ export function QuotationEditor() {
                   ))}
                 </select>
               </div>
-              <div className="col-span-2 flex items-center justify-between bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-3 h-11">
+              <div className="md:col-span-2 flex items-center justify-between gap-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-3 py-2 min-h-11">
                 <label
                   htmlFor="show-bank-details"
                   className="text-xs font-bold text-[var(--text-muted)] uppercase cursor-pointer"
@@ -636,7 +635,7 @@ export function QuotationEditor() {
                 </button>
               </div>
               {formData.show_bank_details && (
-                <div className="col-span-2">
+                <div className="md:col-span-2 min-w-0">
                   <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
                     Bank Account (shown on PDF)
                   </label>

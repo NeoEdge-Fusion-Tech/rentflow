@@ -384,7 +384,9 @@ export function InvoiceEditor() {
         "success",
       );
       if (!skipNavigate) {
-        navigate(`/invoices/${res.data.invoice_id}/edit`, { replace: true });
+        // Done: back to the invoice list, where the new/updated one is at the top.
+        navigate("/invoices", { replace: true });
+        return res.data.invoice_id;
       }
       if (isEditMode) await loadInvoice(id!);
       return res.data.invoice_id;
@@ -605,7 +607,7 @@ export function InvoiceEditor() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2 sm:col-span-1">
+              <div className="min-w-0">
                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
                   Event / Job Date
                 </label>
@@ -664,7 +666,7 @@ export function InvoiceEditor() {
                   ))}
                 </select>
               </div>
-              <div className="col-span-2 flex items-center justify-between bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-3 h-11">
+              <div className="md:col-span-2 flex items-center justify-between gap-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl px-3 py-2 min-h-11">
                 <label
                   htmlFor="show-bank-details"
                   className="text-xs font-bold text-[var(--text-muted)] uppercase cursor-pointer"
@@ -700,7 +702,7 @@ export function InvoiceEditor() {
                 </button>
               </div>
               {formData.show_bank_details && (
-                <div className="col-span-2">
+                <div className="md:col-span-2 min-w-0">
                   <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-2">
                     Bank Account (shown on PDF)
                   </label>
@@ -709,7 +711,7 @@ export function InvoiceEditor() {
                     onChange={(e) =>
                       setFormData({ ...formData, bank_account: e.target.value })
                     }
-                    className="w-full h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)]"
+                    className="w-full max-w-full min-w-0 h-11 px-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:border-brand-primary text-sm font-medium text-[var(--text-main)] truncate"
                   >
                     <option value="">No bank account selected</option>
                     {bankAccounts.map((b) => (
@@ -719,6 +721,12 @@ export function InvoiceEditor() {
                       </option>
                     ))}
                   </select>
+                  {bankAccounts.length === 0 && (
+                    <p className="text-xs text-[var(--text-muted)] mt-2">
+                      No bank accounts yet — add one in Settings → Workspace →
+                      Bank Accounts.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

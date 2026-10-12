@@ -323,7 +323,7 @@ export function Invoices() {
                       </span>
                     </div>
                     <h3 className="text-lg font-bold text-[var(--text-main)] mt-0.5">
-                      {invoice.client_name || "No client"}
+                      {invoice.client_name || "Client not set"}
                     </h3>
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
@@ -340,42 +340,76 @@ export function Invoices() {
                   </div>
                 </div>
 
-                <div className="text-right lg:min-w-[140px]">
-                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
-                    Total
-                  </p>
-                  <p className="text-xl font-black text-[var(--text-main)] flex items-center justify-end">
-                    <RevenueDisplay
-                      amount={`${
-                        invoice.currency_symbol || defaultCurrencySymbol
-                      }${formatCurrency(invoice.total_amount)}`}
-                    />
-                  </p>
-                  {parseFloat(invoice.amount_paid) > 0 &&
-                    invoice.status !== "paid" && (
-                      <div className="mt-1 flex flex-col items-end">
-                        <p className="text-xs text-emerald-600 font-bold flex items-center justify-end gap-1">
-                          Paid:{" "}
-                          <RevenueDisplay
-                            amount={`${
-                              invoice.currency_symbol || defaultCurrencySymbol
-                            }${formatCurrency(invoice.amount_paid)}`}
-                          />
-                        </p>
-                        <p className="text-xs text-amber-600 font-bold flex items-center justify-end gap-1">
-                          Left:{" "}
-                          <RevenueDisplay
-                            amount={`${
-                              invoice.currency_symbol || defaultCurrencySymbol
-                            }${formatCurrency(
-                              invoice.total_amount -
-                                parseFloat(invoice.amount_paid),
-                            )}`}
-                          />
-                        </p>
+                {(() => {
+                  const sym = invoice.currency_symbol || defaultCurrencySymbol;
+                  const total = Number(invoice.total_amount) || 0;
+                  const paid = Number(invoice.amount_paid) || 0;
+                  const balance = Math.max(total - paid, 0);
+                  const partial =
+                    paid > 0 && invoice.status !== "paid" && balance > 0;
+                  const pct =
+                    total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+                  return (
+                    <div className="w-full lg:w-60 shrink-0">
+                      <div className="flex items-baseline justify-between lg:justify-end gap-3">
+                        <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest lg:hidden">
+                          Total
+                        </span>
+                        <div className="text-right">
+                          <p className="hidden lg:block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-0.5">
+                            Total
+                          </p>
+                          <div className="text-xl font-black text-[var(--text-main)] tabular-nums flex justify-end">
+                            <RevenueDisplay
+                              amount={`${sym}${formatCurrency(total)}`}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                </div>
+                      {partial && (
+                        <div className="mt-3">
+                          <div
+                            className="h-1.5 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] overflow-hidden"
+                            role="progressbar"
+                            aria-valuenow={Math.round(pct)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            title={`${Math.round(pct)}% paid`}
+                          >
+                            <div
+                              className="h-full bg-emerald-500 rounded-full"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                            <div className="text-left">
+                              <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                Paid · {Math.round(pct)}%
+                              </dt>
+                              <dd className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                <RevenueDisplay
+                                  hideToggle
+                                  amount={`${sym}${formatCurrency(paid)}`}
+                                />
+                              </dd>
+                            </div>
+                            <div className="text-right">
+                              <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                Balance due
+                              </dt>
+                              <dd className="font-bold text-amber-600 dark:text-amber-400 tabular-nums flex justify-end">
+                                <RevenueDisplay
+                                  hideToggle
+                                  amount={`${sym}${formatCurrency(balance)}`}
+                                />
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="flex items-center justify-end gap-2 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
                   {invoice.status !== "paid" &&

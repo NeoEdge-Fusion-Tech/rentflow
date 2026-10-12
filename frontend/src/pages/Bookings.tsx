@@ -2880,6 +2880,16 @@ export function Bookings() {
                             onClick={() => {
                               setEditingReceipt(r);
                               setShowReceiptPreview(true);
+                              // Load the full receipt with its payment breakdown.
+                              ReceiptService.get(r.receipt_id)
+                                .then((res) =>
+                                  setEditingReceipt((prev: any) =>
+                                    prev && prev.receipt_id === r.receipt_id
+                                      ? { ...prev, ...res.data }
+                                      : prev,
+                                  ),
+                                )
+                                .catch(() => {});
                             }}
                             className="p-2 border-l border-emerald-500/10 hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-600 transition-all opacity-0 group-hover:opacity-100"
                             title="Edit Receipt"
@@ -4330,6 +4340,115 @@ export function Bookings() {
                   </span>
                 </div>
               </div>
+
+              {editingReceipt.breakdown &&
+                (() => {
+                  const b = editingReceipt.breakdown;
+                  const sym = b.currency_symbol || currencySymbol;
+                  const fmt = (v: string) => `${sym}${formatCurrency(v)}`;
+                  const pct =
+                    Number(b.total) > 0
+                      ? Math.min(
+                          100,
+                          (Number(b.paid_to_date) / Number(b.total)) * 100,
+                        )
+                      : 100;
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                          Payment breakdown
+                        </p>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            b.is_full
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : "bg-amber-500/10 text-amber-600"
+                          }`}
+                        >
+                          {b.is_full ? "Paid in full" : "Partially paid"}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <dl className="divide-y divide-[var(--border-soft)] rounded-2xl border border-[var(--border-soft)] overflow-hidden text-sm">
+                        {[
+                          b.invoice_number && ["Invoice", b.invoice_number, ""],
+                          ["Invoice total", fmt(b.total), "font-bold"],
+                          ["Previously paid", fmt(b.previously_paid), ""],
+                          [
+                            "This payment",
+                            fmt(b.this_payment),
+                            "font-bold text-emerald-600",
+                          ],
+                          [
+                            "Total paid to date",
+                            fmt(b.paid_to_date),
+                            "font-bold",
+                          ],
+                          [
+                            "Balance remaining",
+                            fmt(b.balance),
+                            b.is_full
+                              ? "font-bold"
+                              : "font-black text-amber-600",
+                          ],
+                        ]
+                          .filter(Boolean)
+                          .map((row: any) => (
+                            <div
+                              key={row[0]}
+                              className="flex items-center justify-between gap-4 px-4 py-2.5 bg-[var(--bg-surface)]"
+                            >
+                              <dt className="text-[var(--text-muted)]">
+                                {row[0]}
+                              </dt>
+                              <dd
+                                className={`tabular-nums text-[var(--text-main)] ${row[2]}`}
+                              >
+                                {row[1]}
+                              </dd>
+                            </div>
+                          ))}
+                      </dl>
+                      {b.history?.length > 1 && (
+                        <div>
+                          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">
+                            Payment history
+                          </p>
+                          <ul className="space-y-1.5 text-sm">
+                            {b.history.map((h: any, i: number) => (
+                              <li
+                                key={i}
+                                className={`flex justify-between gap-4 px-3 py-2 rounded-xl ${
+                                  h.is_this
+                                    ? "bg-emerald-500/10 font-bold"
+                                    : "bg-[var(--bg-app)]"
+                                }`}
+                              >
+                                <span className="text-[var(--text-main)]">
+                                  {new Date(h.date).toLocaleDateString()}
+                                  {h.is_this && (
+                                    <span className="ml-2 text-[10px] uppercase tracking-wider text-emerald-600">
+                                      This receipt
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="tabular-nums text-[var(--text-main)]">
+                                  {fmt(h.amount)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
               <div>
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase mb-2">
