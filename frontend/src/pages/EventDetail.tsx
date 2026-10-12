@@ -15,6 +15,7 @@ import {
   Phone,
   User,
   Copy,
+  Paperclip,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -26,6 +27,8 @@ import {
   ProjectFeedbackService,
   FeedbackService,
 } from "../api";
+import { ActionMenu } from "../components/ActionMenu";
+import { AttachmentsModal } from "../components/AttachmentsPanel";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function EventDetail() {
@@ -178,6 +181,28 @@ export function EventDetail() {
     });
     setIsAddExpenseOpen(true);
   };
+
+  const [receiptsFor, setReceiptsFor] = useState<any | null>(null);
+
+  const expenseActions = (exp: any) => [
+    { label: "Edit", icon: Edit2, onClick: () => openEditExpense(exp) },
+    {
+      label: "Duplicate",
+      icon: Copy,
+      onClick: () => handleDuplicateExpense(exp.expense_id),
+    },
+    {
+      label: "Receipts & invoices",
+      icon: Paperclip,
+      onClick: () => setReceiptsFor(exp),
+    },
+    {
+      label: "Delete",
+      icon: Trash2,
+      danger: true,
+      onClick: () => handleDeleteExpense(exp.expense_id),
+    },
+  ];
 
   const openEditExpense = (expense: any) => {
     setEditingExpense(expense);
@@ -616,31 +641,7 @@ export function EventDetail() {
                         />
                       </td>
                       <td className="py-3 pr-0 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() =>
-                              handleDuplicateExpense(exp.expense_id)
-                            }
-                            className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
-                            title="Duplicate"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openEditExpense(exp)}
-                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteExpense(exp.expense_id)}
-                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <ActionMenu items={expenseActions(exp)} />
                       </td>
                     </tr>
                   ))}
@@ -689,29 +690,7 @@ export function EventDetail() {
                     <span className="text-xs text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
                     </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDuplicateExpense(exp.expense_id)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-blue-500 transition-colors"
-                        title="Duplicate"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openEditExpense(exp)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteExpense(exp.expense_id)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ActionMenu items={expenseActions(exp)} />
                   </div>
                 </div>
               ))}
@@ -1403,6 +1382,19 @@ export function EventDetail() {
             </div>
           </div>
         </div>
+      )}
+      {receiptsFor && (
+        <AttachmentsModal
+          title="Receipts & invoices"
+          subtitle={receiptsFor.name}
+          target="expense"
+          objectId={receiptsFor.expense_id}
+          kinds={[
+            { value: "payment_receipt", label: "Payment receipt" },
+            { value: "client_invoice", label: "Invoice" },
+          ]}
+          onClose={() => setReceiptsFor(null)}
+        />
       )}
     </div>
   );

@@ -7,6 +7,7 @@ from .models import (
     BookingItem,
     BookingItemUnit,
     OrganizationBookingSettings,
+    MarketplaceTag,
 )
 
 from users.mixins import TenantSerializerMixin
@@ -59,11 +60,60 @@ class OrganizationBookingSettingsSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class MarketplaceTagSerializer(serializers.ModelSerializer):
+    product_count = serializers.IntegerField(read_only=True, required=False)
+
+    class Meta:
+        model = MarketplaceTag
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "sort_order",
+            "is_active",
+            "product_count",
+        ]
+        read_only_fields = ["slug"]
+
+
+class MarketplaceTagBriefSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketplaceTag
+        fields = ["id", "name", "slug"]
+
+
+def _active_tags_field(**kwargs):
+    return serializers.PrimaryKeyRelatedField(
+        many=True,
+        required=False,
+        queryset=MarketplaceTag.objects.filter(is_active=True),
+        **kwargs,
+    )
+
+
 class ProductCategorySerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    default_marketplace_tags = _active_tags_field()
+
     class Meta:
         model = ProductCategory
-        fields = ["category_id", "name", "slug", "description", "is_active"]
+        fields = [
+            "category_id",
+            "name",
+            "slug",
+            "description",
+            "is_active",
+            "default_marketplace_tags",
+        ]
         read_only_fields = ["slug"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Include ids of inactive tags too, so the UI can show them.
+        data["default_marketplace_tags"] = [
+            t.id for t in instance.default_marketplace_tags.all()
+        ]
+        return data
 
 
 class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
@@ -144,6 +194,7 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     units = ProductUnitSerializer(many=True, required=False)
+    marketplace_tags = _active_tags_field()
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
 
@@ -180,6 +231,7 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "is_active",
             "total_cost_price",
             "available_for_rental",
+            "marketplace_tags",
             "units",
             "created_by_name",
             "updated_by_name",
@@ -197,6 +249,15 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        tags = list(instance.marketplace_tags.all())
+        data["marketplace_tags"] = [t.id for t in tags]
+        data["marketplace_tag_details"] = MarketplaceTagBriefSerializer(
+            tags, many=True
+        ).data
+        return data
+
     def validate(self, data):
         if not self.instance and not data.get("units"):
             raise serializers.ValidationError(
@@ -208,7 +269,14 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def create(self, validated_data):
         units_data = validated_data.pop("units", [])
+        tags = validated_data.pop("marketplace_tags", None)
         product = Product.objects.create(**validated_data)
+        if tags is None:
+            # Fall back to the category's default tags.
+            tags = list(
+                product.category.default_marketplace_tags.filter(is_active=True)
+            )
+        product.marketplace_tags.set(tags)
         for unit_data in units_data:
             # Pop product_unit_id if present (could be None or dummy)
             unit_data.pop("product_unit_id", None)
@@ -219,6 +287,12 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         units_data = validated_data.pop("units", None)
+        tags = validated_data.pop("marketplace_tags", None)
+        if tags is not None:
+            # Keep any now-inactive tags the product already had; only the
+            # active ones are selectable, so the client can't resend them.
+            inactive = list(instance.marketplace_tags.filter(is_active=False))
+            instance.marketplace_tags.set([*tags, *inactive])
 
         # Update basic fields
         for attr, value in validated_data.items():

@@ -103,6 +103,42 @@ export const CategoryService = {
   delete: (id: number) => api.delete(`/inventory/categories/${id}/`),
 };
 
+export type AttachmentTarget = "product_unit" | "expense" | "general_expense";
+
+export const AttachmentService = {
+  list: (target: AttachmentTarget, objectId: number) =>
+    api.get("/attachments/", { params: { target, object_id: objectId } }),
+  upload: (
+    target: AttachmentTarget,
+    objectId: number,
+    kind: string,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ) => {
+    const form = new FormData();
+    form.append("target", target);
+    form.append("object_id", String(objectId));
+    form.append("kind", kind);
+    form.append("file", file);
+    return api.post("/attachments/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) =>
+        onProgress &&
+        e.total &&
+        onProgress(Math.round((e.loaded / e.total) * 100)),
+    });
+  },
+  delete: (id: number) => api.delete(`/attachments/${id}/`),
+};
+
+export const MarketplaceTagService = {
+  getAll: (params?: any) => api.get("/inventory/marketplace-tags/", { params }),
+  create: (data: any) => api.post("/inventory/marketplace-tags/", data),
+  update: (id: number, data: any) =>
+    api.patch(`/inventory/marketplace-tags/${id}/`, data),
+  delete: (id: number) => api.delete(`/inventory/marketplace-tags/${id}/`),
+};
+
 export const UserService = {
   getAll: (params?: any) => api.get("/users/team/", { params }),
   create: (data: any) => api.post("/users/team/", data),

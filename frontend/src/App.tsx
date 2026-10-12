@@ -38,6 +38,7 @@ import { Organizations } from "./pages/SuperAdmin/Organizations";
 import { OrganizationDetail } from "./pages/SuperAdmin/OrganizationDetail";
 import { Users as SuperAdminUsers } from "./pages/SuperAdmin/Users";
 import { Currencies } from "./pages/SuperAdmin/Currencies";
+import { MarketplaceTags } from "./pages/SuperAdmin/MarketplaceTags";
 import { Dashboard as SuperAdminDashboard } from "./pages/SuperAdmin/Dashboard";
 import { Bookings as SuperAdminBookings } from "./pages/SuperAdmin/Bookings";
 import { Invoices as SuperAdminInvoices } from "./pages/SuperAdmin/Invoices";
@@ -463,6 +464,10 @@ function AppLayout() {
               />
               <Route path="/superadmin/users" element={<SuperAdminUsers />} />
               <Route path="/superadmin/currencies" element={<Currencies />} />
+              <Route
+                path="/superadmin/marketplace-tags"
+                element={<MarketplaceTags />}
+              />
               <Route
                 path="/superadmin/bookings"
                 element={<SuperAdminBookings />}

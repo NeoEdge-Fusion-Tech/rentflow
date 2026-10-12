@@ -19,13 +19,17 @@ import {
   Printer,
   QrCode,
   Download,
+  Paperclip,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import Barcode from "react-barcode";
-import { ProductService, CategoryService } from "../api";
+import { ProductService, CategoryService, MarketplaceTagService } from "../api";
+import { TagPicker, MarketplaceTagOption } from "../components/TagPicker";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { ActionMenu } from "../components/ActionMenu";
+import { CurrencyBadge } from "../components/CurrencyBadge";
+import { AttachmentsModal } from "../components/AttachmentsPanel";
 
 const generateNextSerialNumber = (products: any[], draftUnits: any[]) => {
   let maxNum = 0;
@@ -70,7 +74,9 @@ export function Inventory() {
     unitName: string;
     identifier: string;
   } | null>(null);
-  const currencySymbol = localStorage.getItem("currencySymbol") || "$";
+  const [currencySymbol, setCurrencySymbol] = useState(
+    () => localStorage.getItem("currencySymbol") || "$",
+  );
   const [units, setUnits] = useState([
     {
       name: "",
@@ -124,6 +130,15 @@ export function Inventory() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [newCategoryIsActive, setNewCategoryIsActive] = useState(true);
+  const [newCategoryTags, setNewCategoryTags] = useState<number[]>([]);
+  const [marketplaceTags, setMarketplaceTags] = useState<
+    MarketplaceTagOption[]
+  >([]);
+  // Marketplace tags for the product being added/edited. `productTagsAuto`
+  // is true while they're just the category's defaults, so changing the
+  // category can swap them without clobbering a manual choice.
+  const [productTags, setProductTags] = useState<number[]>([]);
+  const [productTagsAuto, setProductTagsAuto] = useState(true);
   const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
   const [showDrillDown, setShowDrillDown] = useState(false);
   const [drillDownProduct, setDrillDownProduct] = useState<any | null>(null);
@@ -186,7 +201,25 @@ export function Inventory() {
     },
   ];
 
+  const [receiptsForUnit, setReceiptsForUnit] = useState<{
+    unitId: number;
+    label: string;
+  } | null>(null);
+
+  const openUnitReceipts = (product: any, unit: any) =>
+    setReceiptsForUnit({
+      unitId: unit.product_unit_id,
+      label: [product.name, unit.name || unit.serial_number]
+        .filter(Boolean)
+        .join(" · "),
+    });
+
   const unitActions = (product: any, unit: any) => [
+    {
+      label: "Purchase receipts",
+      icon: Paperclip,
+      onClick: () => openUnitReceipts(product, unit),
+    },
     {
       label: "View QR code",
       icon: QrCode,
@@ -213,6 +246,22 @@ export function Inventory() {
     fetchCategories();
   }, [searchTerm, selectedCategoryFilter, selectedStatusFilter]);
 
+  React.useEffect(() => {
+    MarketplaceTagService.getAll()
+      .then((res) => setMarketplaceTags(res.data.results || res.data))
+      .catch((e) => console.error("Failed to load marketplace tags", e));
+  }, []);
+
+  const categoryDefaultTags = (categoryId: string | number) => {
+    const cat = categories.find(
+      (c) => String(c.category_id) === String(categoryId),
+    );
+    const activeIds = new Set(marketplaceTags.map((t) => t.id));
+    return ((cat?.default_marketplace_tags || []) as number[]).filter((id) =>
+      activeIds.has(id),
+    );
+  };
+
   const fetchCategories = async () => {
     try {
       const response = await CategoryService.getAll();
@@ -224,6 +273,8 @@ export function Inventory() {
 
   const handleEditProductClick = (product: any) => {
     setEditingProductId(product.product_id);
+    setProductTags(product.marketplace_tags || []);
+    setProductTagsAuto(false);
     setNewProduct({
       name: product.name,
       category_id: product.category.toString(),
@@ -272,6 +323,8 @@ export function Inventory() {
   const handleCloseAddModal = () => {
     setShowAddModal(false);
     setEditingProductId(null);
+    setProductTags([]);
+    setProductTagsAuto(true);
     setNewProduct({
       name: "",
       category_id: "",
@@ -294,9 +347,12 @@ export function Inventory() {
     ]);
   };
 
+  const needsMarketplaceTag =
+    newProduct.available_for_rental && marketplaceTags.length > 0;
   const isProductFormValid = Boolean(
     newProduct.name.trim() &&
       newProduct.category_id &&
+      (!needsMarketplaceTag || productTags.length > 0) &&
       units.length > 0 &&
       units.every((u) =>
         u.unit_type === "single"
@@ -341,6 +397,7 @@ export function Inventory() {
         category: parseInt(newProduct.category_id),
         is_active: newProduct.is_active,
         available_for_rental: newProduct.available_for_rental,
+        marketplace_tags: productTags,
         units: units.map((u) => ({
           ...((u as any).product_unit_id
             ? { product_unit_id: (u as any).product_unit_id }
@@ -420,6 +477,8 @@ export function Inventory() {
 
       setShowAddModal(false);
       setEditingProductId(null);
+      setProductTags([]);
+      setProductTagsAuto(true);
       setNewProduct({
         name: "",
         category_id: "",
@@ -514,6 +573,7 @@ export function Inventory() {
           name: newCategoryName,
           description: newCategoryDesc,
           is_active: newCategoryIsActive,
+          default_marketplace_tags: newCategoryTags,
         });
         showNotification("Category updated!", "success");
       } else {
@@ -521,12 +581,14 @@ export function Inventory() {
           name: newCategoryName,
           description: newCategoryDesc,
           is_active: newCategoryIsActive,
+          default_marketplace_tags: newCategoryTags,
         });
         showNotification("Category added!", "success");
       }
       setNewCategoryName("");
       setNewCategoryDesc("");
       setNewCategoryIsActive(true);
+      setNewCategoryTags([]);
       setEditCategoryId(null);
       fetchCategories();
     } catch (error: any) {
@@ -545,6 +607,12 @@ export function Inventory() {
     setNewCategoryName(c.name);
     setNewCategoryDesc(c.description || "");
     setNewCategoryIsActive(c.is_active);
+    const activeIds = new Set(marketplaceTags.map((t) => t.id));
+    setNewCategoryTags(
+      ((c.default_marketplace_tags || []) as number[]).filter((id) =>
+        activeIds.has(id),
+      ),
+    );
   };
 
   const handleDeleteCategory = async (id: number) => {
@@ -610,7 +678,8 @@ export function Inventory() {
               Manage your products, categories, and stock levels.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <CurrencyBadge onChange={setCurrencySymbol} />
             <button
               onClick={() => setShowQRExportModal(true)}
               className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
@@ -1112,6 +1181,7 @@ export function Inventory() {
                                         </td>
                                         <td className="px-5 py-4 text-sm text-right text-[var(--text-muted)] whitespace-nowrap">
                                           <RevenueDisplay
+                                            hideToggle
                                             amount={`${currencySymbol}${formatCurrency(
                                               unit.unit_cost_price,
                                             )}`}
@@ -1119,6 +1189,7 @@ export function Inventory() {
                                         </td>
                                         <td className="px-5 py-4 text-sm text-right text-[var(--text-main)] font-bold whitespace-nowrap">
                                           <RevenueDisplay
+                                            hideToggle
                                             amount={`${currencySymbol}${formatCurrency(
                                               unit.cost_price,
                                             )}`}
@@ -1127,6 +1198,7 @@ export function Inventory() {
                                         <td className="px-5 py-4 text-sm text-right whitespace-nowrap">
                                           <div className="font-bold text-brand-primary">
                                             <RevenueDisplay
+                                              hideToggle
                                               amount={`${currencySymbol}${formatCurrency(
                                                 unit.rental_price,
                                               )}`}
@@ -1397,6 +1469,7 @@ export function Inventory() {
                                   </dt>
                                   <dd className="text-[var(--text-main)]">
                                     <RevenueDisplay
+                                      hideToggle
                                       amount={`${currencySymbol}${formatCurrency(
                                         unit.unit_cost_price,
                                       )}`}
@@ -1409,6 +1482,7 @@ export function Inventory() {
                                   </dt>
                                   <dd className="font-bold text-[var(--text-main)]">
                                     <RevenueDisplay
+                                      hideToggle
                                       amount={`${currencySymbol}${formatCurrency(
                                         unit.cost_price,
                                       )}`}
@@ -1421,6 +1495,7 @@ export function Inventory() {
                                   </dt>
                                   <dd className="flex items-center gap-1 font-bold text-brand-primary">
                                     <RevenueDisplay
+                                      hideToggle
                                       amount={`${currencySymbol}${formatCurrency(
                                         unit.rental_price,
                                       )}`}
@@ -1550,12 +1625,15 @@ export function Inventory() {
                   </label>
                   <select
                     value={newProduct.category_id}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setNewProduct({
                         ...newProduct,
                         category_id: e.target.value,
-                      })
-                    }
+                      });
+                      if (productTagsAuto) {
+                        setProductTags(categoryDefaultTags(e.target.value));
+                      }
+                    }}
                     className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl p-2.5 outline-none focus:border-brand-primary"
                   >
                     <option value="">Select Category...</option>
@@ -1604,6 +1682,28 @@ export function Inventory() {
                     Available for Public Rental
                   </span>
                 </label>
+                {newProduct.available_for_rental && (
+                  <div className="mt-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]/60">
+                    <p className="text-sm font-medium text-[var(--text-main)]">
+                      Marketplace tags{" "}
+                      {marketplaceTags.length > 0 && (
+                        <span className="text-rose-500">*</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-3">
+                      Customers filter the event marketplace by these. Pick
+                      every tag that fits this product.
+                    </p>
+                    <TagPicker
+                      tags={marketplaceTags}
+                      value={productTags}
+                      onChange={(ids) => {
+                        setProductTags(ids);
+                        setProductTagsAuto(false);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1994,6 +2094,21 @@ export function Inventory() {
                       </div>
                     </div>
 
+                    {(unit as any).product_unit_id && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openUnitReceipts(
+                            { name: newProduct.name },
+                            unit as any,
+                          )
+                        }
+                        className="self-start inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary/5 px-2.5 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-3.5 h-3.5" /> Purchase receipts
+                      </button>
+                    )}
+
                     {/* Delete button positioned at top right of the unit card */}
                     {units.length > 1 && (
                       <button
@@ -2121,6 +2236,19 @@ export function Inventory() {
                     </span>
                   </label>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Default marketplace tags (Optional)
+                  </label>
+                  <p className="text-xs text-[var(--text-muted)] mb-2">
+                    Pre-selected on new products in this category.
+                  </p>
+                  <TagPicker
+                    tags={marketplaceTags}
+                    value={newCategoryTags}
+                    onChange={setNewCategoryTags}
+                  />
+                </div>
                 <div className="flex justify-end pt-2 gap-2">
                   {editCategoryId && (
                     <button
@@ -2130,6 +2258,7 @@ export function Inventory() {
                         setNewCategoryName("");
                         setNewCategoryDesc("");
                         setNewCategoryIsActive(true);
+                        setNewCategoryTags([]);
                       }}
                       className="bg-[var(--bg-app)] text-[var(--text-muted)] px-5 py-2.5 rounded-xl font-medium hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] transition-colors whitespace-nowrap"
                     >
@@ -2667,6 +2796,16 @@ export function Inventory() {
             </div>
           </div>
         </>
+      )}
+      {receiptsForUnit && (
+        <AttachmentsModal
+          title="Purchase receipts"
+          subtitle={receiptsForUnit.label}
+          target="product_unit"
+          objectId={receiptsForUnit.unitId}
+          kinds={[{ value: "purchase_receipt", label: "Purchase receipt" }]}
+          onClose={() => setReceiptsForUnit(null)}
+        />
       )}
     </div>
   );

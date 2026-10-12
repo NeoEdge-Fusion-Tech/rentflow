@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Coins,
+  Tags,
   FileText,
   FileSpreadsheet,
   Truck,
@@ -66,6 +67,11 @@ const superAdminItems = [
   { icon: Calendar, label: "Global Bookings", path: "/superadmin/bookings" },
   { icon: FileText, label: "Global Invoices", path: "/superadmin/invoices" },
   { icon: Coins, label: "Currencies", path: "/superadmin/currencies" },
+  {
+    icon: Tags,
+    label: "Marketplace Tags",
+    path: "/superadmin/marketplace-tags",
+  },
   {
     icon: CreditCard,
     label: "Subscriptions",

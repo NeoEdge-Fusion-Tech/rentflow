@@ -14,7 +14,9 @@ from .serializers import (
     PublicBookingSettingsSerializer,
     PublicBookingRequestSerializer,
     GlobalMarketplaceProductSerializer,
+    PublicMarketplaceTagSerializer,
 )
+from inventory.models import MarketplaceTag
 
 
 def get_organization_by_identifier(identifier):
@@ -36,9 +38,16 @@ class GlobalMarketplaceProductListView(generics.ListAPIView):
             Product.objects.filter(
                 is_active=True, available_for_rental=True, organization__isnull=False
             )
-            .select_related("organization")
-            .prefetch_related("units")
+            .select_related("organization", "category")
+            .prefetch_related("units", "marketplace_tags")
         )
+
+
+class GlobalMarketplaceTagListView(generics.ListAPIView):
+    serializer_class = PublicMarketplaceTagSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+    queryset = MarketplaceTag.objects.filter(is_active=True)
 
 
 class PublicProductListView(generics.ListAPIView):

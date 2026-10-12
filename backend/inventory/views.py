@@ -13,6 +13,7 @@ from .models import (
     BookingItem,
     BookingItemUnit,
     OrganizationBookingSettings,
+    MarketplaceTag,
 )
 from .serializers import (
     ProductCategorySerializer,
@@ -23,6 +24,7 @@ from .serializers import (
     BookingItemUnitSerializer,
     ProductAvailabilitySerializer,
     OrganizationBookingSettingsSerializer,
+    MarketplaceTagSerializer,
 )
 from django.utils.dateparse import parse_datetime
 import datetime
@@ -68,6 +70,33 @@ class OrganizationBookingSettingsAPIView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MarketplaceTagViewSet(viewsets.ModelViewSet):
+    """Global marketplace tags. Any signed-in user can list active tags (to
+    tag products); only super admins can create, edit or delete them, and
+    they can pass ?all=true to include inactive tags."""
+
+    queryset = MarketplaceTag.objects.all()
+    serializer_class = MarketplaceTagSerializer
+    pagination_class = None
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAdminUser()]
+
+    def get_queryset(self):
+        qs = super().get_queryset().annotate(product_count=Count("products"))
+        show_all = (
+            self.request.user.is_staff
+            and self.request.query_params.get("all") == "true"
+        )
+        if self.action == "list" and not show_all:
+            qs = qs.filter(is_active=True)
+        return qs
 
 
 class ProductCategoryViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
@@ -125,7 +154,7 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         qs = super().get_queryset()
         if self.action == "list" and self.request.query_params.get("all") != "true":
             qs = qs.filter(is_active=True)
-        return qs.order_by("-created_at")
+        return qs.prefetch_related("marketplace_tags").order_by("-created_at")
 
     def perform_create(self, serializer):
         user = self.request.user

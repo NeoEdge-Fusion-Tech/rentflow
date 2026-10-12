@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "events",
     "notification",
     "feedback",
+    "attachments",
     "django_filters",
     "cloudinary_storage",
     "cloudinary",
@@ -152,8 +153,20 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-if ENV_MODE == "prod":
-    # AWS S3 Storage for Production
+# Where uploaded files live, for the whole app. Set STORAGE_BACKEND in .env to
+# "cloudinary", "s3" or "local". When unset, keep the historical default
+# (S3 in prod, Cloudinary elsewhere) so existing file URLs keep working.
+STORAGE_BACKEND = config(
+    "STORAGE_BACKEND", default="s3" if ENV_MODE == "prod" else "cloudinary"
+).lower()
+
+# Max size of a single receipt / invoice attachment. Vercel rejects request
+# bodies over ~4.5 MB, so stay under that when the API runs there.
+ATTACHMENT_MAX_BYTES = config("ATTACHMENT_MAX_BYTES", default=4 * 1024 * 1024, cast=int)
+
+_STATICFILES = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
+
+if STORAGE_BACKEND == "s3":
     AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
     AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
     AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", default="")
@@ -163,16 +176,16 @@ if ENV_MODE == "prod":
     AWS_DEFAULT_ACL = None
 
     STORAGES = {
-        "default": {
+        "default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
+        # Receipts are financial documents: serve them via expiring signed URLs.
+        "attachments": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {"querystring_auth": True, "querystring_expire": 600},
         },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
+        "staticfiles": _STATICFILES,
     }
 
-else:
-    # Cloudinary Storage for Dev
+elif STORAGE_BACKEND == "cloudinary":
     import cloudinary
 
     CLOUDINARY_STORAGE = {
@@ -185,10 +198,28 @@ else:
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        # "raw" resources accept PDFs as well as images (Cloudinary blocks PDF
+        # delivery from the image pipeline on many accounts).
+        "attachments": {
+            "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",
         },
+        "staticfiles": _STATICFILES,
     }
+
+elif STORAGE_BACKEND == "local":
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "attachments": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": _STATICFILES,
+    }
+
+else:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        f"Unknown STORAGE_BACKEND '{STORAGE_BACKEND}'. "
+        "Use 'cloudinary', 's3' or 'local'."
+    )
 
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = False

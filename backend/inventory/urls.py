@@ -10,10 +10,12 @@ from .views import (
     TenantStatsAPIView,
     ScanItemAPIView,
     OrganizationBookingSettingsAPIView,
+    MarketplaceTagViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"categories", ProductCategoryViewSet)
+router.register(r"marketplace-tags", MarketplaceTagViewSet)
 router.register(r"products", ProductViewSet)
 router.register(r"units", ProductUnitViewSet)
 router.register(r"bookings", BookingViewSet)

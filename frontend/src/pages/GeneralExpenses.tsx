@@ -11,10 +11,13 @@ import {
   TrendingDown,
   Calendar,
   Wallet,
+  Paperclip,
 } from "lucide-react";
 import { GeneralExpenseService } from "@/src/api";
 import { useNotification } from "../context/NotificationContext";
 import { cn } from "@/src/utils";
+import { ActionMenu } from "../components/ActionMenu";
+import { AttachmentsModal } from "../components/AttachmentsPanel";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function GeneralExpenses() {
@@ -92,6 +95,23 @@ export function GeneralExpenses() {
     });
     setIsModalOpen(true);
   };
+
+  const [receiptsFor, setReceiptsFor] = useState<any | null>(null);
+
+  const expenseActions = (exp: any) => [
+    { label: "Edit", icon: Edit2, onClick: () => openEditModal(exp) },
+    {
+      label: "Receipts & invoices",
+      icon: Paperclip,
+      onClick: () => setReceiptsFor(exp),
+    },
+    {
+      label: "Delete",
+      icon: Trash2,
+      danger: true,
+      onClick: () => handleDelete(exp.general_expense_id),
+    },
+  ];
 
   const openEditModal = (expense: any) => {
     setEditingId(expense.general_expense_id);
@@ -353,20 +373,7 @@ export function GeneralExpenses() {
                         />
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openEditModal(exp)}
-                            className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(exp.general_expense_id)}
-                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <ActionMenu items={expenseActions(exp)} />
                       </td>
                     </tr>
                   ))}
@@ -422,20 +429,7 @@ export function GeneralExpenses() {
                     <span className="text-xs text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
                     </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => openEditModal(exp)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(exp.general_expense_id)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <ActionMenu items={expenseActions(exp)} />
                   </div>
                 </div>
               ))}
@@ -652,6 +646,19 @@ export function GeneralExpenses() {
             </form>
           </div>
         </div>
+      )}
+      {receiptsFor && (
+        <AttachmentsModal
+          title="Receipts & invoices"
+          subtitle={receiptsFor.name}
+          target="general_expense"
+          objectId={receiptsFor.general_expense_id}
+          kinds={[
+            { value: "payment_receipt", label: "Payment receipt" },
+            { value: "client_invoice", label: "Invoice" },
+          ]}
+          onClose={() => setReceiptsFor(null)}
+        />
       )}
     </div>
   );

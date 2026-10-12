@@ -8,6 +8,37 @@ from django.conf import settings
 from users.models import Organization, Client
 
 
+class MarketplaceTag(models.Model):
+    """Platform-wide tag managed by super admins. Products carry these so the
+    event marketplace can filter on one shared vocabulary instead of every
+    organization's own inventory categories."""
+
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.CharField(max_length=255, blank=True, default="")
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name) or "tag"
+            slug = base_slug
+            counter = 1
+            while MarketplaceTag.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class ProductCategory(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="categories"
@@ -17,6 +48,10 @@ class ProductCategory(models.Model):
     slug = models.SlugField(max_length=100)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    # Pre-filled onto new products created in this category.
+    default_marketplace_tags = models.ManyToManyField(
+        MarketplaceTag, blank=True, related_name="default_for_categories"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -64,6 +99,9 @@ class Product(models.Model):
     total_quantity_damaged_condition = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     available_for_rental = models.BooleanField(default=False)
+    marketplace_tags = models.ManyToManyField(
+        MarketplaceTag, blank=True, related_name="products"
+    )
     total_cost_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00
     )

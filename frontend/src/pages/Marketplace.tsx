@@ -15,6 +15,20 @@ import { Logo } from "../components/Logo";
 import { useTheme } from "../context/ThemeContext";
 import axios from "axios";
 
+// Filter key for products that have no marketplace tag yet.
+const UNTAGGED = "__untagged";
+
+const tagLabel = (product: any) => {
+  const tags = (product.marketplace_tags || []) as { name: string }[];
+  if (tags.length === 0) return "";
+  return tags.length > 2
+    ? `${tags
+        .slice(0, 2)
+        .map((t) => t.name)
+        .join(" · ")} +${tags.length - 2}`
+    : tags.map((t) => t.name).join(" · ");
+};
+
 export function Marketplace() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -26,6 +40,9 @@ export function Marketplace() {
 
   // Sidebar Filter States
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [tags, setTags] = useState<
+    { id: number; name: string; slug: string }[]
+  >([]);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -39,8 +56,14 @@ export function Marketplace() {
     try {
       const baseUrl =
         import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-      const res = await axios.get(`${baseUrl}/public/marketplace/products/`);
+      const [res, tagRes] = await Promise.all([
+        axios.get(`${baseUrl}/public/marketplace/products/`),
+        axios
+          .get(`${baseUrl}/public/marketplace/tags/`)
+          .catch(() => ({ data: [] })),
+      ]);
       setProducts(res.data.results || res.data);
+      setTags(tagRes.data.results || tagRes.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -48,15 +71,34 @@ export function Marketplace() {
     }
   };
 
-  const allCategories = Array.from(
-    new Set(products.map((p) => p.category_name).filter(Boolean)),
-  );
+  const productTagSlugs = (p: any): string[] =>
+    (p.marketplace_tags || []).map((t: any) => t.slug);
+
+  // Global tags (in the order super admins set) that at least one listed
+  // product uses, plus "Other" for products not tagged yet.
+  const tagCounts = products.reduce<Record<string, number>>((acc, p) => {
+    const slugs = productTagSlugs(p);
+    if (slugs.length === 0) acc[UNTAGGED] = (acc[UNTAGGED] || 0) + 1;
+    slugs.forEach((s) => (acc[s] = (acc[s] || 0) + 1));
+    return acc;
+  }, {});
+  const filterOptions = [
+    ...tags
+      .filter((t) => tagCounts[t.slug])
+      .map((t) => ({ key: t.slug, label: t.name, count: tagCounts[t.slug] })),
+    ...(tagCounts[UNTAGGED]
+      ? [{ key: UNTAGGED, label: "Other", count: tagCounts[UNTAGGED] }]
+      : []),
+  ];
 
   const filteredProducts = products.filter((p) => {
     const term = searchTerm.toLowerCase();
     const matchesSearch =
       p.name.toLowerCase().includes(term) ||
       (p.category_name && p.category_name.toLowerCase().includes(term)) ||
+      (p.marketplace_tags || []).some((t: any) =>
+        t.name.toLowerCase().includes(term),
+      ) ||
       (p.organization_name &&
         p.organization_name.toLowerCase().includes(term)) ||
       (p.description && p.description.toLowerCase().includes(term)) ||
@@ -69,9 +111,12 @@ export function Marketplace() {
             (u.rental_price && String(u.rental_price).includes(term)),
         ));
 
+    const slugs = productTagSlugs(p);
     const matchesCategory =
       selectedCategories.length === 0 ||
-      selectedCategories.includes(p.category_name);
+      selectedCategories.some((key) =>
+        key === UNTAGGED ? slugs.length === 0 : slugs.includes(key),
+      );
 
     // Find min price among units
     const productMinPrice =
@@ -186,9 +231,9 @@ export function Marketplace() {
               Categories
             </h3>
             <div className="space-y-3">
-              {allCategories.map((cat) => (
+              {filterOptions.map(({ key: cat, label, count }) => (
                 <label
-                  key={cat as string}
+                  key={cat}
                   className="flex items-center gap-3 cursor-pointer group"
                 >
                   <div className="relative flex items-center">
@@ -213,12 +258,15 @@ export function Marketplace() {
                       <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  <span className="text-sm font-medium text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors">
-                    {cat as string}
+                  <span className="flex-1 text-sm font-medium text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors">
+                    {label}
+                  </span>
+                  <span className="text-xs text-[var(--text-muted)] tabular-nums">
+                    {count}
                   </span>
                 </label>
               ))}
-              {allCategories.length === 0 && (
+              {filterOptions.length === 0 && (
                 <p className="text-xs text-[var(--text-muted)]">
                   No categories found.
                 </p>
@@ -319,9 +367,9 @@ export function Marketplace() {
                     </div>
 
                     <div className="p-6 flex flex-col flex-1">
-                      {product.category_name && (
-                        <span className="text-xs font-bold text-brand-primary uppercase tracking-wider mb-2 block">
-                          {product.category_name}
+                      {tagLabel(product) && (
+                        <span className="text-xs font-bold text-brand-primary uppercase tracking-wider mb-2 block truncate">
+                          {tagLabel(product)}
                         </span>
                       )}
                       <h3 className="font-black text-[var(--text-main)] text-xl leading-tight mb-2 group-hover:text-brand-primary transition-colors">
@@ -386,10 +434,17 @@ export function Marketplace() {
             <div className="w-full md:w-1/2 flex flex-col flex-1 min-h-0">
               <div className="flex justify-between items-start gap-4 px-8 md:px-10 pt-8 md:pt-10 pb-6 border-b border-[var(--border-soft)] shrink-0">
                 <div>
-                  {selectedProduct.category_name && (
-                    <span className="text-xs font-bold text-brand-primary uppercase tracking-wider mb-2 block">
-                      {selectedProduct.category_name}
-                    </span>
+                  {(selectedProduct.marketplace_tags || []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {selectedProduct.marketplace_tags.map((t: any) => (
+                        <span
+                          key={t.id}
+                          className="text-[10px] font-bold text-brand-primary uppercase tracking-wider bg-brand-primary/10 px-2 py-0.5 rounded-full"
+                        >
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
                   )}
                   <h2 className="text-3xl font-black text-[var(--text-main)] leading-tight">
                     {selectedProduct.name}

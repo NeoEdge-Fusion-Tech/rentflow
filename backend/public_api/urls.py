@@ -4,6 +4,7 @@ from .views import (
     PublicBookingSettingsView,
     PublicBookingRequestView,
     GlobalMarketplaceProductListView,
+    GlobalMarketplaceTagListView,
 )
 from .client_auth import (
     ClientLoginView,
@@ -17,6 +18,11 @@ urlpatterns = [
         "marketplace/products/",
         GlobalMarketplaceProductListView.as_view(),
         name="global-marketplace-products",
+    ),
+    path(
+        "marketplace/tags/",
+        GlobalMarketplaceTagListView.as_view(),
+        name="global-marketplace-tags",
     ),
     path(
         "organizations/<str:identifier>/products/",

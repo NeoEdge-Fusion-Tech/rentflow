@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from inventory.models import Product, OrganizationBookingSettings, Booking, BookingItem
-from inventory.serializers import ProductUnitSerializer
+from inventory.models import MarketplaceTag
+from inventory.serializers import ProductUnitSerializer, MarketplaceTagBriefSerializer
 from inventory.booking_rules import normalize_days, schedule_errors
 
 
@@ -12,12 +13,14 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
     )
     organization_logo = serializers.SerializerMethodField()
     units = ProductUnitSerializer(many=True, read_only=True)
+    marketplace_tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             "product_id",
             "category_name",
+            "marketplace_tags",
             "name",
             "slug",
             "description",
@@ -29,6 +32,12 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
             "organization_name",
             "organization_logo",
         ]
+
+    def get_marketplace_tags(self, obj):
+        # Only active tags are shown publicly (uses the prefetched relation).
+        return MarketplaceTagBriefSerializer(
+            [t for t in obj.marketplace_tags.all() if t.is_active], many=True
+        ).data
 
     def get_organization_logo(self, obj):
         if obj.organization and obj.organization.company_logo:
@@ -159,3 +168,9 @@ class PublicBookingRequestSerializer(serializers.ModelSerializer):
             if errors:
                 raise serializers.ValidationError(errors)
         return attrs
+
+
+class PublicMarketplaceTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketplaceTag
+        fields = ["id", "name", "slug", "description"]

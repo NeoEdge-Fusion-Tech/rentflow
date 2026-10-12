@@ -3883,7 +3883,19 @@ export function Bookings() {
       {/* Success Overlay for Booking Creation */}
       {showSuccessOverlay && lastCreatedBooking && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-[var(--border-soft)] p-10 text-center space-y-8">
+          <div className="relative bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-300 border border-[var(--border-soft)] p-10 text-center space-y-8">
+            <button
+              onClick={() => {
+                setShowSuccessOverlay(false);
+                setLastCreatedBooking(null);
+                setIsAddingBooking(false);
+                resetForm();
+              }}
+              className="absolute top-5 right-5 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
             <div className="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto text-4xl animate-bounce">
               <CheckCircle2 className="w-12 h-12" />
             </div>
