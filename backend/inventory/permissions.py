@@ -19,22 +19,8 @@ class HasPaidSubscription(permissions.BasePermission):
         if not request.user.organization:
             return False
 
-        org = request.user.organization
-        plan_name = None
-        if hasattr(org, "subscription") and org.subscription:
-            plan_name = org.subscription.plan_name
-        elif org.subscription_plan:
-            plan_name = org.subscription_plan
+        from users.subscriptions import effective_plan
 
-        if plan_name:
-            from users.models import SubscriptionPlan
-
-            plan = SubscriptionPlan.objects.filter(
-                name__iexact=plan_name, is_active=True
-            ).first()
-            if plan:
-                return plan.has_inventory
-            free_plan = SubscriptionPlan.objects.filter(is_free=True).first()
-            if free_plan:
-                return free_plan.has_inventory
-        return False
+        # Expired/lapsed subscriptions fall back to the free plan's rules.
+        plan = effective_plan(request.user.organization)
+        return bool(plan and plan.has_inventory)

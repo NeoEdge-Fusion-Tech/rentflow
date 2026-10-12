@@ -39,6 +39,7 @@ import { OrganizationDetail } from "./pages/SuperAdmin/OrganizationDetail";
 import { Users as SuperAdminUsers } from "./pages/SuperAdmin/Users";
 import { Currencies } from "./pages/SuperAdmin/Currencies";
 import { MarketplaceTags } from "./pages/SuperAdmin/MarketplaceTags";
+import { SubscriptionBanner } from "./components/SubscriptionBanner";
 import { Dashboard as SuperAdminDashboard } from "./pages/SuperAdmin/Dashboard";
 import { Bookings as SuperAdminBookings } from "./pages/SuperAdmin/Bookings";
 import { Invoices as SuperAdminInvoices } from "./pages/SuperAdmin/Invoices";
@@ -416,6 +417,12 @@ function AppLayout() {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto p-4 pb-20 lg:p-8 flex flex-col">
           <div className="max-w-7xl mx-auto flex-1 w-full">
+            {currentUser && !currentUser.is_superuser && (
+              <SubscriptionBanner
+                state={currentUser.subscription_state}
+                canManage={currentUser.role !== "staff"}
+              />
+            )}
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/inventory" element={<Inventory />} />

@@ -54,6 +54,12 @@ class MeAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        # Sessions can outlive a renewal date; check on every app load too.
+        org = getattr(request.user, "organization", None)
+        if org is not None and not request.user.is_superuser:
+            from .subscriptions import expire_if_due
+
+            expire_if_due(org)
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 

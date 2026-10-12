@@ -267,11 +267,9 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             from users.models import SubscriptionPlan
 
-            plan_name = None
-            if hasattr(org, "subscription") and org.subscription:
-                plan_name = org.subscription.plan_name
-            elif org.subscription_plan:
-                plan_name = org.subscription_plan
+            from users.subscriptions import effective_plan_name
+
+            plan_name = effective_plan_name(org)
 
             plan = None
             if plan_name:
@@ -846,11 +844,20 @@ class PaystackWebhookView(APIView):
                     subscription, _ = Subscription.objects.get_or_create(
                         organization=org, defaults={"plan_name": plan_name}
                     )
+                    from users.models import SubscriptionPlan
+                    from users.subscriptions import next_period_end
+
+                    plan = SubscriptionPlan.objects.filter(
+                        name__iexact=plan_name
+                    ).first()
+                    # Renewing the same plan early extends the current period.
+                    if subscription.plan_name != plan_name:
+                        subscription.current_period_end = None
+                    subscription.current_period_end = next_period_end(
+                        subscription, plan
+                    )
                     subscription.plan_name = plan_name
                     subscription.status = "active"
-                    subscription.current_period_end = timezone.now() + timedelta(
-                        days=30
-                    )
                     subscription.save()
 
                     # Log the payment

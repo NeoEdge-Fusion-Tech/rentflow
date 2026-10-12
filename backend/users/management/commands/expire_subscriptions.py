@@ -1,36 +1,25 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from users.models import Subscription, Organization
 from loguru import logger
+
+from users.models import Subscription
+from users.subscriptions import expire_if_due
 
 
 class Command(BaseCommand):
-    help = "Downgrades expired subscriptions to the free plan"
+    help = "Marks overdue subscriptions as expired and moves their organizations to the free plan"
 
     def handle(self, *args, **kwargs):
-        now = timezone.now()
-        expired_subscriptions = Subscription.objects.filter(
-            current_period_end__lt=now, status="active"
-        )
+        overdue = Subscription.objects.filter(
+            current_period_end__lt=timezone.now(), status="active"
+        ).select_related("organization")
 
         count = 0
-        for sub in expired_subscriptions:
-            # Revert organization to free
-            org = sub.organization
-            org.subscription_plan = "free"
-            org.save(update_fields=["subscription_plan"])
+        for sub in overdue:
+            if expire_if_due(sub.organization):
+                count += 1
+                logger.info(
+                    f"Subscription for {sub.organization.name} expired; moved to free plan."
+                )
 
-            # Update subscription status
-            sub.status = "expired"
-            sub.save(update_fields=["status"])
-
-            count += 1
-            logger.info(
-                f"Downgraded organization {org.name} to free plan (subscription expired)."
-            )
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Successfully downgraded {count} expired subscriptions."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Expired {count} overdue subscriptions."))

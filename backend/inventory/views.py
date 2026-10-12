@@ -345,11 +345,9 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             from rest_framework.exceptions import PermissionDenied
             from users.models import SubscriptionPlan
 
-            plan_name = None
-            if hasattr(org, "subscription") and org.subscription:
-                plan_name = org.subscription.plan_name
-            elif org.subscription_plan:
-                plan_name = org.subscription_plan
+            from users.subscriptions import effective_plan_name
+
+            plan_name = effective_plan_name(org)
 
             plan = None
             if plan_name:

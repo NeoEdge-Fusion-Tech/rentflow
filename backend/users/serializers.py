@@ -28,6 +28,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             raise serializers.ValidationError(
                 {"email": "Please verify your email address before logging in."}
             )
+        # Check the subscription on every login: record an overdue renewal
+        # as expired and tell the client so it can prompt for renewal.
+        org = getattr(self.user, "organization", None)
+        if org is not None and not self.user.is_superuser:
+            from .subscriptions import expire_if_due, subscription_state
+
+            expire_if_due(org)
+            data["subscription"] = subscription_state(org)
         return data
 
 
@@ -266,6 +274,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     has_booking = serializers.SerializerMethodField()
     has_invoice = serializers.SerializerMethodField()
     subscription_usage = serializers.SerializerMethodField()
+    subscription_state = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -285,6 +294,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "has_booking",
             "has_invoice",
             "subscription_usage",
+            "subscription_state",
             "is_active",
             "is_superuser",
         ]
@@ -342,6 +352,14 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
         return {}
 
+    def get_subscription_state(self, obj):
+        org = getattr(obj, "organization", None)
+        if org is None:
+            return None
+        from .subscriptions import subscription_state
+
+        return subscription_state(org)
+
     def get_currency_symbol(self, obj):
         if (
             hasattr(obj, "organization")
@@ -354,11 +372,9 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     def get_has_booking(self, obj):
         if hasattr(obj, "organization") and obj.organization:
             org = obj.organization
-            plan_name = None
-            if hasattr(org, "subscription") and org.subscription:
-                plan_name = org.subscription.plan_name
-            elif org.subscription_plan:
-                plan_name = org.subscription_plan
+            from users.subscriptions import effective_plan_name
+
+            plan_name = effective_plan_name(org)
 
             if plan_name:
                 plan = SubscriptionPlan.objects.filter(
@@ -376,11 +392,9 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     def get_has_invoice(self, obj):
         if hasattr(obj, "organization") and obj.organization:
             org = obj.organization
-            plan_name = None
-            if hasattr(org, "subscription") and org.subscription:
-                plan_name = org.subscription.plan_name
-            elif org.subscription_plan:
-                plan_name = org.subscription_plan
+            from users.subscriptions import effective_plan_name
+
+            plan_name = effective_plan_name(org)
 
             if plan_name:
                 plan = SubscriptionPlan.objects.filter(
@@ -404,11 +418,9 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         }
         if hasattr(obj, "organization") and obj.organization:
             org = obj.organization
-            plan_name = None
-            if hasattr(org, "subscription") and org.subscription:
-                plan_name = org.subscription.plan_name
-            elif org.subscription_plan:
-                plan_name = org.subscription_plan
+            from users.subscriptions import effective_plan_name
+
+            plan_name = effective_plan_name(org)
 
             plan = None
             if plan_name:
