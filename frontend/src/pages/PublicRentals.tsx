@@ -350,7 +350,7 @@ export function PublicRentals() {
                             </span>
                           </p>
                         </div>
-                        <button className="px-4 py-2 rounded-xl bg-gray-100 text-brand-primary font-bold text-sm group-hover:bg-brand-primary group-hover:text-white transition-colors">
+                        <button className="px-4 py-2 rounded-xl bg-gray-100 text-brand-primary font-bold text-sm group-hover:bg-brand-primary group-hover:text-[var(--text-on-brand)] transition-colors">
                           View Units
                         </button>
                       </div>

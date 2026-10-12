@@ -125,6 +125,16 @@ export function Marketplace() {
     fetchProducts();
   }, []);
 
+  // Keep the page behind the mobile filter sheet / product sheet still.
+  useEffect(() => {
+    const locked = showMobileFilters || selectedProduct !== null;
+    const prev = document.body.style.overflow;
+    if (locked) document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showMobileFilters, selectedProduct]);
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -286,15 +296,19 @@ export function Marketplace() {
     <div className="min-h-screen bg-[var(--bg-app)] flex flex-col font-sans transition-colors duration-300">
       {/* Header */}
       <header className="bg-[var(--bg-surface)] shadow-sm border-b border-[var(--border-soft)] sticky top-0 z-20 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
           <div
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0"
             onClick={() => navigate("/")}
             title="Return to Home"
           >
-            <Logo className="h-10" showText={false} dark={theme === "dark"} />
-            <div>
-              <h1 className="text-xl font-black text-[var(--text-main)] tracking-tight leading-none group-hover:text-brand-primary transition-colors flex items-center gap-1.5">
+            <Logo
+              className="h-8 sm:h-10 shrink-0"
+              showText={false}
+              dark={theme === "dark"}
+            />
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-black text-[var(--text-main)] tracking-tight leading-none group-hover:text-brand-primary transition-colors flex items-center gap-1.5">
                 NeoOps{" "}
                 <span className="text-[var(--text-muted)] font-bold">
                   Marketplace
@@ -320,6 +334,17 @@ export function Marketplace() {
                 className="w-full pl-12 pr-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl text-sm font-medium text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:bg-[var(--bg-surface)] focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all shadow-inner"
               />
             </div>
+          </div>
+
+          {/* Compact actions below lg: theme + sign in */}
+          <div className="flex lg:hidden items-center gap-1.5 shrink-0">
+            <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />
+            <button
+              onClick={() => navigate("/login")}
+              className="px-3 py-2 text-sm font-bold bg-brand-primary text-white rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"
+            >
+              Sign In
+            </button>
           </div>
 
           <div className="hidden lg:flex items-center gap-3 shrink-0">
@@ -359,25 +384,52 @@ export function Marketplace() {
           />
         </div>
         <button
-          onClick={() => setShowMobileFilters(!showMobileFilters)}
-          className="w-12 h-12 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl flex items-center justify-center text-[var(--text-muted)] active:scale-95 transition-transform"
+          onClick={() => setShowMobileFilters(true)}
+          aria-label="Filters"
+          className={`relative w-12 h-12 shrink-0 border rounded-2xl flex items-center justify-center active:scale-95 transition-transform ${
+            activeFilterCount > 0
+              ? "bg-brand-primary/10 border-brand-primary text-brand-primary"
+              : "bg-[var(--bg-app)] border-[var(--border-soft)] text-[var(--text-muted)]"
+          }`}
         >
           <Filter className="w-5 h-5" />
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-brand-primary text-white text-[10px] font-bold flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
       </div>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex flex-col md:flex-row gap-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 w-full flex flex-col md:flex-row gap-6 lg:gap-8">
+        {/* Mobile: filters open as a bottom sheet over a backdrop */}
+        {showMobileFilters && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+            onClick={() => setShowMobileFilters(false)}
+            aria-hidden="true"
+          />
+        )}
         {/* Sidebar */}
         <aside
           className={`${
-            showMobileFilters ? "block" : "hidden"
-          } md:block w-full md:w-64 shrink-0 space-y-8 bg-[var(--bg-surface)] p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm h-fit md:sticky md:top-28`}
+            showMobileFilters
+              ? "fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl rounded-b-none animate-in slide-in-from-bottom duration-200"
+              : "hidden"
+          } md:block md:z-auto md:max-h-[calc(100vh-8rem)] md:overflow-y-auto md:rounded-3xl md:animate-none md:sticky md:top-28 w-full md:w-64 shrink-0 space-y-8 bg-[var(--bg-surface)] p-6 pb-0 md:pb-6 border border-[var(--border-soft)] shadow-sm h-fit`}
         >
           <div className="flex items-center justify-between pb-4 border-b border-[var(--border-soft)]">
             <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2">
               <Filter className="w-4 h-4 text-brand-primary" />
               Filters
             </h3>
+            <button
+              onClick={() => setShowMobileFilters(false)}
+              aria-label="Close filters"
+              className="md:hidden order-last ml-2 p-1.5 rounded-full text-[var(--text-muted)] hover:bg-[var(--bg-app)]"
+            >
+              <X className="w-5 h-5" />
+            </button>
             {activeFilterCount > 0 && (
               <button
                 onClick={clearFilters}
@@ -557,11 +609,29 @@ export function Marketplace() {
               </p>
             )}
           </div>
+
+          {/* Mobile sheet footer */}
+          <div className="md:hidden sticky bottom-0 -mx-6 px-6 py-4 bg-[var(--bg-surface)] border-t border-[var(--border-soft)] flex gap-3">
+            <button
+              onClick={clearFilters}
+              disabled={activeFilterCount === 0}
+              className="flex-1 py-3 rounded-xl border border-[var(--border-soft)] text-sm font-bold text-[var(--text-main)] disabled:opacity-40"
+            >
+              Clear
+            </button>
+            <button
+              onClick={() => setShowMobileFilters(false)}
+              className="flex-[2] py-3 rounded-xl bg-brand-primary text-white text-sm font-bold"
+            >
+              Show {filteredProducts.length} result
+              {filteredProducts.length === 1 ? "" : "s"}
+            </button>
+          </div>
         </aside>
 
-        <div className="flex-1">
-          <div className="mb-8">
-            <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">
+        <div className="flex-1 min-w-0">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
               Explore Rentals
             </h2>
             <p className="text-[var(--text-muted)] mt-2 font-medium">
@@ -577,7 +647,7 @@ export function Marketplace() {
               </p>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-24 bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] shadow-sm transition-colors duration-300">
+            <div className="text-center py-16 sm:py-24 px-6 bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] shadow-sm transition-colors duration-300">
               <div className="w-20 h-20 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Search className="w-10 h-10 text-[var(--text-muted)] opacity-50" />
               </div>
@@ -590,7 +660,7 @@ export function Marketplace() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {filteredProducts.map((product) => {
                 const price = priceOf(product);
                 const location = [
@@ -664,7 +734,7 @@ export function Marketplace() {
                             </p>
                           )}
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-[var(--bg-app)] flex items-center justify-center group-hover:bg-brand-primary group-hover:text-white transition-colors text-[var(--text-muted)] border border-[var(--border-soft)] group-hover:border-transparent">
+                        <div className="w-10 h-10 rounded-full bg-[var(--bg-app)] flex items-center justify-center group-hover:bg-brand-primary group-hover:text-[var(--text-on-brand)] transition-colors text-[var(--text-muted)] border border-[var(--border-soft)] group-hover:border-transparent">
                           <ArrowRightIcon className="w-5 h-5" />
                         </div>
                       </div>
@@ -679,13 +749,16 @@ export function Marketplace() {
 
       {/* Product Details Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedProduct(null)}
+        >
           <div
-            className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row shadow-2xl animate-in zoom-in-95 duration-200 border border-[var(--border-soft)]"
+            className="bg-[var(--bg-surface)] rounded-t-3xl sm:rounded-3xl w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col md:flex-row shadow-2xl animate-in zoom-in-95 duration-200 border border-[var(--border-soft)]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image Side */}
-            <div className="w-full md:w-1/2 h-64 md:h-auto bg-[var(--bg-app)] relative shrink-0">
+            <div className="w-full md:w-1/2 h-44 sm:h-64 md:h-auto bg-[var(--bg-app)] relative shrink-0">
               <img
                 src={`https://picsum.photos/seed/${selectedProduct.product_id}/800/800`}
                 alt={selectedProduct.name}
@@ -697,7 +770,8 @@ export function Marketplace() {
               />
               <button
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 left-4 md:hidden w-10 h-10 bg-[var(--bg-surface)]/50 backdrop-blur-md rounded-full flex items-center justify-center text-[var(--text-main)] border border-[var(--border-soft)]"
+                aria-label="Close"
+                className="absolute top-4 right-4 md:hidden w-10 h-10 bg-[var(--bg-surface)]/80 backdrop-blur-md rounded-full flex items-center justify-center text-[var(--text-main)] border border-[var(--border-soft)]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -705,7 +779,7 @@ export function Marketplace() {
 
             {/* Content Side */}
             <div className="w-full md:w-1/2 flex flex-col flex-1 min-h-0">
-              <div className="flex justify-between items-start gap-4 px-8 md:px-10 pt-8 md:pt-10 pb-6 border-b border-[var(--border-soft)] shrink-0">
+              <div className="flex justify-between items-start gap-4 px-5 sm:px-8 md:px-10 pt-5 sm:pt-8 md:pt-10 pb-4 sm:pb-6 border-b border-[var(--border-soft)] shrink-0">
                 <div>
                   {(selectedProduct.marketplace_tags || []).length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -719,7 +793,7 @@ export function Marketplace() {
                       ))}
                     </div>
                   )}
-                  <h2 className="text-3xl font-black text-[var(--text-main)] leading-tight">
+                  <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)] leading-tight break-words">
                     {selectedProduct.name}
                   </h2>
                 </div>
@@ -731,7 +805,7 @@ export function Marketplace() {
                 </button>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto px-8 md:px-10 py-6">
+              <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-8 md:px-10 py-5 sm:py-6">
                 <div className="prose prose-sm text-[var(--text-muted)] mb-8">
                   <p>
                     {selectedProduct.description ||
