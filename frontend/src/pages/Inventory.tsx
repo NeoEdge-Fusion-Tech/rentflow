@@ -20,6 +20,8 @@ import {
   QrCode,
   Download,
   Paperclip,
+  Store,
+  Tags,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
@@ -187,11 +189,54 @@ export function Inventory() {
     link.click();
   };
 
+  // Quick editor for a product's marketplace listing + tags.
+  const [tagEditor, setTagEditor] = useState<{
+    product: any;
+    tags: number[];
+    listed: boolean;
+  } | null>(null);
+  const [savingTags, setSavingTags] = useState(false);
+
+  const openTagEditor = (product: any) =>
+    setTagEditor({
+      product,
+      tags: product.marketplace_tags || [],
+      listed: Boolean(product.available_for_rental),
+    });
+
+  const saveTagEditor = async () => {
+    if (!tagEditor) return;
+    try {
+      setSavingTags(true);
+      await ProductService.patch(tagEditor.product.product_id, {
+        marketplace_tags: tagEditor.tags,
+        available_for_rental: tagEditor.listed,
+      });
+      showNotification("Marketplace listing updated", "success");
+      setTagEditor(null);
+      fetchProducts();
+    } catch (e: any) {
+      console.error(e);
+      showNotification(
+        e.response?.data?.marketplace_tags?.[0] ||
+          "Failed to update marketplace tags.",
+        "error",
+      );
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
   const productActions = (product: any) => [
     {
       label: "Edit product",
       icon: Edit2,
       onClick: () => handleEditProductClick(product),
+    },
+    {
+      label: "Marketplace tags",
+      icon: Tags,
+      onClick: () => openTagEditor(product),
     },
     {
       label: "Delete product",
@@ -1011,6 +1056,10 @@ export function Inventory() {
                                 <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)] truncate">
                                   {product.name}
                                 </p>
+                                <MarketplaceTagLine
+                                  product={product}
+                                  onEdit={() => openTagEditor(product)}
+                                />
                               </div>
                             </div>
                           </td>
@@ -1307,6 +1356,10 @@ export function Inventory() {
                               <Tag className="w-3 h-3" />
                               {product.category_name || "Uncategorized"}
                             </p>
+                            <MarketplaceTagLine
+                              product={product}
+                              onEdit={() => openTagEditor(product)}
+                            />
                           </div>
                         </div>
                         <div className="flex items-start gap-1 shrink-0">
@@ -1682,28 +1735,34 @@ export function Inventory() {
                     Available for Public Rental
                   </span>
                 </label>
-                {newProduct.available_for_rental && (
-                  <div className="mt-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]/60">
-                    <p className="text-sm font-medium text-[var(--text-main)]">
-                      Marketplace tags{" "}
-                      {marketplaceTags.length > 0 && (
-                        <span className="text-rose-500">*</span>
-                      )}
+                <div className="mt-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]/60">
+                  <p className="text-sm font-medium text-[var(--text-main)] flex items-center gap-1.5">
+                    <Tags className="w-4 h-4 text-brand-primary" />
+                    Marketplace tags
+                    {needsMarketplaceTag && (
+                      <span className="text-rose-500">*</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-3">
+                    {newProduct.available_for_rental
+                      ? "Customers filter the event marketplace by these. Pick every tag that fits this product."
+                      : "Used when this product is listed on the event marketplace (tick “Available for Public Rental”)."}
+                  </p>
+                  <TagPicker
+                    tags={marketplaceTags}
+                    value={productTags}
+                    onChange={(ids) => {
+                      setProductTags(ids);
+                      setProductTagsAuto(false);
+                    }}
+                  />
+                  {needsMarketplaceTag && productTags.length === 0 && (
+                    <p className="text-xs text-rose-500 font-medium mt-2">
+                      Pick at least one tag to list this product on the
+                      marketplace.
                     </p>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-3">
-                      Customers filter the event marketplace by these. Pick
-                      every tag that fits this product.
-                    </p>
-                    <TagPicker
-                      tags={marketplaceTags}
-                      value={productTags}
-                      onChange={(ids) => {
-                        setProductTags(ids);
-                        setProductTagsAuto(false);
-                      }}
-                    />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div>
@@ -2807,6 +2866,87 @@ export function Inventory() {
           onClose={() => setReceiptsForUnit(null)}
         />
       )}
+      {tagEditor && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between gap-3 p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-[var(--text-main)]">
+                  Marketplace tags
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] truncate">
+                  {tagEditor.product.name}
+                </p>
+              </div>
+              <button
+                onClick={() => setTagEditor(null)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+              <label className="flex items-start gap-3 p-3 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={tagEditor.listed}
+                  onChange={(e) =>
+                    setTagEditor({ ...tagEditor, listed: e.target.checked })
+                  }
+                  className="w-5 h-5 mt-0.5 accent-brand-primary cursor-pointer"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-[var(--text-main)]">
+                    List on the event marketplace
+                  </span>
+                  <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                    Same as “Available for Public Rental”. Customers can find
+                    and request this product.
+                  </span>
+                </span>
+              </label>
+              <div>
+                <p className="text-sm font-medium text-[var(--text-main)] mb-1">
+                  Tags{" "}
+                  {tagEditor.listed && marketplaceTags.length > 0 && (
+                    <span className="text-rose-500">*</span>
+                  )}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mb-3">
+                  Pick every tag that describes this product. These are the
+                  filters customers use on the marketplace.
+                </p>
+                <TagPicker
+                  tags={marketplaceTags}
+                  value={tagEditor.tags}
+                  onChange={(ids) => setTagEditor({ ...tagEditor, tags: ids })}
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-[var(--border-soft)] flex justify-end gap-3 shrink-0">
+              <button
+                onClick={() => setTagEditor(null)}
+                className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveTagEditor}
+                disabled={
+                  savingTags ||
+                  (tagEditor.listed &&
+                    marketplaceTags.length > 0 &&
+                    tagEditor.tags.length === 0)
+                }
+                className="px-5 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingTags ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2860,5 +3000,66 @@ function UnitQtyBreakdown({ unit }: { unit: any }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// Marketplace status under a product's name: its tags, or a nudge to add
+// some when it's listed without any. Nothing for unlisted, untagged items.
+function MarketplaceTagLine({
+  product,
+  onEdit,
+}: {
+  product: any;
+  onEdit: () => void;
+}) {
+  const tags: { id: number; name: string }[] =
+    product.marketplace_tag_details || [];
+  if (tags.length === 0) {
+    if (!product.available_for_rental) return null;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+        className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full hover:bg-amber-500/20 transition-colors"
+      >
+        <Tags className="w-3 h-3" /> Add marketplace tags
+      </button>
+    );
+  }
+  const shown = tags.slice(0, 2);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onEdit();
+      }}
+      title={`${
+        product.available_for_rental
+          ? "Listed on marketplace"
+          : "Not listed on marketplace"
+      } · ${tags.map((t) => t.name).join(", ")}`}
+      className="mt-1 flex flex-wrap items-center gap-1 text-left"
+    >
+      {product.available_for_rental && (
+        <Store className="w-3 h-3 text-brand-primary shrink-0" />
+      )}
+      {shown.map((t) => (
+        <span
+          key={t.id}
+          className="text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded-full"
+        >
+          {t.name}
+        </span>
+      ))}
+      {tags.length > shown.length && (
+        <span className="text-[10px] font-semibold text-[var(--text-muted)]">
+          +{tags.length - shown.length}
+        </span>
+      )}
+    </button>
   );
 }

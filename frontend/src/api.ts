@@ -161,6 +161,8 @@ export const ProductService = {
   create: (data: any) => api.post("/inventory/products/", data),
   update: (id: number, data: any) =>
     api.put(`/inventory/products/${id}/`, data),
+  patch: (id: number, data: any) =>
+    api.patch(`/inventory/products/${id}/`, data),
   delete: (id: number) => api.delete(`/inventory/products/${id}/`),
   getAvailability: (
     id: string | number,
