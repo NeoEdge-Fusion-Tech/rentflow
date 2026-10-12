@@ -805,7 +805,11 @@ export function Settings() {
                     onChange={(e) =>
                       setOrg({ ...org, country: e.target.value })
                     }
-                    placeholder="e.g. Nigeria"
+                    placeholder={
+                      org?.detected_location?.country
+                        ? `${org.detected_location.country} (from address)`
+                        : "e.g. Nigeria"
+                    }
                     className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary"
                   />
                 </div>
@@ -817,12 +821,17 @@ export function Settings() {
                     type="text"
                     value={org?.city || ""}
                     onChange={(e) => setOrg({ ...org, city: e.target.value })}
-                    placeholder="e.g. Lagos"
+                    placeholder={
+                      org?.detected_location?.city
+                        ? `${org.detected_location.city} (from address)`
+                        : "e.g. Lagos"
+                    }
                     className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary"
                   />
                 </div>
-                <p className="sm:col-span-2 text-xs text-[var(--text-muted)] -mt-2">
-                  Customers can filter the event marketplace by location.
+                <p className="sm:col-span-2 text-xs text-[var(--text-muted)]">
+                  Customers filter the event marketplace by location. If left
+                  blank, it's read from your company address.
                 </p>
               </div>
 

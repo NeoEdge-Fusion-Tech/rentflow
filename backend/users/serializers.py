@@ -128,6 +128,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     total_bookings = serializers.SerializerMethodField()
     total_invoices = serializers.SerializerMethodField()
     expenses = serializers.SerializerMethodField()
+    detected_location = serializers.SerializerMethodField()
 
     company_logo = serializers.SerializerMethodField()
     company_logo_upload = serializers.ImageField(
@@ -144,6 +145,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "address",
             "country",
             "city",
+            "detected_location",
             "phone_number",
             "email",
             "tax_id",
@@ -182,6 +184,12 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             return url
         except Exception:
             return None
+
+    def get_detected_location(self, obj):
+        from .location import parse_location
+
+        city, country = parse_location(obj.address)
+        return {"city": city, "country": country}
 
     def get_revenue(self, obj):
         return getattr(obj, "revenue", 0.00)

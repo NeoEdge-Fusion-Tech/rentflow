@@ -15,12 +15,8 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
     units = ProductUnitSerializer(many=True, read_only=True)
     marketplace_tags = serializers.SerializerMethodField()
 
-    organization_country = serializers.CharField(
-        source="organization.country", read_only=True
-    )
-    organization_city = serializers.CharField(
-        source="organization.city", read_only=True
-    )
+    organization_country = serializers.SerializerMethodField()
+    organization_city = serializers.SerializerMethodField()
     currency_code = serializers.SerializerMethodField()
     currency_symbol = serializers.SerializerMethodField()
     min_rental_price = serializers.SerializerMethodField()
@@ -49,6 +45,12 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
             "min_rental_price",
             "quantity_available",
         ]
+
+    def get_organization_city(self, obj):
+        return obj.organization.location[0] if obj.organization else ""
+
+    def get_organization_country(self, obj):
+        return obj.organization.location[1] if obj.organization else ""
 
     def get_currency_code(self, obj):
         cur = obj.organization.currency if obj.organization else None

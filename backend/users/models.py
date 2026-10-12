@@ -71,6 +71,21 @@ class Organization(models.Model):
         related_name="updated_organizations",
     )
 
+    @property
+    def location(self):
+        """(city, country): the explicit fields if set, otherwise whatever
+        can be read from the free-text address."""
+        from .location import parse_location
+
+        city, country = self.city or "", self.country or ""
+        if not (city and country):
+            guess_city, guess_country = parse_location(self.address)
+            country = country or guess_country
+            # Only borrow the guessed city if it's in the same country.
+            if not city and guess_country == country:
+                city = guess_city
+        return city, country
+
 
 class OrganizationAccountDetails(models.Model):
     organization = models.OneToOneField(

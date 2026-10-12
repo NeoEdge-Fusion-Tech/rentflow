@@ -8,6 +8,7 @@ import {
   Filter,
   Check,
   ShoppingBag,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -118,6 +119,7 @@ export function Marketplace() {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -160,16 +162,35 @@ export function Marketplace() {
     slugs.forEach((s) => (acc[s] = (acc[s] || 0) + 1));
     return acc;
   }, {});
+  // Busiest tags first (super-admin order breaks ties); "Other" last.
   const filterOptions = [
-    ...tags.map((t) => ({
-      key: t.slug,
-      label: t.name,
-      count: tagCounts[t.slug] || 0,
-    })),
+    ...tags
+      .map((t, order) => ({
+        key: t.slug,
+        label: t.name,
+        count: tagCounts[t.slug] || 0,
+        order,
+      }))
+      .sort((a, b) => b.count - a.count || a.order - b.order),
     ...(tagCounts[UNTAGGED]
-      ? [{ key: UNTAGGED, label: "Other", count: tagCounts[UNTAGGED] }]
+      ? [
+          {
+            key: UNTAGGED,
+            label: "Other",
+            count: tagCounts[UNTAGGED],
+            order: 0,
+          },
+        ]
       : []),
   ];
+  const TAGS_COLLAPSED = 5;
+  // Collapsed: the top 5, plus any selected tag so a choice never hides.
+  const visibleTagOptions = showAllTags
+    ? filterOptions
+    : filterOptions.filter(
+        (o, i) => i < TAGS_COLLAPSED || selectedCategories.includes(o.key),
+      );
+  const hiddenTagCount = filterOptions.length - visibleTagOptions.length;
 
   const currencyCounts = countBy(products.map((p) => p.currency_code));
   const currencySymbols: Record<string, string> = {};
@@ -352,7 +373,7 @@ export function Marketplace() {
             showMobileFilters ? "block" : "hidden"
           } md:block w-full md:w-64 shrink-0 space-y-8 bg-[var(--bg-surface)] p-6 rounded-3xl border border-[var(--border-soft)] shadow-sm h-fit md:sticky md:top-28`}
         >
-          <div className="flex items-center justify-between -mb-4">
+          <div className="flex items-center justify-between pb-4 border-b border-[var(--border-soft)]">
             <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2">
               <Filter className="w-4 h-4 text-brand-primary" />
               Filters
@@ -372,7 +393,7 @@ export function Marketplace() {
               Categories
             </h4>
             <div className="space-y-3">
-              {filterOptions.map(({ key, label, count }) => (
+              {visibleTagOptions.map(({ key, label, count }) => (
                 <React.Fragment key={key}>
                   <FilterCheckbox
                     label={label}
@@ -391,6 +412,24 @@ export function Marketplace() {
                 <p className="text-xs text-[var(--text-muted)]">
                   No categories yet.
                 </p>
+              )}
+              {filterOptions.length > TAGS_COLLAPSED && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllTags((v) => !v)}
+                  className="flex items-center gap-1 text-xs font-bold text-brand-primary hover:underline pt-1"
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      showAllTags ? "rotate-180" : ""
+                    }`}
+                  />
+                  {showAllTags
+                    ? "Show less"
+                    : `Show all categories${
+                        hiddenTagCount > 0 ? ` (${hiddenTagCount} more)` : ""
+                      }`}
+                </button>
               )}
             </div>
           </div>
