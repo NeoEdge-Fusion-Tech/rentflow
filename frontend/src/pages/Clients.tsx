@@ -21,6 +21,7 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
+import { ActionMenu } from "../components/ActionMenu";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { ClientService } from "@/src/api";
@@ -86,6 +87,21 @@ export function Clients() {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  const clientActions = (client: any) => [
+    {
+      label: "View profile",
+      icon: ExternalLink,
+      onClick: () => setViewingClient(client),
+    },
+    { label: "Edit", icon: Edit2, onClick: () => openEditModal(client) },
+    {
+      label: "Delete",
+      icon: Trash2,
+      danger: true,
+      onClick: () => handleDelete(client.client_id),
+    },
+  ];
 
   const openAddModal = () => {
     setEditingClient(null);
@@ -391,21 +407,7 @@ export function Clients() {
                   >
                     {client.status}
                   </span>
-
-                  <button
-                    onClick={() => openEditModal(client)}
-                    className="p-1 text-[var(--text-muted)] hover:text-brand-primary"
-                    title="Edit"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(client.client_id)}
-                    className="p-1 text-[var(--text-muted)] hover:text-rose-500"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <ActionMenu items={clientActions(client)} />
                 </div>
               </div>
 
@@ -563,29 +565,7 @@ export function Clients() {
                       {client.bookings_count || 0}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setViewingClient(client)}
-                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openEditModal(client)}
-                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                          title="Edit Client"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(client.client_id)}
-                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                          title="Delete Client"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <ActionMenu items={clientActions(client)} />
                     </td>
                   </tr>
                 ))}
@@ -675,29 +655,7 @@ export function Clients() {
                     </span>
                     Bookings
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setViewingClient(client)}
-                      className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                      title="View Details"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => openEditModal(client)}
-                      className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                      title="Edit Client"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(client.client_id)}
-                      className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                      title="Delete Client"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <ActionMenu items={clientActions(client)} />
                 </div>
               </div>
             ))}

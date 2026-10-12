@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Save, X, Eye, GripVertical } from "lucide-react";
 import { FeedbackService } from "../api";
 import { FeedbackForm, FeedbackQuestion } from "../types";
 import { useNotification } from "../context/NotificationContext";
+import { ActionMenu } from "../components/ActionMenu";
 
 export function FeedbackForms() {
   const { showNotification, showConfirm } = useNotification();
@@ -364,23 +365,25 @@ export function FeedbackForms() {
               <span className="text-xs font-medium bg-[var(--bg-app)] px-2 py-1 rounded-md text-[var(--text-muted)]">
                 {form.questions?.length || 0} questions
               </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setCurrentForm(form);
-                    setIsEditing(true);
-                  }}
-                  className="p-1.5 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDeleteForm(form.id)}
-                  className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              <ActionMenu
+                label="Form actions"
+                items={[
+                  {
+                    label: "Edit",
+                    icon: Edit2,
+                    onClick: () => {
+                      setCurrentForm(form);
+                      setIsEditing(true);
+                    },
+                  },
+                  {
+                    label: "Delete",
+                    icon: Trash2,
+                    danger: true,
+                    onClick: () => handleDeleteForm(form.id),
+                  },
+                ]}
+              />
             </div>
           </div>
         ))}

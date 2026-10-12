@@ -20,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/src/utils";
+import { ActionMenu } from "../components/ActionMenu";
 import { useNotification } from "../context/NotificationContext";
 import { VendorService } from "@/src/api";
 
@@ -66,6 +67,21 @@ export function Vendors() {
   useEffect(() => {
     fetchVendors();
   }, []);
+
+  const vendorActions = (vendor: any) => [
+    {
+      label: "View profile",
+      icon: ExternalLink,
+      onClick: () => setViewingVendor(vendor),
+    },
+    { label: "Edit", icon: Edit2, onClick: () => openEditModal(vendor) },
+    {
+      label: "Delete",
+      icon: Trash2,
+      danger: true,
+      onClick: () => handleDelete(vendor.vendor_id),
+    },
+  ];
 
   const openAddModal = () => {
     setEditingVendor(null);
@@ -300,21 +316,7 @@ export function Vendors() {
                   >
                     {vendor.status}
                   </span>
-
-                  <button
-                    onClick={() => openEditModal(vendor)}
-                    className="p-1 text-[var(--text-muted)] hover:text-brand-primary"
-                    title="Edit"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(vendor.vendor_id)}
-                    className="p-1 text-[var(--text-muted)] hover:text-rose-500"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <ActionMenu items={vendorActions(vendor)} />
                 </div>
               </div>
 
@@ -442,29 +444,7 @@ export function Vendors() {
                       {vendor.projects_count || 0}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setViewingVendor(vendor)}
-                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openEditModal(vendor)}
-                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                          title="Edit Vendor"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(vendor.vendor_id)}
-                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                          title="Delete Vendor"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <ActionMenu items={vendorActions(vendor)} />
                     </td>
                   </tr>
                 ))}
@@ -539,28 +519,8 @@ export function Vendors() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-1 mt-2">
-                  <button
-                    onClick={() => setViewingVendor(vendor)}
-                    className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                    title="View Details"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => openEditModal(vendor)}
-                    className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                    title="Edit Vendor"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(vendor.vendor_id)}
-                    className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                    title="Delete Vendor"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="flex justify-end mt-2">
+                  <ActionMenu items={vendorActions(vendor)} />
                 </div>
               </div>
             ))}

@@ -18,6 +18,7 @@ import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { QuotationService, AuthService } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
+import { ActionMenu } from "../components/ActionMenu";
 
 export function Quotations() {
   const navigate = useNavigate();
@@ -368,70 +369,72 @@ export function Quotations() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
-                  <button
-                    onClick={() =>
-                      navigate(`/quotations/${quotation.quotation_id}/preview`)
-                    }
-                    className="p-2.5 bg-[var(--bg-app)] text-[var(--text-muted)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
-                    title="Preview Quotation"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  {quotation.status !== "converted" && (
-                    <button
-                      onClick={() =>
-                        navigate(`/quotations/${quotation.quotation_id}/edit`)
-                      }
-                      className="p-2.5 bg-[var(--bg-app)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
-                      title="Edit Quotation"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/quotations/new?duplicate_from=${quotation.quotation_id}`,
-                      )
-                    }
-                    className="p-2.5 bg-[var(--bg-app)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
-                    title="Duplicate Quotation"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center justify-end gap-2 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
                   {quotation.status !== "converted" &&
                     quotation.status !== "cancelled" && (
                       <button
                         onClick={() => handleConvert(quotation)}
-                        className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition-colors"
-                        title="Convert to Invoice"
+                        className="px-3.5 py-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition-colors whitespace-nowrap text-sm font-bold flex items-center gap-1.5"
                       >
-                        <ArrowRightCircle className="w-4 h-4" />
+                        <ArrowRightCircle className="w-4 h-4" /> Convert to
+                        Invoice
                       </button>
                     )}
-                  <button
-                    onClick={() => handleDownload(quotation)}
-                    className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl hover:bg-blue-500/20 transition-colors"
-                    title="Download PDF"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  {quotation.status !== "converted" &&
-                    (quotation.status !== "cancelled" ||
-                      currentUser?.role === "admin") && (
-                      <button
-                        onClick={() => handleDelete(quotation.quotation_id)}
-                        className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                        title={
-                          quotation.status === "cancelled"
-                            ? "Permanently Delete"
-                            : "Delete Quotation"
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                  <ActionMenu
+                    label="Quotation actions"
+                    className="p-2.5 bg-[var(--bg-app)] rounded-xl"
+                    items={[
+                      {
+                        label: "View quotation",
+                        icon: Eye,
+                        onClick: () =>
+                          navigate(
+                            `/quotations/${quotation.quotation_id}/preview`,
+                          ),
+                      },
+                      ...(quotation.status !== "converted"
+                        ? [
+                            {
+                              label: "Edit",
+                              icon: Edit2,
+                              onClick: () =>
+                                navigate(
+                                  `/quotations/${quotation.quotation_id}/edit`,
+                                ),
+                            },
+                          ]
+                        : []),
+                      {
+                        label: "Duplicate",
+                        icon: Copy,
+                        onClick: () =>
+                          navigate(
+                            `/quotations/new?duplicate_from=${quotation.quotation_id}`,
+                          ),
+                      },
+                      {
+                        label: "Download PDF",
+                        icon: Download,
+                        onClick: () => handleDownload(quotation),
+                      },
+                      ...(quotation.status !== "converted" &&
+                      (quotation.status !== "cancelled" ||
+                        currentUser?.role === "admin")
+                        ? [
+                            {
+                              label:
+                                quotation.status === "cancelled"
+                                  ? "Delete permanently"
+                                  : "Delete",
+                              icon: Trash2,
+                              danger: true,
+                              onClick: () =>
+                                handleDelete(quotation.quotation_id),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 </div>
               </div>
             </div>

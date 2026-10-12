@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ActionMenu } from "../components/ActionMenu";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +17,6 @@ import {
   Package,
   Filter,
   ExternalLink,
-  MoreVertical,
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
@@ -30,6 +30,7 @@ import {
   Eye,
   ReceiptText,
   Printer,
+  Settings2,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 
@@ -442,6 +443,36 @@ export function Bookings() {
     }
 
     return true;
+  };
+
+  const openManageBooking = (booking: any) => {
+    setSelectedBooking(booking);
+    setIsManagingBooking(true);
+    const initialItems = booking.items.map((item: any) => ({
+      ...item,
+      selected_unit_ids: item.units.map(
+        (u: any) => u.product_unit_id || u.product_unit,
+      ),
+    }));
+    setEditFormData({
+      pickup_date: formatDateForInput(booking.pickup_date),
+      return_date: formatDateForInput(booking.return_date),
+      event_location: booking.event_location || "",
+      contact_name: booking.contact_name || "",
+      contact_phone: booking.contact_phone || "",
+      booking_title: booking.booking_title || "",
+      delivery_mode: booking.delivery_mode || "pickup",
+      items: initialItems,
+    });
+    // Fetch available units for each product
+    booking.items.forEach((item: any) => {
+      fetchAvailableUnitsForManage(
+        item.product,
+        booking.booking_id,
+        booking.pickup_date,
+        booking.return_date,
+      );
+    });
   };
 
   const isBookingFormValid = Boolean(
@@ -1122,47 +1153,23 @@ export function Bookings() {
                         Generate
                       </button>
                     )}
-                    <button
-                      onClick={() => {
-                        setSelectedBooking(booking);
-                        setIsManagingBooking(true);
-                        const initialItems = booking.items.map((item: any) => ({
-                          ...item,
-                          selected_unit_ids: item.units.map(
-                            (u: any) => u.product_unit_id || u.product_unit,
-                          ),
-                        }));
-                        setEditFormData({
-                          pickup_date: formatDateForInput(booking.pickup_date),
-                          return_date: formatDateForInput(booking.return_date),
-                          event_location: booking.event_location || "",
-                          contact_name: booking.contact_name || "",
-                          contact_phone: booking.contact_phone || "",
-                          booking_title: booking.booking_title || "",
-                          delivery_mode: booking.delivery_mode || "pickup",
-                          items: initialItems,
-                        });
-                        // Fetch available units for each product
-                        booking.items.forEach((item: any) => {
-                          fetchAvailableUnitsForManage(
-                            item.product,
-                            booking.booking_id,
-                            booking.pickup_date,
-                            booking.return_date,
-                          );
-                        });
-                      }}
-                      className="p-2.5 bg-brand-primary text-brand-accent rounded-xl hover:shadow-lg hover:shadow-brand-primary/20 transition-all active:scale-95"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(booking.booking_id)}
-                      className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                      title="Delete Booking"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    <ActionMenu
+                      label="Booking actions"
+                      className="p-2.5 bg-[var(--bg-app)] rounded-xl"
+                      items={[
+                        {
+                          label: "Manage booking",
+                          icon: Settings2,
+                          onClick: () => openManageBooking(booking),
+                        },
+                        {
+                          label: "Delete",
+                          icon: Trash2,
+                          danger: true,
+                          onClick: () => handleDelete(booking.booking_id),
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
 
