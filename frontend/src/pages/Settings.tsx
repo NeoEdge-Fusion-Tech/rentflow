@@ -13,6 +13,7 @@ import {
   Trash2,
   Landmark,
   Edit2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   UserService,
@@ -350,7 +351,15 @@ export function Settings() {
       const orgId = meRes.data.organization_id;
       if (orgId) {
         const orgRes = await OrganizationService.get(orgId);
-        setOrg(orgRes.data);
+        const data = orgRes.data;
+        // Pre-fill country/city from the address when they're still empty;
+        // the user reviews them and saves.
+        const detected = data.detected_location || {};
+        setOrg({
+          ...data,
+          country: data.country || detected.country || "",
+          city: data.city || detected.city || "",
+        });
       }
     } catch (e) {
       console.error(e);
@@ -720,7 +729,19 @@ export function Settings() {
             </h2>
             <p className="text-xs text-[var(--text-muted)] -mt-4 mb-6">
               This branding appears on every invoice and receipt you generate.
+              Fields marked <span className="text-rose-500">*</span> are
+              required to list products on the event marketplace.
             </p>
+            {org?.marketplace_profile_missing?.length > 0 && (
+              <div className="mb-6 flex items-start gap-2.5 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p>
+                  To list on the event marketplace, add:{" "}
+                  <strong>{org.marketplace_profile_missing.join(", ")}</strong>,
+                  then save.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-6">
               <div>
@@ -784,7 +805,13 @@ export function Settings() {
 
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Company Address
+                  Company Address{" "}
+                  <span
+                    className="text-rose-500"
+                    title="Required to list on the marketplace"
+                  >
+                    *
+                  </span>
                 </label>
                 <textarea
                   value={org?.address || ""}
@@ -797,7 +824,13 @@ export function Settings() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Country
+                    Country{" "}
+                    <span
+                      className="text-rose-500"
+                      title="Required to list on the marketplace"
+                    >
+                      *
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -815,7 +848,13 @@ export function Settings() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    City
+                    City{" "}
+                    <span
+                      className="text-rose-500"
+                      title="Required to list on the marketplace"
+                    >
+                      *
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -876,7 +915,13 @@ export function Settings() {
 
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Default Currency
+                  Default Currency{" "}
+                  <span
+                    className="text-rose-500"
+                    title="Required to list on the marketplace"
+                  >
+                    *
+                  </span>
                 </label>
                 <select
                   value={org?.currency?.id || org?.currency_id || ""}

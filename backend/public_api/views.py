@@ -17,6 +17,7 @@ from .serializers import (
     PublicMarketplaceTagSerializer,
 )
 from inventory.models import MarketplaceTag
+from users.marketplace import marketplace_ready_q
 
 
 def get_organization_by_identifier(identifier):
@@ -38,6 +39,8 @@ class GlobalMarketplaceProductListView(generics.ListAPIView):
             Product.objects.filter(
                 is_active=True, available_for_rental=True, organization__isnull=False
             )
+            # Only vendors with a complete profile appear on the marketplace.
+            .filter(marketplace_ready_q())
             .select_related("organization", "organization__currency", "category")
             .prefetch_related("units", "marketplace_tags")
         )

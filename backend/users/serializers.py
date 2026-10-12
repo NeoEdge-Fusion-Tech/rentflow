@@ -137,6 +137,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
     total_invoices = serializers.SerializerMethodField()
     expenses = serializers.SerializerMethodField()
     detected_location = serializers.SerializerMethodField()
+    marketplace_profile_missing = serializers.SerializerMethodField()
 
     company_logo = serializers.SerializerMethodField()
     company_logo_upload = serializers.ImageField(
@@ -154,6 +155,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "country",
             "city",
             "detected_location",
+            "marketplace_profile_missing",
             "phone_number",
             "email",
             "tax_id",
@@ -192,6 +194,11 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             return url
         except Exception:
             return None
+
+    def get_marketplace_profile_missing(self, obj):
+        from .marketplace import marketplace_profile_missing
+
+        return marketplace_profile_missing(obj)
 
     def get_detected_location(self, obj):
         from .location import parse_location
@@ -275,6 +282,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     has_invoice = serializers.SerializerMethodField()
     subscription_usage = serializers.SerializerMethodField()
     subscription_state = serializers.SerializerMethodField()
+    marketplace_profile_missing = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -295,6 +303,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "has_invoice",
             "subscription_usage",
             "subscription_state",
+            "marketplace_profile_missing",
             "is_active",
             "is_superuser",
         ]
@@ -351,6 +360,12 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             return {"_all": ["read", "write", "delete"]}
 
         return {}
+
+    def get_marketplace_profile_missing(self, obj):
+        from .marketplace import marketplace_profile_missing
+
+        org = getattr(obj, "organization", None)
+        return marketplace_profile_missing(org) if org else []
 
     def get_subscription_state(self, obj):
         org = getattr(obj, "organization", None)

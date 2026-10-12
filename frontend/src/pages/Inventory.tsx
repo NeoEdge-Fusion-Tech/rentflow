@@ -26,7 +26,13 @@ import {
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import Barcode from "react-barcode";
-import { ProductService, CategoryService, MarketplaceTagService } from "../api";
+import {
+  ProductService,
+  CategoryService,
+  MarketplaceTagService,
+  AuthService,
+} from "../api";
+import { MarketplaceProfileNotice } from "../components/MarketplaceProfileNotice";
 import { TagPicker, MarketplaceTagOption } from "../components/TagPicker";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { ActionMenu } from "../components/ActionMenu";
@@ -297,6 +303,19 @@ export function Inventory() {
     selectedStatusFilter,
   ]);
 
+  // Company-profile fields still needed before products can be listed on
+  // the marketplace (address, country, city, currency).
+  const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  const refreshProfileMissing = () =>
+    AuthService.getMe()
+      .then((res) =>
+        setProfileMissing(res.data.marketplace_profile_missing || []),
+      )
+      .catch(() => {});
+  React.useEffect(() => {
+    refreshProfileMissing();
+  }, []);
+
   React.useEffect(() => {
     MarketplaceTagService.getAll()
       .then((res) => setMarketplaceTags(res.data.results || res.data))
@@ -404,6 +423,7 @@ export function Inventory() {
     newProduct.name.trim() &&
       newProduct.category_id &&
       (!needsMarketplaceTag || productTags.length > 0) &&
+      !(newProduct.available_for_rental && profileMissing.length > 0) &&
       units.length > 0 &&
       units.every((u) =>
         u.unit_type === "single"
@@ -737,7 +757,12 @@ export function Inventory() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <CurrencyBadge onChange={setCurrencySymbol} />
+            <CurrencyBadge
+              onChange={(symbol) => {
+                setCurrencySymbol(symbol);
+                refreshProfileMissing();
+              }}
+            />
             <button
               onClick={() => setShowQRExportModal(true)}
               className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
@@ -1774,9 +1799,21 @@ export function Inventory() {
                     {newProduct.is_active ? "Active" : "Inactive"}
                   </span>
                 </label>
-                <label className="flex items-center gap-3 p-2.5 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer hover:bg-[var(--bg-surface)] transition-colors mt-2">
+                <label
+                  className={cn(
+                    "flex items-center gap-3 p-2.5 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] transition-colors mt-2",
+                    profileMissing.length > 0 &&
+                      !newProduct.available_for_rental
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer hover:bg-[var(--bg-surface)]",
+                  )}
+                >
                   <input
                     type="checkbox"
+                    disabled={
+                      profileMissing.length > 0 &&
+                      !newProduct.available_for_rental
+                    }
                     checked={newProduct.available_for_rental}
                     onChange={(e) =>
                       setNewProduct({
@@ -1790,6 +1827,7 @@ export function Inventory() {
                     Available for Public Rental
                   </span>
                 </label>
+                <MarketplaceProfileNotice missing={profileMissing} />
                 <div className="mt-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]/60">
                   <p className="text-sm font-medium text-[var(--text-main)] flex items-center gap-1.5">
                     <Tags className="w-4 h-4 text-brand-primary" />
@@ -2945,6 +2983,7 @@ export function Inventory() {
               <label className="flex items-start gap-3 p-3 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer">
                 <input
                   type="checkbox"
+                  disabled={profileMissing.length > 0 && !tagEditor.listed}
                   checked={tagEditor.listed}
                   onChange={(e) =>
                     setTagEditor({ ...tagEditor, listed: e.target.checked })
@@ -2961,6 +3000,7 @@ export function Inventory() {
                   </span>
                 </span>
               </label>
+              <MarketplaceProfileNotice missing={profileMissing} />
               <div>
                 <p className="text-sm font-medium text-[var(--text-main)] mb-1">
                   Tags{" "}
@@ -2990,6 +3030,7 @@ export function Inventory() {
                 onClick={saveTagEditor}
                 disabled={
                   savingTags ||
+                  (tagEditor.listed && profileMissing.length > 0) ||
                   (tagEditor.listed &&
                     marketplaceTags.length > 0 &&
                     tagEditor.tags.length === 0)

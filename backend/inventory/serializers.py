@@ -258,7 +258,29 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         ).data
         return data
 
+    def _check_marketplace_profile(self, data):
+        """Listing on the marketplace needs a complete company profile."""
+        listing = data.get("available_for_rental")
+        if not listing:
+            return
+        request = self.context.get("request")
+        org = (
+            self.instance.organization
+            if self.instance is not None
+            else getattr(getattr(request, "user", None), "organization", None)
+        )
+        if request is not None and request.user.is_superuser and org is None:
+            return
+        from users.marketplace import marketplace_profile_missing, missing_message
+
+        missing = marketplace_profile_missing(org)
+        if missing:
+            raise serializers.ValidationError(
+                {"available_for_rental": missing_message(missing)}
+            )
+
     def validate(self, data):
+        self._check_marketplace_profile(data)
         if not self.instance and not data.get("units"):
             raise serializers.ValidationError(
                 {
