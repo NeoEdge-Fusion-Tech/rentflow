@@ -6,6 +6,8 @@ interface RevenueDisplayProps {
   amount: string | number;
   className?: string;
   iconClassName?: string;
+  /** Hide the per-amount show/hide toggle (e.g. when a table header has one). */
+  hideToggle?: boolean;
 }
 
 // Currency symbols like the Naira sign (₦) are drawn full-width in most fonts,
@@ -29,6 +31,7 @@ export function RevenueDisplay({
   amount,
   className = "",
   iconClassName = "w-4 h-4",
+  hideToggle = false,
 }: RevenueDisplayProps) {
   const { isRevenueHidden, toggleRevenueVisibility } = useVisibility();
 
@@ -40,20 +43,22 @@ export function RevenueDisplay({
       <span style={{ fontFamily: "'Noto Sans', sans-serif" }}>
         {isRevenueHidden ? "****" : formatAmount(amount)}
       </span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleRevenueVisibility();
-        }}
-        className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none"
-        title={isRevenueHidden ? "Show Revenue" : "Hide Revenue"}
-      >
-        {isRevenueHidden ? (
-          <EyeOff className={iconClassName} />
-        ) : (
-          <Eye className={iconClassName} />
-        )}
-      </button>
+      {!hideToggle && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleRevenueVisibility();
+          }}
+          className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none"
+          title={isRevenueHidden ? "Show Revenue" : "Hide Revenue"}
+        >
+          {isRevenueHidden ? (
+            <EyeOff className={iconClassName} />
+          ) : (
+            <Eye className={iconClassName} />
+          )}
+        </button>
+      )}
     </div>
   );
 }

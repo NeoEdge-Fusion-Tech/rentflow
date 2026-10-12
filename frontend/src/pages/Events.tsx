@@ -15,14 +15,41 @@ import {
   ArrowUpRight,
   LayoutGrid,
   List,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
 import { EventService, InvoiceService, FeedbackService } from "@/src/api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
+import { ActionMenu } from "../components/ActionMenu";
+import { useVisibility } from "../context/VisibilityContext";
+
+const formatDateRange = (start?: string, end?: string) => {
+  const s = start ? new Date(start) : null;
+  const e = end ? new Date(end) : null;
+  const full: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  };
+  if (!s && !e) return "—";
+  if (!s || !e) return (s || e)!.toLocaleDateString(undefined, full);
+  if (s.getFullYear() === e.getFullYear()) {
+    return `${s.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+    })} – ${e.toLocaleDateString(undefined, full)}`;
+  }
+  return `${s.toLocaleDateString(undefined, full)} – ${e.toLocaleDateString(
+    undefined,
+    full,
+  )}`;
+};
 
 export function Events() {
   const navigate = useNavigate();
+  const { isRevenueHidden, toggleRevenueVisibility } = useVisibility();
   const { showNotification, showConfirm } = useNotification();
   const [events, setEvents] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -363,54 +390,93 @@ export function Events() {
       ) : (
         <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                  <th className="py-4 px-6 font-bold">Project Name</th>
-                  <th className="py-4 px-6 font-bold">Client</th>
-                  <th className="py-4 px-6 font-bold">Dates</th>
-                  <th className="py-4 px-6 font-bold">Status</th>
-                  <th className="py-4 px-6 font-bold text-right">Revenue</th>
-                  <th className="py-4 px-6 font-bold text-right">Expenses</th>
-                  <th className="py-4 px-6 font-bold text-right">
+            <table className="w-full min-w-[1040px] table-fixed text-left text-sm">
+              <colgroup>
+                <col className="w-[24%]" />
+                <col className="w-[18%]" />
+                <col className="w-[17%]" />
+                <col className="w-[11%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-[10%]" />
+                <col className="w-14" />
+              </colgroup>
+              <thead className="bg-[var(--bg-app)]/60">
+                <tr className="text-[var(--text-muted)] border-b border-[var(--border-soft)]">
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    Project Name
+                  </th>
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    Client
+                  </th>
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    Dates
+                  </th>
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
+                    Status
+                  </th>
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap text-right">
+                    Revenue
+                  </th>
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap text-right">
+                    Expenses
+                  </th>
+                  <th className="py-3.5 px-5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap text-right">
                     Profit / Loss
                   </th>
-                  <th className="py-4 px-6 font-bold text-right">Actions</th>
+                  <th className="py-3.5 px-3 text-right">
+                    <button
+                      onClick={toggleRevenueVisibility}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors"
+                      title={isRevenueHidden ? "Show amounts" : "Hide amounts"}
+                    >
+                      {isRevenueHidden ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
                 {events.map((ev) => {
                   const profit = parseFloat(ev.profit) || 0;
+                  const client = ev.client_details?.business_name;
                   return (
                     <tr
                       key={ev.event_id}
                       onClick={() => navigate(`/events/${ev.event_id}`)}
-                      className="hover:bg-[var(--bg-app)] transition-colors cursor-pointer group"
+                      className="hover:bg-[var(--bg-app)] transition-colors cursor-pointer group align-middle"
                     >
-                      <td className="py-4 px-6 font-bold text-[var(--text-main)]">
-                        <div className="flex items-center gap-3">
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className="p-2 bg-brand-primary/10 rounded-lg text-brand-primary shrink-0">
                             <Briefcase size={16} />
                           </div>
-                          {ev.name}
+                          <span
+                            className="font-bold text-[var(--text-main)] line-clamp-2 break-words"
+                            title={ev.name}
+                          >
+                            {ev.name}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-[var(--text-muted)]">
-                        {ev.client_details?.business_name || "—"}
+                      <td className="py-4 px-5 text-[var(--text-muted)]">
+                        <span
+                          className="line-clamp-2 break-words"
+                          title={client}
+                        >
+                          {client || "—"}
+                        </span>
                       </td>
-                      <td className="py-4 px-6 text-[var(--text-muted)] whitespace-nowrap">
-                        {ev.start_date
-                          ? new Date(ev.start_date).toLocaleDateString()
-                          : "—"}{" "}
-                        -{" "}
-                        {ev.end_date
-                          ? new Date(ev.end_date).toLocaleDateString()
-                          : "—"}
+                      <td className="py-4 px-5 text-[var(--text-muted)] whitespace-nowrap tabular-nums">
+                        {formatDateRange(ev.start_date, ev.end_date)}
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-5">
                         <span
                           className={cn(
-                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
+                            "inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
                             ev.status === "ongoing"
                               ? "bg-blue-500/10 text-blue-500"
                               : ev.status === "completed"
@@ -423,25 +489,25 @@ export function Events() {
                           {ev.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
-                        <div className="flex items-center justify-end">
-                          <RevenueDisplay
-                            amount={`${defaultCurrencySymbol}${formatCurrency(
-                              ev.revenue,
-                            )}`}
-                          />
-                        </div>
+                      <td className="py-4 px-5 font-bold text-[var(--text-main)] whitespace-nowrap tabular-nums">
+                        <RevenueDisplay
+                          hideToggle
+                          className="justify-end"
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            ev.revenue,
+                          )}`}
+                        />
                       </td>
-                      <td className="py-4 px-6 text-right font-bold text-[var(--text-main)] whitespace-nowrap">
-                        <div className="flex items-center justify-end">
-                          <RevenueDisplay
-                            amount={`${defaultCurrencySymbol}${formatCurrency(
-                              ev.total_expenses,
-                            )}`}
-                          />
-                        </div>
+                      <td className="py-4 px-5 font-bold text-[var(--text-main)] whitespace-nowrap tabular-nums">
+                        <RevenueDisplay
+                          hideToggle
+                          className="justify-end"
+                          amount={`${defaultCurrencySymbol}${formatCurrency(
+                            ev.total_expenses,
+                          )}`}
+                        />
                       </td>
-                      <td className="py-4 px-6 text-right font-bold whitespace-nowrap">
+                      <td className="py-4 px-5 font-bold whitespace-nowrap tabular-nums">
                         <div
                           className={cn(
                             "flex items-center justify-end gap-1.5",
@@ -454,23 +520,30 @@ export function Events() {
                             <TrendingDown className="w-3.5 h-3.5 shrink-0" />
                           )}
                           <RevenueDisplay
+                            hideToggle
                             amount={`${defaultCurrencySymbol}${formatCurrency(
                               Math.abs(profit),
                             )}`}
                           />
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(ev.event_id);
-                          }}
-                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="py-4 px-3 text-right">
+                        <ActionMenu
+                          label="Project actions"
+                          items={[
+                            {
+                              label: "Open project",
+                              icon: ArrowUpRight,
+                              onClick: () => navigate(`/events/${ev.event_id}`),
+                            },
+                            {
+                              label: "Delete",
+                              icon: Trash2,
+                              danger: true,
+                              onClick: () => handleDelete(ev.event_id),
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   );
