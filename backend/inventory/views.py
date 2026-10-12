@@ -504,7 +504,6 @@ class TenantStatsAPIView(APIView):
             confirmed=Count("booking_id", filter=Q(status="confirmed")),
             picked_up=Count("booking_id", filter=Q(status="picked_up")),
             returned=Count("booking_id", filter=Q(status="returned")),
-            completed=Count("booking_id", filter=Q(status="completed")),
             cancelled=Count("booking_id", filter=Q(status="cancelled")),
         )
 

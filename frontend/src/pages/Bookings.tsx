@@ -878,9 +878,9 @@ export function Bookings() {
             color: "emerald",
           },
           {
-            label: "Completed",
-            value: stats?.booking_stats?.completed,
-            color: "brand",
+            label: "Cancelled",
+            value: stats?.booking_stats?.cancelled,
+            color: "rose",
           },
         ].map((s, idx) => (
           <div
@@ -892,9 +892,15 @@ export function Bookings() {
             </p>
             <p
               className={`text-xl font-black ${
-                s.color === "brand"
-                  ? "text-[var(--text-link)]"
-                  : "text-" + s.color + "-600 dark:text-" + s.color + "-400"
+                (
+                  {
+                    amber: "text-amber-600 dark:text-amber-400",
+                    blue: "text-blue-600 dark:text-blue-400",
+                    indigo: "text-indigo-600 dark:text-indigo-400",
+                    emerald: "text-emerald-600 dark:text-emerald-400",
+                    rose: "text-rose-600 dark:text-rose-400",
+                  } as Record<string, string>
+                )[s.color] || "text-[var(--text-link)]"
               }`}
             >
               {s.value ?? 0}
@@ -905,7 +911,14 @@ export function Bookings() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[var(--border-soft)] pb-px overflow-x-auto">
-        {["All", "request", "confirmed", "picked_up", "returned"].map((tab) => (
+        {[
+          "All",
+          "request",
+          "confirmed",
+          "picked_up",
+          "returned",
+          "cancelled",
+        ].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -1959,12 +1972,6 @@ export function Bookings() {
                               Returned
                             </option>
                             <option
-                              value="completed"
-                              className="bg-[var(--bg-surface)] text-[var(--text-main)]"
-                            >
-                              Completed
-                            </option>
-                            <option
                               value="cancelled"
                               className="bg-[var(--bg-surface)] text-[var(--text-main)]"
                             >
@@ -2302,8 +2309,8 @@ export function Bookings() {
                                 ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                                 : selectedBooking.status === "returned"
                                   ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : selectedBooking.status === "completed"
-                                    ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30 font-black shadow-sm"
+                                  : selectedBooking.status === "cancelled"
+                                    ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
                                     : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
                           )}
                         >
@@ -3546,12 +3553,6 @@ export function Bookings() {
                                   className="bg-[var(--bg-surface)]"
                                 >
                                   Returned
-                                </option>
-                                <option
-                                  value="completed"
-                                  className="bg-[var(--bg-surface)]"
-                                >
-                                  Completed
                                 </option>
                                 <option
                                   value="cancelled"

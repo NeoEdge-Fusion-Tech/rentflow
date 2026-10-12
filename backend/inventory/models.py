@@ -405,8 +405,8 @@ class Booking(models.Model):
         ("processed", "Processed"),
         ("confirmed", "Confirmed"),
         ("picked_up", "Picked Up"),
+        # Final state once everything that went out has come back.
         ("returned", "Returned"),
-        ("completed", "Completed"),
         ("cancelled", "Cancelled"),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default="request")
@@ -585,16 +585,15 @@ def update_booking_and_item_status(sender, instance, **kwargs):
 
         # Check Booking Status
         booking = item.booking
-        if booking.status in ["confirmed", "picked_up", "returned"]:
+        if booking.status in ["confirmed", "picked_up"]:
             items = booking.items.all()
             total_picked_up = sum(i.total_picked_up for i in items)
             total_returned = sum(i.total_returned for i in items)
 
-            # Booking is completed if everything picked up was returned
+            # Everything that went out has come back: the booking is done.
             if total_picked_up > 0 and total_picked_up == total_returned:
-                if booking.status != "completed":
-                    booking.status = "completed"
-                    booking.save(update_fields=["status"])
+                booking.status = "returned"
+                booking.save(update_fields=["status"])
 
 
 class OrganizationBookingSettings(models.Model):
