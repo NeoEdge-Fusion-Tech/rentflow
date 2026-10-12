@@ -237,7 +237,20 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         "paid": {"payments": "recorded_payments"},
     }
     filterset_fields = ["booking", "client", "status"]
-    search_fields = ["invoice_number"]
+    # Search by number, title, client, linked booking or line items.
+    search_fields = [
+        "invoice_number",
+        "title",
+        "client__business_name",
+        "client__first_name",
+        "client__last_name",
+        "client__email",
+        "client__contact_name",
+        "client__phone_number",
+        "booking__booking_title",
+        "booking__contact_name",
+        "line_items__name",
+    ]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -588,7 +601,20 @@ class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         "updated": {"field": "updated_at"},
     }
     filterset_fields = ["client", "status"]
-    search_fields = ["quotation_number"]
+    # Search by number, title, client, linked booking or line items.
+    search_fields = [
+        "quotation_number",
+        "title",
+        "client__business_name",
+        "client__first_name",
+        "client__last_name",
+        "client__email",
+        "client__contact_name",
+        "client__phone_number",
+        "booking__booking_title",
+        "booking__contact_name",
+        "line_items__name",
+    ]
 
     def get_queryset(self):
         qs = super().get_queryset()

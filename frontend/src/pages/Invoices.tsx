@@ -44,6 +44,12 @@ export function Invoices() {
   const [paymentAmount, setPaymentAmount] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
+  // Debounced copy of the search box, so we don't query on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
   const [dateFilter, setDateFilter] =
     useState<DateFilterValue>(DEFAULT_DATE_FILTER);
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,7 +77,7 @@ export function Invoices() {
     try {
       setIsLoading(true);
       const params: any = { page, ...dateFilterParams(dateFilter) };
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (activeTab !== "All") {
         if (activeTab.toLowerCase() === "trash") {
           params.status = "cancelled";
@@ -91,7 +97,7 @@ export function Invoices() {
 
   useEffect(() => {
     fetchInvoices(currentPage);
-  }, [currentPage, searchQuery, activeTab, dateFilter]);
+  }, [currentPage, debouncedSearch, activeTab, dateFilter]);
 
   const handleDownload = async (invoice: any) => {
     try {
@@ -282,7 +288,7 @@ export function Invoices() {
             setSearchQuery(e.target.value);
             setCurrentPage(1);
           }}
-          placeholder="Search by invoice number..."
+          placeholder="Search by invoice number, title, client, booking or item…"
           className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
         />
       </div>

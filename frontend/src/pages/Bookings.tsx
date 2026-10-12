@@ -960,7 +960,7 @@ export function Bookings() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Search by ID, client, or location..."
+            placeholder="Search by booking ID, title, client, contact, venue, product or invoice…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-11 pl-10 pr-4 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all text-sm font-medium text-[var(--text-main)]"

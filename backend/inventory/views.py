@@ -406,12 +406,19 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         "paid": {"payments": "payments"},
     }
     filterset_class = BookingFilter
+    # Search by ID, title, client, contact, venue or booked product.
     search_fields = [
+        "booking_id",
+        "booking_title",
         "event_location",
         "contact_name",
+        "contact_phone",
+        "client__business_name",
         "client__first_name",
         "client__last_name",
-        "booking_id",
+        "client__email",
+        "items__product__name",
+        "invoices__invoice_number",
     ]
 
     def perform_create(self, serializer):
