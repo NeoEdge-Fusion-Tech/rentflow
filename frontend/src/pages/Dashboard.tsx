@@ -32,6 +32,61 @@ import { RevenueDisplay } from "../components/RevenueDisplay";
 import { useNotification } from "../context/NotificationContext";
 import { Link } from "react-router-dom";
 
+type PlPreset =
+  | "today"
+  | "month"
+  | "last_month"
+  | "year"
+  | "last_year"
+  | "custom";
+
+const PL_PRESETS: { key: PlPreset; label: string }[] = [
+  { key: "today", label: "Today" },
+  { key: "month", label: "This Month" },
+  { key: "last_month", label: "Last Month" },
+  { key: "year", label: "This Year" },
+  { key: "last_year", label: "Last Year" },
+  { key: "custom", label: "Custom" },
+];
+
+const toISODate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+
+// Inclusive [from, to] range for a preset, as YYYY-MM-DD in local time.
+const presetRange = (preset: PlPreset) => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  switch (preset) {
+    case "today":
+      return { from: toISODate(now), to: toISODate(now) };
+    case "last_month":
+      return {
+        from: toISODate(new Date(y, m - 1, 1)),
+        to: toISODate(new Date(y, m, 0)),
+      };
+    case "year":
+      return { from: `${y}-01-01`, to: `${y}-12-31` };
+    case "last_year":
+      return { from: `${y - 1}-01-01`, to: `${y - 1}-12-31` };
+    case "month":
+    default:
+      return {
+        from: toISODate(new Date(y, m, 1)),
+        to: toISODate(new Date(y, m + 1, 0)),
+      };
+  }
+};
+
+const formatRangeDate = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
 const StatCard = ({ title, value, change, icon: Icon, trend }: any) => (
   <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300">
     <div className="flex items-center justify-between mb-4">
@@ -70,9 +125,18 @@ export function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [bookingSettings, setBookingSettings] = useState<any>(null);
 
-  const currentYear = new Date().getFullYear();
-  const [plPeriod, setPlPeriod] = useState<"today" | "month" | "year">("month");
-  const [plYear, setPlYear] = useState(currentYear);
+  const [plPreset, setPlPreset] = useState<PlPreset>("month");
+  const [plRange, setPlRange] = useState(() => presetRange("month"));
+  const plRangeValid = Boolean(
+    plRange.from && plRange.to && plRange.from <= plRange.to,
+  );
+  // The monthly chart covers a calendar year: the year the range starts in.
+  const plYear = Number(plRange.from?.slice(0, 4)) || new Date().getFullYear();
+
+  const selectPlPreset = (preset: PlPreset) => {
+    setPlPreset(preset);
+    if (preset !== "custom") setPlRange(presetRange(preset));
+  };
   const [plStats, setPlStats] = useState<any>(null);
   const [plMonthly, setPlMonthly] = useState<any[]>([]);
   const [plLoading, setPlLoading] = useState(false);
@@ -103,13 +167,15 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!showPl) return;
+    if (!showPl || !plRangeValid) return;
     (async () => {
       try {
         setPlLoading(true);
-        const params: any = { period: plPeriod };
-        if (plPeriod === "year") params.year = plYear;
-        const res = await EventService.getDashboardStats(params);
+        const res = await EventService.getDashboardStats({
+          period: "custom",
+          start_date: plRange.from,
+          end_date: plRange.to,
+        });
         setPlStats(res.data);
       } catch (e) {
         console.error("Failed fetching P&L stats", e);
@@ -118,7 +184,7 @@ export function Dashboard() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plPeriod, plYear, showPl]);
+  }, [plRange.from, plRange.to, showPl]);
 
   useEffect(() => {
     if (!showPl) return;
@@ -325,18 +391,14 @@ export function Dashboard() {
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm transition-all duration-300 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 className="font-bold text-[var(--text-main)]">Profit & Loss</h3>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-1">
-                {[
-                  { key: "today", label: "Today" },
-                  { key: "month", label: "This Month" },
-                  { key: "year", label: "This Year" },
-                ].map((opt) => (
+            <div className="flex flex-col items-stretch sm:items-end gap-2">
+              <div className="flex items-center bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-1 overflow-x-auto">
+                {PL_PRESETS.map((opt) => (
                   <button
                     key={opt.key}
-                    onClick={() => setPlPeriod(opt.key as any)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                      plPeriod === opt.key
+                    onClick={() => selectPlPreset(opt.key)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${
+                      plPreset === opt.key
                         ? "bg-brand-primary text-white shadow-sm"
                         : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
                     }`}
@@ -345,19 +407,47 @@ export function Dashboard() {
                   </button>
                 ))}
               </div>
-              <select
-                value={plYear}
-                onChange={(e) => setPlYear(parseInt(e.target.value))}
-                className="text-xs font-bold border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] text-[var(--text-main)] px-3 py-2 outline-none"
-              >
-                {Array.from({ length: 6 }, (_, i) => currentYear - i).map(
-                  (y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ),
-                )}
-              </select>
+              {plPreset === "custom" ? (
+                <div className="flex items-center gap-2 text-xs">
+                  <label className="flex items-center gap-2 font-bold text-[var(--text-muted)]">
+                    From
+                    <input
+                      type="date"
+                      value={plRange.from}
+                      max={plRange.to || undefined}
+                      onChange={(e) =>
+                        setPlRange((r) => ({ ...r, from: e.target.value }))
+                      }
+                      className="border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] text-[var(--text-main)] px-3 py-2 outline-none focus:border-brand-primary"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 font-bold text-[var(--text-muted)]">
+                    To
+                    <input
+                      type="date"
+                      value={plRange.to}
+                      min={plRange.from || undefined}
+                      onChange={(e) =>
+                        setPlRange((r) => ({ ...r, to: e.target.value }))
+                      }
+                      className="border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] text-[var(--text-main)] px-3 py-2 outline-none focus:border-brand-primary"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <p className="text-xs text-[var(--text-muted)] font-medium">
+                  {plRange.from === plRange.to
+                    ? formatRangeDate(plRange.from)
+                    : `${formatRangeDate(plRange.from)} – ${formatRangeDate(
+                        plRange.to,
+                      )}`}
+                </p>
+              )}
+              {plPreset === "custom" && !plRangeValid && (
+                <p className="text-xs text-rose-500 font-medium">
+                  Pick a start date on or before the end date.
+                </p>
+              )}
             </div>
           </div>
 

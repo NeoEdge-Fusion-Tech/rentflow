@@ -670,206 +670,209 @@ export function Events() {
 
             <form
               onSubmit={handleSubmit}
-              className="p-6 space-y-4 overflow-y-auto"
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Project / Event Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="e.g. Adebayo Wedding — Sept 2026"
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Start Date
+                    Project / Event Name{" "}
+                    <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="date"
-                    value={formData.start_date}
+                    required
+                    type="text"
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, start_date: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
+                    placeholder="e.g. Adebayo Wedding — Sept 2026"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                   />
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    End Date
+                    Description
                   </label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
+                  <textarea
+                    rows={2}
+                    value={formData.description}
                     onChange={(e) =>
-                      setFormData({ ...formData, end_date: e.target.value })
+                      setFormData({ ...formData, description: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                >
-                  <option value="planned">Planned</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, start_date: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, end_date: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Revenue Invoices (optional)
-                </label>
-                <div className="w-full max-h-[160px] overflow-y-auto px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl space-y-2">
-                  {invoices.length === 0 ? (
-                    <div className="text-sm text-[var(--text-muted)] italic">
-                      No invoices available
-                    </div>
-                  ) : (
-                    invoices.map((inv: any) => {
-                      const isChecked = (
-                        formData.invoices as string[]
-                      ).includes(String(inv.invoice_id));
-                      return (
-                        <label
-                          key={inv.invoice_id}
-                          className="flex items-start gap-3 cursor-pointer group"
-                        >
-                          <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const currentInvoices =
-                                  formData.invoices as string[];
-                                if (e.target.checked) {
-                                  setFormData({
-                                    ...formData,
-                                    invoices: [
-                                      ...currentInvoices,
-                                      String(inv.invoice_id),
-                                    ],
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    invoices: currentInvoices.filter(
-                                      (id) => id !== String(inv.invoice_id),
-                                    ),
-                                  });
-                                }
-                              }}
-                              className="peer sr-only"
-                            />
-                            <div className="w-5 h-5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded group-hover:border-brand-primary peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-colors flex items-center justify-center">
-                              {isChecked && (
-                                <svg
-                                  className="w-3.5 h-3.5 text-white"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={3}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  >
+                    <option value="planned">Planned</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Revenue Invoices (optional)
+                  </label>
+                  <div className="w-full max-h-[160px] overflow-y-auto px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl space-y-2">
+                    {invoices.length === 0 ? (
+                      <div className="text-sm text-[var(--text-muted)] italic">
+                        No invoices available
+                      </div>
+                    ) : (
+                      invoices.map((inv: any) => {
+                        const isChecked = (
+                          formData.invoices as string[]
+                        ).includes(String(inv.invoice_id));
+                        return (
+                          <label
+                            key={inv.invoice_id}
+                            className="flex items-start gap-3 cursor-pointer group"
+                          >
+                            <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const currentInvoices =
+                                    formData.invoices as string[];
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      invoices: [
+                                        ...currentInvoices,
+                                        String(inv.invoice_id),
+                                      ],
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      invoices: currentInvoices.filter(
+                                        (id) => id !== String(inv.invoice_id),
+                                      ),
+                                    });
+                                  }
+                                }}
+                                className="peer sr-only"
+                              />
+                              <div className="w-5 h-5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded group-hover:border-brand-primary peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-colors flex items-center justify-center">
+                                {isChecked && (
+                                  <svg
+                                    className="w-3.5 h-3.5 text-white"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={3}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex-1 text-sm text-[var(--text-main)] font-medium">
+                              <span className="font-bold">
+                                {inv.invoice_number}
+                              </span>{" "}
+                              —{" "}
+                              <span className="text-[var(--text-muted)]">
+                                {inv.client_details?.business_name ||
+                                  inv.client_name ||
+                                  "No client"}
+                              </span>
+                              {(inv.title || inv.event_date) && (
+                                <span className="text-[var(--text-muted)] ml-1.5 text-xs opacity-80">
+                                  (
+                                  {[
+                                    inv.title,
+                                    inv.event_date
+                                      ? new Date(
+                                          inv.event_date,
+                                        ).toLocaleDateString()
+                                      : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" • ")}
+                                  )
+                                </span>
                               )}
                             </div>
-                          </div>
-                          <div className="flex-1 text-sm text-[var(--text-main)] font-medium">
-                            <span className="font-bold">
-                              {inv.invoice_number}
-                            </span>{" "}
-                            —{" "}
-                            <span className="text-[var(--text-muted)]">
-                              {inv.client_details?.business_name ||
-                                inv.client_name ||
-                                "No client"}
-                            </span>
-                            {(inv.title || inv.event_date) && (
-                              <span className="text-[var(--text-muted)] ml-1.5 text-xs opacity-80">
-                                (
-                                {[
-                                  inv.title,
-                                  inv.event_date
-                                    ? new Date(
-                                        inv.event_date,
-                                      ).toLocaleDateString()
-                                    : null,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" • ")}
-                                )
-                              </span>
-                            )}
-                          </div>
-                        </label>
-                      );
-                    })
-                  )}
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Feedback Template (optional)
+                  </label>
+                  <select
+                    value={formData.feedback_template_id}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        feedback_template_id: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  >
+                    <option value="">No feedback template selected</option>
+                    {feedbackForms.map((form: any) => (
+                      <option key={form.id} value={form.id}>
+                        {form.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Feedback Template (optional)
-                </label>
-                <select
-                  value={formData.feedback_template_id}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      feedback_template_id: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                >
-                  <option value="">No feedback template selected</option>
-                  {feedbackForms.map((form: any) => (
-                    <option key={form.id} value={form.id}>
-                      {form.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="pt-2 flex gap-3">
+              <div className="p-6 border-t border-[var(--border-soft)] bg-[var(--bg-surface)] shrink-0 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -879,7 +882,7 @@ export function Events() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || !formData.name.trim()}
                   className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? "Creating..." : "Create Project"}

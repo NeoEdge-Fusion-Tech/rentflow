@@ -364,7 +364,7 @@ export function Marketplace() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image Side */}
-            <div className="w-full md:w-1/2 h-64 md:h-auto bg-[var(--bg-app)] relative">
+            <div className="w-full md:w-1/2 h-64 md:h-auto bg-[var(--bg-app)] relative shrink-0">
               <img
                 src={`https://picsum.photos/seed/${selectedProduct.product_id}/800/800`}
                 alt={selectedProduct.name}
@@ -383,8 +383,8 @@ export function Marketplace() {
             </div>
 
             {/* Content Side */}
-            <div className="w-full md:w-1/2 p-8 md:p-10 flex flex-col overflow-y-auto">
-              <div className="flex justify-between items-start mb-6">
+            <div className="w-full md:w-1/2 flex flex-col flex-1 min-h-0">
+              <div className="flex justify-between items-start gap-4 px-8 md:px-10 pt-8 md:pt-10 pb-6 border-b border-[var(--border-soft)] shrink-0">
                 <div>
                   {selectedProduct.category_name && (
                     <span className="text-xs font-bold text-brand-primary uppercase tracking-wider mb-2 block">
@@ -403,132 +403,134 @@ export function Marketplace() {
                 </button>
               </div>
 
-              <div className="prose prose-sm text-[var(--text-muted)] mb-8">
-                <p>
-                  {selectedProduct.description ||
-                    "No description provided for this product."}
-                </p>
-              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto px-8 md:px-10 py-6">
+                <div className="prose prose-sm text-[var(--text-muted)] mb-8">
+                  <p>
+                    {selectedProduct.description ||
+                      "No description provided for this product."}
+                  </p>
+                </div>
 
-              <div className="bg-[var(--bg-app)] rounded-2xl p-6 mb-8 border border-[var(--border-soft)]">
-                <p className="text-xs font-bold text-[var(--text-muted)] opacity-70 uppercase tracking-wider mb-2">
-                  Vendor Information
-                </p>
-                <div className="flex items-center gap-4">
-                  {selectedProduct.organization_logo ? (
-                    <img
-                      src={selectedProduct.organization_logo}
-                      alt={selectedProduct.organization_name}
-                      className="w-12 h-12 rounded-full object-cover shadow-sm border border-[var(--border-soft)]"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center text-lg font-black text-white shadow-sm">
-                      {selectedProduct.organization_name?.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-bold text-[var(--text-main)] text-lg">
-                      {selectedProduct.organization_name}
-                    </h4>
-                    <div className="flex items-center gap-1 text-sm text-[var(--text-muted)] mt-1">
-                      <MapPin className="w-4 h-4" />
-                      Verified Vendor
+                <div className="bg-[var(--bg-app)] rounded-2xl p-6 mb-8 border border-[var(--border-soft)]">
+                  <p className="text-xs font-bold text-[var(--text-muted)] opacity-70 uppercase tracking-wider mb-2">
+                    Vendor Information
+                  </p>
+                  <div className="flex items-center gap-4">
+                    {selectedProduct.organization_logo ? (
+                      <img
+                        src={selectedProduct.organization_logo}
+                        alt={selectedProduct.organization_name}
+                        className="w-12 h-12 rounded-full object-cover shadow-sm border border-[var(--border-soft)]"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center text-lg font-black text-white shadow-sm">
+                        {selectedProduct.organization_name?.charAt(0)}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-[var(--text-main)] text-lg">
+                        {selectedProduct.organization_name}
+                      </h4>
+                      <div className="flex items-center gap-1 text-sm text-[var(--text-muted)] mt-1">
+                        <MapPin className="w-4 h-4" />
+                        Verified Vendor
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex-1">
-                <h3 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-brand-primary" />
-                  Available Units to Book
-                </h3>
-                {selectedProduct.units && selectedProduct.units.length > 0 ? (
-                  <div className="space-y-4 mb-8">
-                    {selectedProduct.units.map((unit: any) => (
-                      <div
-                        key={unit.product_unit_id}
-                        className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between hover:border-brand-primary/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          {unit.image && (
-                            <img
-                              src={unit.image}
-                              alt={unit.name || selectedProduct.name}
-                              className="w-16 h-16 rounded-xl object-cover shadow-sm border border-[var(--border-soft)] bg-white"
-                            />
-                          )}
-                          <div>
-                            <p className="font-bold text-[var(--text-main)]">
-                              {unit.name || `${selectedProduct.name} Unit`}
-                            </p>
-                            {unit.serial_number && (
-                              <p className="text-xs font-mono text-[var(--text-muted)] mt-1 flex items-center gap-1">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span>{" "}
-                                SN: {unit.serial_number}
-                              </p>
+                <div className="flex-1">
+                  <h3 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-brand-primary" />
+                    Available Units to Book
+                  </h3>
+                  {selectedProduct.units && selectedProduct.units.length > 0 ? (
+                    <div className="space-y-4 mb-8">
+                      {selectedProduct.units.map((unit: any) => (
+                        <div
+                          key={unit.product_unit_id}
+                          className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between hover:border-brand-primary/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            {unit.image && (
+                              <img
+                                src={unit.image}
+                                alt={unit.name || selectedProduct.name}
+                                className="w-16 h-16 rounded-xl object-cover shadow-sm border border-[var(--border-soft)] bg-white"
+                              />
                             )}
-                            <p className="font-black text-brand-primary mt-2">
-                              ${Number(unit.rental_price).toFixed(2)}
-                              <span className="text-xs text-[var(--text-muted)] font-medium">
-                                /day
-                              </span>
-                            </p>
-                            {unit.quantity_available !== undefined && (
-                              <p
-                                className={`text-xs font-bold mt-1 ${
-                                  unit.quantity_available > 0
-                                    ? "text-green-600"
-                                    : "text-rose-500"
-                                }`}
-                              >
-                                {unit.quantity_available > 0
-                                  ? `${unit.quantity_available} available`
-                                  : "Out of stock"}
+                            <div>
+                              <p className="font-bold text-[var(--text-main)]">
+                                {unit.name || `${selectedProduct.name} Unit`}
                               </p>
-                            )}
+                              {unit.serial_number && (
+                                <p className="text-xs font-mono text-[var(--text-muted)] mt-1 flex items-center gap-1">
+                                  <span className="w-2 h-2 rounded-full bg-green-500"></span>{" "}
+                                  SN: {unit.serial_number}
+                                </p>
+                              )}
+                              <p className="font-black text-brand-primary mt-2">
+                                ${Number(unit.rental_price).toFixed(2)}
+                                <span className="text-xs text-[var(--text-muted)] font-medium">
+                                  /day
+                                </span>
+                              </p>
+                              {unit.quantity_available !== undefined && (
+                                <p
+                                  className={`text-xs font-bold mt-1 ${
+                                    unit.quantity_available > 0
+                                      ? "text-green-600"
+                                      : "text-rose-500"
+                                  }`}
+                                >
+                                  {unit.quantity_available > 0
+                                    ? `${unit.quantity_available} available`
+                                    : "Out of stock"}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 mt-4 sm:mt-0">
+                            <button
+                              onClick={() => {
+                                if (unit.quantity_available === 0) return;
+                                const storeId =
+                                  selectedProduct.organization_slug ||
+                                  selectedProduct.organization_id;
+                                navigate(`/public/store/${storeId}/checkout`, {
+                                  state: {
+                                    cart: [
+                                      {
+                                        product: selectedProduct,
+                                        unit,
+                                        quantity: 1,
+                                      },
+                                    ],
+                                  },
+                                });
+                              }}
+                              disabled={unit.quantity_available === 0}
+                              className={`w-full sm:w-auto px-5 py-2.5 font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center ${
+                                unit.quantity_available === 0
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                  : "bg-gray-900 hover:bg-black text-white hover:shadow-lg"
+                              }`}
+                            >
+                              Add
+                            </button>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3 shrink-0 mt-4 sm:mt-0">
-                          <button
-                            onClick={() => {
-                              if (unit.quantity_available === 0) return;
-                              const storeId =
-                                selectedProduct.organization_slug ||
-                                selectedProduct.organization_id;
-                              navigate(`/public/store/${storeId}/checkout`, {
-                                state: {
-                                  cart: [
-                                    {
-                                      product: selectedProduct,
-                                      unit,
-                                      quantity: 1,
-                                    },
-                                  ],
-                                },
-                              });
-                            }}
-                            disabled={unit.quantity_available === 0}
-                            className={`w-full sm:w-auto px-5 py-2.5 font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center ${
-                              unit.quantity_available === 0
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                                : "bg-gray-900 hover:bg-black text-white hover:shadow-lg"
-                            }`}
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 mb-8 border border-[var(--border-soft)] border-dashed rounded-2xl">
-                    <p className="text-[var(--text-muted)]">
-                      No units available for this product.
-                    </p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 mb-8 border border-[var(--border-soft)] border-dashed rounded-2xl">
+                      <p className="text-[var(--text-muted)]">
+                        No units available for this product.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

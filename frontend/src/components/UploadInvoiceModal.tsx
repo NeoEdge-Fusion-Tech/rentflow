@@ -193,7 +193,7 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div
         className={cn(
-          "bg-[var(--bg-app)] rounded-3xl w-full shadow-2xl border border-[var(--border-soft)] flex flex-col overflow-hidden transition-all duration-300",
+          "bg-[var(--bg-app)] rounded-3xl w-full shadow-2xl border border-[var(--border-soft)] flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300",
           step === "upload" ? "max-w-md" : "max-w-lg",
         )}
       >
@@ -265,7 +265,7 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
 
         {/* ── STEP 1: Upload ── */}
         {step === "upload" && (
-          <div className="p-6 flex flex-col gap-4">
+          <div className="p-6 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
             <div
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
@@ -394,7 +394,7 @@ export function UploadInvoiceModal({ open, onClose }: Props) {
               </p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-4">
                 <h4 className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider mb-3">
                   Link Client (Optional)

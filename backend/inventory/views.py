@@ -125,7 +125,7 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         qs = super().get_queryset()
         if self.action == "list" and self.request.query_params.get("all") != "true":
             qs = qs.filter(is_active=True)
-        return qs
+        return qs.order_by("-created_at")
 
     def perform_create(self, serializer):
         user = self.request.user

@@ -444,6 +444,15 @@ export function Bookings() {
     return true;
   };
 
+  const isBookingFormValid = Boolean(
+    formData.client_id &&
+      formData.pickup_date &&
+      formData.return_date &&
+      new Date(formData.pickup_date) < new Date(formData.return_date) &&
+      bookingItems.length > 0 &&
+      bookingItems.every((i) => i.product_id),
+  );
+
   const handleCreateBooking = async () => {
     if (!validateForm()) return;
 
@@ -1267,7 +1276,7 @@ export function Bookings() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-7xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--border-subtle)] bg-[var(--bg-app)]/50">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--border-subtle)] bg-[var(--bg-app)]/50 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-[var(--text-main)]">
                   New Booking
@@ -1284,7 +1293,7 @@ export function Bookings() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-8">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* Left Column: Form Sections */}
                 <div className="lg:col-span-8 space-y-10">
@@ -1959,8 +1968,8 @@ export function Bookings() {
 
                         <button
                           onClick={handleCreateBooking}
-                          disabled={isLoading}
-                          className="w-full mt-6 h-16 bg-brand-primary text-brand-accent rounded-2xl font-black text-sm uppercase tracking-[0.3em] hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-brand-primary/20 disabled:opacity-50 flex items-center justify-center gap-3"
+                          disabled={isLoading || !isBookingFormValid}
+                          className="hidden lg:flex w-full mt-6 h-16 bg-brand-primary text-brand-accent rounded-2xl font-black text-sm uppercase tracking-[0.3em] hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed items-center justify-center gap-3"
                         >
                           {isLoading ? (
                             <div className="w-5 h-5 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
@@ -1987,14 +1996,36 @@ export function Bookings() {
                 </div>
               </div>
             </div>
+
+            {/* On small screens the summary column scrolls away, so keep the
+                primary action pinned to the bottom of the modal. */}
+            <div className="lg:hidden flex gap-3 px-6 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0">
+              <button
+                onClick={() => setIsAddingBooking(false)}
+                className="flex-1 py-3 text-[var(--text-muted)] font-bold text-sm rounded-xl border border-[var(--border-soft)] hover:bg-[var(--bg-app)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateBooking}
+                disabled={isLoading || !isBookingFormValid}
+                className="flex-[2] py-3 bg-brand-primary text-brand-accent rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
+                ) : (
+                  "Proceed Booking"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
       {/* Booking Manager Modal (View/Manage) */}
       {(isViewingDetails || isManagingBooking) && selectedBooking && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-7xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
-            <div className="px-4 sm:px-8 py-6 border-b border-[var(--border-soft)] flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-[var(--bg-surface)] rounded-[2.5rem] w-full max-w-7xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
+            <div className="px-4 sm:px-8 py-6 border-b border-[var(--border-soft)] flex flex-wrap items-center justify-between gap-3 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-[var(--text-main)]">
                   Booking #{selectedBooking.booking_id}
@@ -2017,7 +2048,7 @@ export function Bookings() {
                   <button
                     onClick={handleSaveBookingEdits}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-5 py-2 bg-brand-primary text-brand-accent rounded-xl font-black text-sm hover:bg-brand-primary/90 transition-all shadow-sm whitespace-nowrap"
+                    className="flex items-center gap-2 px-5 py-2 bg-brand-primary text-brand-accent rounded-xl font-black text-sm hover:bg-brand-primary/90 transition-all shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <div className="w-4 h-4 border-2 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
@@ -2208,7 +2239,7 @@ export function Bookings() {
               document.body,
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 overflow-hidden min-h-[500px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
               {/* Left Column: Details & Logistics (42%) */}
               <div className="lg:col-span-5 p-8 space-y-8 border-r border-[var(--border-soft)] overflow-y-auto custom-scrollbar max-h-[70vh]">
                 <section className="space-y-6">
@@ -3950,8 +3981,8 @@ export function Bookings() {
       {/* Document Editor Modal */}
       {editingDoc && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-lg shadow-2xl border border-[var(--border-soft)] animate-in zoom-in-95 duration-200">
-            <div className="px-8 py-6 border-b border-[var(--border-soft)] flex items-center justify-between">
+          <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-[var(--border-soft)] animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-[var(--border-soft)] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
@@ -3979,7 +4010,7 @@ export function Bookings() {
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="p-8 space-y-6 overflow-y-auto flex-1 min-h-0">
               {editingDoc.type === "invoice" && (
                 <div className="space-y-4">
                   <div>
@@ -4075,7 +4106,7 @@ export function Bookings() {
               </div>
             </div>
 
-            <div className="px-8 pb-8 pt-2">
+            <div className="px-8 py-6 border-t border-[var(--border-soft)] shrink-0">
               <button
                 onClick={() =>
                   handleUpdateDocument(
@@ -4086,8 +4117,14 @@ export function Bookings() {
                     editingDoc.data,
                   )
                 }
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 py-4 bg-brand-primary text-brand-accent rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-95 transition-all shadow-xl shadow-brand-primary/20 active:scale-[0.98] disabled:opacity-50"
+                disabled={
+                  isLoading ||
+                  (editingDoc.type === "invoice"
+                    ? editingDoc.data.total_amount === ("" as any) ||
+                      !editingDoc.data.due_date
+                    : editingDoc.data.amount === ("" as any))
+                }
+                className="w-full flex items-center justify-center gap-2 py-4 bg-brand-primary text-brand-accent rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-95 transition-all shadow-xl shadow-brand-primary/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
@@ -4203,7 +4240,7 @@ export function Bookings() {
               <button
                 onClick={handleGenerateReceipt}
                 disabled={isLoading}
-                className="flex-[2] py-4 bg-emerald-500 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3"
+                className="flex-[2] py-4 bg-emerald-500 text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -4220,8 +4257,8 @@ export function Bookings() {
       {/* Payment Link Amount Modal */}
       {isGeneratingPaymentLink && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[80] flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
-            <div className="p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-[var(--bg-app)]">
+          <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex justify-between items-center bg-[var(--bg-app)] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
                   <ExternalLink className="w-4 h-4" />
@@ -4238,7 +4275,7 @@ export function Bookings() {
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
+            <div className="p-8 space-y-6 overflow-y-auto flex-1 min-h-0">
               <div>
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2">
                   Amount to Charge ({currencySymbol})
@@ -4267,28 +4304,28 @@ export function Bookings() {
                   />
                 </p>
               </div>
+            </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsGeneratingPaymentLink(null)}
-                  className="flex-1 py-3.5 text-[var(--text-muted)] font-bold text-xs uppercase tracking-widest hover:text-[var(--text-main)] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    handleGeneratePaymentLink(
-                      isGeneratingPaymentLink,
-                      paymentLinkAmount,
-                    );
-                    setIsGeneratingPaymentLink(null);
-                  }}
-                  disabled={isLoading || !paymentLinkAmount}
-                  className="flex-[2] py-3.5 bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
-                >
-                  Generate Link
-                </button>
-              </div>
+            <div className="flex gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
+              <button
+                onClick={() => setIsGeneratingPaymentLink(null)}
+                className="flex-1 py-3.5 text-[var(--text-muted)] font-bold text-xs uppercase tracking-widest hover:text-[var(--text-main)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleGeneratePaymentLink(
+                    isGeneratingPaymentLink,
+                    paymentLinkAmount,
+                  );
+                  setIsGeneratingPaymentLink(null);
+                }}
+                disabled={isLoading || !(paymentLinkAmount > 0)}
+                className="flex-[2] py-3.5 bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Generate Link
+              </button>
             </div>
           </div>
         </div>

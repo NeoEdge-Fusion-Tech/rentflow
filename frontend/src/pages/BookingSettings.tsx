@@ -1,29 +1,52 @@
 import React, { useState, useEffect } from "react";
-import { Settings, Save, Clock, CalendarDays, CheckCircle } from "lucide-react";
+import {
+  Settings,
+  Save,
+  Clock,
+  CalendarDays,
+  CheckCircle,
+  Check,
+} from "lucide-react";
 import { api } from "../api";
 import { useNotification } from "../context/NotificationContext";
+
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+const WEEKDAYS = DAYS_OF_WEEK.slice(0, 5);
+
+// The API returns a list, but older records may hold "Monday,Tuesday".
+const parseDays = (value: unknown): string[] => {
+  const raw = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",")
+      : [];
+  const picked = raw.map((d) => String(d).trim().toLowerCase());
+  return DAYS_OF_WEEK.filter((d) => picked.includes(d.toLowerCase()));
+};
+
+// <input type="time"> wants HH:MM; the API sends HH:MM:SS (or null).
+const toTimeInput = (value: unknown, fallback: string) =>
+  typeof value === "string" && value ? value.slice(0, 5) : fallback;
 
 export function BookingSettings() {
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({
-    available_days: "Monday,Tuesday,Wednesday,Thursday,Friday",
-    open_time: "09:00:00",
-    close_time: "17:00:00",
+    available_days: WEEKDAYS as string[],
+    open_time: "09:00",
+    close_time: "17:00",
     is_accepting_requests: true,
     public_url_slug: "",
     storefront_name: "",
   });
-
-  const daysOfWeek = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
 
   useEffect(() => {
     fetchSettings();
@@ -33,7 +56,15 @@ export function BookingSettings() {
     try {
       const res = await api.get("/inventory/booking-settings/");
       if (res.data) {
-        setSettings(res.data);
+        const days = parseDays(res.data.available_days);
+        setSettings({
+          available_days: days.length ? days : WEEKDAYS,
+          open_time: toTimeInput(res.data.open_time, "09:00"),
+          close_time: toTimeInput(res.data.close_time, "17:00"),
+          is_accepting_requests: res.data.is_accepting_requests ?? true,
+          public_url_slug: res.data.public_url_slug || "",
+          storefront_name: res.data.storefront_name || "",
+        });
       }
     } catch (e) {
       console.error(e);
@@ -42,30 +73,42 @@ export function BookingSettings() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid) return;
     setLoading(true);
     try {
       await api.put("/inventory/booking-settings/", settings);
       showNotification("Booking settings updated successfully", "success");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      showNotification("Failed to update booking settings", "error");
+      const data = e.response?.data;
+      const detail =
+        data && typeof data === "object"
+          ? Object.values(data).flat().filter(Boolean).join(" ")
+          : "";
+      showNotification(detail || "Failed to update booking settings", "error");
     } finally {
       setLoading(false);
     }
   };
 
   const toggleDay = (day: string) => {
-    const currentDays = settings.available_days
-      ? settings.available_days.split(",")
-      : [];
-    const newDays = currentDays.includes(day)
-      ? currentDays.filter((d) => d !== day)
-      : [...currentDays, day];
-
-    // Sort days based on original order
-    const sortedDays = daysOfWeek.filter((d) => newDays.includes(d));
-    setSettings({ ...settings, available_days: sortedDays.join(",") });
+    setSettings((prev) => {
+      const current = prev.available_days;
+      const next = current.includes(day)
+        ? current.filter((d) => d !== day)
+        : [...current, day];
+      return {
+        ...prev,
+        available_days: DAYS_OF_WEEK.filter((d) => next.includes(d)),
+      };
+    });
   };
+
+  const hoursValid =
+    !settings.open_time ||
+    !settings.close_time ||
+    settings.open_time < settings.close_time;
+  const isFormValid = settings.available_days.length > 0 && hoursValid;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -187,29 +230,65 @@ export function BookingSettings() {
               Available Days
             </h3>
             <div className="flex flex-wrap gap-2">
-              {daysOfWeek.map((day) => {
-                const isSelected =
-                  settings.available_days &&
-                  settings.available_days.includes(day);
+              {DAYS_OF_WEEK.map((day) => {
+                const isSelected = settings.available_days.includes(day);
                 return (
                   <button
                     key={day}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => toggleDay(day)}
-                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border text-sm font-medium transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-brand-primary/10 border-brand-primary text-brand-primary"
-                        : "bg-[var(--bg-app)] border-[var(--border-soft)] text-[var(--text-muted)] hover:border-[var(--border-subtle)]"
+                        ? "bg-brand-primary border-brand-primary text-white shadow-sm"
+                        : "bg-[var(--bg-app)] border-[var(--border-soft)] text-[var(--text-muted)] hover:border-brand-primary/50 hover:text-[var(--text-main)]"
                     }`}
                   >
+                    {isSelected && <Check className="w-3.5 h-3.5" />}
                     {day}
                   </button>
                 );
               })}
             </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2">
-              Select the days of the week when setups and set downs can be
-              scheduled.
+            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
+              <button
+                type="button"
+                onClick={() =>
+                  setSettings((p) => ({ ...p, available_days: WEEKDAYS }))
+                }
+                className="font-bold text-brand-primary hover:underline"
+              >
+                Weekdays
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setSettings((p) => ({ ...p, available_days: DAYS_OF_WEEK }))
+                }
+                className="font-bold text-brand-primary hover:underline"
+              >
+                Every day
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setSettings((p) => ({ ...p, available_days: [] }))
+                }
+                className="font-bold text-[var(--text-muted)] hover:underline"
+              >
+                Clear
+              </button>
+            </div>
+            <p
+              className={`text-xs mt-2 ${
+                settings.available_days.length
+                  ? "text-[var(--text-muted)]"
+                  : "text-rose-500 font-medium"
+              }`}
+            >
+              {settings.available_days.length
+                ? "Select the days of the week when setups and set downs can be scheduled."
+                : "Select at least one day. To stop taking bookings, turn off “Accepting Requests” instead."}
             </p>
           </div>
 
@@ -248,13 +327,18 @@ export function BookingSettings() {
                 />
               </div>
             </div>
+            {!hoursValid && (
+              <p className="text-xs text-rose-500 font-medium mt-2">
+                Close time must be later than open time.
+              </p>
+            )}
           </div>
 
           <div className="pt-4 border-t border-[var(--border-soft)] flex justify-end">
             <button
               type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-accent transition-colors disabled:opacity-50"
+              disabled={loading || !isFormValid}
+              className="flex items-center gap-2 px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               {loading ? "Saving..." : "Save Settings"}

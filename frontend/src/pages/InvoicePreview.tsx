@@ -12,6 +12,7 @@ import {
   Copy,
   Check,
   ExternalLink,
+  X,
 } from "lucide-react";
 import { InvoiceService, AuthService, OrganizationService } from "../api";
 import { useNotification } from "../context/NotificationContext";
@@ -322,67 +323,82 @@ export function InvoicePreview() {
           onClick={() => setPaymentLink(null)}
         >
           <div
-            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] w-full max-w-md p-6 space-y-5"
+            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-start gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{
-                  backgroundColor: `${org?.primary_color || "#7c3aed"}18`,
-                }}
-              >
-                <Link
-                  className="w-5 h-5"
-                  style={{ color: org?.primary_color || "#7c3aed" }}
-                />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--text-main)]">
-                  Payment Link Ready
-                </h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                  Share this link with <strong>{invoice.client_name}</strong> to
-                  collect payment via Paystack.
-                </p>
-              </div>
-            </div>
-
-            {/* Amount callout */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-app)]">
-              <span className="text-sm text-[var(--text-muted)] font-medium">
-                Amount Due
-              </span>
-              <span className="text-lg font-black text-[var(--text-main)]">
-                {invoice.currency_symbol || "$"}
-                {(parseFloat(invoice.total_amount) || 0).toLocaleString(
-                  undefined,
-                  { minimumFractionDigits: 2 },
-                )}
-              </span>
-            </div>
-
-            {/* Link input + copy */}
-            <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2.5 text-xs font-mono bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-[var(--text-muted)] truncate select-all">
-                {paymentLink}
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] shrink-0">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    backgroundColor: `${org?.primary_color || "#7c3aed"}18`,
+                  }}
+                >
+                  <Link
+                    className="w-5 h-5"
+                    style={{ color: org?.primary_color || "#7c3aed" }}
+                  />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-main)]">
+                    Payment Link Ready
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                    Share this link with <strong>{invoice.client_name}</strong>
+                  </p>
+                </div>
               </div>
               <button
-                onClick={handleCopyLink}
-                className="px-3 py-2.5 rounded-xl border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors shrink-0 flex items-center gap-1.5 text-sm font-bold"
+                onClick={() => setPaymentLink(null)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
               >
-                {copied ? (
-                  <Check className="w-4 h-4 text-emerald-500" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-                {copied ? "Copied!" : "Copy"}
+                <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Scrollable Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+              {/* Amount callout */}
+              <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-app)]">
+                <span className="text-sm text-[var(--text-muted)] font-medium">
+                  Amount Due
+                </span>
+                <span className="text-lg font-black text-[var(--text-main)]">
+                  {invoice.currency_symbol || "$"}
+                  {(parseFloat(invoice.total_amount) || 0).toLocaleString(
+                    undefined,
+                    { minimumFractionDigits: 2 },
+                  )}
+                </span>
+              </div>
+
+              {/* Link input + copy */}
+              <div className="flex gap-2">
+                <div className="flex-1 px-3 py-2.5 text-xs font-mono bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-[var(--text-muted)] truncate select-all">
+                  {paymentLink}
+                </div>
+                <button
+                  onClick={handleCopyLink}
+                  className="px-3 py-2.5 rounded-xl border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors shrink-0 flex items-center gap-1.5 text-sm font-bold"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+
+              <p className="text-xs text-[var(--text-muted)] text-center">
+                Once paid, this invoice will automatically be marked as{" "}
+                <strong>Paid</strong>.
+              </p>
+            </div>
+
             {/* Actions */}
-            <div className="flex gap-3 pt-1">
+            <div className="flex gap-3 p-6 border-t border-[var(--border-soft)] shrink-0 bg-[var(--bg-surface)]">
               <button
                 onClick={() => window.open(paymentLink, "_blank")}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-xl border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
@@ -397,11 +413,6 @@ export function InvoicePreview() {
                 Done
               </button>
             </div>
-
-            <p className="text-xs text-[var(--text-muted)] text-center">
-              Once paid, this invoice will automatically be marked as{" "}
-              <strong>Paid</strong>.
-            </p>
           </div>
         </div>
       )}
@@ -413,33 +424,48 @@ export function InvoicePreview() {
           onClick={() => setShowPaymentModal(false)}
         >
           <div
-            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] w-full max-w-sm p-6"
+            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-soft)] w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-[var(--text-main)] mb-4">
-              Record Payment
-            </h3>
-            <form onSubmit={handleRecordPayment} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-muted)] mb-1.5">
-                  Amount ({currencySymbol})
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={invoice.amount_left || invoice.total_amount}
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary"
-                  required
-                />
-                <p className="text-xs text-[var(--text-muted)] mt-1.5">
-                  Balance due: {currencySymbol}
-                  {formatCurrency(invoice.amount_left || invoice.total_amount)}
-                </p>
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] shrink-0">
+              <h3 className="text-lg font-bold text-[var(--text-main)]">
+                Record Payment
+              </h3>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={handleRecordPayment}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div>
+                  <label className="block text-sm font-bold text-[var(--text-muted)] mb-1.5">
+                    Amount ({currencySymbol})
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={invoice.amount_left || invoice.total_amount}
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary"
+                    required
+                  />
+                  <p className="text-xs text-[var(--text-muted)] mt-1.5">
+                    Balance due: {currencySymbol}
+                    {formatCurrency(
+                      invoice.amount_left || invoice.total_amount,
+                    )}
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 p-6 border-t border-[var(--border-soft)] shrink-0 bg-[var(--bg-surface)]">
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
@@ -449,8 +475,12 @@ export function InvoicePreview() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isRecordingPayment}
-                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                  disabled={
+                    isRecordingPayment ||
+                    !paymentAmount ||
+                    parseFloat(paymentAmount) <= 0
+                  }
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isRecordingPayment ? "Saving..." : "Record Payment"}
                 </button>

@@ -512,120 +512,122 @@ export function GeneralExpenses() {
             </div>
             <form
               onSubmit={handleSubmit}
-              className="p-6 space-y-4 overflow-y-auto"
+              className="flex flex-col flex-1 min-h-0"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({ ...formData, expense_type: "item" })
-                  }
-                  className={cn(
-                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
-                    formData.expense_type === "item"
-                      ? "bg-brand-primary text-white border-brand-primary"
-                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
-                  )}
-                >
-                  Item
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({ ...formData, expense_type: "vendor" })
-                  }
-                  className={cn(
-                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
-                    formData.expense_type === "vendor"
-                      ? "bg-brand-primary text-white border-brand-primary"
-                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
-                  )}
-                >
-                  Vendor
-                </button>
-              </div>
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, expense_type: "item" })
+                    }
+                    className={cn(
+                      "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                      formData.expense_type === "item"
+                        ? "bg-brand-primary text-white border-brand-primary"
+                        : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                    )}
+                  >
+                    Item
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, expense_type: "vendor" })
+                    }
+                    className={cn(
+                      "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                      formData.expense_type === "vendor"
+                        ? "bg-brand-primary text-white border-brand-primary"
+                        : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                    )}
+                  >
+                    Vendor
+                  </button>
+                </div>
 
-              {formData.expense_type === "vendor" ? (
+                {formData.expense_type === "vendor" ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Vendor ID <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      step="any"
+                      value={formData.vendor}
+                      onChange={(e) =>
+                        setFormData({ ...formData, vendor: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Item Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Vendor ID <span className="text-rose-500">*</span>
+                    Amount <span className="text-rose-500">*</span>
                   </label>
                   <input
                     required
                     type="number"
-                    step="any"
-                    value={formData.vendor}
+                    step="0.01"
+                    value={formData.amount || ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, vendor: e.target.value })
+                      setFormData({
+                        ...formData,
+                        amount: e.target.value,
+                      })
                     }
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
                   />
                 </div>
-              ) : (
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Item Name <span className="text-rose-500">*</span>
+                    Date (Optional)
                   </label>
                   <input
-                    required
-                    type="text"
-                    value={formData.name}
+                    type="date"
+                    value={formData.date || ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
+                      setFormData({ ...formData, date: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
                   />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Amount <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  value={formData.amount || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      amount: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Date (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={formData.date || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-3">
+              <div className="p-6 border-t border-[var(--border-soft)] flex gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -635,7 +637,13 @@ export function GeneralExpenses() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={
+                    isSaving ||
+                    !String(formData.amount ?? "").trim() ||
+                    (formData.expense_type === "vendor"
+                      ? !String(formData.vendor ?? "").trim()
+                      : !formData.name?.trim())
+                  }
                   className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? "Saving..." : "Save Expense"}

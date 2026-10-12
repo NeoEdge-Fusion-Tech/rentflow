@@ -73,7 +73,7 @@ export function ProductSelectorModal({
         aria-hidden="true"
       />
       <div className="relative bg-[var(--bg-app)] rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] flex flex-col shadow-2xl overflow-hidden border border-[var(--border-soft)] w-full bottom-0 absolute sm:relative sm:bottom-auto rounded-b-none sm:rounded-b-3xl">
-        <div className="p-4 sm:p-6 border-b border-[var(--border-soft)] flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-[var(--border-soft)] flex items-center justify-between shrink-0">
           <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] font-display">
             Select Products
           </h3>
@@ -85,7 +85,7 @@ export function ProductSelectorModal({
           </button>
         </div>
 
-        <div className="p-4 border-b border-[var(--border-soft)] bg-[var(--bg-surface)]">
+        <div className="p-4 border-b border-[var(--border-soft)] bg-[var(--bg-surface)] shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
@@ -98,7 +98,7 @@ export function ProductSelectorModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2">
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-4 space-y-2">
           {filteredUnits.length === 0 ? (
             <div className="text-center py-8 text-[var(--text-muted)] text-sm font-medium">
               No products found.
@@ -146,7 +146,7 @@ export function ProductSelectorModal({
           )}
         </div>
 
-        <div className="p-4 sm:p-6 border-t border-[var(--border-soft)] flex gap-3 bg-[var(--bg-surface)]">
+        <div className="p-4 sm:p-6 border-t border-[var(--border-soft)] flex gap-3 bg-[var(--bg-surface)] shrink-0">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-3 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] font-bold hover:bg-[var(--bg-app)] transition-all"
@@ -155,7 +155,8 @@ export function ProductSelectorModal({
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 px-4 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-primary/90 transition-all flex items-center justify-center gap-2"
+            disabled={selectedUnitIds.size === 0}
+            className="flex-1 px-4 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add Selected ({selectedUnitIds.size})
           </button>

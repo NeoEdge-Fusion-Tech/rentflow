@@ -1,7 +1,41 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { ShoppingBag, ArrowLeft, CheckCircle } from "lucide-react";
+import { ShoppingBag, ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import axios from "axios";
+
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+// Mirrors backend inventory.booking_rules.schedule_errors so customers see
+// problems before submitting. Empty days / unset hours = no restriction.
+function scheduleError(settings: any, label: string, value: string) {
+  if (!settings || !value) return "";
+  const dt = new Date(value);
+  if (isNaN(dt.getTime())) return "";
+  const days: string[] = Array.isArray(settings.available_days)
+    ? settings.available_days
+    : [];
+  const dayName = DAYS_OF_WEEK[(dt.getDay() + 6) % 7];
+  if (days.length && !days.includes(dayName)) {
+    return `${label} falls on a ${dayName}. Available days: ${days.join(
+      ", ",
+    )}.`;
+  }
+  const open = settings.open_time?.slice(0, 5);
+  const close = settings.close_time?.slice(0, 5);
+  const hhmm = value.slice(11, 16);
+  if (open && close && (hhmm < open || hhmm > close)) {
+    return `${label} must be between ${open} and ${close}.`;
+  }
+  return "";
+}
 
 export function PublicRentalCheckout() {
   const { org_id, identifier } = useParams();
@@ -58,8 +92,37 @@ export function PublicRentalCheckout() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+  const dateErrors = {
+    setup_date: scheduleError(settings, "Setup", formData.setup_date),
+    set_down_date:
+      scheduleError(settings, "Set down", formData.set_down_date) ||
+      (formData.setup_date &&
+      formData.set_down_date &&
+      formData.set_down_date <= formData.setup_date
+        ? "Set down must be after setup."
+        : ""),
+  };
+  const notAccepting = settings && !settings.is_accepting_requests;
+  const isFormValid = Boolean(
+    formData.contact_name.trim() &&
+      formData.email.trim() &&
+      formData.contact_phone.trim() &&
+      formData.event_name.trim() &&
+      formData.city.trim() &&
+      formData.address.trim() &&
+      formData.setup_date &&
+      formData.event_date &&
+      formData.set_down_date &&
+      !dateErrors.setup_date &&
+      !dateErrors.set_down_date,
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid || notAccepting) return;
     setLoading(true);
     try {
       const baseUrl =
@@ -78,10 +141,16 @@ export function PublicRentalCheckout() {
         payload,
       );
       setSuccess(true);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const data = e.response?.data;
+      const detail =
+        data && typeof data === "object"
+          ? Object.values(data).flat().filter(Boolean).join("\n")
+          : "";
       alert(
-        "Failed to submit booking request. Please check your details and try again.",
+        detail ||
+          "Failed to submit booking request. Please check your details and try again.",
       );
     } finally {
       setLoading(false);
@@ -263,6 +332,37 @@ export function PublicRentalCheckout() {
                   />
                 </div>
 
+                {settings &&
+                  ((settings.available_days?.length ?? 0) > 0 ||
+                    (settings.open_time && settings.close_time)) && (
+                    <div className="flex items-start gap-3 p-4 rounded-xl bg-brand-primary/5 border border-brand-primary/20 text-sm text-gray-700">
+                      <Clock className="w-4 h-4 mt-0.5 text-brand-primary shrink-0" />
+                      <p>
+                        Setups and set downs can be scheduled
+                        {settings.available_days?.length > 0 && (
+                          <>
+                            {" "}
+                            on{" "}
+                            <strong>
+                              {settings.available_days.join(", ")}
+                            </strong>
+                          </>
+                        )}
+                        {settings.open_time && settings.close_time && (
+                          <>
+                            {" "}
+                            between{" "}
+                            <strong>
+                              {settings.open_time.slice(0, 5)} –{" "}
+                              {settings.close_time.slice(0, 5)}
+                            </strong>
+                          </>
+                        )}
+                        .
+                      </p>
+                    </div>
+                  )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -272,10 +372,20 @@ export function PublicRentalCheckout() {
                       required
                       type="datetime-local"
                       name="setup_date"
+                      min={nowLocal}
                       value={formData.setup_date}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm"
+                      className={`w-full border rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm ${
+                        dateErrors.setup_date
+                          ? "border-rose-400"
+                          : "border-gray-200"
+                      }`}
                     />
+                    {dateErrors.setup_date && (
+                      <p className="text-xs text-rose-600 mt-1">
+                        {dateErrors.setup_date}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -285,6 +395,7 @@ export function PublicRentalCheckout() {
                       required
                       type="datetime-local"
                       name="event_date"
+                      min={nowLocal}
                       value={formData.event_date}
                       onChange={handleChange}
                       className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm"
@@ -298,10 +409,20 @@ export function PublicRentalCheckout() {
                       required
                       type="datetime-local"
                       name="set_down_date"
+                      min={nowLocal}
                       value={formData.set_down_date}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm"
+                      className={`w-full border rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm ${
+                        dateErrors.set_down_date
+                          ? "border-rose-400"
+                          : "border-gray-200"
+                      }`}
                     />
+                    {dateErrors.set_down_date && (
+                      <p className="text-xs text-rose-600 mt-1">
+                        {dateErrors.set_down_date}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -322,9 +443,7 @@ export function PublicRentalCheckout() {
                 <div className="pt-6 border-t border-gray-100">
                   <button
                     type="submit"
-                    disabled={
-                      loading || (settings && !settings.is_accepting_requests)
-                    }
+                    disabled={loading || notAccepting || !isFormValid}
                     className="w-full py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                   >
                     {loading

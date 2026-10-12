@@ -1302,8 +1302,8 @@ export function Settings() {
       {/* Role Modal */}
       {showRoleModal && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-lg w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] overflow-y-auto scrollbar-thin">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] sticky top-0 bg-[var(--bg-surface)] z-10">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-lg w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 {editingRole ? "Edit Role" : "Create Role"}
               </h2>
@@ -1314,151 +1314,158 @@ export function Settings() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <form onSubmit={handleSaveRole} className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Role Name
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    value={roleForm.name}
-                    onChange={(e) =>
-                      setRoleForm({ ...roleForm, name: e.target.value })
-                    }
-                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                    placeholder="e.g. Support Manager"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Description
-                  </label>
-                  <input
-                    type="text"
-                    value={roleForm.description}
-                    onChange={(e) =>
-                      setRoleForm({ ...roleForm, description: e.target.value })
-                    }
-                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                    placeholder="Describe this role's purpose..."
-                  />
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-[var(--text-main)] mb-3">
-                  Permissions
-                </h3>
-                <div className="rounded-xl border border-[var(--border-soft)] overflow-hidden">
-                  {/* Header row */}
-                  <div className="grid grid-cols-[1fr_auto_auto_auto] bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
-                    <div className="px-4 py-2.5 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                      Module
-                    </div>
-                    {["Read", "Write", "Delete"].map((a) => (
-                      <div
-                        key={a}
-                        className="px-4 py-2.5 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center w-16"
-                      >
-                        {a}
-                      </div>
-                    ))}
+            <form
+              onSubmit={handleSaveRole}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Role Name
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={roleForm.name}
+                      onChange={(e) =>
+                        setRoleForm({ ...roleForm, name: e.target.value })
+                      }
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                      placeholder="e.g. Support Manager"
+                    />
                   </div>
-                  {/* Module rows */}
-                  {Object.keys(roleForm.permissions).map((mod, idx) => {
-                    const modPerms = (roleForm.permissions as any)[mod] as {
-                      read: boolean;
-                      write: boolean;
-                      delete: boolean;
-                    };
-                    const toggle = (
-                      action: "read" | "write" | "delete",
-                      val: boolean,
-                    ) => {
-                      const updated = { ...modPerms, [action]: val };
-                      // write implies read; delete implies read+write
-                      if (action === "write" && val) updated.read = true;
-                      if (action === "delete" && val) {
-                        updated.read = true;
-                        updated.write = true;
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={roleForm.description}
+                      onChange={(e) =>
+                        setRoleForm({
+                          ...roleForm,
+                          description: e.target.value,
+                        })
                       }
-                      if (action === "read" && !val) {
-                        updated.write = false;
-                        updated.delete = false;
-                      }
-                      if (action === "write" && !val) updated.delete = false;
-                      setRoleForm({
-                        ...roleForm,
-                        permissions: {
-                          ...roleForm.permissions,
-                          [mod]: updated,
-                        },
-                      });
-                    };
-                    return (
-                      <div
-                        key={mod}
-                        className={`grid grid-cols-[1fr_auto_auto_auto] items-center ${
-                          idx % 2 === 0
-                            ? "bg-[var(--bg-surface)]"
-                            : "bg-[var(--bg-app)]"
-                        } hover:bg-brand-primary/5 transition-colors`}
-                      >
-                        <div className="px-4 py-3 text-sm font-medium text-[var(--text-main)] capitalize">
-                          {mod}
-                        </div>
-                        {(["read", "write", "delete"] as const).map(
-                          (action) => (
-                            <div
-                              key={action}
-                              className="flex items-center justify-center w-16 py-3"
-                            >
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  toggle(action, !modPerms[action])
-                                }
-                                className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all ${
-                                  modPerms[action]
-                                    ? action === "delete"
-                                      ? "bg-red-500 border-red-500 text-white"
-                                      : action === "write"
-                                        ? "bg-amber-500 border-amber-500 text-white"
-                                        : "bg-brand-primary border-brand-primary text-brand-accent"
-                                    : "border-[var(--border-soft)] bg-transparent"
-                                }`}
-                              >
-                                {modPerms[action] && (
-                                  <svg
-                                    className="w-3 h-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={3}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    );
-                  })}
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                      placeholder="Describe this role's purpose..."
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-[var(--text-muted)] mt-2">
-                  Write implies Read. Delete implies Read + Write.
-                </p>
-              </div>
 
-              <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-[var(--bg-surface)]">
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-main)] mb-3">
+                    Permissions
+                  </h3>
+                  <div className="rounded-xl border border-[var(--border-soft)] overflow-hidden">
+                    {/* Header row */}
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
+                      <div className="px-4 py-2.5 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                        Module
+                      </div>
+                      {["Read", "Write", "Delete"].map((a) => (
+                        <div
+                          key={a}
+                          className="px-4 py-2.5 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider text-center w-16"
+                        >
+                          {a}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Module rows */}
+                    {Object.keys(roleForm.permissions).map((mod, idx) => {
+                      const modPerms = (roleForm.permissions as any)[mod] as {
+                        read: boolean;
+                        write: boolean;
+                        delete: boolean;
+                      };
+                      const toggle = (
+                        action: "read" | "write" | "delete",
+                        val: boolean,
+                      ) => {
+                        const updated = { ...modPerms, [action]: val };
+                        // write implies read; delete implies read+write
+                        if (action === "write" && val) updated.read = true;
+                        if (action === "delete" && val) {
+                          updated.read = true;
+                          updated.write = true;
+                        }
+                        if (action === "read" && !val) {
+                          updated.write = false;
+                          updated.delete = false;
+                        }
+                        if (action === "write" && !val) updated.delete = false;
+                        setRoleForm({
+                          ...roleForm,
+                          permissions: {
+                            ...roleForm.permissions,
+                            [mod]: updated,
+                          },
+                        });
+                      };
+                      return (
+                        <div
+                          key={mod}
+                          className={`grid grid-cols-[1fr_auto_auto_auto] items-center ${
+                            idx % 2 === 0
+                              ? "bg-[var(--bg-surface)]"
+                              : "bg-[var(--bg-app)]"
+                          } hover:bg-brand-primary/5 transition-colors`}
+                        >
+                          <div className="px-4 py-3 text-sm font-medium text-[var(--text-main)] capitalize">
+                            {mod}
+                          </div>
+                          {(["read", "write", "delete"] as const).map(
+                            (action) => (
+                              <div
+                                key={action}
+                                className="flex items-center justify-center w-16 py-3"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggle(action, !modPerms[action])
+                                  }
+                                  className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all ${
+                                    modPerms[action]
+                                      ? action === "delete"
+                                        ? "bg-red-500 border-red-500 text-white"
+                                        : action === "write"
+                                          ? "bg-amber-500 border-amber-500 text-white"
+                                          : "bg-brand-primary border-brand-primary text-brand-accent"
+                                      : "border-[var(--border-soft)] bg-transparent"
+                                  }`}
+                                >
+                                  {modPerms[action] && (
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={3}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-2">
+                    Write implies Read. Delete implies Read + Write.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowRoleModal(false)}
@@ -1468,7 +1475,8 @@ export function Settings() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+                  disabled={!roleForm.name?.trim()}
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Role
                 </button>
@@ -1481,8 +1489,8 @@ export function Settings() {
       {/* Change Role Modal */}
       {showChangeRoleModal && userToChangeRole && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-sm w-full shadow-xl border border-[var(--border-soft)]">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)]">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-sm w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 Change Role
               </h2>
@@ -1493,37 +1501,42 @@ export function Settings() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <form onSubmit={handleChangeRoleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
-                  Select new role for {userToChangeRole.first_name}
-                </label>
-                <select
-                  value={userToChangeRole.role_id_to_set || ""}
-                  onChange={(e) =>
-                    setUserToChangeRole({
-                      ...userToChangeRole,
-                      role_id_to_set: e.target.value,
-                    })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                  required
-                >
-                  <option value="" disabled>
-                    Select a role...
-                  </option>
-                  {roles.map((r) => (
-                    <option
-                      key={r.id}
-                      value={r.id}
-                      className="bg-[var(--bg-surface)]"
-                    >
-                      {r.name}
+            <form
+              onSubmit={handleChangeRoleSubmit}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                    Select new role for {userToChangeRole.first_name}
+                  </label>
+                  <select
+                    value={userToChangeRole.role_id_to_set || ""}
+                    onChange={(e) =>
+                      setUserToChangeRole({
+                        ...userToChangeRole,
+                        role_id_to_set: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select a role...
                     </option>
-                  ))}
-                </select>
+                    {roles.map((r) => (
+                      <option
+                        key={r.id}
+                        value={r.id}
+                        className="bg-[var(--bg-surface)]"
+                      >
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="pt-2 flex justify-end gap-3">
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowChangeRoleModal(false)}
@@ -1533,7 +1546,8 @@ export function Settings() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-semibold rounded-xl hover:opacity-90"
+                  disabled={!userToChangeRole.role_id_to_set}
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Update Role
                 </button>
@@ -1546,8 +1560,8 @@ export function Settings() {
       {/* Add Team Member Modal */}
       {showAddUserModal && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border-soft)]">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)]">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 Add Team Member
               </h2>
@@ -1559,93 +1573,97 @@ export function Settings() {
               </button>
             </div>
 
-            <form onSubmit={handleAddUser} className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
+            <form
+              onSubmit={handleAddUser}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      First Name
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={newUser.first_name}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, first_name: e.target.value })
+                      }
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={newUser.last_name}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, last_name: e.target.value })
+                      }
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                    />
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    First Name
+                    Email
                   </label>
                   <input
                     required
-                    type="text"
-                    value={newUser.first_name}
+                    type="email"
+                    value={newUser.email}
                     onChange={(e) =>
-                      setNewUser({ ...newUser, first_name: e.target.value })
+                      setNewUser({ ...newUser, email: e.target.value })
                     }
                     className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
                   />
                 </div>
-                <div className="flex-1">
+
+                <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Last Name
+                    Temporary Password
                   </label>
                   <input
                     required
-                    type="text"
-                    value={newUser.last_name}
+                    type="password"
+                    value={newUser.password}
                     onChange={(e) =>
-                      setNewUser({ ...newUser, last_name: e.target.value })
+                      setNewUser({ ...newUser, password: e.target.value })
                     }
                     className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Email
-                </label>
-                <input
-                  required
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, email: e.target.value })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Role
+                  </label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, role: e.target.value })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  >
+                    {roles.map((r) => (
+                      <option
+                        key={r.id}
+                        value={r.id}
+                        className="bg-[var(--bg-surface)]"
+                      >
+                        {r.name.charAt(0).toUpperCase() +
+                          r.name.slice(1).replace("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Temporary Password
-                </label>
-                <input
-                  required
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, password: e.target.value })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Role
-                </label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, role: e.target.value })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                >
-                  {roles.map((r) => (
-                    <option
-                      key={r.id}
-                      value={r.id}
-                      className="bg-[var(--bg-surface)]"
-                    >
-                      {r.name.charAt(0).toUpperCase() +
-                        r.name.slice(1).replace("_", " ")}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddUserModal(false)}
@@ -1655,7 +1673,13 @@ export function Settings() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+                  disabled={
+                    !newUser.first_name?.trim() ||
+                    !newUser.last_name?.trim() ||
+                    !newUser.email?.trim() ||
+                    !newUser.password
+                  }
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Add Member
                 </button>
@@ -1667,8 +1691,8 @@ export function Settings() {
       {/* Set Password Modal */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl overflow-hidden border border-[var(--border-soft)]">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-[var(--text-main)]">
                   Set Team Member Password
@@ -1688,23 +1712,27 @@ export function Settings() {
               </button>
             </div>
 
-            <form onSubmit={handleSetPassword} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  New Password
-                </label>
-                <input
-                  required
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                  placeholder="Enter new password"
-                  autoFocus
-                />
+            <form
+              onSubmit={handleSetPassword}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    New Password
+                  </label>
+                  <input
+                    required
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                    placeholder="Enter new password"
+                    autoFocus
+                  />
+                </div>
               </div>
-
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1718,7 +1746,7 @@ export function Settings() {
                 <button
                   type="submit"
                   disabled={isSettingPassword || !newPassword}
-                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50"
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSettingPassword ? "Updating..." : "Update Password"}
                 </button>
@@ -1730,8 +1758,8 @@ export function Settings() {
       {/* Bank Account Modal */}
       {isBankModalOpen && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl overflow-hidden border border-[var(--border-soft)]">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-xl border border-[var(--border-soft)] max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 {editingBankAccount ? "Edit Bank Account" : "Add Bank Account"}
               </h2>
@@ -1743,111 +1771,118 @@ export function Settings() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveBankAccount} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Bank Name
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={bankFormData.bank_name}
-                  onChange={(e) =>
-                    setBankFormData({
-                      ...bankFormData,
-                      bank_name: e.target.value,
-                    })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                />
+            <form
+              onSubmit={handleSaveBankAccount}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Bank Name
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={bankFormData.bank_name}
+                    onChange={(e) =>
+                      setBankFormData({
+                        ...bankFormData,
+                        bank_name: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Account Number
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={bankFormData.account_number}
+                    onChange={(e) =>
+                      setBankFormData({
+                        ...bankFormData,
+                        account_number: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Account Name
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={bankFormData.account_name}
+                    onChange={(e) =>
+                      setBankFormData({
+                        ...bankFormData,
+                        account_name: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Account Type
+                  </label>
+                  <select
+                    value={bankFormData.account_type}
+                    onChange={(e) =>
+                      setBankFormData({
+                        ...bankFormData,
+                        account_type: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  >
+                    <option value="savings" className="bg-[var(--bg-surface)]">
+                      Savings
+                    </option>
+                    <option value="current" className="bg-[var(--bg-surface)]">
+                      Current
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    SWIFT Code
+                  </label>
+                  <input
+                    type="text"
+                    value={bankFormData.swift_code}
+                    onChange={(e) =>
+                      setBankFormData({
+                        ...bankFormData,
+                        swift_code: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Note
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={bankFormData.notes}
+                    onChange={(e) =>
+                      setBankFormData({
+                        ...bankFormData,
+                        notes: e.target.value,
+                      })
+                    }
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)] resize-none"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Account Number
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={bankFormData.account_number}
-                  onChange={(e) =>
-                    setBankFormData({
-                      ...bankFormData,
-                      account_number: e.target.value,
-                    })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Account Name
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={bankFormData.account_name}
-                  onChange={(e) =>
-                    setBankFormData({
-                      ...bankFormData,
-                      account_name: e.target.value,
-                    })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Account Type
-                </label>
-                <select
-                  value={bankFormData.account_type}
-                  onChange={(e) =>
-                    setBankFormData({
-                      ...bankFormData,
-                      account_type: e.target.value,
-                    })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                >
-                  <option value="savings" className="bg-[var(--bg-surface)]">
-                    Savings
-                  </option>
-                  <option value="current" className="bg-[var(--bg-surface)]">
-                    Current
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  SWIFT Code
-                </label>
-                <input
-                  type="text"
-                  value={bankFormData.swift_code}
-                  onChange={(e) =>
-                    setBankFormData({
-                      ...bankFormData,
-                      swift_code: e.target.value,
-                    })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Note
-                </label>
-                <textarea
-                  rows={2}
-                  value={bankFormData.notes}
-                  onChange={(e) =>
-                    setBankFormData({ ...bankFormData, notes: e.target.value })
-                  }
-                  className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary bg-[var(--bg-app)] text-[var(--text-main)] resize-none"
-                />
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsBankModalOpen(false)}
@@ -1857,7 +1892,12 @@ export function Settings() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+                  disabled={
+                    !bankFormData.bank_name?.trim() ||
+                    !bankFormData.account_number?.trim() ||
+                    !bankFormData.account_name?.trim()
+                  }
+                  className="px-5 py-2.5 bg-brand-primary text-brand-accent font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingBankAccount ? "Save Changes" : "Add Account"}
                 </button>

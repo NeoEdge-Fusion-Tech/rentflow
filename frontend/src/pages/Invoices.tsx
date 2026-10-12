@@ -22,6 +22,7 @@ import { useNotification } from "../context/NotificationContext";
 import { InvoiceService, AuthService } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { UploadInvoiceModal } from "../components/UploadInvoiceModal";
+import { ActionMenu } from "../components/ActionMenu";
 
 export function Invoices() {
   const navigate = useNavigate();
@@ -376,81 +377,76 @@ export function Invoices() {
                     )}
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
-                  <button
-                    onClick={() =>
-                      navigate(`/invoices/${invoice.invoice_id}/preview`)
-                    }
-                    className="p-2.5 bg-[var(--bg-app)] text-[var(--text-muted)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
-                    title="Preview Invoice"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigate(`/invoices/${invoice.invoice_id}/edit`)
-                    }
-                    className="p-2.5 bg-[var(--bg-app)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
-                    title="Edit Invoice"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/invoices/new?duplicate_from=${invoice.invoice_id}`,
-                      )
-                    }
-                    className="p-2.5 bg-[var(--bg-app)] text-[var(--text-main)] rounded-xl hover:bg-[var(--border-soft)] transition-colors"
-                    title="Duplicate Invoice"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center justify-end gap-2 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
                   {invoice.status !== "paid" &&
                     invoice.status !== "cancelled" && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setSelectedInvoice(invoice);
-                            setPaymentAmount("");
-                            setPaymentModalOpen(true);
-                          }}
-                          className="p-2.5 bg-brand-primary/10 text-brand-primary rounded-xl hover:bg-brand-primary/20 transition-colors whitespace-nowrap text-sm font-bold flex items-center gap-1"
-                          title="Record Payment"
-                        >
-                          <CreditCard className="w-4 h-4" /> Record Payment
-                        </button>
-                        <button
-                          onClick={() => handleMarkPaid(invoice)}
-                          className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition-colors"
-                          title="Mark as Paid"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                  <button
-                    onClick={() => handleDownload(invoice)}
-                    className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl hover:bg-blue-500/20 transition-colors"
-                    title="Download PDF"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  {invoice.status !== "paid" &&
-                    (invoice.status !== "cancelled" ||
-                      currentUser?.role === "admin") && (
                       <button
-                        onClick={() => handleDelete(invoice.invoice_id)}
-                        className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                        title={
-                          invoice.status === "cancelled"
-                            ? "Permanently Delete"
-                            : "Delete Invoice"
-                        }
+                        onClick={() => {
+                          setSelectedInvoice(invoice);
+                          setPaymentAmount("");
+                          setPaymentModalOpen(true);
+                        }}
+                        className="px-3.5 py-2.5 bg-brand-primary/10 text-brand-primary rounded-xl hover:bg-brand-primary/20 transition-colors whitespace-nowrap text-sm font-bold flex items-center gap-1.5"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <CreditCard className="w-4 h-4" /> Record Payment
                       </button>
                     )}
+                  <ActionMenu
+                    label="Invoice actions"
+                    className="p-2.5 bg-[var(--bg-app)] rounded-xl"
+                    items={[
+                      {
+                        label: "View invoice",
+                        icon: Eye,
+                        onClick: () =>
+                          navigate(`/invoices/${invoice.invoice_id}/preview`),
+                      },
+                      {
+                        label: "Edit",
+                        icon: Edit2,
+                        onClick: () =>
+                          navigate(`/invoices/${invoice.invoice_id}/edit`),
+                      },
+                      {
+                        label: "Duplicate",
+                        icon: Copy,
+                        onClick: () =>
+                          navigate(
+                            `/invoices/new?duplicate_from=${invoice.invoice_id}`,
+                          ),
+                      },
+                      {
+                        label: "Download PDF",
+                        icon: Download,
+                        onClick: () => handleDownload(invoice),
+                      },
+                      ...(invoice.status !== "paid" &&
+                      invoice.status !== "cancelled"
+                        ? [
+                            {
+                              label: "Mark as paid",
+                              icon: CheckCircle,
+                              onClick: () => handleMarkPaid(invoice),
+                            },
+                          ]
+                        : []),
+                      ...(invoice.status !== "paid" &&
+                      (invoice.status !== "cancelled" ||
+                        currentUser?.role === "admin")
+                        ? [
+                            {
+                              label:
+                                invoice.status === "cancelled"
+                                  ? "Delete permanently"
+                                  : "Delete",
+                              icon: Trash2,
+                              danger: true,
+                              onClick: () => handleDelete(invoice.invoice_id),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 </div>
               </div>
             </div>
@@ -491,67 +487,70 @@ export function Invoices() {
 
       {paymentModalOpen && selectedInvoice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--bg-app)] rounded-3xl max-w-md w-full shadow-2xl overflow-hidden border border-[var(--border-soft)]">
-            <div className="p-6 md:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-black text-[var(--text-main)] font-display">
-                  Record Payment
-                </h3>
-                <button
-                  onClick={() => setPaymentModalOpen(false)}
-                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)] rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          <div className="bg-[var(--bg-app)] rounded-3xl max-w-md w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between shrink-0">
+              <h3 className="text-2xl font-black text-[var(--text-main)] font-display">
+                Record Payment
+              </h3>
+              <button
+                onClick={() => setPaymentModalOpen(false)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
+                <span className="text-[var(--text-muted)]">Invoice</span>
+                <span className="font-bold text-[var(--text-main)]">
+                  {selectedInvoice.invoice_number}
+                </span>
               </div>
-              <div className="mb-6 space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
-                  <span className="text-[var(--text-muted)]">Invoice</span>
-                  <span className="font-bold text-[var(--text-main)]">
-                    {selectedInvoice.invoice_number}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
-                  <span className="text-[var(--text-muted)]">Amount Left</span>
-                  <span className="font-bold text-[var(--text-main)] flex items-center justify-end">
-                    <RevenueDisplay
-                      amount={`${
-                        selectedInvoice.currency_symbol || defaultCurrencySymbol
-                      }${formatCurrency(
-                        selectedInvoice.total_amount -
-                          parseFloat(selectedInvoice.amount_paid),
-                      )}`}
-                    />
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-[var(--text-main)] mb-2">
-                    Payment Amount
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all"
-                    placeholder="Enter amount..."
+              <div className="flex justify-between items-center py-3 border-b border-[var(--border-soft)]">
+                <span className="text-[var(--text-muted)]">Amount Left</span>
+                <span className="font-bold text-[var(--text-main)] flex items-center justify-end">
+                  <RevenueDisplay
+                    amount={`${
+                      selectedInvoice.currency_symbol || defaultCurrencySymbol
+                    }${formatCurrency(
+                      selectedInvoice.total_amount -
+                        parseFloat(selectedInvoice.amount_paid),
+                    )}`}
                   />
-                </div>
+                </span>
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setPaymentModalOpen(false)}
-                  className="flex-1 px-4 py-3 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] font-bold hover:bg-[var(--bg-surface)] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={submitPayment}
-                  className="flex-1 px-4 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-primary/90 transition-all"
-                >
-                  Record Payment
-                </button>
+              <div>
+                <label className="block text-sm font-bold text-[var(--text-main)] mb-2">
+                  Payment Amount
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all"
+                  placeholder="Enter amount..."
+                />
               </div>
+            </div>
+
+            <div className="p-6 border-t border-[var(--border-soft)] flex gap-3 shrink-0 bg-[var(--bg-app)]">
+              <button
+                type="button"
+                onClick={() => setPaymentModalOpen(false)}
+                className="flex-1 px-4 py-3 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] font-bold hover:bg-[var(--bg-surface)] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitPayment}
+                disabled={!paymentAmount || parseFloat(paymentAmount) <= 0}
+                className="flex-1 px-4 py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Record Payment
+              </button>
             </div>
           </div>
         </div>

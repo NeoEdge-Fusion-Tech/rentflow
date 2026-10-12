@@ -800,8 +800,8 @@ export function TaskChecklistPanel({
       {/* Duplicate Checklist Modal */}
       {isDuplicateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md border border-[var(--border-soft)] shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-main)]">
                 {isChecklistEmpty
                   ? "Duplicate Checklist From Project"
@@ -814,7 +814,7 @@ export function TaskChecklistPanel({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <p className="text-sm text-[var(--text-muted)]">
                 {isChecklistEmpty
                   ? "Copy every task and subtask from another project's checklist into this one. Due dates are cleared on the copy."
@@ -839,21 +839,21 @@ export function TaskChecklistPanel({
                     ))}
                 </select>
               </div>
-              <div className="pt-2 flex gap-3">
-                <button
-                  onClick={() => setIsDuplicateOpen(false)}
-                  className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDuplicate}
-                  disabled={!duplicateTarget || isDuplicating}
-                  className="flex-1 px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50"
-                >
-                  {isDuplicating ? "Duplicating..." : "Duplicate"}
-                </button>
-              </div>
+            </div>
+            <div className="p-6 border-t border-[var(--border-soft)] flex gap-3 shrink-0">
+              <button
+                onClick={() => setIsDuplicateOpen(false)}
+                className="flex-1 px-6 py-3 font-bold text-[var(--text-muted)] bg-[var(--bg-app)] hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDuplicate}
+                disabled={!duplicateTarget || isDuplicating}
+                className="flex-1 px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDuplicating ? "Duplicating..." : "Duplicate"}
+              </button>
             </div>
           </div>
         </div>

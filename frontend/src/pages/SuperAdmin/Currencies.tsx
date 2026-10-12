@@ -285,8 +285,8 @@ export function Currencies() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden scale-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
-            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden scale-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30 shrink-0">
               <h3 className="text-lg font-bold text-[var(--text-main)]">
                 Add New Currency
               </h3>
@@ -298,53 +298,57 @@ export function Currencies() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateCurrency} className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[var(--text-muted)] uppercase px-1">
-                  Currency Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary placeholder-[var(--text-muted)] outline-none transition-all"
-                  placeholder="e.g. US Dollar"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form
+              onSubmit={handleCreateCurrency}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[var(--text-muted)] uppercase px-1">
-                    Currency Code
+                    Currency Name
                   </label>
                   <input
                     type="text"
                     required
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary placeholder-[var(--text-muted)] outline-none transition-all uppercase"
-                    placeholder="e.g. USD"
-                    maxLength={10}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary placeholder-[var(--text-muted)] outline-none transition-all"
+                    placeholder="e.g. US Dollar"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase px-1">
-                    Symbol
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary placeholder-[var(--text-muted)] outline-none transition-all font-bold"
-                    placeholder="e.g. $"
-                    maxLength={10}
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase px-1">
+                      Currency Code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary placeholder-[var(--text-muted)] outline-none transition-all uppercase"
+                      placeholder="e.g. USD"
+                      maxLength={10}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase px-1">
+                      Symbol
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={symbol}
+                      onChange={(e) => setSymbol(e.target.value)}
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary placeholder-[var(--text-muted)] outline-none transition-all font-bold"
+                      placeholder="e.g. $"
+                      maxLength={10}
+                    />
+                  </div>
                 </div>
               </div>
-
-              <div className="pt-4 mt-2 border-t border-[var(--border-soft)]">
+              <div className="p-6 border-t border-[var(--border-soft)] shrink-0">
                 <div className="flex gap-3">
                   <button
                     type="button"
@@ -355,8 +359,13 @@ export function Currencies() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 py-3 px-4 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
+                    disabled={
+                      isSubmitting ||
+                      !name.trim() ||
+                      !code.trim() ||
+                      !symbol.trim()
+                    }
+                    className="flex-1 py-3 px-4 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20"
                   >
                     {isSubmitting ? "Saving..." : "Add Currency"}
                   </button>

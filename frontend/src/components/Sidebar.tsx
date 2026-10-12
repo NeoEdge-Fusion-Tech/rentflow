@@ -11,7 +11,6 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronRight,
   Coins,
   FileText,
   FileSpreadsheet,
@@ -55,7 +54,7 @@ const navItems = [
   { icon: QrCode, label: "Scanner", path: "/scanner" },
   { icon: ScanLine, label: "Validation App", path: "/validation" },
   { icon: HelpCircle, label: "Help & Support", path: "/support" },
-  { icon: Calendar, label: "Rental Settings", path: "/rental-settings" },
+  { icon: Calendar, label: "Booking Settings", path: "/rental-settings" },
   { icon: Settings, label: "Settings", path: "/settings" },
   { icon: CreditCard, label: "Billing & Plans", path: "/settings?tab=billing" },
 ];
@@ -216,7 +215,7 @@ export function Sidebar({
                   if (
                     item.label === "Settings" ||
                     item.label === "Payments" ||
-                    item.label === "Rental Settings"
+                    item.label === "Booking Settings"
                   ) {
                     return false;
                   }
@@ -250,9 +249,6 @@ export function Sidebar({
                       {!isCollapsed && (
                         <>
                           <span className="truncate">{item.label}</span>
-                          {isActive && (
-                            <ChevronRight className="ml-auto w-4 h-4 shrink-0" />
-                          )}
                         </>
                       )}
                     </>
@@ -290,9 +286,6 @@ export function Sidebar({
                         {!isCollapsed && (
                           <>
                             <span className="truncate">{item.label}</span>
-                            {isActive && (
-                              <ChevronRight className="ml-auto w-4 h-4 shrink-0" />
-                            )}
                           </>
                         )}
                       </>

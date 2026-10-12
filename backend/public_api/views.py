@@ -72,7 +72,17 @@ class PublicBookingRequestView(APIView):
     @transaction.atomic
     def post(self, request, identifier):
         org = get_organization_by_identifier(identifier)
-        serializer = PublicBookingRequestSerializer(data=request.data)
+        booking_settings, _ = OrganizationBookingSettings.objects.get_or_create(
+            organization=org
+        )
+        if not booking_settings.is_accepting_requests:
+            return Response(
+                {"error": "This store is not accepting rental requests right now."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = PublicBookingRequestSerializer(
+            data=request.data, context={"booking_settings": booking_settings}
+        )
 
         if serializer.is_valid():
             # Create or find client

@@ -47,8 +47,9 @@ def _resolve_organization(request):
 class EventDashboardStatsAPIView(APIView):
     """
     Org-wide Profit & Loss totals across all Events for a given period.
-    ?period=today|month|year (default month) and ?year=YYYY (used only when
-    period=year; defaults to the current year).
+    ?period=today|month|year|custom (default month) and ?year=YYYY (used only
+    when period=year; defaults to the current year). period=custom takes
+    ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD (both inclusive).
     """
 
     permission_classes = [IsAuthenticated]
@@ -61,7 +62,33 @@ class EventDashboardStatsAPIView(APIView):
         period = request.query_params.get("period", "month")
         now = timezone.now()
 
-        if period == "today":
+        if period == "custom":
+            try:
+                start_d = datetime.date.fromisoformat(
+                    request.query_params.get("start_date", "")
+                )
+                end_d = datetime.date.fromisoformat(
+                    request.query_params.get("end_date", "")
+                )
+            except ValueError:
+                return Response(
+                    {"error": "start_date and end_date must be YYYY-MM-DD."},
+                    status=400,
+                )
+            if end_d < start_d:
+                return Response(
+                    {"error": "end_date must be on or after start_date."},
+                    status=400,
+                )
+            start = datetime.datetime.combine(
+                start_d, datetime.time.min, tzinfo=datetime.timezone.utc
+            )
+            end = datetime.datetime.combine(
+                end_d + datetime.timedelta(days=1),
+                datetime.time.min,
+                tzinfo=datetime.timezone.utc,
+            )
+        elif period == "today":
             start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             end = start + datetime.timedelta(days=1)
         elif period == "year":

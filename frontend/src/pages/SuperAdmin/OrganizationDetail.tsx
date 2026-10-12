@@ -619,8 +619,8 @@ export function OrganizationDetail() {
       {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
-            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30 shrink-0">
               <h3 className="text-lg font-bold text-[var(--text-main)]">
                 Edit Organization
               </h3>
@@ -632,58 +632,62 @@ export function OrganizationDetail() {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateOrg} className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
-                  Organization Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
-                  placeholder="Company Name"
-                />
-              </div>
+            <form
+              onSubmit={handleUpdateOrg}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
+                    Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
+                    placeholder="Company Name"
+                  />
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
-                  Default Currency
-                </label>
-                <select
-                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
-                  value={editCurrencyId}
-                  onChange={(e) => setEditCurrencyId(e.target.value)}
-                  required
-                >
-                  <option value="">Select Currency</option>
-                  {currencies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.symbol})
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
+                    Default Currency
+                  </label>
+                  <select
+                    className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all"
+                    value={editCurrencyId}
+                    onChange={(e) => setEditCurrencyId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Currency</option>
+                    {currencies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.symbol})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
-                  Payout Account ID (Stripe)
-                </label>
-                <input
-                  type="text"
-                  value={editPayoutId}
-                  onChange={(e) => setEditPayoutId(e.target.value)}
-                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
-                  placeholder="acct_..."
-                />
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
+                    Payout Account ID (Stripe)
+                  </label>
+                  <input
+                    type="text"
+                    value={editPayoutId}
+                    onChange={(e) => setEditPayoutId(e.target.value)}
+                    className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
+                    placeholder="acct_..."
+                  />
+                </div>
               </div>
-
-              <div className="pt-4">
+              <div className="p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="submit"
-                  disabled={isSaving}
-                  className="w-full py-3 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
+                  disabled={isSaving || !editName.trim() || !editCurrencyId}
+                  className="w-full py-3 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20"
                 >
                   {isSaving ? (
                     "Saving..."
@@ -701,8 +705,8 @@ export function OrganizationDetail() {
       {/* Set Password Modal */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
-            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+            <div className="p-6 border-b border-[var(--border-soft)] flex items-center justify-between bg-[var(--bg-app)]/30 shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-[var(--text-main)]">
                   Set User Password
@@ -722,27 +726,31 @@ export function OrganizationDetail() {
               </button>
             </div>
 
-            <form onSubmit={handleSetPassword} className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
-                  placeholder="Enter new strong password"
-                  autoFocus
-                />
+            <form
+              onSubmit={handleSetPassword}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase px-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm focus:border-brand-primary outline-none transition-all placeholder-[var(--text-muted)]"
+                    placeholder="Enter new strong password"
+                    autoFocus
+                  />
+                </div>
               </div>
-
-              <div className="pt-4">
+              <div className="p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="submit"
                   disabled={isSettingPassword || !newPassword}
-                  className="w-full py-3 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-brand-primary/20"
+                  className="w-full py-3 bg-brand-primary text-brand-accent rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-brand-primary/20"
                 >
                   {isSettingPassword ? (
                     "Updating..."

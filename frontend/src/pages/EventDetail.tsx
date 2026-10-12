@@ -799,161 +799,164 @@ export function EventDetail() {
             </div>
             <form
               onSubmit={handleEditSubmit}
-              className="p-6 space-y-4 overflow-y-auto"
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Project / Event Name
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, name: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, description: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Start Date
+                    Project / Event Name
                   </label>
                   <input
-                    type="date"
-                    value={editForm.start_date}
+                    required
+                    type="text"
+                    value={editForm.name}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, start_date: e.target.value })
+                      setEditForm({ ...editForm, name: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    End Date
+                    Description
                   </label>
-                  <input
-                    type="date"
-                    value={editForm.end_date}
+                  <textarea
+                    rows={2}
+                    value={editForm.description}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, end_date: e.target.value })
+                      setEditForm({ ...editForm, description: e.target.value })
                     }
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Status
-                </label>
-                <select
-                  value={editForm.status}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, status: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                >
-                  <option value="planned">Planned</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Revenue Invoices
-                </label>
-                <div className="w-full max-h-[160px] overflow-y-auto px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl space-y-2">
-                  {invoices.length === 0 ? (
-                    <div className="text-sm text-[var(--text-muted)] italic">
-                      No invoices available
-                    </div>
-                  ) : (
-                    invoices.map((inv: any) => {
-                      const isChecked = (
-                        editForm.invoices as string[]
-                      ).includes(String(inv.invoice_id));
-                      return (
-                        <label
-                          key={inv.invoice_id}
-                          className="flex items-start gap-3 cursor-pointer group"
-                        >
-                          <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const currentInvoices =
-                                  editForm.invoices as string[];
-                                if (e.target.checked) {
-                                  setEditForm({
-                                    ...editForm,
-                                    invoices: [
-                                      ...currentInvoices,
-                                      String(inv.invoice_id),
-                                    ],
-                                  });
-                                } else {
-                                  setEditForm({
-                                    ...editForm,
-                                    invoices: currentInvoices.filter(
-                                      (id) => id !== String(inv.invoice_id),
-                                    ),
-                                  });
-                                }
-                              }}
-                              className="peer sr-only"
-                            />
-                            <div className="w-5 h-5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded group-hover:border-brand-primary peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-colors flex items-center justify-center">
-                              {isChecked && (
-                                <svg
-                                  className="w-3.5 h-3.5 text-white"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={3}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.start_date}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, start_date: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editForm.end_date}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, end_date: e.target.value })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Status
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, status: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  >
+                    <option value="planned">Planned</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Revenue Invoices
+                  </label>
+                  <div className="w-full max-h-[160px] overflow-y-auto px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl space-y-2">
+                    {invoices.length === 0 ? (
+                      <div className="text-sm text-[var(--text-muted)] italic">
+                        No invoices available
+                      </div>
+                    ) : (
+                      invoices.map((inv: any) => {
+                        const isChecked = (
+                          editForm.invoices as string[]
+                        ).includes(String(inv.invoice_id));
+                        return (
+                          <label
+                            key={inv.invoice_id}
+                            className="flex items-start gap-3 cursor-pointer group"
+                          >
+                            <div className="relative flex items-center justify-center w-5 h-5 mt-0.5 shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const currentInvoices =
+                                    editForm.invoices as string[];
+                                  if (e.target.checked) {
+                                    setEditForm({
+                                      ...editForm,
+                                      invoices: [
+                                        ...currentInvoices,
+                                        String(inv.invoice_id),
+                                      ],
+                                    });
+                                  } else {
+                                    setEditForm({
+                                      ...editForm,
+                                      invoices: currentInvoices.filter(
+                                        (id) => id !== String(inv.invoice_id),
+                                      ),
+                                    });
+                                  }
+                                }}
+                                className="peer sr-only"
+                              />
+                              <div className="w-5 h-5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded group-hover:border-brand-primary peer-checked:bg-brand-primary peer-checked:border-brand-primary transition-colors flex items-center justify-center">
+                                {isChecked && (
+                                  <svg
+                                    className="w-3.5 h-3.5 text-white"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={3}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex-1 text-sm text-[var(--text-main)] font-medium">
-                            <span className="font-bold">
-                              {inv.invoice_number}
-                            </span>{" "}
-                            —{" "}
-                            <span className="text-[var(--text-muted)]">
-                              {inv.client_details?.business_name ||
-                                inv.client_name ||
-                                "No client"}
-                            </span>
-                          </div>
-                        </label>
-                      );
-                    })
-                  )}
+                            <div className="flex-1 text-sm text-[var(--text-main)] font-medium">
+                              <span className="font-bold">
+                                {inv.invoice_number}
+                              </span>{" "}
+                              —{" "}
+                              <span className="text-[var(--text-muted)]">
+                                {inv.client_details?.business_name ||
+                                  inv.client_name ||
+                                  "No client"}
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="pt-2 flex gap-3">
+
+              <div className="p-6 border-t border-[var(--border-soft)] bg-[var(--bg-surface)] shrink-0 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
@@ -963,7 +966,7 @@ export function EventDetail() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isEditSaving}
+                  disabled={isEditSaving || !editForm.name.trim()}
                   className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isEditSaving ? "Saving..." : "Save Changes"}
@@ -994,129 +997,134 @@ export function EventDetail() {
             </div>
             <form
               onSubmit={handleAddExpense}
-              className="p-6 space-y-4 overflow-y-auto"
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setExpenseForm({ ...expenseForm, expense_type: "item" })
-                  }
-                  className={cn(
-                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
-                    expenseForm.expense_type === "item"
-                      ? "bg-brand-primary text-white border-brand-primary"
-                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
-                  )}
-                >
-                  Item
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setExpenseForm({ ...expenseForm, expense_type: "vendor" })
-                  }
-                  className={cn(
-                    "py-2.5 rounded-xl border font-bold text-sm transition-colors",
-                    expenseForm.expense_type === "vendor"
-                      ? "bg-brand-primary text-white border-brand-primary"
-                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
-                  )}
-                >
-                  Vendor
-                </button>
-              </div>
-
-              {expenseForm.expense_type === "vendor" ? (
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Vendor <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={expenseForm.vendor}
-                    onChange={(e) =>
-                      setExpenseForm({ ...expenseForm, vendor: e.target.value })
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpenseForm({ ...expenseForm, expense_type: "item" })
                     }
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    className={cn(
+                      "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                      expenseForm.expense_type === "item"
+                        ? "bg-brand-primary text-white border-brand-primary"
+                        : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                    )}
                   >
-                    <option value="">Select a vendor...</option>
-                    {vendors.map((v: any) => (
-                      <option key={v.vendor_id} value={v.vendor_id}>
-                        {v.business_name} — {v.service}
-                      </option>
-                    ))}
-                  </select>
+                    Item
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpenseForm({ ...expenseForm, expense_type: "vendor" })
+                    }
+                    className={cn(
+                      "py-2.5 rounded-xl border font-bold text-sm transition-colors",
+                      expenseForm.expense_type === "vendor"
+                        ? "bg-brand-primary text-white border-brand-primary"
+                        : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                    )}
+                  >
+                    Vendor
+                  </button>
                 </div>
-              ) : (
+
+                {expenseForm.expense_type === "vendor" ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Vendor <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={expenseForm.vendor}
+                      onChange={(e) =>
+                        setExpenseForm({
+                          ...expenseForm,
+                          vendor: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    >
+                      <option value="">Select a vendor...</option>
+                      {vendors.map((v: any) => (
+                        <option key={v.vendor_id} value={v.vendor_id}>
+                          {v.business_name} — {v.service}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Item Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={expenseForm.name}
+                      onChange={(e) =>
+                        setExpenseForm({ ...expenseForm, name: e.target.value })
+                      }
+                      placeholder="e.g. Chairs & Tables Rental"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Item Name <span className="text-rose-500">*</span>
+                    Amount <span className="text-rose-500">*</span>
                   </label>
                   <input
                     required
-                    type="text"
-                    value={expenseForm.name}
+                    type="number"
+                    step="0.01"
+                    value={expenseForm.amount || ""}
                     onChange={(e) =>
-                      setExpenseForm({ ...expenseForm, name: e.target.value })
+                      setExpenseForm({
+                        ...expenseForm,
+                        amount: e.target.value,
+                      })
                     }
-                    placeholder="e.g. Chairs & Tables Rental"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
                   />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Amount <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  value={expenseForm.amount || ""}
-                  onChange={(e) =>
-                    setExpenseForm({
-                      ...expenseForm,
-                      amount: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={expenseForm.description}
+                    onChange={(e) =>
+                      setExpenseForm({
+                        ...expenseForm,
+                        description: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={expenseForm.date || ""}
+                    onChange={(e) =>
+                      setExpenseForm({ ...expenseForm, date: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Description
-                </label>
-                <textarea
-                  rows={2}
-                  value={expenseForm.description}
-                  onChange={(e) =>
-                    setExpenseForm({
-                      ...expenseForm,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Date (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={expenseForm.date || ""}
-                  onChange={(e) =>
-                    setExpenseForm({ ...expenseForm, date: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-3">
+              <div className="p-6 border-t border-[var(--border-soft)] bg-[var(--bg-surface)] shrink-0 flex gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -1129,7 +1137,13 @@ export function EventDetail() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isExpenseSaving}
+                  disabled={
+                    isExpenseSaving ||
+                    !String(expenseForm.amount ?? "").trim() ||
+                    (expenseForm.expense_type === "vendor"
+                      ? !String(expenseForm.vendor ?? "").trim()
+                      : !expenseForm.name?.trim())
+                  }
                   className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isExpenseSaving
@@ -1147,7 +1161,7 @@ export function EventDetail() {
       {/* Clone Expense Modal */}
       {isCloneExpenseOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md border border-[var(--border-soft)] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-main)]">
                 Clone Expenses
@@ -1159,33 +1173,38 @@ export function EventDetail() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCloneExpenses} className="p-6 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Select Source Project <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  required
-                  value={selectedSourceEvent}
-                  onChange={(e) => setSelectedSourceEvent(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                >
-                  <option value="">Select a previous project...</option>
-                  {availableEvents
-                    .filter((ev: any) => ev.event_id !== parseInt(id!))
-                    .map((ev: any) => (
-                      <option key={ev.event_id} value={ev.event_id}>
-                        {ev.name}
-                      </option>
-                    ))}
-                </select>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  This will copy all expenses from the selected project to this
-                  one.
-                </p>
+            <form
+              onSubmit={handleCloneExpenses}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Select Source Project{" "}
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={selectedSourceEvent}
+                    onChange={(e) => setSelectedSourceEvent(e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  >
+                    <option value="">Select a previous project...</option>
+                    {availableEvents
+                      .filter((ev: any) => ev.event_id !== parseInt(id!))
+                      .map((ev: any) => (
+                        <option key={ev.event_id} value={ev.event_id}>
+                          {ev.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    This will copy all expenses from the selected project to
+                    this one.
+                  </p>
+                </div>
               </div>
-
-              <div className="pt-4 flex gap-3">
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsCloneExpenseOpen(false)}
@@ -1209,7 +1228,7 @@ export function EventDetail() {
       {/* Attach Feedback Modal */}
       {isAttachFeedbackOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-md border border-[var(--border-soft)] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-main)]">
                 Attach Feedback Form
@@ -1221,27 +1240,31 @@ export function EventDetail() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAttachFeedback} className="p-6 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Select Template <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  required
-                  value={selectedForm}
-                  onChange={(e) => setSelectedForm(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
-                >
-                  <option value="">Select a form...</option>
-                  {availableForms.map((f: any) => (
-                    <option key={f.id} value={f.id}>
-                      {f.title}
-                    </option>
-                  ))}
-                </select>
+            <form
+              onSubmit={handleAttachFeedback}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Select Template <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={selectedForm}
+                    onChange={(e) => setSelectedForm(e.target.value)}
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                  >
+                    <option value="">Select a form...</option>
+                    {availableForms.map((f: any) => (
+                      <option key={f.id} value={f.id}>
+                        {f.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-
-              <div className="pt-4 flex gap-3">
+              <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAttachFeedbackOpen(false)}
@@ -1283,7 +1306,7 @@ export function EventDetail() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto bg-[var(--bg-app)]">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0 bg-[var(--bg-app)]">
               {isLoadingResponses ? (
                 <div className="text-center py-10 text-[var(--text-muted)]">
                   Loading responses...

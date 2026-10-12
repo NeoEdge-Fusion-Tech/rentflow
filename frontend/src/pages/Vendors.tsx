@@ -643,161 +643,170 @@ export function Vendors() {
 
             <form
               onSubmit={handleSubmit}
-              className="p-6 space-y-6 overflow-y-auto"
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
-              <div className="flex flex-col items-center justify-center space-y-3">
-                <div className="relative group">
-                  <div className="w-24 h-24 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] flex items-center justify-center overflow-hidden">
-                    {formData.logo ? (
-                      <img
-                        src={
-                          formData.logo instanceof File
-                            ? URL.createObjectURL(formData.logo)
-                            : formData.logo
-                        }
-                        alt="Logo Preview"
-                        className="w-full h-full object-cover"
+              <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <div className="relative group">
+                    <div className="w-24 h-24 rounded-full bg-[var(--bg-app)] border border-[var(--border-soft)] flex items-center justify-center overflow-hidden">
+                      {formData.logo ? (
+                        <img
+                          src={
+                            formData.logo instanceof File
+                              ? URL.createObjectURL(formData.logo)
+                              : formData.logo
+                          }
+                          alt="Logo Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Building2 className="w-10 h-10 text-[var(--text-muted)]" />
+                      )}
+                    </div>
+                    <label className="absolute bottom-0 right-0 p-1.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-full shadow-sm cursor-pointer hover:bg-[var(--bg-app)] transition-colors">
+                      <Upload className="w-4 h-4 text-[var(--text-main)]" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setFormData({
+                              ...formData,
+                              logo: e.target.files[0],
+                            });
+                          }
+                        }}
                       />
-                    ) : (
-                      <Building2 className="w-10 h-10 text-[var(--text-muted)]" />
-                    )}
+                    </label>
                   </div>
-                  <label className="absolute bottom-0 right-0 p-1.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-full shadow-sm cursor-pointer hover:bg-[var(--bg-app)] transition-colors">
-                    <Upload className="w-4 h-4 text-[var(--text-main)]" />
+                  <span className="text-xs font-bold text-[var(--text-muted)]">
+                    Vendor Logo (Optional)
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Vendor Business Name{" "}
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.business_name}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        business_name: e.target.value,
+                      })
+                    }
+                    placeholder="e.g. Bright Sound & Lighting"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Vendor Service <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.service}
+                    onChange={(e) =>
+                      setFormData({ ...formData, service: e.target.value })
+                    }
+                    placeholder="e.g. Sound & Lighting Rental"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-[var(--text-muted)]">
+                    Contact Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.contact_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, contact_name: e.target.value })
+                    }
+                    placeholder="Contact Person"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Contact Email
+                    </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setFormData({ ...formData, logo: e.target.files[0] });
-                        }
-                      }}
+                      type="email"
+                      value={formData.contact_email}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_email: e.target.value,
+                        })
+                      }
+                      placeholder="Optional"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
                     />
-                  </label>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[var(--text-muted)]">
+                      Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.contact_phone}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_phone: e.target.value,
+                        })
+                      }
+                      placeholder="Optional"
+                      className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    />
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-[var(--text-muted)]">
-                  Vendor Logo (Optional)
-                </span>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Vendor Business Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.business_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, business_name: e.target.value })
-                  }
-                  placeholder="e.g. Bright Sound & Lighting"
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Vendor Service <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.service}
-                  onChange={(e) =>
-                    setFormData({ ...formData, service: e.target.value })
-                  }
-                  placeholder="e.g. Sound & Lighting Rental"
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Contact Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.contact_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, contact_name: e.target.value })
-                  }
-                  placeholder="Contact Person"
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Contact Email
+                    Description
                   </label>
-                  <input
-                    type="email"
-                    value={formData.contact_email}
+                  <textarea
+                    rows={3}
+                    value={formData.description}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_email: e.target.value,
-                      })
+                      setFormData({ ...formData, description: e.target.value })
                     }
-                    placeholder="Optional"
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
+                    placeholder="What this vendor provides..."
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
                   />
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
-                    Contact Phone
+                    Status
                   </label>
-                  <input
-                    type="tel"
-                    value={formData.contact_phone}
+                  <select
+                    value={formData.status}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_phone: e.target.value,
-                      })
+                      setFormData({ ...formData, status: e.target.value })
                     }
-                    placeholder="Optional"
                     className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                  />
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="What this vendor provides..."
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-muted)]">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div className="pt-2 flex gap-3">
+              <div className="p-6 border-t border-[var(--border-soft)] bg-[var(--bg-surface)] shrink-0 flex gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -807,7 +816,12 @@ export function Vendors() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={
+                    isSaving ||
+                    !formData.business_name.trim() ||
+                    !formData.service.trim() ||
+                    !formData.contact_name.trim()
+                  }
                   className="px-6 py-2.5 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving
@@ -903,18 +917,18 @@ export function Vendors() {
                   </p>
                 </div>
               )}
+            </div>
 
-              <div className="flex items-center justify-end pt-6 border-t border-[var(--border-soft)]">
-                <button
-                  onClick={() => {
-                    setViewingVendor(null);
-                    openEditModal(viewingVendor);
-                  }}
-                  className="px-6 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-surface)] transition-colors flex items-center gap-2"
-                >
-                  <Edit2 className="w-4 h-4" /> Edit Vendor
-                </button>
-              </div>
+            <div className="flex items-center justify-end p-6 border-t border-[var(--border-soft)] bg-[var(--bg-surface)] shrink-0">
+              <button
+                onClick={() => {
+                  setViewingVendor(null);
+                  openEditModal(viewingVendor);
+                }}
+                className="px-6 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--bg-surface)] transition-colors flex items-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" /> Edit Vendor
+              </button>
             </div>
           </div>
         </div>

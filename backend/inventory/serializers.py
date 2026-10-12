@@ -10,6 +10,7 @@ from .models import (
 )
 
 from users.mixins import TenantSerializerMixin
+from .booking_rules import normalize_days
 
 
 class OrganizationBookingSettingsSerializer(serializers.ModelSerializer):
@@ -23,6 +24,39 @@ class OrganizationBookingSettingsSerializer(serializers.ModelSerializer):
             "public_url_slug",
             "storefront_name",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Older rows may hold a comma-separated string; always return a list.
+        try:
+            data["available_days"] = normalize_days(data.get("available_days"))
+        except ValueError:
+            data["available_days"] = []
+        return data
+
+    def validate_available_days(self, value):
+        try:
+            return normalize_days(value)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e))
+
+    def validate_public_url_slug(self, value):
+        # Blank slug means "use the organization id"; store NULL so the
+        # unique constraint doesn't clash between organizations.
+        return value or None
+
+    def validate(self, attrs):
+        open_t = attrs.get(
+            "open_time", self.instance.open_time if self.instance else None
+        )
+        close_t = attrs.get(
+            "close_time", self.instance.close_time if self.instance else None
+        )
+        if open_t and close_t and open_t >= close_t:
+            raise serializers.ValidationError(
+                {"close_time": "Close time must be later than open time."}
+            )
+        return attrs
 
 
 class ProductCategorySerializer(TenantSerializerMixin, serializers.ModelSerializer):

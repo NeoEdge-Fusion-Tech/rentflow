@@ -498,8 +498,8 @@ function AppLayout() {
       {/* Profile Management Modal */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)]">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-[var(--border-soft)]">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 My Profile
               </h2>
@@ -511,8 +511,12 @@ function AppLayout() {
               </button>
             </div>
 
-            <div className="p-6">
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0">
+              <form
+                id="profile-form"
+                onSubmit={handleUpdateProfile}
+                className="space-y-4"
+              >
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
@@ -562,25 +566,9 @@ function AppLayout() {
                     className="w-full border border-[var(--border-soft)] rounded-xl p-2.5 outline-none bg-[var(--bg-app)] opacity-60 text-[var(--text-main)]"
                   />
                 </div>
-
-                <div className="pt-4 flex justify-end gap-3 border-b border-[var(--border-soft)] pb-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowProfileModal(false)}
-                    className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-brand-primary text-white font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm"
-                  >
-                    Save Changes
-                  </button>
-                </div>
               </form>
 
-              <div className="mt-6 pt-2">
+              <div className="mt-6 pt-6 border-t border-[var(--border-soft)]">
                 <h3 className="text-sm font-bold text-rose-500 mb-2 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" /> Danger Zone
                 </h3>
@@ -595,6 +583,27 @@ function AppLayout() {
                   Delete My Account
                 </button>
               </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-soft)] shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(false)}
+                className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="profile-form"
+                disabled={
+                  !profileData.first_name?.trim() ||
+                  !profileData.last_name?.trim()
+                }
+                className="px-5 py-2.5 bg-brand-primary text-white font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>

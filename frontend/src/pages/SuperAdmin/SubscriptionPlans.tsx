@@ -286,8 +286,8 @@ export function SubscriptionPlans() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)] shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b border-[var(--border-soft)]">
+          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)] shadow-lg w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-[var(--border-soft)] shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 {editingPlan
                   ? "Edit Subscription Plan"
@@ -295,190 +295,198 @@ export function SubscriptionPlans() {
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)] p-1 rounded-lg hover:bg-[var(--bg-app)]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Plan Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary h-20"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
+            >
+              <div className="p-4 space-y-4 overflow-y-auto flex-1">
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Price ($)
+                    Plan Name
                   </label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
                     required
-                    value={formData.price}
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        price: parseFloat(e.target.value),
-                      })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                     className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Billing Cycle
+                    Description
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary h-20"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Price ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Billing Cycle
+                    </label>
+                    <select
+                      value={formData.billing_cycle}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          billing_cycle: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
+                    >
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Max Invoices/Month (-1 = unltd)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={formData.max_invoices_per_month}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          max_invoices_per_month: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                      Max Bookings/Month (-1 = unltd)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={formData.max_inventory_booking_per_month}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          max_inventory_booking_per_month: parseInt(
+                            e.target.value,
+                          ),
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[var(--border-soft)]">
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Included Modules
                   </label>
                   <select
-                    value={formData.billing_cycle}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        billing_cycle: e.target.value,
-                      })
-                    }
+                    value={formData.has_booking ? "inventory" : "invoice"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "inventory") {
+                        setFormData({
+                          ...formData,
+                          has_booking: true,
+                          has_invoice: true,
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          has_booking: false,
+                          has_invoice: true,
+                        });
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
                   >
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
+                    <option value="invoice">Invoice Only</option>
+                    <option value="inventory">Inventory & Invoicing</option>
                   </select>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Inventory inherently includes Invoicing capabilities.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isFree"
+                      checked={formData.is_free}
+                      onChange={(e) =>
+                        setFormData({ ...formData, is_free: e.target.checked })
+                      }
+                      className="mr-2"
+                    />
+                    <label
+                      htmlFor="isFree"
+                      className="text-sm font-medium text-[var(--text-main)]"
+                    >
+                      Is Free Plan (Unique)
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={formData.is_active}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_active: e.target.checked,
+                        })
+                      }
+                      className="mr-2"
+                    />
+                    <label
+                      htmlFor="isActive"
+                      className="text-sm font-medium text-[var(--text-main)]"
+                    >
+                      Active Plan
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Max Invoices/Month (-1 = unltd)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.max_invoices_per_month}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        max_invoices_per_month: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    Max Bookings/Month (-1 = unltd)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.max_inventory_booking_per_month}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        max_inventory_booking_per_month: parseInt(
-                          e.target.value,
-                        ),
-                      })
-                    }
-                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-[var(--border-soft)]">
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                  Included Modules
-                </label>
-                <select
-                  value={formData.has_booking ? "inventory" : "invoice"}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "inventory") {
-                      setFormData({
-                        ...formData,
-                        has_booking: true,
-                        has_invoice: true,
-                      });
-                    } else {
-                      setFormData({
-                        ...formData,
-                        has_booking: false,
-                        has_invoice: true,
-                      });
-                    }
-                  }}
-                  className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] focus:outline-none focus:border-brand-primary"
-                >
-                  <option value="invoice">Invoice Only</option>
-                  <option value="inventory">Inventory & Invoicing</option>
-                </select>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  Inventory inherently includes Invoicing capabilities.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isFree"
-                    checked={formData.is_free}
-                    onChange={(e) =>
-                      setFormData({ ...formData, is_free: e.target.checked })
-                    }
-                    className="mr-2"
-                  />
-                  <label
-                    htmlFor="isFree"
-                    className="text-sm font-medium text-[var(--text-main)]"
-                  >
-                    Is Free Plan (Unique)
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={formData.is_active}
-                    onChange={(e) =>
-                      setFormData({ ...formData, is_active: e.target.checked })
-                    }
-                    className="mr-2"
-                  />
-                  <label
-                    htmlFor="isActive"
-                    className="text-sm font-medium text-[var(--text-main)]"
-                  >
-                    Active Plan
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--border-soft)]">
+              <div className="flex justify-end gap-3 p-4 border-t border-[var(--border-soft)] shrink-0 bg-[var(--bg-surface)]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -488,7 +496,8 @@ export function SubscriptionPlans() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary/90 flex items-center gap-2"
+                  disabled={!formData.name.trim()}
+                  className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary/90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="w-4 h-4" />
                   Save Plan
