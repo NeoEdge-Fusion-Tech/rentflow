@@ -3,40 +3,22 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingBag, ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import axios from "axios";
 import { formatPrice } from "../components/StoreFilters";
+import {
+  BookingConfirmation,
+  Confirmation,
+} from "../components/BookingConfirmation";
+import {
+  OpeningHours,
+  openingStatus,
+  checkBookingTime,
+} from "../components/OpeningHours";
 
-const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
-// Mirrors backend inventory.booking_rules.schedule_errors so customers see
-// problems before submitting. Empty days / unset hours = no restriction.
-function scheduleError(settings: any, label: string, value: string) {
-  if (!settings || !value) return "";
-  const dt = new Date(value);
-  if (isNaN(dt.getTime())) return "";
-  const days: string[] = Array.isArray(settings.available_days)
-    ? settings.available_days
-    : [];
-  const dayName = DAYS_OF_WEEK[(dt.getDay() + 6) % 7];
-  if (days.length && !days.includes(dayName)) {
-    return `${label} falls on a ${dayName}. Available days: ${days.join(
-      ", ",
-    )}.`;
-  }
-  const open = settings.open_time?.slice(0, 5);
-  const close = settings.close_time?.slice(0, 5);
-  const hhmm = value.slice(11, 16);
-  if (open && close && (hhmm < open || hhmm > close)) {
-    return `${label} must be between ${open} and ${close}.`;
-  }
-  return "";
-}
+// datetime-local values are wall-clock times in the customer's own zone.
+const toInstant = (value: string) => (value ? new Date(value).getTime() : NaN);
+const toISO = (value: string) => {
+  const t = toInstant(value);
+  return isNaN(t) ? value : new Date(t).toISOString();
+};
 
 export function PublicRentalCheckout() {
   const { org_id, identifier } = useParams();
@@ -47,6 +29,10 @@ export function PublicRentalCheckout() {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [notice, setNotice] = useState("");
+  // Which button submitted the form.
+  const [payMode, setPayMode] = useState<"pay" | "request">("pay");
   const [settings, setSettings] = useState<any>(null);
 
   const [formData, setFormData] = useState({
@@ -97,9 +83,17 @@ export function PublicRentalCheckout() {
     .toISOString()
     .slice(0, 16);
   const dateErrors = {
-    setup_date: scheduleError(settings, "Setup", formData.setup_date),
+    setup_date: checkBookingTime(
+      settings,
+      "Setup",
+      toInstant(formData.setup_date),
+    ),
     set_down_date:
-      scheduleError(settings, "Set down", formData.set_down_date) ||
+      checkBookingTime(
+        settings,
+        "Set down",
+        toInstant(formData.set_down_date),
+      ) ||
       (formData.setup_date &&
       formData.set_down_date &&
       formData.set_down_date <= formData.setup_date
@@ -124,6 +118,7 @@ export function PublicRentalCheckout() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || notAccepting) return;
+    const payNow = canPayOnline && payMode === "pay";
     setLoading(true);
     try {
       const baseUrl =
@@ -131,16 +126,34 @@ export function PublicRentalCheckout() {
 
       const payload = {
         ...formData,
+        // Send real instants so the vendor reads them in its own time zone.
+        setup_date: toISO(formData.setup_date),
+        set_down_date: toISO(formData.set_down_date),
+        event_date: toISO(formData.event_date),
+        note_for_org: formData.note_for_org.trim(),
         items: cart.map((item: any) => ({
           product_unit_id: item.unit.product_unit_id,
           quantity_booked: item.quantity,
         })),
+        pay_now: payNow,
+        // Paystack sends the guest back here to confirm the payment.
+        return_url: `${window.location.origin}/public/store/${storeIdentifier}/payment/complete`,
       };
 
-      await axios.post(
+      const res = await axios.post(
         `${baseUrl}/public/organizations/${storeIdentifier}/booking-requests/`,
         payload,
       );
+      if (res.data.authorization_url) {
+        window.location.href = res.data.authorization_url;
+        return;
+      }
+      if (res.data.payment_error) {
+        setNotice(
+          "Online payment couldn't start, so your request was sent without payment. The vendor will contact you.",
+        );
+      }
+      setConfirmation(res.data.confirmation || null);
       setSuccess(true);
     } catch (e: any) {
       console.error(e);
@@ -158,6 +171,12 @@ export function PublicRentalCheckout() {
     }
   };
 
+  const canPayOnline = Boolean(settings?.online_payments_enabled);
+  const depositPercent = Math.min(
+    100,
+    Math.max(1, Number(settings?.deposit_percent) || 100),
+  );
+
   const currencySymbol: string | undefined = cart.find(
     (item: any) => item.product?.currency_symbol,
   )?.product?.currency_symbol;
@@ -166,6 +185,18 @@ export function PublicRentalCheckout() {
       item.unit?.rental_price || item.product.units?.[0]?.rental_price || 0;
     return acc + price * item.quantity;
   }, 0);
+
+  if (success && confirmation) {
+    return (
+      <BookingConfirmation
+        data={confirmation}
+        paid={false}
+        notice={notice}
+        onDone={() => navigate(`/public/store/${storeIdentifier}`)}
+        doneLabel="Back to rentals"
+      />
+    );
+  }
 
   if (success) {
     return (
@@ -336,36 +367,19 @@ export function PublicRentalCheckout() {
                   />
                 </div>
 
-                {settings &&
-                  ((settings.available_days?.length ?? 0) > 0 ||
-                    (settings.open_time && settings.close_time)) && (
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-brand-primary/5 border border-brand-primary/20 text-sm text-[var(--text-main)]">
-                      <Clock className="w-4 h-4 mt-0.5 text-brand-primary shrink-0" />
-                      <p>
-                        Setups and set downs can be scheduled
-                        {settings.available_days?.length > 0 && (
-                          <>
-                            {" "}
-                            on{" "}
-                            <strong>
-                              {settings.available_days.join(", ")}
-                            </strong>
-                          </>
-                        )}
-                        {settings.open_time && settings.close_time && (
-                          <>
-                            {" "}
-                            between{" "}
-                            <strong>
-                              {settings.open_time.slice(0, 5)} –{" "}
-                              {settings.close_time.slice(0, 5)}
-                            </strong>
-                          </>
-                        )}
-                        .
-                      </p>
-                    </div>
+                <div>
+                  <OpeningHours availability={settings} />
+                  {settings && openingStatus(settings) && (
+                    <p className="text-xs text-[var(--text-muted)] mt-2 px-1">
+                      Pick times in your own time zone (
+                      {Intl.DateTimeFormat()
+                        .resolvedOptions()
+                        .timeZone.replace(/_/g, " ")}
+                      ). Setup and set-down must fall within the opening hours
+                      above.
+                    </p>
                   )}
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-[var(--border-soft)]">
                   <div>
@@ -431,31 +445,89 @@ export function PublicRentalCheckout() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
-                    Additional Notes
+                  <label
+                    htmlFor="note_for_org"
+                    className="block text-sm font-medium text-[var(--text-main)] mb-1"
+                  >
+                    Note to the vendor{" "}
+                    <span className="text-[var(--text-muted)] font-normal">
+                      (optional)
+                    </span>
                   </label>
                   <textarea
+                    id="note_for_org"
                     name="note_for_org"
                     value={formData.note_for_org}
                     onChange={handleChange}
-                    rows={3}
+                    maxLength={1000}
+                    rows={4}
                     className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] resize-none"
-                    placeholder="Any specific requirements..."
+                    placeholder="E.g. delivery instructions, venue access, colour preferences, or questions for the vendor…"
                   ></textarea>
+                  <div className="flex justify-between mt-1 text-xs text-[var(--text-muted)]">
+                    <span>The vendor sees this with your request.</span>
+                    <span className="tabular-nums">
+                      {formData.note_for_org.length}/1000
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-6 border-t border-[var(--border-soft)]">
-                  <button
-                    type="submit"
-                    disabled={loading || notAccepting || !isFormValid}
-                    className="w-full py-4 bg-brand-primary text-[var(--text-on-brand)] rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                  >
-                    {loading
-                      ? "Submitting..."
-                      : settings && !settings.is_accepting_requests
-                        ? "Currently Not Accepting Requests"
-                        : "Submit Rental Request"}
-                  </button>
+                <div className="pt-6 border-t border-[var(--border-soft)] space-y-3">
+                  {notAccepting ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-4 bg-brand-primary text-[var(--text-on-brand)] rounded-xl font-bold text-lg opacity-50 cursor-not-allowed"
+                    >
+                      Currently Not Accepting Requests
+                    </button>
+                  ) : canPayOnline && totalAmount > 0 ? (
+                    <>
+                      <button
+                        type="submit"
+                        onClick={() => setPayMode("pay")}
+                        disabled={loading || !isFormValid}
+                        className="w-full py-4 bg-brand-primary text-[var(--text-on-brand)] rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex flex-col items-center"
+                      >
+                        <span style={{ fontFamily: "'Noto Sans', sans-serif" }}>
+                          {loading && payMode === "pay"
+                            ? "Starting payment…"
+                            : `Pay ${formatPrice(
+                                { currency_symbol: currencySymbol },
+                                (totalAmount * depositPercent) / 100,
+                              )} & book now`}
+                        </span>
+                        {depositPercent < 100 && (
+                          <span className="text-xs font-medium opacity-80">
+                            {depositPercent}% deposit · balance paid later
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        type="submit"
+                        onClick={() => setPayMode("request")}
+                        disabled={loading || !isFormValid}
+                        className="w-full py-3 rounded-xl font-bold border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading && payMode === "request"
+                          ? "Sending…"
+                          : "Just send a request (pay later)"}
+                      </button>
+                      <p className="text-xs text-[var(--text-muted)] text-center">
+                        Paying now secures your booking. A request lets the
+                        vendor confirm availability and send a quotation first.
+                      </p>
+                    </>
+                  ) : (
+                    <button
+                      type="submit"
+                      onClick={() => setPayMode("request")}
+                      disabled={loading || !isFormValid}
+                      className="w-full py-4 bg-brand-primary text-[var(--text-on-brand)] rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    >
+                      {loading ? "Submitting..." : "Submit Rental Request"}
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

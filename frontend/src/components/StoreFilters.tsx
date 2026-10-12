@@ -73,3 +73,20 @@ export function FilterCheckbox({
 
 export const toggleIn = (list: string[], value: string, on: boolean) =>
   on ? [...list, value] : list.filter((v) => v !== value);
+
+/** "Mon – Fri", "Every day" or "Mon, Wed, Sat" for a list of day names. */
+export const shortDays = (days: string[]) => {
+  const order = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+  const sorted = order.filter((d) => days.includes(d));
+  if (sorted.length === 7) return "Every day";
+  if (sorted.join() === order.slice(0, 5).join()) return "Mon – Fri";
+  return sorted.map((d) => d.slice(0, 3)).join(", ");
+};

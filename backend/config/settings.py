@@ -269,6 +269,8 @@ SPECTACULAR_SETTINGS = {
 
 # Paystack Configuration
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="sk_test_mock_key")
+# Public base URL of this API, used for links in emails sent without a request.
+PUBLIC_API_BASE_URL = config("PUBLIC_API_BASE_URL", default="")
 
 # Email Configuration
 EMAIL_VENDOR = config("EMAIL_VENDOR", default="resend")  # resend, ses, sendgrid

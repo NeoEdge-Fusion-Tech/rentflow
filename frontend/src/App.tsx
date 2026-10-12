@@ -77,6 +77,7 @@ import { PublicFeedback } from "./pages/PublicFeedback";
 import { Landing } from "./pages/Landing";
 import { PublicRentals } from "./pages/PublicRentals";
 import { PublicRentalCheckout } from "./pages/PublicRentalCheckout";
+import { PublicPaymentComplete } from "./pages/PublicPaymentComplete";
 import { ClientPortalLogin } from "./pages/ClientPortalLogin";
 import { ClientPortalDashboard } from "./pages/ClientPortalDashboard";
 import { Marketplace } from "./pages/Marketplace";
@@ -115,13 +116,24 @@ function AppLayout() {
     location.pathname.startsWith("/marketplace") ||
     location.pathname.startsWith("/public/store/") ||
     location.pathname.startsWith("/public/organizations/");
+  // Public pages anyone may view, signed in or not (no dashboard redirect).
+  const isPublicPage =
+    location.pathname.startsWith("/f/") ||
+    location.pathname.startsWith("/marketplace") ||
+    location.pathname.startsWith("/public/store/") ||
+    location.pathname.startsWith("/public/organizations/");
 
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token && !isAuthRoute) {
       navigate("/login");
-    } else if (token && isAuthRoute && location.pathname !== "/onboarding") {
+    } else if (
+      token &&
+      isAuthRoute &&
+      !isPublicPage &&
+      location.pathname !== "/onboarding"
+    ) {
       // If token exists and they are on an auth route, go to dashboard
       navigate("/dashboard");
     }
@@ -233,6 +245,10 @@ function AppLayout() {
             <Route
               path="/public/store/:identifier/checkout"
               element={<PublicRentalCheckout />}
+            />
+            <Route
+              path="/public/store/:identifier/payment/complete"
+              element={<PublicPaymentComplete />}
             />
             <Route
               path="/public/store/:identifier/login"

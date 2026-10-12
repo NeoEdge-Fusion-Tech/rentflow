@@ -477,17 +477,10 @@ export function QuotationEditor() {
         <div className="lg:col-span-8 space-y-6">
           {/* From */}
           <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
-                From
-              </h3>
-              <button
-                onClick={() => navigate("/settings")}
-                className="text-xs font-bold text-brand-primary hover:underline"
-              >
-                Edit company details
-              </button>
-            </div>
+            {/* Company details are managed in Settings, not while invoicing. */}
+            <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider mb-4">
+              From
+            </h3>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 {org?.company_logo && (

@@ -22,6 +22,8 @@ class OrganizationBookingSettingsSerializer(serializers.ModelSerializer):
             "open_time",
             "close_time",
             "is_accepting_requests",
+            "online_payments_enabled",
+            "deposit_percent",
             "public_url_slug",
             "storefront_name",
         ]
@@ -40,6 +42,11 @@ class OrganizationBookingSettingsSerializer(serializers.ModelSerializer):
             return normalize_days(value)
         except ValueError as e:
             raise serializers.ValidationError(str(e))
+
+    def validate_deposit_percent(self, value):
+        if not 1 <= value <= 100:
+            raise serializers.ValidationError("Deposit must be between 1% and 100%.")
+        return value
 
     def validate_public_url_slug(self, value):
         # Blank slug means "use the organization id"; store NULL so the
@@ -172,20 +179,37 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 pass
         return value
 
+    def _organization(self, data):
+        product = data.get("product")
+        if product is not None and getattr(product, "organization_id", None):
+            return product.organization_id
+        parent = getattr(self, "parent", None)
+        root = getattr(parent, "parent", None) or parent
+        instance = getattr(root, "instance", None)
+        if instance is not None and getattr(instance, "organization_id", None):
+            return instance.organization_id
+        request = self.context.get("request")
+        return getattr(getattr(request, "user", None), "organization_id", None)
+
     def validate(self, data):
-        serial = data.get("serial_number")
+        serial = (data.get("serial_number") or "").strip()
         if serial:
-            # Check uniqueness manually, accounting for updates
-            # We look for product_unit_id in data (since we made it writable above)
+            data["serial_number"] = serial
+            # Serial numbers are unique within an organization. product_unit_id
+            # is writable here so edits don't clash with themselves.
+            qs = ProductUnit.objects.filter(
+                serial_number__iexact=serial,
+                organization_id=self._organization(data),
+            )
             unit_id = data.get("product_unit_id")
-            qs = ProductUnit.objects.filter(serial_number=serial)
             if unit_id:
                 qs = qs.exclude(product_unit_id=unit_id)
-
-            if qs.exists():
+            clash = qs.select_related("product").first()
+            if clash:
                 raise serializers.ValidationError(
                     {
-                        "serial_number": "product unit with this serial number already exists."
+                        "serial_number": f"{serial} is already used by "
+                        f"“{clash.product.name}”. Use a different one."
                     }
                 )
         return data
@@ -281,6 +305,19 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
     def validate(self, data):
         self._check_marketplace_profile(data)
+        # The same serial number twice in one save.
+        seen = set()
+        for unit in data.get("units") or []:
+            serial = (unit.get("serial_number") or "").strip().lower()
+            if not serial:
+                continue
+            if serial in seen:
+                raise serializers.ValidationError(
+                    {
+                        "units": f"Serial number {unit['serial_number']} is used on more than one unit."
+                    }
+                )
+            seen.add(serial)
         if not self.instance and not data.get("units"):
             raise serializers.ValidationError(
                 {
@@ -503,12 +540,27 @@ class BookingSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "has_invoice",
             "receipts_summary",
             "invoices_summary",
+            # Details a guest gave when requesting via storefront/marketplace.
+            "note_for_org",
+            "setup_date",
+            "set_down_date",
+            "event_type",
+            "address",
+            "city",
+            "country",
             "created_at",
             "updated_at",
         ]
         read_only_fields = [
             "total_amount",
             "payment_status",
+            "note_for_org",
+            "setup_date",
+            "set_down_date",
+            "event_type",
+            "address",
+            "city",
+            "country",
             "created_at",
             "updated_at",
         ]

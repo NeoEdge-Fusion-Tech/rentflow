@@ -62,6 +62,51 @@ api.get = async (url: string, config?: any) => {
   return response;
 };
 
+const humanize = (key: string) => {
+  const s = key.replace(/_/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+/**
+ * Turns DRF validation errors (possibly nested, e.g.
+ * {units: [{serial_number: ["…"]}]}) into one readable line such as
+ * "Unit 1 – Serial number: … already used". Shows the first few problems.
+ */
+export function formatDrfErrors(data: any, max = 3): string {
+  const messages: string[] = [];
+  const walk = (value: any, path: string[]) => {
+    if (messages.length >= max || value == null) return;
+    if (typeof value === "string") {
+      const label = path.filter(Boolean).join(" – ");
+      messages.push(
+        label && label !== "Non field errors" ? `${label}: ${value}` : value,
+      );
+      return;
+    }
+    if (Array.isArray(value)) {
+      const parentKey = path[path.length - 1] || "";
+      value.forEach((item, i) => {
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+          // A list of objects is a list of nested records (e.g. units).
+          if (Object.keys(item).length === 0) return;
+          const singular = parentKey.replace(/s$/, "") || "Item";
+          walk(item, [...path.slice(0, -1), `${singular} ${i + 1}`]);
+        } else {
+          walk(item, path);
+        }
+      });
+      return;
+    }
+    if (typeof value === "object") {
+      Object.entries(value).forEach(([k, v]) =>
+        walk(v, [...path, humanize(k)]),
+      );
+    }
+  };
+  walk(data, []);
+  return messages.join(" · ");
+}
+
 // Clear cache on any mutation to ensure data consistency
 api.interceptors.response.use(
   (response) => {
@@ -84,10 +129,8 @@ api.interceptors.response.use(
     if (error.response?.data && typeof error.response.data === "object") {
       const data = error.response.data;
       if (!data.error && !data.detail) {
-        const firstKey = Object.keys(data)[0];
-        if (firstKey && Array.isArray(data[firstKey])) {
-          data.error = `${firstKey.replace("_", " ")}: ${data[firstKey][0]}`;
-        }
+        const message = formatDrfErrors(data);
+        if (message) data.error = message;
       }
     }
 
@@ -163,6 +206,21 @@ export const ProductService = {
     api.put(`/inventory/products/${id}/`, data),
   patch: (id: number, data: any) =>
     api.patch(`/inventory/products/${id}/`, data),
+  // Uses api.request to bypass the GET cache: availability must be live.
+  checkSerial: (
+    serial: string,
+    excludeUnitId?: number,
+    reserved: string[] = [],
+  ) =>
+    api.request({
+      method: "get",
+      url: "/inventory/units/check-serial/",
+      params: {
+        serial,
+        ...(excludeUnitId ? { exclude: excludeUnitId } : {}),
+        ...(reserved.length ? { reserved: reserved.join(",") } : {}),
+      },
+    }),
   delete: (id: number) => api.delete(`/inventory/products/${id}/`),
   getAvailability: (
     id: string | number,

@@ -5,6 +5,8 @@ from .views import (
     PublicBookingRequestView,
     GlobalMarketplaceProductListView,
     GlobalMarketplaceTagListView,
+    PublicPaymentVerifyView,
+    PublicBookingDocumentView,
 )
 from .client_auth import (
     ClientLoginView,
@@ -18,6 +20,16 @@ urlpatterns = [
         "marketplace/products/",
         GlobalMarketplaceProductListView.as_view(),
         name="global-marketplace-products",
+    ),
+    path(
+        "payments/verify/",
+        PublicPaymentVerifyView.as_view(),
+        name="public-payment-verify",
+    ),
+    path(
+        "bookings/<str:token>/<str:kind>/",
+        PublicBookingDocumentView.as_view(),
+        name="public-booking-document",
     ),
     path(
         "marketplace/tags/",

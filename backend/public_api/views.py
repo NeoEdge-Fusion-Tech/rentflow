@@ -17,6 +17,17 @@ from .serializers import (
     PublicMarketplaceTagSerializer,
 )
 from inventory.models import MarketplaceTag
+from loguru import logger
+from .booking_payments import (
+    booking_from_token,
+    confirmation_payload,
+    deposit_amount,
+    finalize_payment,
+    safe_return_url,
+    send_booking_email,
+    start_payment,
+    verify_with_paystack,
+)
 from users.marketplace import marketplace_ready_q
 
 
@@ -41,7 +52,12 @@ class GlobalMarketplaceProductListView(generics.ListAPIView):
             )
             # Only vendors with a complete profile appear on the marketplace.
             .filter(marketplace_ready_q())
-            .select_related("organization", "organization__currency", "category")
+            .select_related(
+                "organization",
+                "organization__currency",
+                "organization__booking_settings",
+                "category",
+            )
             .prefetch_related("units", "marketplace_tags")
         )
 
@@ -101,6 +117,10 @@ class PublicBookingRequestView(APIView):
         )
 
         if serializer.is_valid():
+            pay_now = serializer.validated_data.pop("pay_now", False)
+            return_url = safe_return_url(
+                serializer.validated_data.pop("return_url", "")
+            )
             # Create or find client
             email = serializer.validated_data.pop("email")
             contact_name = serializer.validated_data.get("contact_name", "Public User")
@@ -214,11 +234,108 @@ class PublicBookingRequestView(APIView):
                     ],
                 )
 
+            if (
+                pay_now
+                and booking_settings.online_payments_enabled
+                and booking.total_amount > 0
+            ):
+                amount = deposit_amount(
+                    booking.total_amount, booking_settings.deposit_percent
+                )
+                try:
+                    auth_url, reference = start_payment(
+                        booking, email, amount, return_url
+                    )
+                except Exception as e:
+                    # Keep the request; the guest can still be contacted.
+                    logger.error(
+                        f"Paystack init failed for booking {booking.booking_id}: {e}"
+                    )
+                    send_booking_email(booking, paid=False, request=request)
+                    return Response(
+                        {
+                            "message": "Your request was sent, but online payment "
+                            "couldn't start. The vendor will contact you.",
+                            "booking_id": booking.booking_id,
+                            "payment_error": str(e),
+                            "confirmation": confirmation_payload(booking, request),
+                        },
+                        status=status.HTTP_201_CREATED,
+                    )
+                return Response(
+                    {
+                        "message": "Redirecting to payment.",
+                        "booking_id": booking.booking_id,
+                        "authorization_url": auth_url,
+                        "reference": reference,
+                        "amount": str(amount),
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
+            send_booking_email(booking, paid=False, request=request)
             return Response(
                 {
                     "message": "Booking request submitted successfully.",
                     "booking_id": booking.booking_id,
+                    "confirmation": confirmation_payload(booking, request),
                 },
                 status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PublicPaymentVerifyView(APIView):
+    """POST {reference}: called when Paystack sends the guest back."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        reference = (request.data.get("reference") or "").strip()
+        if not reference:
+            return Response({"error": "Missing payment reference."}, status=400)
+        data = verify_with_paystack(reference)
+        booking = finalize_payment(reference, data, request=request)
+        if booking is None:
+            return Response(
+                {
+                    "error": "We couldn't confirm this payment yet. If you were "
+                    "charged, contact the vendor with your reference."
+                },
+                status=400,
+            )
+        return Response(confirmation_payload(booking, request))
+
+
+class PublicBookingDocumentView(APIView):
+    """GET /public/bookings/<token>/<invoice|receipt>/ → PDF (signed link)."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, token, kind):
+        from django.http import FileResponse, Http404
+        from payment.models import Invoice, Receipt
+        from payment.utils import generate_invoice_pdf, generate_receipt_pdf
+
+        if kind not in ("invoice", "receipt"):
+            raise Http404()
+        booking = booking_from_token(token)
+        if booking is None:
+            raise Http404("Link expired or invalid.")
+        if kind == "invoice":
+            doc = Invoice.objects.filter(booking=booking).first()
+            if doc is None:
+                raise Http404("No invoice yet.")
+            buf, name = generate_invoice_pdf(doc), f"invoice_{doc.invoice_number}.pdf"
+        else:
+            doc = (
+                Receipt.objects.filter(payment__booking=booking)
+                .order_by("-created_at")
+                .first()
+            )
+            if doc is None:
+                raise Http404("No receipt yet.")
+            buf, name = generate_receipt_pdf(doc), f"receipt_{doc.receipt_number}.pdf"
+        return FileResponse(
+            buf, as_attachment=False, filename=name, content_type="application/pdf"
+        )

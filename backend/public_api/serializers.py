@@ -22,6 +22,8 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
     min_rental_price = serializers.SerializerMethodField()
     quantity_available = serializers.SerializerMethodField()
 
+    vendor_availability = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
@@ -44,6 +46,7 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
             "currency_symbol",
             "min_rental_price",
             "quantity_available",
+            "vendor_availability",
         ]
 
     def get_organization_city(self, obj):
@@ -51,6 +54,40 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
 
     def get_organization_country(self, obj):
         return obj.organization.location[1] if obj.organization else ""
+
+    def get_vendor_availability(self, obj):
+        """The vendor's booking days/hours, so customers see them before
+        heading to checkout (where they're enforced)."""
+        settings = (
+            getattr(obj.organization, "booking_settings", None)
+            if obj.organization
+            else None
+        )
+        if settings is None:
+            return {
+                "accepting_requests": True,
+                "available_days": [],
+                "open_time": None,
+                "close_time": None,
+                "store": None,
+                "timezone": obj.organization.timezone if obj.organization else None,
+            }
+        try:
+            days = normalize_days(settings.available_days)
+        except ValueError:
+            days = []
+        return {
+            "accepting_requests": settings.is_accepting_requests,
+            "available_days": days,
+            "open_time": (
+                settings.open_time.strftime("%H:%M") if settings.open_time else None
+            ),
+            "close_time": (
+                settings.close_time.strftime("%H:%M") if settings.close_time else None
+            ),
+            "store": settings.public_url_slug or None,
+            "timezone": obj.organization.timezone,
+        }
 
     def get_currency_code(self, obj):
         cur = obj.organization.currency if obj.organization else None
@@ -143,6 +180,7 @@ class PublicBookingSettingsSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(
         source="organization.name", read_only=True
     )
+    timezone = serializers.CharField(source="organization.timezone", read_only=True)
     organization_logo = serializers.SerializerMethodField()
 
     class Meta:
@@ -155,6 +193,9 @@ class PublicBookingSettingsSerializer(serializers.ModelSerializer):
             "storefront_name",
             "organization_name",
             "organization_logo",
+            "timezone",
+            "online_payments_enabled",
+            "deposit_percent",
         ]
 
     def to_representation(self, instance):
@@ -182,6 +223,23 @@ class PublicBookingItemRequestSerializer(serializers.Serializer):
 class PublicBookingRequestSerializer(serializers.ModelSerializer):
     items = PublicBookingItemRequestSerializer(many=True, write_only=True)
     email = serializers.EmailField(write_only=True)
+    # Pay the deposit online now (else it's a plain request).
+    pay_now = serializers.BooleanField(write_only=True, required=False, default=False)
+    # Where Paystack should send the guest back to (must be our frontend).
+    return_url = serializers.URLField(write_only=True, required=False, allow_blank=True)
+
+    DATETIME_FIELDS = ("setup_date", "set_down_date", "pickup_date", "return_date")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Customers pick wall-clock times ("10:00") in the vendor's local
+        # time, so read times without an offset in the vendor's zone.
+        settings = self.context.get("booking_settings")
+        org = getattr(settings, "organization", None)
+        if org is not None:
+            for name in self.DATETIME_FIELDS:
+                if name in self.fields:
+                    self.fields[name].timezone = org.tzinfo
 
     class Meta:
         model = Booking
@@ -199,6 +257,8 @@ class PublicBookingRequestSerializer(serializers.ModelSerializer):
             "pickup_date",
             "return_date",
             "items",
+            "pay_now",
+            "return_url",
         ]
 
     def validate_items(self, value):

@@ -25,9 +25,12 @@ from decouple import config
 
 class EmailService:
     @staticmethod
-    def send(to_email, subject, body_text, body_html=None):
+    def send(to_email, subject, body_text, body_html=None, attachments=None):
         """
         Intelligent Email Dispatcher.
+        `attachments`: optional list of {"filename": str, "content": bytes}.
+        Only Resend sends them; other vendors log and skip them, so always
+        include download links in the body too.
         """
         environment = getattr(
             settings, "ENVIRONMENT", config("ENVIRONMENT", default="local")
@@ -37,15 +40,23 @@ class EmailService:
             and getattr(settings, "EMAIL_VENDOR", "resend").lower() != "resend"
         ):
             logger.info(
-                f"[LOCAL EMAIL SIMULATOR] To: {to_email} | Subject: {subject} | Body: {body_text}"
+                f"[LOCAL EMAIL SIMULATOR] To: {to_email} | Subject: {subject} | "
+                f"Attachments: {[a['filename'] for a in attachments or []]} | Body: {body_text}"
             )
             return True
 
         vendor = getattr(settings, "EMAIL_VENDOR", "resend").lower()
 
         if vendor == "resend":
-            return EmailService.send_via_resend(to_email, subject, body_text, body_html)
-        elif vendor == "ses":
+            return EmailService.send_via_resend(
+                to_email, subject, body_text, body_html, attachments
+            )
+        if attachments:
+            logger.info(
+                f"{vendor}: attachments not supported, skipping "
+                f"{[a['filename'] for a in attachments]}"
+            )
+        if vendor == "ses":
             return EmailService.send_via_ses(to_email, subject, body_text, body_html)
         elif vendor == "sendgrid":
             return EmailService.send_via_sendgrid(
@@ -57,7 +68,7 @@ class EmailService:
             return True
 
     @staticmethod
-    def send_via_resend(to_email, subject, body_text, body_html=None):
+    def send_via_resend(to_email, subject, body_text, body_html=None, attachments=None):
         try:
             import resend
 
@@ -76,6 +87,19 @@ class EmailService:
                     "to": to_email,
                     "subject": subject,
                     "html": body_html or f"<p>{body_text}</p>",
+                    **(
+                        {
+                            "attachments": [
+                                {
+                                    "filename": a["filename"],
+                                    "content": list(a["content"]),
+                                }
+                                for a in attachments
+                            ]
+                        }
+                        if attachments
+                        else {}
+                    ),
                 }
             )
             logger.info(f"Resend Success: Sent email to {to_email} - Response: {r}")

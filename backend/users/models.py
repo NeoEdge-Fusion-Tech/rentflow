@@ -24,6 +24,9 @@ class Organization(models.Model):
     # Structured location, used by the marketplace's location filter.
     country = models.CharField(max_length=100, blank=True, default="")
     city = models.CharField(max_length=100, blank=True, default="")
+    # IANA name, e.g. "Africa/Lagos". Opening hours and booking times are
+    # interpreted in this zone.
+    timezone = models.CharField(max_length=64, default="Africa/Lagos")
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     tax_id = models.CharField(
@@ -70,6 +73,15 @@ class Organization(models.Model):
         blank=True,
         related_name="updated_organizations",
     )
+
+    @property
+    def tzinfo(self):
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+        try:
+            return ZoneInfo(self.timezone or "UTC")
+        except (ZoneInfoNotFoundError, ValueError):
+            return ZoneInfo("UTC")
 
     @property
     def location(self):

@@ -141,6 +141,7 @@ export function ClientPortalDashboard() {
                       </h4>
                       <span
                         className={`px-2 py-1 text-[10px] font-bold uppercase rounded flex-shrink-0 ${
+                          booking.status === "booked" ||
                           booking.status === "confirmed"
                             ? "bg-green-100 text-green-700"
                             : booking.status === "request"

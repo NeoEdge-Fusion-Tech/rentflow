@@ -9,8 +9,12 @@ import {
   Check,
   ShoppingBag,
   ChevronDown,
+  Clock,
+  AlertTriangle,
+  Store,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { OpeningHours, OpenStatusBadge } from "../components/OpeningHours";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { Logo } from "../components/Logo";
 import { useTheme } from "../context/ThemeContext";
@@ -92,6 +96,10 @@ export function Marketplace() {
       setLoading(false);
     }
   };
+
+  // Vendor storefront URL: custom slug when set, otherwise the org id.
+  const storePath = (p: any) =>
+    `/public/store/${p.vendor_availability?.store || p.organization_id}`;
 
   const productTagSlugs = (p: any): string[] =>
     (p.marketplace_tags || []).map((t: any) => t.slug);
@@ -623,7 +631,15 @@ export function Marketplace() {
                             "https://placehold.co/600x450/1e293b/475569?text=Product";
                         }}
                       />
-                      <div className="absolute top-4 left-4 bg-[var(--bg-surface)]/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2 border border-[var(--border-soft)]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(storePath(product));
+                        }}
+                        title={`Visit ${product.organization_name}'s store`}
+                        className="absolute top-4 left-4 bg-[var(--bg-surface)]/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2 border border-[var(--border-soft)] hover:border-brand-primary/50 transition-colors"
+                      >
                         {product.organization_logo ? (
                           <img
                             src={product.organization_logo}
@@ -631,14 +647,15 @@ export function Marketplace() {
                             className="w-5 h-5 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-5 h-5 bg-brand-primary rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+                          <div className="w-5 h-5 bg-brand-primary rounded-full flex items-center justify-center text-[10px] font-bold text-[var(--text-on-brand)]">
                             {product.organization_name?.charAt(0)}
                           </div>
                         )}
-                        <span className="text-xs font-bold text-[var(--text-main)] truncate max-w-[100px]">
+                        <span className="text-xs font-bold text-[var(--text-main)] truncate max-w-[120px]">
                           {product.organization_name}
                         </span>
-                      </div>
+                        <Store className="w-3 h-3 text-[var(--text-muted)] shrink-0" />
+                      </button>
                     </div>
 
                     <div className="p-6 flex flex-col flex-1">
@@ -671,6 +688,10 @@ export function Marketplace() {
                               {location}
                             </p>
                           )}
+                          <OpenStatusBadge
+                            availability={product.vendor_availability}
+                            className="mt-2"
+                          />
                         </div>
                         <div className="w-10 h-10 rounded-full bg-[var(--bg-app)] flex items-center justify-center group-hover:bg-brand-primary group-hover:text-[var(--text-on-brand)] transition-colors text-[var(--text-muted)] border border-[var(--border-soft)] group-hover:border-transparent">
                           <ArrowRightIcon className="w-5 h-5" />
@@ -744,12 +765,27 @@ export function Marketplace() {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-8 md:px-10 py-5 sm:py-6">
-                <div className="prose prose-sm text-[var(--text-muted)] mb-8">
+                <div className="prose prose-sm text-[var(--text-muted)] mb-6">
                   <p>
                     {selectedProduct.description ||
                       "No description provided for this product."}
                   </p>
                 </div>
+
+                {selectedProduct.vendor_availability?.accepting_requests ===
+                false ? (
+                  <div className="mb-6 flex items-start gap-3 p-4 rounded-2xl border bg-rose-500/10 border-rose-500/30 text-rose-600 text-sm">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <p className="font-medium">
+                      This vendor isn't taking new rental requests right now.
+                    </p>
+                  </div>
+                ) : (
+                  <OpeningHours
+                    availability={selectedProduct.vendor_availability}
+                    className="mb-6 bg-[var(--bg-app)]"
+                  />
+                )}
 
                 <div className="bg-[var(--bg-app)] rounded-2xl p-6 mb-8 border border-[var(--border-soft)]">
                   <p className="text-xs font-bold text-[var(--text-muted)] opacity-70 uppercase tracking-wider mb-2">
@@ -763,20 +799,43 @@ export function Marketplace() {
                         className="w-12 h-12 rounded-full object-cover shadow-sm border border-[var(--border-soft)]"
                       />
                     ) : (
-                      <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center text-lg font-black text-white shadow-sm">
+                      <div className="w-12 h-12 bg-brand-primary rounded-full flex items-center justify-center text-lg font-black text-[var(--text-on-brand)] shadow-sm shrink-0">
                         {selectedProduct.organization_name?.charAt(0)}
                       </div>
                     )}
-                    <div>
-                      <h4 className="font-bold text-[var(--text-main)] text-lg">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-[var(--text-main)] text-lg truncate">
                         {selectedProduct.organization_name}
                       </h4>
-                      <div className="flex items-center gap-1 text-sm text-[var(--text-muted)] mt-1">
-                        <MapPin className="w-4 h-4" />
-                        Verified Vendor
-                      </div>
+                      {(selectedProduct.organization_city ||
+                        selectedProduct.organization_country) && (
+                        <div className="flex items-center gap-1 text-sm text-[var(--text-muted)] mt-1">
+                          <MapPin className="w-4 h-4 shrink-0" />
+                          <span className="truncate">
+                            {[
+                              selectedProduct.organization_city,
+                              selectedProduct.organization_country,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
+                      <OpenStatusBadge
+                        availability={selectedProduct.vendor_availability}
+                        className="mt-2"
+                      />
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate(storePath(selectedProduct))}
+                    className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-surface)] text-sm font-bold text-[var(--text-main)] hover:border-brand-primary/50 hover:text-[var(--text-link)] transition-colors"
+                  >
+                    <Store className="w-4 h-4" />
+                    Visit store
+                    <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                  </button>
                 </div>
 
                 <div className="flex-1">
@@ -846,7 +905,7 @@ export function Marketplace() {
                               onClick={() => {
                                 if (unit.quantity_available === 0) return;
                                 const storeId =
-                                  selectedProduct.organization_slug ||
+                                  selectedProduct.vendor_availability?.store ||
                                   selectedProduct.organization_id;
                                 navigate(`/public/store/${storeId}/checkout`, {
                                   state: {
@@ -860,12 +919,12 @@ export function Marketplace() {
                                   },
                                 });
                               }}
-                              disabled={unit.quantity_available === 0}
-                              className={`w-full sm:w-auto px-5 py-2.5 font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center ${
-                                unit.quantity_available === 0
-                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                                  : "bg-gray-900 hover:bg-black text-white hover:shadow-lg"
-                              }`}
+                              disabled={
+                                unit.quantity_available === 0 ||
+                                selectedProduct.vendor_availability
+                                  ?.accepting_requests === false
+                              }
+                              className="w-full sm:w-auto px-5 py-2.5 font-bold text-sm rounded-xl transition-all active:scale-95 flex items-center justify-center bg-brand-primary text-[var(--text-on-brand)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Add
                             </button>

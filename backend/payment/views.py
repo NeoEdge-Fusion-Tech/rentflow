@@ -882,6 +882,19 @@ class PaystackWebhookView(APIView):
                     )
                     return Response({"status": "organization not found"}, status=404)
 
+            # 1b. Guest paying for a storefront/marketplace booking request
+            if data["data"].get("metadata", {}).get("source") == "public_booking":
+                from public_api.booking_payments import finalize_payment
+
+                booking = finalize_payment(reference, data["data"], request=request)
+                return Response(
+                    {
+                        "status": "success" if booking else "reference not found",
+                        "source": "public_booking",
+                    },
+                    status=200 if booking else 404,
+                )
+
             # 2. Try to resolve as an invoice payment link reference
             invoice = Invoice.objects.filter(paystack_reference=reference).first()
             if invoice and invoice.status != "paid":

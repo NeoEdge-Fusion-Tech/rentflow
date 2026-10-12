@@ -277,6 +277,77 @@ class ProductUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             qs = qs.filter(product__is_active=True)
         return qs
 
+    @action(detail=False, methods=["get"], url_path="check-serial")
+    def check_serial(self, request):
+        """
+        GET ?serial=SN000001[&exclude=<unit id>][&reserved=SN000019,SN000020]
+        Is this serial free in the user's organization? Also returns the most
+        recently added serial (as a hint) and the next free one (to suggest).
+        `reserved` lists serials already typed elsewhere in the open form.
+        """
+        import re
+
+        org_id = getattr(request.user, "organization_id", None)
+        units = (
+            ProductUnit.objects.filter(organization_id=org_id)
+            .exclude(serial_number__isnull=True)
+            .exclude(serial_number="")
+        )
+
+        serial = (request.query_params.get("serial") or "").strip()
+        exclude = request.query_params.get("exclude")
+        reserved = {
+            s.strip().lower()
+            for s in (request.query_params.get("reserved") or "").split(",")
+            if s.strip()
+        }
+
+        clash = None
+        if serial:
+            qs = units.filter(serial_number__iexact=serial)
+            if exclude and str(exclude).isdigit():
+                qs = qs.exclude(product_unit_id=int(exclude))
+            clash = qs.select_related("product").first()
+
+        last = (
+            units.order_by("-product_unit_id")
+            .values_list("serial_number", flat=True)
+            .first()
+        )
+
+        # Next free serial: follow the org's pattern (prefix + zero-padded
+        # number) after its highest number, skipping anything taken/reserved.
+        taken = {s.lower() for s in units.values_list("serial_number", flat=True)}
+        taken |= reserved
+        best_num, prefix, width = 0, "SN", 6
+        for s in units.values_list("serial_number", flat=True):
+            m = re.match(r"^(.*?)(\d+)$", s)
+            if m and int(m.group(2)) >= best_num:
+                best_num, prefix, width = int(m.group(2)), m.group(1), len(m.group(2))
+        n = best_num + 1
+        suggestion = f"{prefix}{str(n).zfill(width)}"
+        while suggestion.lower() in taken:
+            n += 1
+            suggestion = f"{prefix}{str(n).zfill(width)}"
+
+        return Response(
+            {
+                "serial": serial,
+                "available": serial != "" and clash is None,
+                "used_by": (
+                    {
+                        "product_id": clash.product_id,
+                        "product_name": clash.product.name,
+                        "unit_name": clash.name,
+                    }
+                    if clash
+                    else None
+                ),
+                "last_serial": last,
+                "suggestion": suggestion,
+            }
+        )
+
     @action(detail=True, methods=["post"], parser_classes=[MultiPartParser, FormParser])
     def upload_image(self, request, pk=None):
         unit = self.get_object()
@@ -503,6 +574,7 @@ class TenantStatsAPIView(APIView):
             request=Count("booking_id", filter=Q(status="request")),
             confirmed=Count("booking_id", filter=Q(status="confirmed")),
             picked_up=Count("booking_id", filter=Q(status="picked_up")),
+            booked=Count("booking_id", filter=Q(status="booked")),
             returned=Count("booking_id", filter=Q(status="returned")),
             cancelled=Count("booking_id", filter=Q(status="cancelled")),
         )
@@ -656,7 +728,11 @@ class ScanItemAPIView(APIView):
                     BookingItemUnit.objects.filter(
                         product_unit=unit,
                         quantity_picked_up__lt=models.F("quantity"),
-                        booking_item__booking__status__in=["confirmed", "picked_up"],
+                        booking_item__booking__status__in=[
+                            "booked",
+                            "confirmed",
+                            "picked_up",
+                        ],
                     )
                     .select_related(
                         "booking_item__booking", "booking_item__booking__client"
@@ -733,7 +809,11 @@ class ScanItemAPIView(APIView):
                     BookingItemUnit.objects.filter(
                         product_unit=unit,
                         status="pending",
-                        booking_item__booking__status__in=["confirmed", "picked_up"],
+                        booking_item__booking__status__in=[
+                            "booked",
+                            "confirmed",
+                            "picked_up",
+                        ],
                     )
                     .select_related(
                         "booking_item__booking", "booking_item__booking__client"

@@ -154,6 +154,7 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "address",
             "country",
             "city",
+            "timezone",
             "detected_location",
             "marketplace_profile_missing",
             "phone_number",
@@ -199,6 +200,13 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
         from .marketplace import marketplace_profile_missing
 
         return marketplace_profile_missing(obj)
+
+    def validate_timezone(self, value):
+        from zoneinfo import available_timezones
+
+        if value not in available_timezones():
+            raise serializers.ValidationError(f"'{value}' is not a valid time zone.")
+        return value
 
     def get_detected_location(self, obj):
         from .location import parse_location

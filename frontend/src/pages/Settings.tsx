@@ -28,6 +28,47 @@ import { format } from "date-fns";
 
 import { PricingCards } from "../components/PricingCards";
 
+// IANA time zones with their current UTC offset, e.g. "(UTC+01:00) Africa/Lagos".
+const timeZoneOptions = (current?: string) => {
+  let zones: string[] = [];
+  try {
+    zones = (Intl as any).supportedValuesOf("timeZone");
+  } catch {
+    zones = [];
+  }
+  if (!zones.length) zones = ["Africa/Lagos", "UTC"];
+  if (current && !zones.includes(current)) zones = [current, ...zones];
+  const offsetOf = (tz: string) => {
+    try {
+      const part = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        timeZoneName: "longOffset",
+      })
+        .formatToParts(new Date())
+        .find((p) => p.type === "timeZoneName")?.value;
+      return part === "GMT" ? "+00:00" : (part || "").replace("GMT", "");
+    } catch {
+      return "";
+    }
+  };
+  return zones
+    .map((tz) => {
+      const offset = offsetOf(tz);
+      return {
+        value: tz,
+        offset,
+        label: `(UTC${offset}) ${tz.replace(/_/g, " ")}`,
+      };
+    })
+    .sort((a, b) => {
+      const mins = (o: string) => {
+        const m = o.match(/([+-])(\d{2}):(\d{2})/);
+        return m ? (m[1] === "-" ? -1 : 1) * (+m[2] * 60 + +m[3]) : 0;
+      };
+      return mins(a.offset) - mins(b.offset) || a.value.localeCompare(b.value);
+    });
+};
+
 export function Settings() {
   const { showNotification, showConfirm } = useNotification();
   const initialTab = new URLSearchParams(window.location.search).get("tab");
@@ -373,6 +414,7 @@ export function Settings() {
           name: org.name,
           address: org.address,
           country: org.country || "",
+          timezone: org.timezone || "Africa/Lagos",
           city: org.city || "",
           phone_number: org.phone_number,
           email: org.email,
@@ -871,6 +913,27 @@ export function Settings() {
                 <p className="sm:col-span-2 text-xs text-[var(--text-muted)]">
                   Customers filter the event marketplace by location. If left
                   blank, it's read from your company address.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                  Time Zone
+                </label>
+                <select
+                  value={org?.timezone || "Africa/Lagos"}
+                  onChange={(e) => setOrg({ ...org, timezone: e.target.value })}
+                  className="w-full px-3 py-2 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary"
+                >
+                  {timeZoneOptions(org?.timezone).map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Your opening hours and customers' booking times use this time
+                  zone.
                 </p>
               </div>
 

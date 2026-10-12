@@ -8,10 +8,10 @@ import {
   Building2,
   Filter,
   ChevronDown,
-  Clock,
   AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
+import { OpeningHours, OpenStatusBadge } from "../components/OpeningHours";
 import { ThemeToggle } from "../components/ThemeToggle";
 import {
   FilterCheckbox,
@@ -21,22 +21,6 @@ import {
 } from "../components/StoreFilters";
 
 const CATEGORIES_COLLAPSED = 5;
-
-const shortDays = (days: string[]) => {
-  const order = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-  const sorted = order.filter((d) => days.includes(d));
-  if (sorted.length === 7) return "Every day";
-  if (sorted.join() === order.slice(0, 5).join()) return "Mon – Fri";
-  return sorted.map((d) => d.slice(0, 3)).join(", ");
-};
 
 export function PublicRentals() {
   const { org_id, identifier } = useParams();
@@ -202,13 +186,16 @@ export function PublicRentals() {
     settings?.organization_logo ||
     (products.length > 0 ? products[0].organization_logo : null);
 
-  const days: string[] = Array.isArray(settings?.available_days)
-    ? settings.available_days
-    : [];
-  const hours =
-    settings?.open_time && settings?.close_time
-      ? `${settings.open_time.slice(0, 5)} – ${settings.close_time.slice(0, 5)}`
-      : "";
+  const storeAvailability = settings
+    ? {
+        available_days: Array.isArray(settings.available_days)
+          ? settings.available_days
+          : [],
+        open_time: settings.open_time,
+        close_time: settings.close_time,
+        timezone: settings.timezone,
+      }
+    : null;
   const notAccepting = settings && settings.is_accepting_requests === false;
 
   const inputCls =
@@ -235,9 +222,14 @@ export function PublicRentals() {
               <h1 className="text-lg sm:text-xl font-black text-[var(--text-main)] tracking-tight leading-none truncate">
                 {orgName}
               </h1>
-              <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5">
-                Official Rental Store
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-[var(--text-muted)] font-medium">
+                  Official Rental Store
+                </p>
+                {!notAccepting && (
+                  <OpenStatusBadge availability={storeAvailability} />
+                )}
+              </div>
             </div>
           </div>
 
@@ -303,38 +295,17 @@ export function PublicRentals() {
       </div>
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full pb-32 sm:pb-10">
-        {/* Store info: hours / not accepting requests */}
-        {(notAccepting || days.length > 0 || hours) && (
-          <div
-            className={`mb-6 flex items-start gap-3 p-4 rounded-2xl border text-sm ${
-              notAccepting
-                ? "bg-rose-500/10 border-rose-500/30 text-rose-600"
-                : "bg-[var(--bg-surface)] border-[var(--border-soft)] text-[var(--text-muted)]"
-            }`}
-          >
-            {notAccepting ? (
-              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-            ) : (
-              <Clock className="w-4 h-4 mt-0.5 shrink-0 text-brand-primary" />
-            )}
-            <p>
-              {notAccepting ? (
-                <strong>
-                  This store isn't taking new rental requests right now. You can
-                  still browse.
-                </strong>
-              ) : (
-                <>
-                  Setups and set downs:{" "}
-                  <strong className="text-[var(--text-main)]">
-                    {[days.length ? shortDays(days) : "", hours]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </strong>
-                </>
-              )}
+        {/* Store status: opening hours, or not accepting requests */}
+        {notAccepting ? (
+          <div className="mb-6 flex items-start gap-3 p-4 rounded-2xl border text-sm bg-rose-500/10 border-rose-500/30 text-rose-600">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <p className="font-medium">
+              This store isn't taking new rental requests right now. You can
+              still browse.
             </p>
           </div>
+        ) : (
+          <OpeningHours availability={storeAvailability} className="mb-6" />
         )}
 
         <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
@@ -758,9 +729,11 @@ export function PublicRentals() {
                             )}
                             <button
                               onClick={() =>
-                                !out && addToCart(selectedProduct, unit)
+                                !out &&
+                                !notAccepting &&
+                                addToCart(selectedProduct, unit)
                               }
-                              disabled={out}
+                              disabled={out || Boolean(notAccepting)}
                               className="w-full sm:w-auto px-5 py-2.5 font-bold text-sm rounded-xl transition-all active:scale-95 bg-brand-primary text-[var(--text-on-brand)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Add

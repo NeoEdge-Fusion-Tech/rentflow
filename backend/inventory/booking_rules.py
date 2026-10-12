@@ -47,7 +47,10 @@ def schedule_errors(settings, label, dt):
     if dt is None or settings is None:
         return []
     if timezone.is_aware(dt):
-        dt = timezone.localtime(dt)
+        # Judge the time in the vendor's own time zone.
+        org = getattr(settings, "organization", None)
+        tz = org.tzinfo if org is not None else None
+        dt = dt.astimezone(tz) if tz else timezone.localtime(dt)
 
     errors = []
     try:

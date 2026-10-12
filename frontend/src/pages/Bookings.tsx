@@ -31,6 +31,7 @@ import {
   ReceiptText,
   Printer,
   Settings2,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 
@@ -863,6 +864,11 @@ export function Bookings() {
             color: "amber",
           },
           {
+            label: "Booked",
+            value: stats?.booking_stats?.booked,
+            color: "violet",
+          },
+          {
             label: "Confirmed",
             value: stats?.booking_stats?.confirmed,
             color: "blue",
@@ -899,6 +905,7 @@ export function Bookings() {
                     indigo: "text-indigo-600 dark:text-indigo-400",
                     emerald: "text-emerald-600 dark:text-emerald-400",
                     rose: "text-rose-600 dark:text-rose-400",
+                    violet: "text-violet-600 dark:text-violet-400",
                   } as Record<string, string>
                 )[s.color] || "text-[var(--text-link)]"
               }`}
@@ -914,6 +921,7 @@ export function Bookings() {
         {[
           "All",
           "request",
+          "booked",
           "confirmed",
           "picked_up",
           "returned",
@@ -1016,15 +1024,17 @@ export function Bookings() {
                         <span
                           className={cn(
                             "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border",
-                            booking.status === "confirmed"
-                              ? "bg-blue-50 text-blue-700 border-blue-100"
-                              : booking.status === "picked_up"
-                                ? "bg-amber-50 text-amber-700 border-amber-100"
-                                : booking.status === "returned"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                  : booking.status === "cancelled"
-                                    ? "bg-rose-50 text-rose-700 border-rose-100"
-                                    : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                            booking.status === "booked"
+                              ? "bg-violet-50 text-violet-700 border-violet-100"
+                              : booking.status === "confirmed"
+                                ? "bg-blue-50 text-blue-700 border-blue-100"
+                                : booking.status === "picked_up"
+                                  ? "bg-amber-50 text-amber-700 border-amber-100"
+                                  : booking.status === "returned"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                    : booking.status === "cancelled"
+                                      ? "bg-rose-50 text-rose-700 border-rose-100"
+                                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
                           )}
                         >
                           {booking.status === "request"
@@ -1053,6 +1063,17 @@ export function Bookings() {
                             ? `${booking.contact_name} Event`
                             : booking.client_name || "Generic Event")}
                       </h3>
+                      {booking.note_for_org && (
+                        <p
+                          className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1 max-w-xl"
+                          title={booking.note_for_org}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 shrink-0 mt-px" />
+                          <span className="line-clamp-1">
+                            <strong>Guest note:</strong> {booking.note_for_org}
+                          </span>
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                         <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
                           <Clock className="w-3.5 h-3.5 shrink-0" />
@@ -1116,7 +1137,9 @@ export function Bookings() {
                               : "bg-rose-500/10 text-rose-500 border-rose-500/20",
                         )}
                       >
-                        {booking.payment_status || "unpaid"}
+                        {booking.payment_status === "partial"
+                          ? "partially paid"
+                          : booking.payment_status || "unpaid"}
                       </span>
                     </div>
                   </div>
@@ -1954,6 +1977,12 @@ export function Bookings() {
                               Request
                             </option>
                             <option
+                              value="booked"
+                              className="bg-[var(--bg-surface)] text-[var(--text-main)]"
+                            >
+                              Booked (paid online)
+                            </option>
+                            <option
                               value="confirmed"
                               className="bg-[var(--bg-surface)] text-[var(--text-main)]"
                             >
@@ -2256,6 +2285,79 @@ export function Bookings() {
             <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
               {/* Left Column: Details & Logistics (42%) */}
               <div className="lg:col-span-5 p-8 space-y-8 border-r border-[var(--border-soft)] overflow-y-auto custom-scrollbar max-h-[70vh]">
+                {(selectedBooking.note_for_org ||
+                  selectedBooking.setup_date ||
+                  selectedBooking.set_down_date ||
+                  selectedBooking.event_type ||
+                  selectedBooking.address) && (
+                  <section className="space-y-3 p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-amber-600" />
+                      <h3 className="text-sm font-black text-[var(--text-main)] uppercase tracking-widest">
+                        Guest request
+                      </h3>
+                    </div>
+                    {selectedBooking.note_for_org && (
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
+                          Note to you
+                        </p>
+                        <p className="text-sm text-[var(--text-main)] whitespace-pre-wrap break-words">
+                          {selectedBooking.note_for_org}
+                        </p>
+                      </div>
+                    )}
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                      {[
+                        ["Setup", selectedBooking.setup_date],
+                        ["Set down", selectedBooking.set_down_date],
+                      ]
+                        .filter(([, v]) => v && isValidDate(v as string))
+                        .map(([label, v]) => (
+                          <div key={label as string}>
+                            <dt className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                              {label}
+                            </dt>
+                            <dd className="text-[var(--text-main)] font-medium">
+                              {new Date(v as string).toLocaleString(undefined, {
+                                weekday: "short",
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </dd>
+                          </div>
+                        ))}
+                      {selectedBooking.event_type && (
+                        <div>
+                          <dt className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                            Event type
+                          </dt>
+                          <dd className="text-[var(--text-main)] font-medium capitalize">
+                            {selectedBooking.event_type}
+                          </dd>
+                        </div>
+                      )}
+                      {(selectedBooking.address || selectedBooking.city) && (
+                        <div className="sm:col-span-2">
+                          <dt className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                            Venue
+                          </dt>
+                          <dd className="text-[var(--text-main)] font-medium break-words">
+                            {[
+                              selectedBooking.address,
+                              selectedBooking.city,
+                              selectedBooking.country,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </section>
+                )}
                 <section className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-brand-primary/10 flex items-center justify-center text-[var(--text-link)]">
@@ -2303,15 +2405,17 @@ export function Bookings() {
                         <span
                           className={cn(
                             "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border",
-                            selectedBooking.status === "confirmed"
-                              ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                              : selectedBooking.status === "picked_up"
-                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                : selectedBooking.status === "returned"
-                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : selectedBooking.status === "cancelled"
-                                    ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                                    : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                            selectedBooking.status === "booked"
+                              ? "bg-violet-500/10 text-violet-500 border-violet-500/20"
+                              : selectedBooking.status === "confirmed"
+                                ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                : selectedBooking.status === "picked_up"
+                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                  : selectedBooking.status === "returned"
+                                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                    : selectedBooking.status === "cancelled"
+                                      ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
                           )}
                         >
                           {selectedBooking.status?.replace("_", " ") ||
@@ -3471,7 +3575,9 @@ export function Bookings() {
                                     : "bg-rose-500/10 text-rose-500 border-rose-500/20",
                               )}
                             >
-                              {selectedBooking.payment_status || "unpaid"}
+                              {selectedBooking.payment_status === "partial"
+                                ? "partially paid"
+                                : selectedBooking.payment_status || "unpaid"}
                             </span>
                             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">
                               Paid:{" "}
@@ -3535,6 +3641,12 @@ export function Bookings() {
                                   className="bg-[var(--bg-surface)]"
                                 >
                                   Request
+                                </option>
+                                <option
+                                  value="booked"
+                                  className="bg-[var(--bg-surface)] text-[var(--text-main)]"
+                                >
+                                  Booked (paid online)
                                 </option>
                                 <option
                                   value="confirmed"

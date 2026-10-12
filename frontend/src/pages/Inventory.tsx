@@ -392,6 +392,7 @@ export function Inventory() {
 
   const handleCloseAddModal = () => {
     setShowAddModal(false);
+    setSerialChecks({});
     setEditingProductId(null);
     setProductTags([]);
     setProductTagsAuto(true);
@@ -419,10 +420,129 @@ export function Inventory() {
 
   const needsMarketplaceTag =
     newProduct.available_for_rental && marketplaceTags.length > 0;
+  // Live serial-number checks for single units, keyed by unit index.
+  type SerialCheck = {
+    serial: string;
+    status: "checking" | "ok" | "taken" | "duplicate";
+    usedBy?: { product_name: string; unit_name?: string | null } | null;
+    suggestion?: string;
+  };
+  const [serialChecks, setSerialChecks] = useState<Record<number, SerialCheck>>(
+    {},
+  );
+  const [lastSerial, setLastSerial] = useState<string | null>(null);
+  const [serialSuggestion, setSerialSuggestion] = useState<string | null>(null);
+
+  const serialKey = units
+    .map(
+      (u: any) =>
+        `${u.unit_type}:${u.serial_number}:${u.product_unit_id || ""}`,
+    )
+    .join("|");
+
+  React.useEffect(() => {
+    if (!showAddModal) return;
+    const handle = setTimeout(() => {
+      units.forEach((u: any, i: number) => {
+        const serial = (u.serial_number || "").trim();
+        if (u.unit_type !== "single" || !serial) {
+          setSerialChecks((prev) => {
+            const next = { ...prev };
+            delete next[i];
+            return next;
+          });
+          return;
+        }
+        const others = units
+          .filter((o: any, j: number) => j !== i && o.unit_type === "single")
+          .map((o: any) => (o.serial_number || "").trim())
+          .filter(Boolean);
+        if (
+          others.some((o: string) => o.toLowerCase() === serial.toLowerCase())
+        ) {
+          setSerialChecks((prev) => ({
+            ...prev,
+            [i]: { serial, status: "duplicate" },
+          }));
+          return;
+        }
+        setSerialChecks((prev) => ({
+          ...prev,
+          [i]: { ...prev[i], serial, status: "checking" },
+        }));
+        ProductService.checkSerial(serial, u.product_unit_id, others)
+          .then((res) => {
+            setLastSerial(res.data.last_serial || null);
+            setSerialSuggestion(res.data.suggestion || null);
+            setSerialChecks((prev) =>
+              // Ignore stale responses for a serial that has since changed.
+              (units[i]?.serial_number || "").trim() !== serial
+                ? prev
+                : {
+                    ...prev,
+                    [i]: {
+                      serial,
+                      status: res.data.available ? "ok" : "taken",
+                      usedBy: res.data.used_by,
+                      suggestion: res.data.suggestion,
+                    },
+                  },
+            );
+          })
+          .catch(() =>
+            setSerialChecks((prev) => {
+              const next = { ...prev };
+              delete next[i];
+              return next;
+            }),
+          );
+      });
+    }, 350);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serialKey, showAddModal]);
+
+  const serialProblems = (
+    Object.entries(serialChecks) as [string, SerialCheck][]
+  ).some(
+    ([i, c]) =>
+      units[Number(i)]?.unit_type === "single" &&
+      (c.status === "taken" ||
+        c.status === "duplicate" ||
+        c.status === "checking"),
+  );
+
+  // Next free serial from the server (knows every product, not just the
+  // filtered list), skipping serials already typed in the form.
+  const fetchSuggestedSerial = async (draft: any[]) => {
+    try {
+      const reserved = draft
+        .map((u: any) => (u.serial_number || "").trim())
+        .filter(Boolean);
+      const res = await ProductService.checkSerial("", undefined, reserved);
+      setLastSerial(res.data.last_serial || null);
+      return res.data.suggestion as string;
+    } catch {
+      return generateNextSerialNumber(products, draft);
+    }
+  };
+
+  const openAddProduct = async () => {
+    setShowAddModal(true);
+    if (editingProductId) return;
+    const suggestion = await fetchSuggestedSerial([]);
+    setUnits((prev: any[]) =>
+      prev.length === 1 && !prev[0].product_unit_id
+        ? [{ ...prev[0], serial_number: suggestion }]
+        : prev,
+    );
+  };
+
   const isProductFormValid = Boolean(
     newProduct.name.trim() &&
       newProduct.category_id &&
       (!needsMarketplaceTag || productTags.length > 0) &&
+      !serialProblems &&
       !(newProduct.available_for_rental && profileMissing.length > 0) &&
       units.length > 0 &&
       units.every((u) =>
@@ -547,6 +667,7 @@ export function Inventory() {
       }
 
       setShowAddModal(false);
+      setSerialChecks({});
       setEditingProductId(null);
       setProductTags([]);
       setProductTagsAuto(true);
@@ -777,7 +898,7 @@ export function Inventory() {
               Categories
             </button>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={openAddProduct}
               className="flex items-center gap-2 bg-brand-primary text-brand-accent px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
             >
               <Plus className="w-5 h-5" />
@@ -864,7 +985,7 @@ export function Inventory() {
             </ol>
 
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={openAddProduct}
               className="mt-3 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[var(--border-soft)] rounded-xl text-sm font-bold text-brand-primary hover:border-brand-primary/50 hover:bg-brand-primary/5 transition-colors"
             >
               <Plus className="w-4 h-4" /> Add new product
@@ -1987,7 +2108,19 @@ export function Inventory() {
                                 newUnits[i].serial_number = e.target.value;
                                 setUnits(newUnits);
                               }}
-                              className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                              aria-invalid={
+                                serialChecks[i]?.status === "taken" ||
+                                serialChecks[i]?.status === "duplicate"
+                              }
+                              className={cn(
+                                "w-full border rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]",
+                                serialChecks[i]?.status === "taken" ||
+                                  serialChecks[i]?.status === "duplicate"
+                                  ? "border-rose-500"
+                                  : serialChecks[i]?.status === "ok"
+                                    ? "border-emerald-500/60"
+                                    : "border-[var(--border-soft)]",
+                              )}
                             />
 
                             <button
@@ -2012,6 +2145,55 @@ export function Inventory() {
                               View QR
                             </button>
                           </div>
+                          {serialChecks[i]?.status === "checking" && (
+                            <p className="text-xs text-[var(--text-muted)] mt-1.5">
+                              Checking availability…
+                            </p>
+                          )}
+                          {serialChecks[i]?.status === "taken" && (
+                            <div className="mt-1.5 text-xs text-rose-500">
+                              <p>
+                                <strong>{serialChecks[i].serial}</strong> is
+                                already used by “
+                                {serialChecks[i].usedBy?.product_name}
+                                {serialChecks[i].usedBy?.unit_name
+                                  ? ` – ${serialChecks[i].usedBy?.unit_name}`
+                                  : ""}
+                                ”.
+                              </p>
+                              {serialChecks[i].suggestion && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newUnits = [...units];
+                                    newUnits[i].serial_number = serialChecks[i]
+                                      .suggestion as string;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-primary/10 text-[var(--text-link)] font-bold hover:bg-brand-primary/20 transition-colors"
+                                >
+                                  Use {serialChecks[i].suggestion} instead
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {serialChecks[i]?.status === "duplicate" && (
+                            <p className="mt-1.5 text-xs text-rose-500">
+                              This serial number is already on another unit in
+                              this form.
+                            </p>
+                          )}
+                          {serialChecks[i]?.status === "ok" && (
+                            <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                              Available
+                            </p>
+                          )}
+                          {lastSerial && (
+                            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                              Last serial added:{" "}
+                              <span className="font-mono">{lastSerial}</span>
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <div>
@@ -2276,15 +2458,13 @@ export function Inventory() {
                 ))}
 
                 <button
-                  onClick={() =>
-                    setUnits([
-                      ...units,
+                  onClick={async () => {
+                    const suggestion = await fetchSuggestedSerial(units);
+                    setUnits((prev: any[]) => [
+                      ...prev,
                       {
                         name: "",
-                        serial_number: generateNextSerialNumber(
-                          products,
-                          units,
-                        ),
+                        serial_number: suggestion,
                         status: "available",
                         unit_type: "single",
                         quantity: 1,
@@ -2294,8 +2474,8 @@ export function Inventory() {
                         unit: "per_day",
                         description: "",
                       },
-                    ])
-                  }
+                    ]);
+                  }}
                   className="flex items-center gap-2 text-brand-primary text-sm font-bold mt-2 hover:bg-brand-primary/5 px-3 py-1.5 rounded-lg transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Add Another Unit / Batch

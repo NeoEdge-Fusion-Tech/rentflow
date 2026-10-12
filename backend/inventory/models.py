@@ -162,7 +162,7 @@ class Product(models.Model):
 
         q = Q(
             product=self,
-            booking__status__in=["pending", "confirmed", "picked_up"],
+            booking__status__in=["pending", "booked", "confirmed", "picked_up"],
             booking__pickup_date__lte=end_date,
             booking__return_date__gte=start_date,
         )
@@ -188,7 +188,12 @@ class Product(models.Model):
 
         q = Q(
             product_unit__product=self,
-            booking_item__booking__status__in=["pending", "confirmed", "picked_up"],
+            booking_item__booking__status__in=[
+                "pending",
+                "booked",
+                "confirmed",
+                "picked_up",
+            ],
             booking_item__booking__pickup_date__lte=end_date,
             booking_item__booking__return_date__gte=start_date,
         )
@@ -233,7 +238,8 @@ class ProductUnit(models.Model):
         choices=[("single", "Single (SN)"), ("bulk", "Bulk")],
         default="single",
     )
-    serial_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    # Unique within an organization (see Meta), not across the platform.
+    serial_number = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     status_choices = [
         ("available", "Available"),
@@ -338,6 +344,15 @@ class ProductUnit(models.Model):
             # good = total condition minus damaged (1 or 0)
             self.quantity_good = 0 if s == "damaged" else 1
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "serial_number"],
+                condition=Q(serial_number__isnull=False) & ~Q(serial_number=""),
+                name="unique_serial_per_organization",
+            )
+        ]
+
     def save(self, *args, **kwargs):
         # Auto-populate organization from parent product
         if self.product_id and not self.organization_id:
@@ -403,6 +418,8 @@ class Booking(models.Model):
     status_choices = [
         ("request", "Request"),
         ("processed", "Processed"),
+        # Guest paid the deposit online; awaiting vendor confirmation.
+        ("booked", "Booked"),
         ("confirmed", "Confirmed"),
         ("picked_up", "Picked Up"),
         # Final state once everything that went out has come back.
@@ -585,7 +602,7 @@ def update_booking_and_item_status(sender, instance, **kwargs):
 
         # Check Booking Status
         booking = item.booking
-        if booking.status in ["confirmed", "picked_up"]:
+        if booking.status in ["booked", "confirmed", "picked_up"]:
             items = booking.items.all()
             total_picked_up = sum(i.total_picked_up for i in items)
             total_returned = sum(i.total_returned for i in items)
@@ -606,6 +623,10 @@ class OrganizationBookingSettings(models.Model):
     open_time = models.TimeField(null=True, blank=True)
     close_time = models.TimeField(null=True, blank=True)
     is_accepting_requests = models.BooleanField(default=True)
+    # Guests can pay online when requesting (or just send a request).
+    online_payments_enabled = models.BooleanField(default=True)
+    # Share of the booking total paid upfront online (1–100).
+    deposit_percent = models.PositiveSmallIntegerField(default=100)
     storefront_name = models.CharField(
         max_length=255,
         null=True,

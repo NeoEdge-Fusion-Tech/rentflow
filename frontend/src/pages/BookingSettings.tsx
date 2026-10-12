@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle,
   Check,
+  CreditCard,
 } from "lucide-react";
 import { api } from "../api";
 import { useNotification } from "../context/NotificationContext";
@@ -44,6 +45,8 @@ export function BookingSettings() {
     open_time: "09:00",
     close_time: "17:00",
     is_accepting_requests: true,
+    online_payments_enabled: true,
+    deposit_percent: 100,
     public_url_slug: "",
     storefront_name: "",
   });
@@ -62,6 +65,8 @@ export function BookingSettings() {
           open_time: toTimeInput(res.data.open_time, "09:00"),
           close_time: toTimeInput(res.data.close_time, "17:00"),
           is_accepting_requests: res.data.is_accepting_requests ?? true,
+          online_payments_enabled: res.data.online_payments_enabled ?? true,
+          deposit_percent: res.data.deposit_percent ?? 100,
           public_url_slug: res.data.public_url_slug || "",
           storefront_name: res.data.storefront_name || "",
         });
@@ -108,7 +113,13 @@ export function BookingSettings() {
     !settings.open_time ||
     !settings.close_time ||
     settings.open_time < settings.close_time;
-  const isFormValid = settings.available_days.length > 0 && hoursValid;
+  const depositValid =
+    !settings.online_payments_enabled ||
+    (Number.isInteger(settings.deposit_percent) &&
+      settings.deposit_percent >= 1 &&
+      settings.deposit_percent <= 100);
+  const isFormValid =
+    settings.available_days.length > 0 && hoursValid && depositValid;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -173,6 +184,95 @@ export function BookingSettings() {
             <p className="text-xs text-[var(--text-muted)] mt-2">
               If disabled, your public rental page will not accept new bookings.
             </p>
+          </div>
+
+          {/* Online payments */}
+          <div className="pt-6 border-t border-[var(--border-soft)]">
+            <h3 className="font-bold text-[var(--text-main)] flex items-center gap-2 mb-1">
+              <CreditCard className="w-5 h-5 text-brand-primary" />
+              Online Payments
+            </h3>
+            <p className="text-xs text-[var(--text-muted)] mb-3">
+              Let guests pay when they book from your storefront or the
+              marketplace. Paid bookings are marked <strong>Booked</strong>, and
+              the guest is emailed their invoice and receipt.
+            </p>
+            <label className="flex items-center gap-3 p-3 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={settings.online_payments_enabled}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    online_payments_enabled: e.target.checked,
+                  })
+                }
+                className="w-5 h-5 accent-brand-primary cursor-pointer"
+              />
+              <span className="text-sm font-medium text-[var(--text-main)]">
+                {settings.online_payments_enabled
+                  ? "Guests can pay online or just send a request"
+                  : "Requests only (no online payment)"}
+              </span>
+            </label>
+            {settings.online_payments_enabled && (
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                  Amount paid upfront (% of booking total)
+                </label>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative w-32">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={settings.deposit_percent}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          deposit_percent: Number(e.target.value),
+                        })
+                      }
+                      className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 pr-8 outline-none focus:border-brand-primary text-[var(--text-main)]"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">
+                      %
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    {[25, 50, 100].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() =>
+                          setSettings({ ...settings, deposit_percent: p })
+                        }
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                          settings.deposit_percent === p
+                            ? "bg-brand-primary text-[var(--text-on-brand)] border-brand-primary"
+                            : "border-[var(--border-soft)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                        }`}
+                      >
+                        {p === 100 ? "Full payment" : `${p}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p
+                  className={`text-xs mt-2 ${
+                    depositValid
+                      ? "text-[var(--text-muted)]"
+                      : "text-rose-500 font-medium"
+                  }`}
+                >
+                  {depositValid
+                    ? settings.deposit_percent === 100
+                      ? "Guests pay the full amount when booking."
+                      : `Guests pay ${settings.deposit_percent}% now; the booking shows as partially paid until the balance is settled.`
+                    : "Enter a whole percentage between 1 and 100."}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Custom Public URL */}
