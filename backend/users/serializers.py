@@ -142,6 +142,8 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "company_logo",
             "company_logo_upload",
             "address",
+            "country",
+            "city",
             "phone_number",
             "email",
             "tax_id",

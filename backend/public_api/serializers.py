@@ -15,6 +15,17 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
     units = ProductUnitSerializer(many=True, read_only=True)
     marketplace_tags = serializers.SerializerMethodField()
 
+    organization_country = serializers.CharField(
+        source="organization.country", read_only=True
+    )
+    organization_city = serializers.CharField(
+        source="organization.city", read_only=True
+    )
+    currency_code = serializers.SerializerMethodField()
+    currency_symbol = serializers.SerializerMethodField()
+    min_rental_price = serializers.SerializerMethodField()
+    quantity_available = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
@@ -31,7 +42,28 @@ class GlobalMarketplaceProductSerializer(serializers.ModelSerializer):
             "organization_id",
             "organization_name",
             "organization_logo",
+            "organization_country",
+            "organization_city",
+            "currency_code",
+            "currency_symbol",
+            "min_rental_price",
+            "quantity_available",
         ]
+
+    def get_currency_code(self, obj):
+        cur = obj.organization.currency if obj.organization else None
+        return cur.code if cur else None
+
+    def get_currency_symbol(self, obj):
+        cur = obj.organization.currency if obj.organization else None
+        return cur.symbol if cur else None
+
+    def get_min_rental_price(self, obj):
+        prices = [u.rental_price for u in obj.units.all() if u.rental_price]
+        return min(prices) if prices else None
+
+    def get_quantity_available(self, obj):
+        return sum((u.quantity_available or 0) for u in obj.units.all())
 
     def get_marketplace_tags(self, obj):
         # Only active tags are shown publicly (uses the prefetched relation).

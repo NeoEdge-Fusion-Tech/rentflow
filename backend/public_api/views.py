@@ -38,7 +38,7 @@ class GlobalMarketplaceProductListView(generics.ListAPIView):
             Product.objects.filter(
                 is_active=True, available_for_rental=True, organization__isnull=False
             )
-            .select_related("organization", "category")
+            .select_related("organization", "organization__currency", "category")
             .prefetch_related("units", "marketplace_tags")
         )
 

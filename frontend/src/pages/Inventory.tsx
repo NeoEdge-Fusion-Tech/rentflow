@@ -62,6 +62,7 @@ export function Inventory() {
   const { showNotification, showConfirm } = useNotification();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
+  const [selectedTagFilter, setSelectedTagFilter] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
@@ -289,7 +290,12 @@ export function Inventory() {
   React.useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, [searchTerm, selectedCategoryFilter, selectedStatusFilter]);
+  }, [
+    searchTerm,
+    selectedCategoryFilter,
+    selectedTagFilter,
+    selectedStatusFilter,
+  ]);
 
   React.useEffect(() => {
     MarketplaceTagService.getAll()
@@ -564,10 +570,16 @@ export function Inventory() {
       }
       // Take the user back to the product list, newest first, with the
       // saved product visible (clear filters that could hide it).
-      if (searchTerm || selectedCategoryFilter || selectedStatusFilter) {
+      if (
+        searchTerm ||
+        selectedCategoryFilter ||
+        selectedTagFilter ||
+        selectedStatusFilter
+      ) {
         // Changing filters re-triggers fetchProducts via the effect.
         setSearchTerm("");
         setSelectedCategoryFilter("");
+        setSelectedTagFilter("");
         setSelectedStatusFilter("");
       } else {
         await fetchProducts();
@@ -689,6 +701,7 @@ export function Inventory() {
       // Backend expects 'search' parameter for SearchFilter
       const params: any = { search: searchTerm };
       if (selectedCategoryFilter) params.category = selectedCategoryFilter;
+      if (selectedTagFilter) params.marketplace_tag = selectedTagFilter;
       if (selectedStatusFilter) {
         if (selectedStatusFilter === "all") params.all = "true";
         else if (selectedStatusFilter === "active") params.is_active = "True";
@@ -899,7 +912,7 @@ export function Inventory() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className="relative">
               <select
                 value={selectedCategoryFilter}
@@ -917,6 +930,48 @@ export function Inventory() {
                 ))}
               </select>
               <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M1 1L5 5L9 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="relative">
+              <select
+                value={selectedTagFilter}
+                onChange={(e) => setSelectedTagFilter(e.target.value)}
+                aria-label="Filter by marketplace tag"
+                className={cn(
+                  "appearance-none flex items-center gap-2 pl-10 pr-8 py-2 border rounded-xl text-[var(--text-main)] bg-transparent hover:bg-[var(--bg-app)] font-medium transition-colors outline-none cursor-pointer",
+                  selectedTagFilter
+                    ? "border-brand-primary"
+                    : "border-[var(--border-soft)]",
+                )}
+              >
+                <option value="">All Marketplace Tags</option>
+                {marketplaceTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+                <option disabled>──────────</option>
+                <option value="untagged">Listed, needs tags</option>
+                <option value="unlisted">Not on marketplace</option>
+              </select>
+              <Tags className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
                 <svg
                   width="10"

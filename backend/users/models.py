@@ -21,6 +21,9 @@ class Organization(models.Model):
     name = models.CharField(max_length=255)
     company_logo = models.ImageField(upload_to="logos/", blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    # Structured location, used by the marketplace's location filter.
+    country = models.CharField(max_length=100, blank=True, default="")
+    city = models.CharField(max_length=100, blank=True, default="")
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     tax_id = models.CharField(

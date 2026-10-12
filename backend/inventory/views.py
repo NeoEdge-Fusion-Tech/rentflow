@@ -152,8 +152,17 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.action == "list" and self.request.query_params.get("all") != "true":
+        params = self.request.query_params
+        if self.action == "list" and params.get("all") != "true":
             qs = qs.filter(is_active=True)
+        # ?marketplace_tag=<id> | untagged (listed, no tags) | unlisted
+        tag = params.get("marketplace_tag") if self.action == "list" else None
+        if tag == "untagged":
+            qs = qs.filter(available_for_rental=True, marketplace_tags__isnull=True)
+        elif tag == "unlisted":
+            qs = qs.filter(available_for_rental=False)
+        elif tag and tag.isdigit():
+            qs = qs.filter(marketplace_tags__id=int(tag)).distinct()
         return qs.prefetch_related("marketplace_tags").order_by("-created_at")
 
     def perform_create(self, serializer):
