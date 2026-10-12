@@ -89,6 +89,10 @@ class PublicProductSerializer(serializers.ModelSerializer):
     )
     organization_logo = serializers.SerializerMethodField()
     units = ProductUnitSerializer(many=True, read_only=True)
+    currency_code = serializers.SerializerMethodField()
+    currency_symbol = serializers.SerializerMethodField()
+    min_rental_price = serializers.SerializerMethodField()
+    quantity_available = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -98,13 +102,33 @@ class PublicProductSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "description",
+            "image",
             "total_quantity_good_condition_available",
             "total_cost_price",
             "units",
             "available_for_rental",
             "organization_name",
             "organization_logo",
+            "currency_code",
+            "currency_symbol",
+            "min_rental_price",
+            "quantity_available",
         ]
+
+    def get_currency_code(self, obj):
+        cur = obj.organization.currency if obj.organization else None
+        return cur.code if cur else None
+
+    def get_currency_symbol(self, obj):
+        cur = obj.organization.currency if obj.organization else None
+        return cur.symbol if cur else None
+
+    def get_min_rental_price(self, obj):
+        prices = [u.rental_price for u in obj.units.all() if u.rental_price]
+        return min(prices) if prices else None
+
+    def get_quantity_available(self, obj):
+        return sum((u.quantity_available or 0) for u in obj.units.all())
 
     def get_organization_logo(self, obj):
         if obj.organization and obj.organization.company_logo:

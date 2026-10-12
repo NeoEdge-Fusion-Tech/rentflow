@@ -60,9 +60,13 @@ class PublicProductListView(generics.ListAPIView):
     def get_queryset(self):
         identifier = self.kwargs["identifier"]
         org = get_organization_by_identifier(identifier)
-        return Product.objects.filter(
-            organization=org, is_active=True, available_for_rental=True
-        ).prefetch_related("units")
+        return (
+            Product.objects.filter(
+                organization=org, is_active=True, available_for_rental=True
+            )
+            .select_related("organization__currency", "category")
+            .prefetch_related("units")
+        )
 
 
 class PublicBookingSettingsView(generics.RetrieveAPIView):

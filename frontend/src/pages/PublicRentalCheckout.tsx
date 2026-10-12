@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingBag, ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import axios from "axios";
+import { formatPrice } from "../components/StoreFilters";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -157,6 +158,9 @@ export function PublicRentalCheckout() {
     }
   };
 
+  const currencySymbol: string | undefined = cart.find(
+    (item: any) => item.product?.currency_symbol,
+  )?.product?.currency_symbol;
   const totalAmount = cart.reduce((acc: number, item: any) => {
     const price =
       item.unit?.rental_price || item.product.units?.[0]?.rental_price || 0;
@@ -165,22 +169,22 @@ export function PublicRentalCheckout() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl p-8 text-center shadow-xl">
+      <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[var(--bg-surface)] rounded-2xl p-8 text-center shadow-xl">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-[var(--text-main)] mb-2">
             Request Received!
           </h2>
-          <p className="text-gray-500 mb-8">
+          <p className="text-[var(--text-muted)] mb-8">
             Thank you for your rental request. We have noted your request and
             will reach out to you shortly with a formal quotation and next
             steps.
           </p>
           <button
             onClick={() => navigate(`/public/store/${storeIdentifier}`)}
-            className="w-full py-3 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-accent transition-colors"
+            className="w-full py-3 bg-brand-primary text-[var(--text-on-brand)] rounded-xl font-bold hover:opacity-90 transition-opacity"
           >
             Return to Rentals
           </button>
@@ -190,11 +194,11 @@ export function PublicRentalCheckout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-[var(--bg-app)] py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 font-medium transition-colors"
+          className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-main)] mb-6 font-medium transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to rentals
@@ -202,15 +206,15 @@ export function PublicRentalCheckout() {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="bg-[var(--bg-surface)] rounded-2xl shadow-sm border border-[var(--border-soft)] p-6 sm:p-8">
+              <h2 className="text-2xl font-bold text-[var(--text-main)] mb-6">
                 Booking Details
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Full Name *
                     </label>
                     <input
@@ -219,12 +223,12 @@ export function PublicRentalCheckout() {
                       name="contact_name"
                       value={formData.contact_name}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)]"
                       placeholder="John Doe"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Email Address *
                     </label>
                     <input
@@ -233,12 +237,12 @@ export function PublicRentalCheckout() {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)]"
                       placeholder="john@example.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Phone Number *
                     </label>
                     <input
@@ -247,12 +251,12 @@ export function PublicRentalCheckout() {
                       name="contact_phone"
                       value={formData.contact_phone}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)]"
                       placeholder="+1 234 567 890"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Event Name *
                     </label>
                     <input
@@ -261,12 +265,12 @@ export function PublicRentalCheckout() {
                       name="event_name"
                       value={formData.event_name}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)]"
                       placeholder="Annual Gala 2026"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Event Type *
                     </label>
                     <select
@@ -274,7 +278,7 @@ export function PublicRentalCheckout() {
                       name="event_type"
                       value={formData.event_type}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 appearance-none"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] appearance-none"
                     >
                       <option value="corporate">Corporate Event</option>
                       <option value="wedding">Wedding</option>
@@ -284,7 +288,7 @@ export function PublicRentalCheckout() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Country *
                     </label>
                     <select
@@ -292,7 +296,7 @@ export function PublicRentalCheckout() {
                       name="country"
                       value={formData.country}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 appearance-none"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] appearance-none"
                     >
                       <option value="Nigeria">Nigeria</option>
                       <option value="Kenya">Kenya</option>
@@ -302,7 +306,7 @@ export function PublicRentalCheckout() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       City *
                     </label>
                     <input
@@ -311,14 +315,14 @@ export function PublicRentalCheckout() {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)]"
                       placeholder="Lagos"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                     Event Address *
                   </label>
                   <input
@@ -327,7 +331,7 @@ export function PublicRentalCheckout() {
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50"
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)]"
                     placeholder="123 Main St..."
                   />
                 </div>
@@ -335,7 +339,7 @@ export function PublicRentalCheckout() {
                 {settings &&
                   ((settings.available_days?.length ?? 0) > 0 ||
                     (settings.open_time && settings.close_time)) && (
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-brand-primary/5 border border-brand-primary/20 text-sm text-gray-700">
+                    <div className="flex items-start gap-3 p-4 rounded-xl bg-brand-primary/5 border border-brand-primary/20 text-sm text-[var(--text-main)]">
                       <Clock className="w-4 h-4 mt-0.5 text-brand-primary shrink-0" />
                       <p>
                         Setups and set downs can be scheduled
@@ -363,9 +367,9 @@ export function PublicRentalCheckout() {
                     </div>
                   )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-[var(--border-soft)]">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Setup Date & Time *
                     </label>
                     <input
@@ -375,10 +379,10 @@ export function PublicRentalCheckout() {
                       min={nowLocal}
                       value={formData.setup_date}
                       onChange={handleChange}
-                      className={`w-full border rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm ${
+                      className={`w-full border rounded-xl p-3 outline-none text-[var(--text-main)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] text-sm ${
                         dateErrors.setup_date
                           ? "border-rose-400"
-                          : "border-gray-200"
+                          : "border-[var(--border-soft)]"
                       }`}
                     />
                     {dateErrors.setup_date && (
@@ -388,7 +392,7 @@ export function PublicRentalCheckout() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Event Date & Time *
                     </label>
                     <input
@@ -398,11 +402,11 @@ export function PublicRentalCheckout() {
                       min={nowLocal}
                       value={formData.event_date}
                       onChange={handleChange}
-                      className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm"
+                      className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                       Set Down Date & Time *
                     </label>
                     <input
@@ -412,10 +416,10 @@ export function PublicRentalCheckout() {
                       min={nowLocal}
                       value={formData.set_down_date}
                       onChange={handleChange}
-                      className={`w-full border rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 text-sm ${
+                      className={`w-full border rounded-xl p-3 outline-none text-[var(--text-main)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] text-sm ${
                         dateErrors.set_down_date
                           ? "border-rose-400"
-                          : "border-gray-200"
+                          : "border-[var(--border-soft)]"
                       }`}
                     />
                     {dateErrors.set_down_date && (
@@ -427,7 +431,7 @@ export function PublicRentalCheckout() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-main)] mb-1">
                     Additional Notes
                   </label>
                   <textarea
@@ -435,16 +439,16 @@ export function PublicRentalCheckout() {
                     value={formData.note_for_org}
                     onChange={handleChange}
                     rows={3}
-                    className="w-full border border-gray-200 rounded-xl p-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-gray-50 resize-none"
+                    className="w-full border border-[var(--border-soft)] rounded-xl p-3 outline-none text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all bg-[var(--bg-app)] resize-none"
                     placeholder="Any specific requirements..."
                   ></textarea>
                 </div>
 
-                <div className="pt-6 border-t border-gray-100">
+                <div className="pt-6 border-t border-[var(--border-soft)]">
                   <button
                     type="submit"
                     disabled={loading || notAccepting || !isFormValid}
-                    className="w-full py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    className="w-full py-4 bg-brand-primary text-[var(--text-on-brand)] rounded-xl font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                   >
                     {loading
                       ? "Submitting..."
@@ -458,8 +462,8 @@ export function PublicRentalCheckout() {
           </div>
 
           <div className="w-full lg:w-96">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="bg-[var(--bg-surface)] rounded-2xl shadow-sm border border-[var(--border-soft)] p-6 sticky top-24">
+              <h3 className="text-lg font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-brand-primary" />
                 Order Summary
               </h3>
@@ -470,39 +474,51 @@ export function PublicRentalCheckout() {
                   return (
                     <div
                       key={item.product.product_id}
-                      className="flex justify-between items-start gap-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                      className="flex justify-between items-start gap-4 pb-4 border-b border-[var(--border-soft)] last:border-0 last:pb-0"
                     >
                       <div>
-                        <p className="font-medium text-gray-900 leading-snug">
+                        <p className="font-medium text-[var(--text-main)] leading-snug">
                           {item.product.name}
                         </p>
-                        <p className="text-sm text-gray-500 mt-0.5">
+                        <p className="text-sm text-[var(--text-muted)] mt-0.5">
                           Qty: {item.quantity}
                         </p>
                       </div>
-                      <p className="font-bold text-gray-900">
-                        ${(price * item.quantity).toFixed(2)}
+                      <p className="font-bold text-[var(--text-main)]">
+                        {formatPrice(item.product, price * item.quantity)}
                       </p>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="pt-4 border-t border-gray-100">
+              <div className="pt-4 border-t border-[var(--border-soft)]">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span className="font-medium text-gray-900">
-                    ${totalAmount.toFixed(2)}
+                  <span className="text-[var(--text-muted)]">Subtotal</span>
+                  <span className="font-medium text-[var(--text-main)]">
+                    {formatPrice(
+                      { currency_symbol: currencySymbol },
+                      totalAmount,
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-gray-500">Estimated Tax (0%)</span>
-                  <span className="font-medium text-gray-900">$0.00</span>
+                  <span className="text-[var(--text-muted)]">
+                    Estimated Tax (0%)
+                  </span>
+                  <span className="font-medium text-[var(--text-main)]">
+                    {currencySymbol || ""}0
+                  </span>
                 </div>
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                  <span className="font-bold text-gray-900">Total</span>
-                  <span className="font-black text-2xl text-brand-primary">
-                    ${totalAmount.toFixed(2)}
+                <div className="flex justify-between items-center pt-4 border-t border-[var(--border-soft)]">
+                  <span className="font-bold text-[var(--text-main)]">
+                    Total
+                  </span>
+                  <span className="font-black text-2xl text-[var(--text-link)]">
+                    {formatPrice(
+                      { currency_symbol: currencySymbol },
+                      totalAmount,
+                    )}
                   </span>
                 </div>
               </div>
