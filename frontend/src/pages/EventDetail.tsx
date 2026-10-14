@@ -29,6 +29,7 @@ import {
 } from "../api";
 import { ActionMenu } from "../components/ActionMenu";
 import { AttachmentsModal } from "../components/AttachmentsPanel";
+import { FeedbackQrSheet } from "../components/FeedbackQrSheet";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 
 export function EventDetail() {
@@ -367,6 +368,8 @@ export function EventDetail() {
       showNotification("Failed to remove feedback form.", "error");
     }
   };
+
+  const [qrSheetFor, setQrSheetFor] = useState<any | null>(null);
 
   const copyPublicLink = (publicId: string) => {
     const url = `${window.location.origin}/f/${publicId}`;
@@ -746,6 +749,12 @@ export function EventDetail() {
                       className="text-sm font-bold text-brand-primary hover:underline"
                     >
                       Copy Link
+                    </button>
+                    <button
+                      onClick={() => setQrSheetFor(pf)}
+                      className="text-sm font-bold text-brand-primary hover:underline"
+                    >
+                      Print QR
                     </button>
                     <button
                       onClick={() => handleRemoveFeedback(pf.id)}
@@ -1394,6 +1403,16 @@ export function EventDetail() {
             { value: "client_invoice", label: "Invoice" },
           ]}
           onClose={() => setReceiptsFor(null)}
+        />
+      )}
+      {qrSheetFor && event && (
+        <FeedbackQrSheet
+          url={`${window.location.origin}/f/${qrSheetFor.public_id}`}
+          formTitle={qrSheetFor.form?.title || ""}
+          eventName={event.name}
+          startDate={event.start_date}
+          endDate={event.end_date}
+          onClose={() => setQrSheetFor(null)}
         />
       )}
     </div>

@@ -12,6 +12,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
+import {
+  clearDraft,
+  loadDraft,
+  timeAgo,
+  useDraftAutosave,
+} from "../utils/formDraft";
 import { ClientPicker } from "../components/ClientPicker";
 import {
   QuotationService,
@@ -68,6 +74,52 @@ export function QuotationEditor() {
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { name: "", description: "", quantity: 1, unit_price: 0 },
   ]);
+
+  // ---- Unsaved-draft recovery (new quotations only) -----------------------
+  const draftKey = `quotation:new:${
+    duplicateFromParam ? `dup-${duplicateFromParam}` : "blank"
+  }`;
+  const [draftBaseline, setDraftBaseline] = useState<string | null>(null);
+  const [restoredAt, setRestoredAt] = useState<number | null>(null);
+  const suggestedNumber = lastQuotationMeta?.next_quotation_number || "";
+  const draftData = {
+    formData,
+    lineItems,
+    // Keep a hand-typed number; otherwise take a fresh one on restore.
+    customNumber: Boolean(
+      suggestedNumber && formData.quotation_number !== suggestedNumber,
+    ),
+  };
+  const draftSavedAt = useDraftAutosave(draftKey, draftData, {
+    ready: !isEditMode && !isLoading && draftBaseline !== null,
+    baseline: draftBaseline,
+    orgId: org?.id,
+  });
+
+  // Once the new form has loaded: remember its pristine state, then offer
+  // back any unsaved draft for it.
+  useEffect(() => {
+    if (isEditMode || isLoading || draftBaseline !== null) return;
+    setDraftBaseline(JSON.stringify(draftData));
+
+    const draft = loadDraft<typeof draftData>(draftKey, org?.id);
+    if (!draft) return;
+    setFormData((prev) => ({
+      ...prev,
+      ...draft.data.formData,
+      quotation_number: draft.data.customNumber
+        ? draft.data.formData.quotation_number
+        : prev.quotation_number,
+    }));
+    if (draft.data.lineItems?.length) setLineItems(draft.data.lineItems);
+    setRestoredAt(draft.savedAt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
+  const discardDraft = () => {
+    clearDraft(draftKey);
+    window.location.reload();
+  };
 
   const fetchClients = async () => {
     try {
@@ -298,6 +350,7 @@ export function QuotationEditor() {
         isEditMode ? "Quotation updated." : "Quotation created.",
         "success",
       );
+      if (!isEditMode) clearDraft(draftKey);
       if (!skipNavigate) {
         navigate("/quotations", { replace: true });
         return res.data.quotation_id;
@@ -470,6 +523,28 @@ export function QuotationEditor() {
           )}
         </div>
       </div>
+
+      {!isEditMode && restoredAt && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 text-sm">
+          <p className="flex-1 text-[var(--text-main)]">
+            <strong>Welcome back!</strong> We restored the quotation you were
+            working on ({timeAgo(restoredAt)}). It isn't saved until you save
+            it.
+          </p>
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="self-start sm:self-auto px-3 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors whitespace-nowrap"
+          >
+            Discard draft & start over
+          </button>
+        </div>
+      )}
+      {!isEditMode && draftSavedAt && (
+        <p className="-mt-3 text-xs text-[var(--text-muted)]">
+          Draft saved on this device · you can leave and come back anytime.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left column */}
