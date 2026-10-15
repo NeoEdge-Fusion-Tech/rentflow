@@ -15,6 +15,7 @@ from decouple import config
 #         # Skip file logging in read-only environments
 #         pass
 
+
 class ErrorLoggingMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -23,15 +24,17 @@ class ErrorLoggingMiddleware:
         response = self.get_response(request)
 
         if response.status_code >= 400:
-            user = getattr(request, 'user', 'Anonymous')
+            user = getattr(request, "user", "Anonymous")
             method = request.method
             path = request.get_full_path()
-            
-            log_msg = f"Response {response.status_code} | {method} {path} | User: {user}"
-            
+
+            log_msg = (
+                f"Response {response.status_code} | {method} {path} | User: {user}"
+            )
+
             if response.status_code >= 500:
                 logger.error(log_msg)
             else:
                 logger.warning(log_msg)
-                
+
         return response

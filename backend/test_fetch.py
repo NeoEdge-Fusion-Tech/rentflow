@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 from rest_framework.test import APIRequestFactory
@@ -16,10 +16,10 @@ if not org:
     exit()
 
 factory = APIRequestFactory()
-view = ProductViewSet.as_view({'get': 'list'})
+view = ProductViewSet.as_view({"get": "list"})
 
 # Construct a simple request
-request = factory.get('/api/inventory/products/')
+request = factory.get("/api/inventory/products/")
 # Mock the organization (tenant isolation usually uses request.organization or something similar)
 request.organization = org
 
@@ -35,4 +35,5 @@ try:
 except Exception as e:
     print("ERROR during fetch:")
     import traceback
+
     traceback.print_exc()

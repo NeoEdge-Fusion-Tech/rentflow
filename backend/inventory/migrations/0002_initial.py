@@ -9,59 +9,95 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('inventory', '0001_initial'),
-        ('users', '0001_initial'),
+        ("inventory", "0001_initial"),
+        ("users", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='booking',
-            name='client',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bookings', to='users.client'),
+            model_name="booking",
+            name="client",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="bookings",
+                to="users.client",
+            ),
         ),
         migrations.AddField(
-            model_name='booking',
-            name='organization',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bookings', to='users.organization'),
+            model_name="booking",
+            name="organization",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="bookings",
+                to="users.organization",
+            ),
         ),
         migrations.AddField(
-            model_name='bookingitem',
-            name='booking',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='inventory.booking'),
+            model_name="bookingitem",
+            name="booking",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="items",
+                to="inventory.booking",
+            ),
         ),
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='booking_item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='units', to='inventory.bookingitem'),
+            model_name="bookingitemunit",
+            name="booking_item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="units",
+                to="inventory.bookingitem",
+            ),
         ),
         migrations.AddField(
-            model_name='product',
-            name='organization',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to='users.organization'),
+            model_name="product",
+            name="organization",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="products",
+                to="users.organization",
+            ),
         ),
         migrations.AddField(
-            model_name='bookingitem',
-            name='product',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='inventory.product'),
+            model_name="bookingitem",
+            name="product",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="inventory.product"
+            ),
         ),
         migrations.AddField(
-            model_name='productcategory',
-            name='organization',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='categories', to='users.organization'),
+            model_name="productcategory",
+            name="organization",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="categories",
+                to="users.organization",
+            ),
         ),
         migrations.AddField(
-            model_name='product',
-            name='category',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to='inventory.productcategory'),
+            model_name="product",
+            name="category",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="products",
+                to="inventory.productcategory",
+            ),
         ),
         migrations.AddField(
-            model_name='productunit',
-            name='product',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='units', to='inventory.product'),
+            model_name="productunit",
+            name="product",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="units",
+                to="inventory.product",
+            ),
         ),
         migrations.AddField(
-            model_name='bookingitemunit',
-            name='product_unit',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='inventory.productunit'),
+            model_name="bookingitemunit",
+            name="product_unit",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="inventory.productunit"
+            ),
         ),
     ]

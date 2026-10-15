@@ -1,0 +1,31 @@
+# robots.txt for RentFlow / NeoOps
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /marketplace
+Allow: /public/
+Allow: /assets/
+
+# Disallow authenticated SaaS dashboard and internal endpoints
+Disallow: /dashboard
+Disallow: /inventory
+Disallow: /bookings
+Disallow: /clients
+Disallow: /invoices
+Disallow: /events
+Disallow: /vendors
+Disallow: /general-expenses
+Disallow: /quotations
+Disallow: /settings
+Disallow: /superadmin
+Disallow: /scanner
+Disallow: /onboarding
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /api/
+
+# Sitemap
+Sitemap: /sitemap.xml

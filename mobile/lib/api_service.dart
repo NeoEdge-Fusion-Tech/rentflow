@@ -42,12 +42,12 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> scanItem(
-    String serialNumber, 
+    String serialNumber,
     String action, {
-    int? quantity, 
-    int? qtyGood, 
-    int? qtyDamaged, 
-    String? condition, 
+    int? quantity,
+    int? qtyGood,
+    int? qtyDamaged,
+    String? condition,
     bool? conditionSubmitted
   }) async {
     try {
@@ -74,7 +74,7 @@ class ApiService {
       );
 
       final data = jsonDecode(response.body);
-      
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         data['success'] = true;
         return data as Map<String, dynamic>;
@@ -122,7 +122,7 @@ class ApiService {
           'units': [unitData] // The backend Serializer handles partial updates by merging/adding
         }),
       );
-      
+
       final data = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {'success': true, 'message': 'Unit added successfully'};

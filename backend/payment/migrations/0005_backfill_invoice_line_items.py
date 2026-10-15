@@ -2,10 +2,12 @@ from django.db import migrations
 
 
 def backfill_invoices(apps, schema_editor):
-    Invoice = apps.get_model('payment', 'Invoice')
-    InvoiceLineItem = apps.get_model('payment', 'InvoiceLineItem')
+    Invoice = apps.get_model("payment", "Invoice")
+    InvoiceLineItem = apps.get_model("payment", "InvoiceLineItem")
 
-    for invoice in Invoice.objects.select_related('booking', 'booking__client').filter(booking__isnull=False):
+    for invoice in Invoice.objects.select_related("booking", "booking__client").filter(
+        booking__isnull=False
+    ):
         booking = invoice.booking
         if not booking:
             continue
@@ -18,7 +20,7 @@ def backfill_invoices(apps, schema_editor):
         for item in booking.items.all():
             InvoiceLineItem.objects.create(
                 invoice=invoice,
-                description=item.product.name if item.product_id else 'Item',
+                description=item.product.name if item.product_id else "Item",
                 quantity=item.quantity_booked,
                 unit_price=item.unit_price,
                 total=item.unit_price * item.quantity_booked,
@@ -31,7 +33,14 @@ def backfill_invoices(apps, schema_editor):
         invoice.discount_amount = booking.discount_amount
         invoice.discount_percentage = booking.discount_percentage
         # total_amount is left untouched so historical totals don't shift.
-        invoice.save(update_fields=['client', 'subtotal', 'discount_amount', 'discount_percentage'])
+        invoice.save(
+            update_fields=[
+                "client",
+                "subtotal",
+                "discount_amount",
+                "discount_percentage",
+            ]
+        )
 
 
 def noop_reverse(apps, schema_editor):
@@ -41,7 +50,7 @@ def noop_reverse(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payment', '0004_invoice_client_invoice_discount_amount_and_more'),
+        ("payment", "0004_invoice_client_invoice_discount_amount_and_more"),
     ]
 
     operations = [

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Coins, TrendingUp, BarChart3, Users } from 'lucide-react';
-import { api } from '@/src/api';
-import { useNotification } from '@/src/context/NotificationContext';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from "react";
+import { Coins, TrendingUp, BarChart3, Users } from "lucide-react";
+import { api } from "@/src/api";
+import { useNotification } from "@/src/context/NotificationContext";
+import { format } from "date-fns";
+import { RevenueDisplay } from "@/src/components/RevenueDisplay";
 
 export function Revenue() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -15,10 +16,10 @@ export function Revenue() {
 
   const fetchMetrics = async () => {
     try {
-      const res = await api.get('/payment/super-admin/revenue/');
+      const res = await api.get("/payment/super-admin/revenue/");
       setMetrics(res.data);
     } catch (e: any) {
-      showNotification('Failed to load revenue metrics', 'error');
+      showNotification("Failed to load revenue metrics", "error");
     } finally {
       setLoading(false);
     }
@@ -32,7 +33,9 @@ export function Revenue() {
             <Coins className="w-6 h-6 text-brand-primary" />
             Revenue & Payments
           </h1>
-          <p className="text-[var(--text-muted)] mt-1">Platform-wide financial metrics</p>
+          <p className="text-[var(--text-muted)] mt-1">
+            Platform-wide financial metrics
+          </p>
         </div>
       </div>
 
@@ -43,10 +46,22 @@ export function Revenue() {
               <TrendingUp className="w-6 h-6" />
             </div>
           </div>
-          <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">Total SaaS Revenue</h3>
-          <p className="text-2xl font-bold text-[var(--text-main)]">
-            ₦{metrics?.total_saas_revenue?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}
-          </p>
+          <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">
+            Total SaaS Revenue
+          </h3>
+          <div className="flex flex-col gap-1 mt-1 max-h-28 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[var(--border-soft)]">
+            {metrics?.total_revenue_by_currency?.map(
+              (rev: any, idx: number) => (
+                <RevenueDisplay
+                  key={idx}
+                  amount={`${rev.symbol}${rev.total.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
+                />
+              ),
+            )}
+          </div>
         </div>
 
         <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm">
@@ -55,7 +70,9 @@ export function Revenue() {
               <Users className="w-6 h-6" />
             </div>
           </div>
-          <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">Active Subscriptions</h3>
+          <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">
+            Active Subscriptions
+          </h3>
           <p className="text-2xl font-bold text-[var(--text-main)]">
             {metrics?.active_subscriptions || 0}
           </p>
@@ -67,18 +84,32 @@ export function Revenue() {
               <BarChart3 className="w-6 h-6" />
             </div>
           </div>
-          <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">Estimated MRR</h3>
-          <p className="text-2xl font-bold text-[var(--text-main)]">
-            ₦{metrics?.mrr?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}
-          </p>
+          <h3 className="text-[var(--text-muted)] font-medium text-sm mb-1">
+            Estimated MRR
+          </h3>
+          <div className="flex flex-col gap-1 mt-1 max-h-28 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[var(--border-soft)]">
+            {metrics?.total_revenue_by_currency?.map(
+              (rev: any, idx: number) => (
+                <RevenueDisplay
+                  key={idx}
+                  amount={`${rev.symbol}${rev.total.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
+                />
+              ),
+            )}
+          </div>
         </div>
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
         <div className="p-4 border-b border-[var(--border-soft)]">
-          <h2 className="font-bold text-[var(--text-main)]">Recent Global Transactions (Tenants)</h2>
+          <h2 className="font-bold text-[var(--text-main)]">
+            Recent Global Transactions (Tenants)
+          </h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--bg-app)] text-[var(--text-muted)] uppercase">
               <tr>
@@ -91,27 +122,90 @@ export function Revenue() {
             </thead>
             <tbody className="divide-y divide-[var(--border-soft)]">
               {metrics?.recent_payments?.map((payment: any) => (
-                <tr key={payment.id} className="hover:bg-[var(--bg-app)]">
-                  <td className="px-4 py-3 text-[var(--text-muted)]">{payment.id}</td>
-                  <td className="px-4 py-3 font-medium text-[var(--text-main)]">{payment.organization}</td>
-                  <td className="px-4 py-3 font-medium text-[var(--text-main)]">{payment.amount}</td>
+                <tr
+                  key={payment.subscription_payment_id || payment.id}
+                  className="hover:bg-[var(--bg-app)]"
+                >
+                  <td className="px-4 py-3 text-[var(--text-muted)]">
+                    {payment.subscription_payment_id || payment.id}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-[var(--text-main)]">
+                    {payment.organization_name || payment.organization}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-[var(--text-main)]">
+                    <RevenueDisplay amount={payment.amount} />
+                  </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">
                       {payment.status}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[var(--text-muted)]">
-                    {payment.created_at ? format(new Date(payment.created_at), 'MMM d, yyyy') : '-'}
+                    {payment.payment_date || payment.created_at
+                      ? format(
+                          new Date(payment.payment_date || payment.created_at),
+                          "MMM d, yyyy",
+                        )
+                      : "-"}
                   </td>
                 </tr>
               ))}
-              {(!metrics?.recent_payments || metrics.recent_payments.length === 0) && (
+              {(!metrics?.recent_payments ||
+                metrics.recent_payments.length === 0) && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-[var(--text-muted)]">No recent transactions</td>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-[var(--text-muted)]"
+                  >
+                    No recent transactions
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+          {metrics?.recent_payments?.length ? (
+            metrics.recent_payments.map((payment: any) => (
+              <div
+                key={payment.subscription_payment_id || payment.id}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="font-bold text-[var(--text-main)] text-sm">
+                      {payment.organization_name || payment.organization}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      #{payment.subscription_payment_id || payment.id}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-[var(--text-main)]">
+                      <RevenueDisplay amount={payment.amount} />
+                    </p>
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-500 mt-1">
+                      {payment.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-[var(--text-muted)]">
+                  {payment.payment_date || payment.created_at
+                    ? format(
+                        new Date(payment.payment_date || payment.created_at),
+                        "MMM d, yyyy",
+                      )
+                    : "-"}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-[var(--text-muted)]">
+              No recent transactions
+            </div>
+          )}
         </div>
       </div>
     </div>

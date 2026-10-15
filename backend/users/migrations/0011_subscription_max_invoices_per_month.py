@@ -6,13 +6,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0010_organization_primary_color'),
+        ("users", "0010_organization_primary_color"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscription',
-            name='max_invoices_per_month',
-            field=models.IntegerField(default=10, help_text='Maximum number of invoices this subscription can generate per month. Set to -1 for unlimited.'),
+            model_name="subscription",
+            name="max_invoices_per_month",
+            field=models.IntegerField(
+                default=10,
+                help_text="Maximum number of invoices this subscription can generate per month. Set to -1 for unlimited.",
+            ),
         ),
     ]
