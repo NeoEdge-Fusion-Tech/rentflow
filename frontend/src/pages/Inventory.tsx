@@ -3442,50 +3442,55 @@ function MarketplaceTagLine({
 }) {
   const tags: { id: number; name: string }[] =
     product.marketplace_tag_details || [];
+  const stop = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit();
+  };
+
+  // Listed on the marketplace but untagged: a quiet one-line nudge.
   if (tags.length === 0) {
     if (!product.available_for_rental) return null;
     return (
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
-        }}
-        className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full hover:bg-amber-500/20 transition-colors"
+        onClick={stop}
+        title="Listed on the marketplace without tags — customers will only find it under “Other”. Click to add tags."
+        className="mt-1 inline-flex items-center gap-1.5 max-w-full whitespace-nowrap text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
       >
-        <Tags className="w-3 h-3" /> Add marketplace tags
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+        <Store className="w-3 h-3 shrink-0" />
+        <span className="truncate">Add tags</span>
       </button>
     );
   }
-  const shown = tags.slice(0, 2);
+
+  // Tagged: first tag + "+N", always on one line.
+  const [first, ...rest] = tags;
   return (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onEdit();
-      }}
+      onClick={stop}
       title={`${
         product.available_for_rental
-          ? "Listed on marketplace"
-          : "Not listed on marketplace"
-      } · ${tags.map((t) => t.name).join(", ")}`}
-      className="mt-1 flex flex-wrap items-center gap-1 text-left"
+          ? "Listed on the marketplace"
+          : "Not listed on the marketplace"
+      } · Tags: ${tags.map((t) => t.name).join(", ")} · Click to edit`}
+      className="mt-1 inline-flex items-center gap-1.5 max-w-full whitespace-nowrap text-[11px] text-left group/tags"
     >
-      {product.available_for_rental && (
-        <Store className="w-3 h-3 text-brand-primary shrink-0" />
-      )}
-      {shown.map((t) => (
-        <span
-          key={t.id}
-          className="text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded-full"
-        >
-          {t.name}
-        </span>
-      ))}
-      {tags.length > shown.length && (
-        <span className="text-[10px] font-semibold text-[var(--text-muted)]">
-          +{tags.length - shown.length}
+      <Store
+        className={cn(
+          "w-3 h-3 shrink-0",
+          product.available_for_rental
+            ? "text-[var(--text-link)]"
+            : "text-[var(--text-muted)] opacity-50",
+        )}
+      />
+      <span className="truncate font-semibold text-[var(--text-muted)] group-hover/tags:text-[var(--text-main)]">
+        {first.name}
+      </span>
+      {rest.length > 0 && (
+        <span className="shrink-0 px-1.5 rounded-full bg-[var(--bg-app)] border border-[var(--border-subtle)] font-semibold text-[var(--text-muted)]">
+          +{rest.length}
         </span>
       )}
     </button>
