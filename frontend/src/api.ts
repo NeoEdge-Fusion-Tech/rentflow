@@ -2,6 +2,52 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
+// ---- Session tokens ------------------------------------------------------
+// "Remember me" keeps tokens in localStorage (survives browser restarts);
+// otherwise sessionStorage (ends when the browser closes).
+const storeFor = (): Storage =>
+  localStorage.getItem("token") ? localStorage : sessionStorage;
+
+export const saveSession = (
+  access: string,
+  refresh: string | undefined,
+  remember: boolean,
+) => {
+  clearSession();
+  const store = remember ? localStorage : sessionStorage;
+  store.setItem("token", access);
+  if (refresh) store.setItem("refresh_token", refresh);
+};
+
+export function clearSession() {
+  for (const s of [localStorage, sessionStorage]) {
+    s.removeItem("token");
+    s.removeItem("refresh_token");
+  }
+}
+
+let refreshing: Promise<string | null> | null = null;
+
+/** Swap the refresh token for a new access token (one request at a time). */
+const refreshAccessToken = (): Promise<string | null> => {
+  if (refreshing) return refreshing;
+  const store = storeFor();
+  const refresh = store.getItem("refresh_token");
+  if (!refresh) return Promise.resolve(null);
+  refreshing = axios
+    .post(`${API_URL}/users/token/refresh/`, { refresh })
+    .then((res) => {
+      store.setItem("token", res.data.access);
+      if (res.data.refresh) store.setItem("refresh_token", res.data.refresh);
+      return res.data.access as string;
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+};
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -116,10 +162,21 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
+  async (error) => {
+    const original = error.config;
+    const isAuthCall = /\/users\/token\//.test(original?.url || "");
+    if (error.response?.status === 401 && original && !isAuthCall) {
+      // Access token expired: renew it silently and retry once.
+      if (!original._retried) {
+        original._retried = true;
+        const access = await refreshAccessToken();
+        if (access) {
+          original.headers = original.headers || {};
+          original.headers.Authorization = `Bearer ${access}`;
+          return api.request(original);
+        }
+      }
+      clearSession();
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
@@ -292,8 +349,11 @@ export const VendorService = {
 };
 
 export const AuthService = {
-  login: (data: { username: string; password: string }) =>
-    api.post("/users/token/", data),
+  login: (data: {
+    username: string;
+    password: string;
+    remember_me?: boolean;
+  }) => api.post("/users/token/", data),
   register: (data: any) => api.post("/users/register/", data),
   verifyEmail: (data: { email: string; code: string }) =>
     api.post("/users/verify-email/", data),

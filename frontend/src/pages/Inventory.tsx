@@ -22,6 +22,7 @@ import {
   Paperclip,
   Store,
   Tags,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
@@ -345,6 +346,11 @@ export function Inventory() {
 
   const handleEditProductClick = (product: any) => {
     setEditingProductId(product.product_id);
+    setCollapsedUnits(
+      (product.units || [])
+        .map((_: any, i: number) => i)
+        .filter((i: number) => i > 0),
+    );
     setProductTags(product.marketplace_tags || []);
     setProductTagsAuto(false);
     setNewProduct({
@@ -395,6 +401,7 @@ export function Inventory() {
   const handleCloseAddModal = () => {
     setShowAddModal(false);
     setSerialChecks({});
+    setCollapsedUnits([]);
     setEditingProductId(null);
     setProductTags([]);
     setProductTagsAuto(true);
@@ -422,6 +429,20 @@ export function Inventory() {
 
   const needsMarketplaceTag =
     newProduct.available_for_rental && marketplaceTags.length > 0;
+  // Unit cards in the product form can be collapsed to a one-line summary.
+  const [collapsedUnits, setCollapsedUnits] = useState<number[]>([]);
+  const toggleUnitCollapsed = (i: number) =>
+    setCollapsedUnits((prev) =>
+      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i],
+    );
+  const removeUnitAt = (i: number) => {
+    setUnits((prev: any[]) => prev.filter((_, idx) => idx !== i));
+    setCollapsedUnits((prev) =>
+      prev.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)),
+    );
+    setSerialChecks({});
+  };
+
   // Live serial-number checks for single units, keyed by unit index.
   type SerialCheck = {
     serial: string;
@@ -682,6 +703,7 @@ export function Inventory() {
 
       setShowAddModal(false);
       setSerialChecks({});
+      setCollapsedUnits([]);
       setEditingProductId(null);
       setProductTags([]);
       setProductTagsAuto(true);
@@ -890,8 +912,8 @@ export function Inventory() {
           only ever contains the .qr-print-only content (avoids extra/duplicate
           pages from this section's height still counting toward the print layout) */}
       <div className="print:hidden space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-[var(--text-main)]">
               Inventory Management
             </h1>
@@ -899,7 +921,7 @@ export function Inventory() {
               Manage your products, categories, and stock levels.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
             <CurrencyBadge
               onChange={(symbol) => {
                 setCurrencySymbol(symbol);
@@ -908,22 +930,24 @@ export function Inventory() {
             />
             <button
               onClick={() => setShowQRExportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+              title="Export product line QR codes"
+              className="h-10 inline-flex items-center gap-2 px-4 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl text-sm font-medium whitespace-nowrap hover:bg-[var(--bg-app)] transition-colors shadow-sm"
             >
-              <QrCode className="w-4 h-4" />
-              <span className="hidden sm:inline">Export Product Line QR</span>
+              <QrCode className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Export QR codes</span>
             </button>
             <button
               onClick={() => setShowCategoryModal(true)}
-              className="px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+              className="h-10 inline-flex items-center gap-2 px-4 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl text-sm font-medium whitespace-nowrap hover:bg-[var(--bg-app)] transition-colors shadow-sm"
             >
+              <Tag className="w-4 h-4 shrink-0" />
               Categories
             </button>
             <button
               onClick={openAddProduct}
-              className="flex items-center gap-2 bg-brand-primary text-brand-accent px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+              className="h-10 inline-flex items-center gap-2 bg-brand-primary text-brand-accent px-4 rounded-xl text-sm font-semibold whitespace-nowrap hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 shrink-0" />
               Add Product
             </button>
           </div>
@@ -2030,457 +2054,563 @@ export function Inventory() {
                   track.
                 </p>
 
-                {units.map((unit, i) => (
-                  <div
-                    key={i}
-                    className="flex flex-col gap-3 p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] mb-4 group/unit relative"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex gap-2 items-center col-span-1 md:col-span-2">
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                          Unit Type:
-                        </label>
-                        <div className="flex bg-[var(--bg-surface)] rounded-lg p-0.5 border border-[var(--border-soft)]">
-                          <button
-                            onClick={() => {
-                              const newUnits = [...units];
-                              newUnits[i].unit_type = "single";
-                              if (!newUnits[i].serial_number) {
-                                newUnits[i].serial_number =
-                                  generateNextSerialNumber(products, newUnits);
-                              }
-                              setUnits(newUnits);
-                            }}
+                {units.length > 1 && (
+                  <div className="flex justify-end mb-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCollapsedUnits(
+                          collapsedUnits.length === units.length
+                            ? []
+                            : units.map((_, idx) => idx),
+                        )
+                      }
+                      className="text-xs font-bold text-[var(--text-link)] hover:underline"
+                    >
+                      {collapsedUnits.length === units.length
+                        ? "Expand all"
+                        : "Collapse all"}
+                    </button>
+                  </div>
+                )}
+                {units.map((unit, i) => {
+                  const u: any = unit;
+                  const collapsed = collapsedUnits.includes(i);
+                  const check = serialChecks[i]?.status;
+                  const hasProblem =
+                    (u.unit_type === "single" &&
+                      (!String(u.serial_number || "").trim() ||
+                        check === "taken" ||
+                        check === "duplicate")) ||
+                    (u.unit_type !== "single" && !(Number(u.quantity) > 0)) ||
+                    u.rental_price === "" ||
+                    u.unit_cost_price === "";
+                  const summary =
+                    u.unit_type === "single"
+                      ? u.serial_number || "No serial yet"
+                      : `Bulk × ${u.quantity || 0}`;
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex flex-col gap-3 bg-[var(--bg-app)] rounded-2xl border mb-3 transition-colors",
+                        collapsed ? "p-3" : "p-4",
+                        hasProblem && collapsed
+                          ? "border-rose-500/50"
+                          : "border-[var(--border-soft)]",
+                      )}
+                    >
+                      {/* Header: click to expand/collapse */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleUnitCollapsed(i)}
+                          aria-expanded={!collapsed}
+                          className="flex-1 min-w-0 flex items-center gap-2.5 text-left"
+                        >
+                          <ChevronDown
                             className={cn(
-                              "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
-                              unit.unit_type === "single"
-                                ? "bg-brand-primary text-brand-accent shadow-sm"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                              "w-4 h-4 shrink-0 text-[var(--text-muted)] transition-transform",
+                              collapsed && "-rotate-90",
                             )}
-                          >
-                            Single
-                          </button>
-                          <button
-                            onClick={() => {
-                              const newUnits = [...units];
-                              newUnits[i].unit_type = "bulk";
-                              setUnits(newUnits);
-                            }}
-                            className={cn(
-                              "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
-                              unit.unit_type === "bulk"
-                                ? "bg-brand-primary text-brand-accent shadow-sm"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
-                            )}
-                          >
-                            Bulk
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                          Unit Name (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Unit A"
-                          value={unit.name}
-                          onChange={(e) => {
-                            const newUnits = [...units];
-                            newUnits[i].name = e.target.value;
-                            setUnits(newUnits);
-                          }}
-                          className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
-                        />
-                      </div>
-
-                      <div className="col-span-1">
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                          Unit Image
-                        </label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const newUnits = [...units];
-                              newUnits[i].image_file = file;
-                              setUnits(newUnits);
-                            }
-                          }}
-                          className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20"
-                        />
-                      </div>
-
-                      {unit.unit_type === "single" ? (
-                        <div>
-                          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                            Serial Number
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="SN000000"
-                              required
-                              value={unit.serial_number}
-                              onChange={(e) => {
-                                const newUnits = [...units];
-                                newUnits[i].serial_number = e.target.value;
-                                setUnits(newUnits);
-                              }}
-                              aria-invalid={
-                                serialChecks[i]?.status === "taken" ||
-                                serialChecks[i]?.status === "duplicate"
-                              }
-                              className={cn(
-                                "w-full border rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]",
-                                serialChecks[i]?.status === "taken" ||
-                                  serialChecks[i]?.status === "duplicate"
-                                  ? "border-rose-500"
-                                  : serialChecks[i]?.status === "ok"
-                                    ? "border-emerald-500/60"
-                                    : "border-[var(--border-soft)]",
-                              )}
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!unit.serial_number) {
-                                  alert(
-                                    "Please enter a serial number first to preview its QR code.",
-                                  );
-                                  return;
-                                }
-                                setSingleQRView({
-                                  productName:
-                                    newProduct.name || "Unknown Product",
-                                  unitName: "SN",
-                                  identifier: unit.serial_number,
-                                });
-                              }}
-                              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap flex items-center gap-2"
-                            >
-                              <QrCode className="w-4 h-4" />
-                              View QR
-                            </button>
-                          </div>
-                          {serialChecks[i]?.status === "checking" && (
-                            <p className="text-xs text-[var(--text-muted)] mt-1.5">
-                              Checking availability…
-                            </p>
+                          />
+                          <span className="text-sm font-bold text-[var(--text-main)] shrink-0">
+                            Unit {i + 1}
+                          </span>
+                          {(collapsed || u.name) && (
+                            <span className="text-sm text-[var(--text-muted)] truncate">
+                              {[u.name, summary].filter(Boolean).join(" · ")}
+                            </span>
                           )}
-                          {serialChecks[i]?.status === "taken" && (
-                            <div className="mt-1.5 text-xs text-rose-500">
-                              <p>
-                                <strong>{serialChecks[i].serial}</strong> is
-                                already used by “
-                                {serialChecks[i].usedBy?.product_name}
-                                {serialChecks[i].usedBy?.unit_name
-                                  ? ` – ${serialChecks[i].usedBy?.unit_name}`
-                                  : ""}
-                                ”.
-                              </p>
-                              {serialChecks[i].suggestion && (
+                          {collapsed && (
+                            <span className="ml-auto shrink-0 flex items-center gap-2">
+                              {hasProblem && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                                  Needs attention
+                                </span>
+                              )}
+                              <span className="text-xs font-bold text-[var(--text-main)] tabular-nums">
+                                {currencySymbol}
+                                {formatCurrency(u.rental_price || 0)}
+                                <span className="font-normal text-[var(--text-muted)]">
+                                  {" "}
+                                  /{" "}
+                                  {String(u.unit || "per_day").replace(
+                                    "per_",
+                                    "",
+                                  )}
+                                </span>
+                              </span>
+                            </span>
+                          )}
+                        </button>
+                        {units.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeUnitAt(i)}
+                            title="Remove this unit"
+                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {!collapsed && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex gap-2 items-center col-span-1 md:col-span-2">
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                Unit Type:
+                              </label>
+                              <div className="flex bg-[var(--bg-surface)] rounded-lg p-0.5 border border-[var(--border-soft)]">
                                 <button
-                                  type="button"
                                   onClick={() => {
                                     const newUnits = [...units];
-                                    newUnits[i].serial_number = serialChecks[i]
-                                      .suggestion as string;
+                                    newUnits[i].unit_type = "single";
+                                    if (!newUnits[i].serial_number) {
+                                      newUnits[i].serial_number =
+                                        generateNextSerialNumber(
+                                          products,
+                                          newUnits,
+                                        );
+                                    }
                                     setUnits(newUnits);
                                   }}
-                                  className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-primary/10 text-[var(--text-link)] font-bold hover:bg-brand-primary/20 transition-colors"
+                                  className={cn(
+                                    "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
+                                    unit.unit_type === "single"
+                                      ? "bg-brand-primary text-brand-accent shadow-sm"
+                                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                                  )}
                                 >
-                                  Use {serialChecks[i].suggestion} instead
+                                  Single
                                 </button>
-                              )}
+                                <button
+                                  onClick={() => {
+                                    const newUnits = [...units];
+                                    newUnits[i].unit_type = "bulk";
+                                    setUnits(newUnits);
+                                  }}
+                                  className={cn(
+                                    "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
+                                    unit.unit_type === "bulk"
+                                      ? "bg-brand-primary text-brand-accent shadow-sm"
+                                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                                  )}
+                                >
+                                  Bulk
+                                </button>
+                              </div>
                             </div>
-                          )}
-                          {serialChecks[i]?.status === "duplicate" && (
-                            <p className="mt-1.5 text-xs text-rose-500">
-                              This serial number is already on another unit in
-                              this form.
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                Unit Name (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Unit A"
+                                value={unit.name}
+                                onChange={(e) => {
+                                  const newUnits = [...units];
+                                  newUnits[i].name = e.target.value;
+                                  setUnits(newUnits);
+                                }}
+                                className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                              />
+                            </div>
+
+                            <div className="col-span-1">
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                Unit Image
+                              </label>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const newUnits = [...units];
+                                    newUnits[i].image_file = file;
+                                    setUnits(newUnits);
+                                  }
+                                }}
+                                className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20"
+                              />
+                            </div>
+
+                            {unit.unit_type === "single" ? (
+                              <div>
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                  Serial Number
+                                </label>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="SN000000"
+                                    required
+                                    value={unit.serial_number}
+                                    onChange={(e) => {
+                                      const newUnits = [...units];
+                                      newUnits[i].serial_number =
+                                        e.target.value;
+                                      setUnits(newUnits);
+                                    }}
+                                    aria-invalid={
+                                      serialChecks[i]?.status === "taken" ||
+                                      serialChecks[i]?.status === "duplicate"
+                                    }
+                                    className={cn(
+                                      "w-full border rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]",
+                                      serialChecks[i]?.status === "taken" ||
+                                        serialChecks[i]?.status === "duplicate"
+                                        ? "border-rose-500"
+                                        : serialChecks[i]?.status === "ok"
+                                          ? "border-emerald-500/60"
+                                          : "border-[var(--border-soft)]",
+                                    )}
+                                  />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!unit.serial_number) {
+                                        alert(
+                                          "Please enter a serial number first to preview its QR code.",
+                                        );
+                                        return;
+                                      }
+                                      setSingleQRView({
+                                        productName:
+                                          newProduct.name || "Unknown Product",
+                                        unitName: "SN",
+                                        identifier: unit.serial_number,
+                                      });
+                                    }}
+                                    className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap flex items-center gap-2"
+                                  >
+                                    <QrCode className="w-4 h-4" />
+                                    View QR
+                                  </button>
+                                </div>
+                                {serialChecks[i]?.status === "checking" && (
+                                  <p className="text-xs text-[var(--text-muted)] mt-1.5">
+                                    Checking availability…
+                                  </p>
+                                )}
+                                {serialChecks[i]?.status === "taken" && (
+                                  <div className="mt-1.5 text-xs text-rose-500">
+                                    <p>
+                                      <strong>{serialChecks[i].serial}</strong>{" "}
+                                      is already used by “
+                                      {serialChecks[i].usedBy?.product_name}
+                                      {serialChecks[i].usedBy?.unit_name
+                                        ? ` – ${serialChecks[i].usedBy?.unit_name}`
+                                        : ""}
+                                      ”.
+                                    </p>
+                                    {serialChecks[i].suggestion && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newUnits = [...units];
+                                          newUnits[i].serial_number =
+                                            serialChecks[i]
+                                              .suggestion as string;
+                                          setUnits(newUnits);
+                                        }}
+                                        className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-primary/10 text-[var(--text-link)] font-bold hover:bg-brand-primary/20 transition-colors"
+                                      >
+                                        Use {serialChecks[i].suggestion} instead
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                {serialChecks[i]?.status === "duplicate" && (
+                                  <p className="mt-1.5 text-xs text-rose-500">
+                                    This serial number is already on another
+                                    unit in this form.
+                                  </p>
+                                )}
+                                {serialChecks[i]?.status === "ok" && (
+                                  <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                    Available
+                                  </p>
+                                )}
+                                {lastSerial && (
+                                  <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                                    Last serial added:{" "}
+                                    <span className="font-mono">
+                                      {lastSerial}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                  Quantity
+                                </label>
+                                <input
+                                  type="number"
+                                  placeholder="Quantity"
+                                  required
+                                  value={unit.quantity}
+                                  onChange={(e) => {
+                                    const newUnits = [...units];
+                                    newUnits[i].quantity =
+                                      e.target.value === ""
+                                        ? ("" as any)
+                                        : parseInt(e.target.value) || 1;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4">
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                              Unit Description (Optional)
+                            </label>
+                            <textarea
+                              placeholder="Additional details about this unit..."
+                              value={unit.description || ""}
+                              onChange={(e) => {
+                                const newUnits = [...units];
+                                newUnits[i].description = e.target.value;
+                                setUnits(newUnits);
+                              }}
+                              className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)] resize-y"
+                              rows={2}
+                            />
+                          </div>
+
+                          {/* Quantity Breakdown — editable damaged stepper + derived displays */}
+                          {(unit as any).product_unit_id ? (
+                            <div className="space-y-3 p-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+                                Quantity Breakdown
+                              </p>
+                              {/* Damaged stepper — user-editable */}
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                                  <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />{" "}
+                                  Damaged
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newUnits = [...units];
+                                      const cur =
+                                        (newUnits[i] as any).quantity_damaged ??
+                                        0;
+                                      (newUnits[i] as any).quantity_damaged =
+                                        Math.max(0, cur - 1);
+                                      setUnits(newUnits);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-600 font-black hover:bg-rose-500/20 transition-colors"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-8 text-center font-black text-rose-500 text-sm">
+                                    {(unit as any).quantity_damaged ?? 0}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newUnits = [...units];
+                                      const cur =
+                                        (newUnits[i] as any).quantity_damaged ??
+                                        0;
+                                      const max =
+                                        unit.quantity === ""
+                                          ? ("" as any)
+                                          : parseInt(String(unit.quantity)) ||
+                                            1;
+                                      (newUnits[i] as any).quantity_damaged =
+                                        Math.min(max, cur + 1);
+                                      setUnits(newUnits);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-500 font-black hover:bg-rose-500/20 transition-colors"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                              {/* Derived read-only stats */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black uppercase text-emerald-500">
+                                    Good
+                                  </span>
+                                  <span className="font-black text-emerald-500">
+                                    {Math.max(
+                                      0,
+                                      (unit.quantity === ""
+                                        ? ("" as any)
+                                        : parseInt(String(unit.quantity)) ||
+                                          0) -
+                                        ((unit as any).quantity_damaged ?? 0),
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black uppercase text-blue-500">
+                                    Available
+                                  </span>
+                                  <span className="font-black text-blue-500">
+                                    {Math.max(
+                                      0,
+                                      Math.max(
+                                        0,
+                                        (unit.quantity === ""
+                                          ? ("" as any)
+                                          : parseInt(String(unit.quantity)) ||
+                                            0) -
+                                          ((unit as any).quantity_damaged ?? 0),
+                                      ) - ((unit as any).quantity_rented ?? 0),
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black uppercase text-[var(--text-muted)]">
+                                    Rented
+                                  </span>
+                                  <span className="font-black text-[var(--text-main)]">
+                                    {(unit as any).quantity_rented ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-[9px] text-[var(--text-muted)] italic">
+                                Good = Total − Damaged &nbsp;|&nbsp; Available =
+                                Good − Rented
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-[var(--text-muted)] italic px-1">
+                              Quantity breakdown will appear after saving.
                             </p>
                           )}
-                          {serialChecks[i]?.status === "ok" && (
-                            <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                              Available
-                            </p>
+
+                          {/* Financial Info & Status */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-soft)]">
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Unit Status
+                              </label>
+                              <select
+                                value={unit.status}
+                                onChange={(e) => {
+                                  const newUnits = [...units];
+                                  newUnits[i].status = e.target.value;
+                                  setUnits(newUnits);
+                                }}
+                                className="w-full text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                              >
+                                <option value="available">Available</option>
+                                <option value="rented">Rented</option>
+                                <option value="damaged">Damaged</option>
+                                <option value="maintenance">Maintenance</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Unit Purchase Price
+                              </label>
+                              <div className="relative group/input text-[var(--text-main)]">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">
+                                  {currencySymbol}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={unit.unit_cost_price}
+                                  onChange={(e) => {
+                                    const newUnits = [...units];
+                                    newUnits[i].unit_cost_price =
+                                      e.target.value;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-bold outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Rental Rate
+                              </label>
+                              <div className="relative group/input">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">
+                                  {currencySymbol}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={unit.rental_price}
+                                  onChange={(e) => {
+                                    const newUnits = [...units];
+                                    newUnits[i].rental_price = e.target.value;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-black text-brand-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Rental Unit
+                              </label>
+                              <select
+                                value={unit.unit}
+                                onChange={(e) => {
+                                  const newUnits = [...units];
+                                  newUnits[i].unit = e.target.value;
+                                  setUnits(newUnits);
+                                }}
+                                className="w-full text-sm font-bold bg-[var(--bg-app)] border-none text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
+                              >
+                                <option value="pcs">Piece (pcs)</option>
+                                <option value="per_hour">Per Hour</option>
+                                <option value="per_day">Per Day</option>
+                                <option value="per_week">Per Week</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {(unit as any).product_unit_id && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openUnitReceipts(
+                                  { name: newProduct.name },
+                                  unit as any,
+                                )
+                              }
+                              className="self-start inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary/5 px-2.5 py-1.5 rounded-lg transition-colors"
+                            >
+                              <Paperclip className="w-3.5 h-3.5" /> Purchase
+                              receipts
+                            </button>
                           )}
-                          {lastSerial && (
-                            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-                              Last serial added:{" "}
-                              <span className="font-mono">{lastSerial}</span>
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                            Quantity
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="Quantity"
-                            required
-                            value={unit.quantity}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].quantity =
-                                e.target.value === ""
-                                  ? ("" as any)
-                                  : parseInt(e.target.value) || 1;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
-                          />
-                        </div>
+                        </>
                       )}
                     </div>
-
-                    <div className="mt-4">
-                      <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                        Unit Description (Optional)
-                      </label>
-                      <textarea
-                        placeholder="Additional details about this unit..."
-                        value={unit.description || ""}
-                        onChange={(e) => {
-                          const newUnits = [...units];
-                          newUnits[i].description = e.target.value;
-                          setUnits(newUnits);
-                        }}
-                        className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)] resize-y"
-                        rows={2}
-                      />
-                    </div>
-
-                    {/* Quantity Breakdown — editable damaged stepper + derived displays */}
-                    {(unit as any).product_unit_id ? (
-                      <div className="space-y-3 p-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-                          Quantity Breakdown
-                        </p>
-                        {/* Damaged stepper — user-editable */}
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />{" "}
-                            Damaged
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newUnits = [...units];
-                                const cur =
-                                  (newUnits[i] as any).quantity_damaged ?? 0;
-                                (newUnits[i] as any).quantity_damaged =
-                                  Math.max(0, cur - 1);
-                                setUnits(newUnits);
-                              }}
-                              className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-600 font-black hover:bg-rose-500/20 transition-colors"
-                            >
-                              −
-                            </button>
-                            <span className="w-8 text-center font-black text-rose-500 text-sm">
-                              {(unit as any).quantity_damaged ?? 0}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newUnits = [...units];
-                                const cur =
-                                  (newUnits[i] as any).quantity_damaged ?? 0;
-                                const max =
-                                  unit.quantity === ""
-                                    ? ("" as any)
-                                    : parseInt(String(unit.quantity)) || 1;
-                                (newUnits[i] as any).quantity_damaged =
-                                  Math.min(max, cur + 1);
-                                setUnits(newUnits);
-                              }}
-                              className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-500 font-black hover:bg-rose-500/20 transition-colors"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        {/* Derived read-only stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                          <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black uppercase text-emerald-500">
-                              Good
-                            </span>
-                            <span className="font-black text-emerald-500">
-                              {Math.max(
-                                0,
-                                (unit.quantity === ""
-                                  ? ("" as any)
-                                  : parseInt(String(unit.quantity)) || 0) -
-                                  ((unit as any).quantity_damaged ?? 0),
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black uppercase text-blue-500">
-                              Available
-                            </span>
-                            <span className="font-black text-blue-500">
-                              {Math.max(
-                                0,
-                                Math.max(
-                                  0,
-                                  (unit.quantity === ""
-                                    ? ("" as any)
-                                    : parseInt(String(unit.quantity)) || 0) -
-                                    ((unit as any).quantity_damaged ?? 0),
-                                ) - ((unit as any).quantity_rented ?? 0),
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black uppercase text-[var(--text-muted)]">
-                              Rented
-                            </span>
-                            <span className="font-black text-[var(--text-main)]">
-                              {(unit as any).quantity_rented ?? 0}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-[9px] text-[var(--text-muted)] italic">
-                          Good = Total − Damaged &nbsp;|&nbsp; Available = Good
-                          − Rented
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-[var(--text-muted)] italic px-1">
-                        Quantity breakdown will appear after saving.
-                      </p>
-                    )}
-
-                    {/* Financial Info & Status */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-soft)]">
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
-                          Unit Status
-                        </label>
-                        <select
-                          value={unit.status}
-                          onChange={(e) => {
-                            const newUnits = [...units];
-                            newUnits[i].status = e.target.value;
-                            setUnits(newUnits);
-                          }}
-                          className="w-full text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                        >
-                          <option value="available">Available</option>
-                          <option value="rented">Rented</option>
-                          <option value="damaged">Damaged</option>
-                          <option value="maintenance">Maintenance</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
-                          Unit Purchase Price
-                        </label>
-                        <div className="relative group/input text-[var(--text-main)]">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">
-                            {currencySymbol}
-                          </span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={unit.unit_cost_price}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].unit_cost_price = e.target.value;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-bold outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
-                          Rental Rate
-                        </label>
-                        <div className="relative group/input">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">
-                            {currencySymbol}
-                          </span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={unit.rental_price}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].rental_price = e.target.value;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-black text-brand-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
-                          Rental Unit
-                        </label>
-                        <select
-                          value={unit.unit}
-                          onChange={(e) => {
-                            const newUnits = [...units];
-                            newUnits[i].unit = e.target.value;
-                            setUnits(newUnits);
-                          }}
-                          className="w-full text-sm font-bold bg-[var(--bg-app)] border-none text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
-                        >
-                          <option value="pcs">Piece (pcs)</option>
-                          <option value="per_hour">Per Hour</option>
-                          <option value="per_day">Per Day</option>
-                          <option value="per_week">Per Week</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {(unit as any).product_unit_id && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openUnitReceipts(
-                            { name: newProduct.name },
-                            unit as any,
-                          )
-                        }
-                        className="self-start inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary/5 px-2.5 py-1.5 rounded-lg transition-colors"
-                      >
-                        <Paperclip className="w-3.5 h-3.5" /> Purchase receipts
-                      </button>
-                    )}
-
-                    {/* Delete button positioned at top right of the unit card */}
-                    {units.length > 1 && (
-                      <button
-                        onClick={() =>
-                          setUnits(units.filter((_, idx) => idx !== i))
-                        }
-                        className="absolute top-2 right-2 text-[var(--text-muted)] hover:text-rose-500 p-1.5 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover/unit:opacity-100"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
 
                 <button
                   onClick={async () => {
+                    // Stack the existing units as summaries; open the new one.
+                    setCollapsedUnits(units.map((_, idx) => idx));
                     const suggestion = await fetchSuggestedSerial(units);
                     setUnits((prev: any[]) => [
                       ...prev,

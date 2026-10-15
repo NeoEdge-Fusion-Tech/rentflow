@@ -31,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useVisibility } from "../context/VisibilityContext";
 import { usePermissions } from "../context/usePermissions";
+import { clearSession } from "../api";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -111,8 +112,7 @@ export function Sidebar({
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
+    clearSession();
     navigate("/login");
   };
 

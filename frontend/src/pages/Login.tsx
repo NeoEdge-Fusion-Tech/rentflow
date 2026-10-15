@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { AuthService } from "../api";
+import { AuthService, saveSession } from "../api";
 import { Logo } from "../components/Logo";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
@@ -22,13 +22,13 @@ export function Login() {
     try {
       setIsLoading(true);
       setErrorText("");
-      const res = await AuthService.login({ username: email, password });
+      const res = await AuthService.login({
+        username: email,
+        password,
+        remember_me: rememberMe,
+      });
       if (res.data && res.data.access) {
-        if (rememberMe) {
-          localStorage.setItem("token", res.data.access);
-        } else {
-          sessionStorage.setItem("token", res.data.access);
-        }
+        saveSession(res.data.access, res.data.refresh, rememberMe);
 
         try {
           const userRes = await AuthService.getMe();

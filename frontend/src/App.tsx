@@ -66,7 +66,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { UserHint } from "./components/UserHint";
-import { NotificationService, AuthService } from "./api";
+import { NotificationService, AuthService, clearSession } from "./api";
 import { useTheme } from "./context/ThemeContext";
 import { useNotification } from "./context/NotificationContext";
 
@@ -201,8 +201,7 @@ function AppLayout() {
       onConfirm: async () => {
         try {
           await AuthService.deleteMe();
-          localStorage.removeItem("token");
-          sessionStorage.removeItem("token");
+          clearSession();
           navigate("/login");
         } catch (e) {
           console.error(e);
@@ -213,8 +212,7 @@ function AppLayout() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
+    clearSession();
     navigate("/login");
   };
 

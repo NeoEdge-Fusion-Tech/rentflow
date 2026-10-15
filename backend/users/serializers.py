@@ -1,3 +1,4 @@
+from datetime import timedelta
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
@@ -21,9 +22,27 @@ class GlobalConfigSerializer(serializers.ModelSerializer):
         fields = ["free_tier_monthly_quota", "max_organizations_per_user"]
 
 
+# "Remember me" sessions: the refresh token lasts this long and is renewed
+# (rolling) every time the app refreshes its access token.
+REMEMBER_ME_LIFETIME = timedelta(days=30)
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["remember_me"] = serializers.BooleanField(
+            required=False, default=False
+        )
+
     def validate(self, attrs):
+        remember = bool(attrs.pop("remember_me", False))
         data = super().validate(attrs)
+        if remember:
+            refresh = self.get_token(self.user)
+            refresh["remember"] = True
+            refresh.set_exp(lifetime=REMEMBER_ME_LIFETIME)
+            data["refresh"] = str(refresh)
+            data["access"] = str(refresh.access_token)
         if not self.user.email_verified:
             raise serializers.ValidationError(
                 {"email": "Please verify your email address before logging in."}
@@ -36,6 +55,36 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
             expire_if_due(org)
             data["subscription"] = subscription_state(org)
+        return data
+
+
+class CustomTokenRefreshSerializer(serializers.Serializer):
+    """Issues a new access token *and* a new refresh token (rolling session),
+    keeping a remember-me session's longer lifetime."""
+
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+        from rest_framework_simplejwt.settings import api_settings as jwt_settings
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        try:
+            refresh = RefreshToken(attrs["refresh"])
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        data = {"access": str(refresh.access_token)}
+        refresh.set_jti()
+        refresh.set_exp(
+            lifetime=(
+                REMEMBER_ME_LIFETIME
+                if refresh.get("remember")
+                else jwt_settings.REFRESH_TOKEN_LIFETIME
+            )
+        )
+        refresh.set_iat()
+        data["refresh"] = str(refresh)
         return data
 
 

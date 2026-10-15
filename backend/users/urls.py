@@ -58,6 +58,12 @@ router.register(
 router.register(r"superadmin/users", SuperAdminUserViewSet, basename="superadmin-users")
 
 
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = __import__(
+        "users.serializers"
+    ).serializers.CustomTokenRefreshSerializer
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = __import__(
         "users.serializers"
@@ -90,7 +96,7 @@ urlpatterns = [
         name="switch-organization",
     ),
     path("token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("token/refresh/", CustomTokenRefreshView.as_view(), name="token_refresh"),
     path(
         "superadmin/stats/", SuperAdminStatsAPIView.as_view(), name="superadmin-stats"
     ),

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { AuthService } from "../api";
+import { AuthService, saveSession } from "../api";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 export function VerifyEmail() {
@@ -22,7 +22,8 @@ export function VerifyEmail() {
     try {
       const res = await AuthService.verifyEmail({ email, code });
       if (res.data && res.data.access) {
-        localStorage.setItem("token", res.data.access);
+        // Signed in straight after verifying: keep them signed in.
+        saveSession(res.data.access, res.data.refresh, true);
         setSuccess("Email verified! Redirecting to dashboard...");
         setTimeout(() => navigate("/dashboard"), 1000);
       } else {

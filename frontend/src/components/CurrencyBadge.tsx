@@ -147,7 +147,7 @@ export function CurrencyBadge({ onChange }: CurrencyBadgeProps) {
               : "Organization currency"
         }
         className={cn(
-          "inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-bold transition-colors shadow-sm disabled:cursor-default",
+          "h-10 inline-flex items-center gap-2 px-3 rounded-xl border text-sm font-bold whitespace-nowrap transition-colors shadow-sm disabled:cursor-default",
           missing
             ? "bg-amber-500/10 border-amber-500/40 text-amber-600 hover:bg-amber-500/20 animate-pulse"
             : "bg-[var(--bg-surface)] border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-app)]",
