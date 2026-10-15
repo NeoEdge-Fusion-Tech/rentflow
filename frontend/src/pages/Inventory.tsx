@@ -431,9 +431,13 @@ export function Inventory() {
     newProduct.available_for_rental && marketplaceTags.length > 0;
   // Unit cards in the product form can be collapsed to a one-line summary.
   const [collapsedUnits, setCollapsedUnits] = useState<number[]>([]);
+  // Accordion: opening one unit closes the others; clicking an open unit
+  // closes it.
   const toggleUnitCollapsed = (i: number) =>
     setCollapsedUnits((prev) =>
-      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i],
+      prev.includes(i)
+        ? units.map((_, idx) => idx).filter((idx) => idx !== i)
+        : [...prev, i],
     );
   const removeUnitAt = (i: number) => {
     setUnits((prev: any[]) => prev.filter((_, idx) => idx !== i));
@@ -1220,32 +1224,32 @@ export function Inventory() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
-                  <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <th className="px-4 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="hidden lg:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <th className="hidden lg:table-cell px-4 lg:px-5 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                  <th className="px-2 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
                     Cost
                   </th>
-                  <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                  <th className="px-2 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
                     Qty
                   </th>
-                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-emerald-500 uppercase tracking-wider text-center">
+                  <th className="hidden sm:table-cell px-4 lg:px-5 py-4 text-xs font-semibold text-emerald-500 uppercase tracking-wider text-center">
                     Good
                   </th>
-                  <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-blue-500 uppercase tracking-wider text-center">
+                  <th className="px-2 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-blue-500 uppercase tracking-wider text-center">
                     Avail
                   </th>
-                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                  <th className="hidden sm:table-cell px-4 lg:px-5 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
                     Rented
                   </th>
-                  <th className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-wider text-center">
+                  <th className="px-4 lg:px-5 py-4 text-xs font-black text-rose-500 uppercase tracking-wider text-center">
                     DAMAGED
                   </th>
-                  <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-                    Actions
+                  <th className="sticky right-0 z-10 bg-[var(--bg-app)] shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.35)] px-3 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-right">
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
@@ -1282,7 +1286,7 @@ export function Inventory() {
                             toggleProductExpand(product.product_id)
                           }
                         >
-                          <td className="px-4 sm:px-6 py-4">
+                          <td className="px-4 sm:px-4 lg:px-5 py-4">
                             <div className="flex items-center gap-2 sm:gap-3">
                               <div
                                 className={cn(
@@ -1310,20 +1314,25 @@ export function Inventory() {
                               </div>
                             </div>
                           </td>
-                          <td className="hidden lg:table-cell px-6 py-4">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                              <Tag className="w-3 h-3" />
-                              {product.category_name || "Uncategorized"}
+                          <td className="hidden lg:table-cell px-4 lg:px-5 py-4">
+                            <span
+                              className="inline-flex items-center gap-1.5 max-w-[11rem] px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]"
+                              title={product.category_name || "Uncategorized"}
+                            >
+                              <Tag className="w-3 h-3 shrink-0" />
+                              <span className="truncate">
+                                {product.category_name || "Uncategorized"}
+                              </span>
                             </span>
                           </td>
-                          <td className="px-2 sm:px-6 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
+                          <td className="px-2 sm:px-4 lg:px-5 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
                             <RevenueDisplay
                               amount={`${currencySymbol}${formatCurrency(
                                 product.total_cost_price,
                               )}`}
                             />
                           </td>
-                          <td className="px-2 sm:px-6 py-4 text-center">
+                          <td className="px-2 sm:px-4 lg:px-5 py-4 text-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1336,7 +1345,7 @@ export function Inventory() {
                               {product.total_quantity || 0}
                             </button>
                           </td>
-                          <td className="hidden sm:table-cell px-6 py-4 text-center">
+                          <td className="hidden sm:table-cell px-4 lg:px-5 py-4 text-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1349,7 +1358,7 @@ export function Inventory() {
                               {product.total_quantity_good_condition || 0}
                             </button>
                           </td>
-                          <td className="px-2 sm:px-6 py-4 text-center">
+                          <td className="px-2 sm:px-4 lg:px-5 py-4 text-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1363,7 +1372,7 @@ export function Inventory() {
                                 0}
                             </button>
                           </td>
-                          <td className="hidden sm:table-cell px-6 py-4 text-center">
+                          <td className="hidden sm:table-cell px-4 lg:px-5 py-4 text-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1381,7 +1390,7 @@ export function Inventory() {
                               )}
                             </button>
                           </td>
-                          <td className="hidden sm:table-cell px-6 py-4 text-center">
+                          <td className="hidden sm:table-cell px-4 lg:px-5 py-4 text-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1394,7 +1403,7 @@ export function Inventory() {
                               {product.total_quantity_damaged_condition || 0}
                             </button>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-app)] transition-colors shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.35)] px-3 py-4 text-right">
                             <ActionMenu items={productActions(product)} />
                           </td>
                         </tr>
@@ -2054,22 +2063,16 @@ export function Inventory() {
                   track.
                 </p>
 
-                {units.length > 1 && (
+                {units.length > 1 && collapsedUnits.length < units.length && (
                   <div className="flex justify-end mb-2">
                     <button
                       type="button"
                       onClick={() =>
-                        setCollapsedUnits(
-                          collapsedUnits.length === units.length
-                            ? []
-                            : units.map((_, idx) => idx),
-                        )
+                        setCollapsedUnits(units.map((_, idx) => idx))
                       }
                       className="text-xs font-bold text-[var(--text-link)] hover:underline"
                     >
-                      {collapsedUnits.length === units.length
-                        ? "Expand all"
-                        : "Collapse all"}
+                      Collapse all
                     </button>
                   </div>
                 )}
@@ -2106,7 +2109,7 @@ export function Inventory() {
                           type="button"
                           onClick={() => toggleUnitCollapsed(i)}
                           aria-expanded={!collapsed}
-                          className="flex-1 min-w-0 flex items-center gap-2.5 text-left"
+                          className="flex-1 min-w-0 flex items-center gap-2.5 text-left rounded-lg px-1 -mx-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                         >
                           <ChevronDown
                             className={cn(
