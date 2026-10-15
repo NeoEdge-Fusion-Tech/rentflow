@@ -169,7 +169,9 @@ export function Quotations() {
         } catch (err: any) {
           console.error("Failed to delete quotation", err);
           showNotification(
-            err.response?.data?.detail || "Failed to delete quotation",
+            err.response?.data?.error ||
+              err.response?.data?.detail ||
+              "Failed to delete quotation",
             "error",
           );
         }
@@ -436,8 +438,10 @@ export function Quotations() {
                         icon: Download,
                         onClick: () => handleDownload(quotation),
                       },
-                      ...(quotation.status !== "converted" &&
-                      (quotation.status !== "cancelled" ||
+                      // Only drafts can be deleted (to trash); admins can
+                      // permanently delete what's in the trash.
+                      ...(quotation.status === "draft" ||
+                      (quotation.status === "cancelled" &&
                         currentUser?.role === "admin")
                         ? [
                             {

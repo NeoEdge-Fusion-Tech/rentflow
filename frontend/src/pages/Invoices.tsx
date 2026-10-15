@@ -178,7 +178,9 @@ export function Invoices() {
         } catch (err: any) {
           console.error("Failed to delete invoice", err);
           showNotification(
-            err.response?.data?.detail || "Failed to delete invoice",
+            err.response?.data?.error ||
+              err.response?.data?.detail ||
+              "Failed to delete invoice",
             "error",
           );
         }
@@ -486,8 +488,10 @@ export function Invoices() {
                             },
                           ]
                         : []),
-                      ...(invoice.status !== "paid" &&
-                      (invoice.status !== "cancelled" ||
+                      // Only drafts can be deleted (to trash); admins can
+                      // permanently delete what's in the trash.
+                      ...(invoice.status === "draft" ||
+                      (invoice.status === "cancelled" &&
                         currentUser?.role === "admin")
                         ? [
                             {

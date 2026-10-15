@@ -255,7 +255,9 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         status_param = self.request.query_params.get("status")
-        if not status_param:
+        # Trashed invoices are hidden from the list, but still reachable by
+        # id (so they can be viewed, restored or permanently deleted).
+        if not status_param and self.action == "list":
             qs = qs.exclude(status="cancelled")
         return qs.select_related(
             "client", "organization", "currency", "bank_account"
@@ -332,19 +334,21 @@ class InvoiceViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         from rest_framework.exceptions import ValidationError, PermissionDenied
 
-        if instance.status == "paid":
-            raise ValidationError(
-                "Cannot delete an invoice that has already been paid."
-            )
-
         if instance.status == "cancelled":
             if self.request.user.role != "admin":
                 raise PermissionDenied(
                     "Only organization admins can permanently delete invoices from the trash."
                 )
             super().perform_destroy(instance)
+        elif instance.status != "draft":
+            # Issued/sent/paid invoices are records that were shared with a
+            # client; only drafts can be deleted.
+            raise ValidationError(
+                f"Only draft invoices can be deleted. This invoice is "
+                f"{instance.get_status_display().lower()}."
+            )
         else:
-            instance.status = "cancelled"
+            instance.status = "cancelled"  # move to trash
             instance.save()
 
     @action(detail=False, methods=["delete"])
@@ -619,7 +623,7 @@ class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         status_param = self.request.query_params.get("status")
-        if not status_param:
+        if not status_param and self.action == "list":
             qs = qs.exclude(status="cancelled")
         return qs
 
@@ -633,19 +637,19 @@ class QuotationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         from rest_framework.exceptions import ValidationError, PermissionDenied
 
-        if instance.status == "converted":
-            raise ValidationError(
-                "Cannot delete a quotation that has already been converted to an invoice."
-            )
-
         if instance.status == "cancelled":
             if self.request.user.role != "admin":
                 raise PermissionDenied(
                     "Only organization admins can permanently delete quotations from the trash."
                 )
             super().perform_destroy(instance)
+        elif instance.status != "draft":
+            raise ValidationError(
+                f"Only draft quotations can be deleted. This quotation is "
+                f"{instance.get_status_display().lower()}."
+            )
         else:
-            instance.status = "cancelled"
+            instance.status = "cancelled"  # move to trash
             instance.save()
 
     @action(detail=False, methods=["delete"])
