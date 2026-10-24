@@ -284,6 +284,9 @@ MAX_ORGANIZATIONS_PER_USER = config("MAX_ORGANIZATIONS_PER_USER", default=5, cas
 # Marketplace & Storefront Test Access
 # List of email profiles who can see the marketplace to test
 ALLOW_STORE = [
+    "sunnexajayi@gmail.com",
+    "okerenomso@gmail.com",
+    "adewumiolumide42@gmail.com",
     # Add allowed email addresses here:
 ]
 _env_allow_store = [
