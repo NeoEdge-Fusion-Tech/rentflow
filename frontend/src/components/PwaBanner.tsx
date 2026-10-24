@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, WifiOff, RefreshCw, X, Sparkles } from "lucide-react";
+import { Download, WifiOff, RefreshCw, X, Info } from "lucide-react";
 import { usePwa } from "../context/PwaContext";
 
 export function PwaBanner() {
@@ -30,7 +30,7 @@ export function PwaBanner() {
       {isUpdateAvailable && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-brand-primary text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-4 animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-brand-accent shrink-0" />
+            <Info className="w-4 h-4 text-brand-accent shrink-0" />
             <span className="text-xs font-medium">
               A new version of NeoOps is available.
             </span>

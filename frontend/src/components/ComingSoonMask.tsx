@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ShoppingBag, Store, Sparkles, ArrowLeft, Lock } from "lucide-react";
+import { ShoppingBag, Store, ArrowLeft, Lock } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
@@ -141,8 +141,7 @@ export function ComingSoonMask({
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-16 text-center max-w-3xl mx-auto w-full">
         <div className="space-y-6">
           {/* Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary text-xs font-bold uppercase tracking-widest shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-brand-accent" />
+          <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-brand-primary text-xs font-bold uppercase tracking-widest shadow-sm">
             Coming Soon
           </div>
 
@@ -172,13 +171,13 @@ export function ComingSoonMask({
           {/* Feature Highlights */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
             <span className="px-3.5 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-soft)] text-xs font-medium text-[var(--text-muted)] shadow-sm">
-              ✨ Curated Catalog
+              Curated Catalog
             </span>
             <span className="px-3.5 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-soft)] text-xs font-medium text-[var(--text-muted)] shadow-sm">
-              ⚡ Instant Availability
+              Instant Availability
             </span>
             <span className="px-3.5 py-1.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-soft)] text-xs font-medium text-[var(--text-muted)] shadow-sm">
-              🔒 Seamless Bookings
+              Seamless Bookings
             </span>
           </div>
 
