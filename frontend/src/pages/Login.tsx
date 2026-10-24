@@ -69,9 +69,12 @@ export function Login() {
         </button>
         <button
           onClick={() => navigate("/marketplace")}
-          className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm"
+          className="hidden sm:flex px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm items-center gap-2"
         >
           Event Marketplace
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            Coming Soon
+          </span>
         </button>
         <button
           onClick={() => navigate("/pricing")}

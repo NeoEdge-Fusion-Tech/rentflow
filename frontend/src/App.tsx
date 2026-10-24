@@ -81,6 +81,7 @@ import { PublicPaymentComplete } from "./pages/PublicPaymentComplete";
 import { ClientPortalLogin } from "./pages/ClientPortalLogin";
 import { ClientPortalDashboard } from "./pages/ClientPortalDashboard";
 import { Marketplace } from "./pages/Marketplace";
+import { ComingSoonMask } from "./components/ComingSoonMask";
 import { Footer } from "./components/Footer";
 
 function AppLayout() {
@@ -234,36 +235,71 @@ function AppLayout() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/f/:uuid" element={<PublicFeedback />} />
 
-            {/* Public Rentals */}
-            <Route path="/marketplace" element={<Marketplace />} />
+            {/* Public Rentals / Marketplace */}
+            <Route
+              path="/marketplace"
+              element={
+                <ComingSoonMask type="marketplace">
+                  <Marketplace />
+                </ComingSoonMask>
+              }
+            />
             <Route
               path="/public/store/:identifier"
-              element={<PublicRentals />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <PublicRentals />
+                </ComingSoonMask>
+              }
             />
             <Route
               path="/public/store/:identifier/checkout"
-              element={<PublicRentalCheckout />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <PublicRentalCheckout />
+                </ComingSoonMask>
+              }
             />
             <Route
               path="/public/store/:identifier/payment/complete"
-              element={<PublicPaymentComplete />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <PublicPaymentComplete />
+                </ComingSoonMask>
+              }
             />
             <Route
               path="/public/store/:identifier/login"
-              element={<ClientPortalLogin />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <ClientPortalLogin />
+                </ComingSoonMask>
+              }
             />
             <Route
               path="/public/store/:identifier/portal"
-              element={<ClientPortalDashboard />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <ClientPortalDashboard />
+                </ComingSoonMask>
+              }
             />
             {/* Backward compatibility */}
             <Route
               path="/public/organizations/:org_id/rentals"
-              element={<PublicRentals />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <PublicRentals />
+                </ComingSoonMask>
+              }
             />
             <Route
               path="/public/organizations/:org_id/checkout"
-              element={<PublicRentalCheckout />}
+              element={
+                <ComingSoonMask type="storefront">
+                  <PublicRentalCheckout />
+                </ComingSoonMask>
+              }
             />
           </Routes>
         </div>

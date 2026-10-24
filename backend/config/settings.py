@@ -280,3 +280,13 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@rentflow.com"
 # Free Tier Quotas
 FREE_TIER_MONTHLY_QUOTA = config("FREE_TIER_MONTHLY_QUOTA", default=10, cast=int)
 MAX_ORGANIZATIONS_PER_USER = config("MAX_ORGANIZATIONS_PER_USER", default=5, cast=int)
+
+# Marketplace & Storefront Test Access
+# List of email profiles who can see the marketplace to test
+ALLOW_STORE = [
+    # Add allowed email addresses here:
+]
+_env_allow_store = [
+    e.strip().lower() for e in config("ALLOW_STORE", default="").split(",") if e.strip()
+]
+ALLOW_STORE.extend(_env_allow_store)

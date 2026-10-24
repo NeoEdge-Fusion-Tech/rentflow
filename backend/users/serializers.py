@@ -340,6 +340,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     subscription_usage = serializers.SerializerMethodField()
     subscription_state = serializers.SerializerMethodField()
     marketplace_profile_missing = serializers.SerializerMethodField()
+    allow_store = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -361,6 +362,7 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "subscription_usage",
             "subscription_state",
             "marketplace_profile_missing",
+            "allow_store",
             "is_active",
             "is_superuser",
         ]
@@ -423,6 +425,15 @@ class UserSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
         org = getattr(obj, "organization", None)
         return marketplace_profile_missing(org) if org else []
+
+    def get_allow_store(self, obj):
+        from django.conf import settings
+
+        if getattr(obj, "is_superuser", False):
+            return True
+        allowed = [e.strip().lower() for e in getattr(settings, "ALLOW_STORE", [])]
+        user_email = (getattr(obj, "email", None) or "").strip().lower()
+        return bool(user_email and user_email in allowed)
 
     def get_subscription_state(self, obj):
         org = getattr(obj, "organization", None)

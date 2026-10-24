@@ -278,6 +278,9 @@ export function Dashboard() {
           <div>
             <h3 className="text-sm font-bold text-brand-primary flex items-center gap-2">
               <Building2 className="w-4 h-4" /> Your Public Marketplace Store
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                Coming Soon
+              </span>
             </h3>
             <p className="text-xs text-brand-primary/80 mt-1">
               Share this link with your customers so they can view and rent your
