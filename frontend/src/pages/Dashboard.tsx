@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Wallet,
   Building2,
+  ShoppingBag,
+  ExternalLink,
 } from "lucide-react";
 import {
   BarChart,
@@ -31,6 +33,7 @@ import { StatsService, AuthService, EventService, api } from "../api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { useNotification } from "../context/NotificationContext";
 import { Link } from "react-router-dom";
+import { isProfileAllowed } from "../config/marketplaceAccess";
 
 type PlPreset =
   | "today"
@@ -262,25 +265,37 @@ export function Dashboard() {
     );
   }
 
+  const isStoreAllowed = isProfileAllowed(currentUser);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-main)]">
-          Dashboard Overview
-        </h1>
-        <p className="text-[var(--text-muted)]">
-          Welcome back, here's what's happening today.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">
+            Dashboard Overview
+          </h1>
+          <p className="text-[var(--text-muted)]">
+            Welcome back, here's what's happening today.
+          </p>
+        </div>
+        {isStoreAllowed && (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/marketplace"
+              className="px-4 py-2.5 bg-brand-primary text-white text-xs font-bold rounded-xl hover:bg-brand-accent transition-colors shadow-sm flex items-center gap-2 shrink-0"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Event Marketplace
+            </Link>
+          </div>
+        )}
       </div>
 
-      {!isAdmin && currentUser && (
+      {!isAdmin && currentUser && isStoreAllowed && (
         <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-brand-primary flex items-center gap-2">
               <Building2 className="w-4 h-4" /> Your Public Marketplace Store
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                Coming Soon
-              </span>
             </h3>
             <p className="text-xs text-brand-primary/80 mt-1">
               Share this link with your customers so they can view and rent your
@@ -292,6 +307,17 @@ export function Dashboard() {
               {window.location.origin}/public/store/
               {bookingSettings?.public_url_slug || currentUser?.organization_id}
             </div>
+            <a
+              href={`/public/store/${
+                bookingSettings?.public_url_slug || currentUser?.organization_id
+              }`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-brand-primary text-white text-xs font-bold rounded-xl hover:bg-brand-accent transition-colors shrink-0 flex items-center gap-1.5"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Visit Store
+            </a>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(
@@ -302,7 +328,7 @@ export function Dashboard() {
                 );
                 showNotification("Store link copied to clipboard!", "success");
               }}
-              className="px-4 py-2 bg-brand-primary text-white text-xs font-bold rounded-xl hover:bg-brand-accent transition-colors shrink-0"
+              className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] text-xs font-bold rounded-xl hover:border-brand-primary/50 transition-colors shrink-0"
             >
               Copy Link
             </button>

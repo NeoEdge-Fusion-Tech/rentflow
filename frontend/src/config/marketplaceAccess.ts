@@ -3,12 +3,12 @@
  *
  * When `enabled` is true, a "Coming Soon" mask is displayed over the
  * marketplace and storefront for all users, EXCEPT those whose profiles
- * match the allowlist below.
+ * are in the allowed store list (ALLOW_STORE).
  */
 
 /**
  * List of email profiles who can see the marketplace to test.
- * You can add emails directly here or in Django's backend `config/settings.py` (ALLOW_STORE).
+ * Add emails here or in backend `config/settings.py` (ALLOW_STORE).
  */
 export const ALLOW_STORE: string[] = [
   // Add allowed email addresses here:
@@ -18,7 +18,7 @@ export interface MarketplaceAccessConfig {
   /** Master switch: if true, Coming Soon mask is active. If false, open to everyone. */
   enabled: boolean;
 
-  /** When true, Django superusers / admins automatically bypass the Coming Soon mask. */
+  /** When true, Django superusers / admins automatically see the store. */
   allowSuperusers: boolean;
 
   /** List of user emails allowed to access (case-insensitive). */
@@ -32,16 +32,13 @@ export interface MarketplaceAccessConfig {
 
   /** List of organization IDs whose members can view the marketplace and storefront. */
   allowedOrganizationIds: (string | number)[];
-
-  /** Optional preview passphrase to quickly unlock access without signing in. */
-  previewPassphrase?: string;
 }
 
 export const MARKETPLACE_ACCESS_CONFIG: MarketplaceAccessConfig = {
   enabled: true,
   allowSuperusers: true,
 
-  // Allowed email addresses (also includes ALLOW_STORE above)
+  // Allowed email addresses
   allowedEmails: [],
 
   // Add allowed usernames here if needed:
@@ -52,9 +49,6 @@ export const MARKETPLACE_ACCESS_CONFIG: MarketplaceAccessConfig = {
 
   // Add allowed organization IDs here if needed:
   allowedOrganizationIds: [],
-
-  // Secret passphrase that can be entered on the UI or via ?preview_access=<passphrase>
-  previewPassphrase: "rentflow-preview",
 };
 
 /**
@@ -65,37 +59,11 @@ export function isProfileAllowed(user: any): boolean {
     return true;
   }
 
-  // Check if browser has saved preview passphrase
-  if (typeof window !== "undefined") {
-    try {
-      const storedKey = localStorage.getItem("marketplace_preview_access");
-      if (
-        MARKETPLACE_ACCESS_CONFIG.previewPassphrase &&
-        storedKey === MARKETPLACE_ACCESS_CONFIG.previewPassphrase
-      ) {
-        return true;
-      }
-
-      // Check URL search parameter
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlKey = urlParams.get("preview_access");
-      if (
-        MARKETPLACE_ACCESS_CONFIG.previewPassphrase &&
-        urlKey === MARKETPLACE_ACCESS_CONFIG.previewPassphrase
-      ) {
-        localStorage.setItem("marketplace_preview_access", urlKey);
-        return true;
-      }
-    } catch {
-      // Storage access error fallback
-    }
-  }
-
   if (!user) {
     return false;
   }
 
-  // Check if backend flagged user as allow_store
+  // Check if backend flagged user as allow_store from Django settings.ALLOW_STORE
   if (user.allow_store === true) {
     return true;
   }

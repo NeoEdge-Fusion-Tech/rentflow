@@ -82,6 +82,8 @@ import { ClientPortalLogin } from "./pages/ClientPortalLogin";
 import { ClientPortalDashboard } from "./pages/ClientPortalDashboard";
 import { Marketplace } from "./pages/Marketplace";
 import { ComingSoonMask } from "./components/ComingSoonMask";
+import { PwaProvider } from "./context/PwaContext";
+import { PwaBanner } from "./components/PwaBanner";
 import { Footer } from "./components/Footer";
 
 function AppLayout() {
@@ -222,6 +224,7 @@ function AppLayout() {
   if (isAuthRoute) {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--bg-app)] transition-colors duration-300">
+        <PwaBanner />
         <div className="flex-1 flex flex-col">
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -310,6 +313,7 @@ function AppLayout() {
 
   return (
     <div className="fixed inset-0 flex bg-[var(--bg-app)] text-[var(--text-main)] overflow-hidden transition-colors duration-300">
+      <PwaBanner />
       <Sidebar
         isOpen={isSidebarOpen}
         toggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -676,8 +680,10 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <Router>
-      <AppLayout />
-    </Router>
+    <PwaProvider>
+      <Router>
+        <AppLayout />
+      </Router>
+    </PwaProvider>
   );
 }

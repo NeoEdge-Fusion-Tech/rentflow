@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  ShoppingBag,
-  Store,
-  Sparkles,
-  ArrowLeft,
-  KeyRound,
-  CheckCircle2,
-  Lock,
-  User,
-  ShieldAlert,
-  X,
-} from "lucide-react";
+import { ShoppingBag, Store, Sparkles, ArrowLeft, Lock } from "lucide-react";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
@@ -41,20 +30,10 @@ export function ComingSoonMask({
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [showPassModal, setShowPassModal] = useState(false);
-  const [passphraseInput, setPassphraseInput] = useState("");
-  const [passphraseError, setPassphraseError] = useState("");
 
   useEffect(() => {
     // If the mask is turned off completely in config, allow access
     if (!MARKETPLACE_ACCESS_CONFIG.enabled) {
-      setIsAuthorized(true);
-      setIsLoading(false);
-      return;
-    }
-
-    // Check query params and stored passphrase
-    if (isProfileAllowed(null)) {
       setIsAuthorized(true);
       setIsLoading(false);
       return;
@@ -82,39 +61,13 @@ export function ComingSoonMask({
         }
       })
       .catch((e) => {
-        console.warn("Could not verify user profile for preview mask", e);
+        console.warn("Could not verify user profile for store mask", e);
         setIsAuthorized(false);
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, [location.pathname, location.search]);
-
-  // When user enters preview passphrase manually
-  const handlePassphraseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passphraseInput.trim()) return;
-
-    if (
-      MARKETPLACE_ACCESS_CONFIG.previewPassphrase &&
-      passphraseInput.trim() === MARKETPLACE_ACCESS_CONFIG.previewPassphrase
-    ) {
-      localStorage.setItem(
-        "marketplace_preview_access",
-        passphraseInput.trim(),
-      );
-      setIsAuthorized(true);
-      setShowPassModal(false);
-      setPassphraseError("");
-    } else {
-      setPassphraseError("Invalid preview code. Please try again.");
-    }
-  };
-
-  const handleClearPreviewAccess = () => {
-    localStorage.removeItem("marketplace_preview_access");
-    window.location.reload();
-  };
+  }, [location.pathname]);
 
   // If loading user profile
   if (isLoading) {
@@ -123,42 +76,19 @@ export function ComingSoonMask({
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin" />
           <p className="text-sm text-[var(--text-muted)] animate-pulse">
-            Checking access permissions...
+            Loading...
           </p>
         </div>
       </div>
     );
   }
 
-  // If authorized, render children (implementation completely untouched)
+  // If authorized, render original implementation with zero changes
   if (isAuthorized) {
-    return (
-      <>
-        {/* Subtle banner indicating preview mode for authorized viewers */}
-        <div className="bg-brand-primary text-white text-xs px-4 py-1.5 flex items-center justify-between shadow-sm sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-brand-accent shrink-0" />
-            <span className="font-medium">
-              Authorized Preview Mode —{" "}
-              {currentUser?.email
-                ? `Logged in as ${currentUser.email}`
-                : "Unlocked via preview key"}
-            </span>
-          </div>
-          <button
-            onClick={handleClearPreviewAccess}
-            className="text-[11px] underline opacity-80 hover:opacity-100 transition-opacity"
-            title="Lock marketplace again"
-          >
-            Lock preview
-          </button>
-        </div>
-        {children}
-      </>
-    );
+    return <>{children}</>;
   }
 
-  // Default content based on type
+  // Content for unauthorized users
   const isMarketplace = type === "marketplace";
   const heading =
     title ||
@@ -189,23 +119,19 @@ export function ComingSoonMask({
             <ArrowLeft className="w-4 h-4" />
             Home
           </button>
-          {!currentUser ? (
-            <button
-              onClick={() =>
-                navigate(
-                  `/login?redirect=${encodeURIComponent(location.pathname)}`,
-                )
-              }
-              className="px-4 py-2 text-sm font-bold bg-brand-primary text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
-            >
-              Sign In
-            </button>
-          ) : (
+          {currentUser ? (
             <button
               onClick={() => navigate("/dashboard")}
               className="px-4 py-2 text-sm font-bold bg-brand-primary text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
             >
               Dashboard
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-2 text-sm font-bold bg-brand-primary text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+            >
+              Sign In
             </button>
           )}
         </div>
@@ -256,53 +182,24 @@ export function ComingSoonMask({
             </span>
           </div>
 
-          {/* User Status / Early Access Notice */}
-          {currentUser ? (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 max-w-md mx-auto text-left flex items-start gap-3">
-              <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-700 dark:text-amber-400 space-y-1">
-                <p className="font-semibold">
-                  Signed in as:{" "}
-                  <span className="underline">{currentUser.email}</span>
-                </p>
-                <p>
-                  This feature is currently in private preview and restricted to
-                  authorized tester profiles.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-[var(--text-muted)]">
-              Authorized team member or tester?{" "}
-              <button
-                onClick={() =>
-                  navigate(
-                    `/login?redirect=${encodeURIComponent(location.pathname)}`,
-                  )
-                }
-                className="text-brand-primary font-bold underline hover:opacity-80 transition-opacity"
-              >
-                Sign in with an authorized profile
-              </button>
-            </p>
-          )}
-
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <button
-              onClick={() => navigate("/")}
-              className="w-full sm:w-auto px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-md shadow-brand-primary/20 flex items-center justify-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Return to Home
-            </button>
-            <button
-              onClick={() => setShowPassModal(true)}
-              className="w-full sm:w-auto px-5 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-semibold rounded-xl hover:border-brand-primary/50 transition-all shadow-sm flex items-center justify-center gap-2"
-            >
-              <KeyRound className="w-4 h-4 text-brand-primary" />
-              Enter Preview Code
-            </button>
+          <div className="flex items-center justify-center gap-3 pt-4">
+            {currentUser ? (
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-md shadow-brand-primary/20 flex items-center justify-center gap-2"
+              >
+                Go to Dashboard
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/")}
+                className="px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-md shadow-brand-primary/20 flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Return to Home
+              </button>
+            )}
           </div>
         </div>
       </main>
@@ -311,73 +208,6 @@ export function ComingSoonMask({
       <footer className="relative z-10 py-6 text-center text-xs text-[var(--text-muted)] border-t border-[var(--border-subtle)]">
         &copy; {new Date().getFullYear()} NeoOps RentFlow. All rights reserved.
       </footer>
-
-      {/* Preview Code Modal */}
-      {showPassModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm text-[var(--text-main)]">
-                <KeyRound className="w-4 h-4 text-brand-primary" />
-                Unlock Preview
-              </div>
-              <button
-                onClick={() => {
-                  setShowPassModal(false);
-                  setPassphraseError("");
-                }}
-                className="p-1 rounded-lg hover:bg-[var(--bg-app)] text-[var(--text-muted)]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              If you have an early access preview passphrase, enter it below to
-              view the live {isMarketplace ? "marketplace" : "storefront"}.
-            </p>
-
-            <form onSubmit={handlePassphraseSubmit} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Enter preview code..."
-                value={passphraseInput}
-                onChange={(e) => {
-                  setPassphraseInput(e.target.value);
-                  setPassphraseError("");
-                }}
-                autoFocus
-                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] text-sm outline-none focus:border-brand-primary transition-colors"
-              />
-
-              {passphraseError && (
-                <p className="text-xs text-rose-500 font-medium">
-                  {passphraseError}
-                </p>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPassModal(false);
-                    setPassphraseError("");
-                  }}
-                  className="px-4 py-2 text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-brand-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
-                >
-                  Unlock Access
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

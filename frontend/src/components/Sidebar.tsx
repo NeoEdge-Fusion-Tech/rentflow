@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Eye,
   EyeOff,
+  Download,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { UserOrganizationSelector } from "./UserOrganizationSelector";
@@ -31,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useVisibility } from "../context/VisibilityContext";
 import { usePermissions } from "../context/usePermissions";
+import { usePwa } from "../context/PwaContext";
 import { clearSession } from "../api";
 
 interface SidebarProps {
@@ -96,6 +98,7 @@ export function Sidebar({
   const { theme } = useTheme();
   const { isRevenueHidden, toggleRevenueVisibility } = useVisibility();
   const { hasPermission } = usePermissions(currentUser);
+  const { isInstallable, promptInstall } = usePwa();
   const navigate = useNavigate();
 
   const [isCollapsed, setIsCollapsed] = React.useState(() => {
@@ -422,6 +425,19 @@ export function Sidebar({
                 </div>
               )}
             </div>
+            {isInstallable && (
+              <button
+                onClick={promptInstall}
+                title={isCollapsed ? "Install App" : undefined}
+                className={cn(
+                  "flex items-center w-full py-2 text-sm font-semibold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary/20 rounded-xl transition-all duration-200 mb-1 overflow-hidden",
+                  isCollapsed ? "justify-center" : "px-3 gap-3",
+                )}
+              >
+                <Download className="w-5 h-5 shrink-0" />
+                {!isCollapsed && <span className="truncate">Install App</span>}
+              </button>
+            )}
             <button
               onClick={toggleRevenueVisibility}
               title={
