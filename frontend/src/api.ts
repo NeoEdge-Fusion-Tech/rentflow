@@ -231,6 +231,27 @@ export const AttachmentService = {
   delete: (id: number) => api.delete(`/attachments/${id}/`),
 };
 
+export const VendorReviewService = {
+  getAll: (params?: any) => api.get("/events/vendor-reviews/", { params }),
+  // Uses api.request to bypass the GET cache: the to-do list must be live.
+  pending: (params?: any) =>
+    api.request({
+      method: "get",
+      url: "/events/vendor-reviews/pending/",
+      params,
+    }),
+  summary: (params?: any) =>
+    api.request({
+      method: "get",
+      url: "/events/vendor-reviews/summary/",
+      params,
+    }),
+  create: (data: any) => api.post("/events/vendor-reviews/", data),
+  update: (id: number, data: any) =>
+    api.patch(`/events/vendor-reviews/${id}/`, data),
+  delete: (id: number) => api.delete(`/events/vendor-reviews/${id}/`),
+};
+
 export const MarketplaceTagService = {
   getAll: (params?: any) => api.get("/inventory/marketplace-tags/", { params }),
   create: (data: any) => api.post("/inventory/marketplace-tags/", data),

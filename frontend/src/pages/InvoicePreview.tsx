@@ -13,9 +13,29 @@ import {
   Check,
   ExternalLink,
   X,
+  ReceiptText,
+  Loader2,
 } from "lucide-react";
-import { InvoiceService, AuthService, OrganizationService } from "../api";
+import {
+  InvoiceService,
+  AuthService,
+  OrganizationService,
+  ReceiptService,
+} from "../api";
 import { useNotification } from "../context/NotificationContext";
+
+/** Open a PDF blob in a new tab (falls back to download if blocked). */
+const openPdf = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+  if (!win) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
 
 export function InvoicePreview() {
   const { id } = useParams();
@@ -300,6 +320,19 @@ export function InvoicePreview() {
           </div>
         </div>
 
+        {/* Payments & receipts */}
+        {invoice?.recorded_payments?.length > 0 && (
+          <PaymentsPanel
+            payments={invoice.recorded_payments}
+            currencySymbol={currencySymbol}
+            formatCurrency={formatCurrency}
+            onChanged={async () => {
+              const res = await InvoiceService.get(id!);
+              setInvoice(res.data);
+            }}
+          />
+        )}
+
         {/* Invoice Document */}
         <div className="bg-white text-gray-900 rounded-lg shadow-sm border border-gray-200 overflow-hidden h-[80vh] min-h-[800px] print:shadow-none print:border-none">
           {pdfUrl ? (
@@ -490,5 +523,93 @@ export function InvoicePreview() {
         </div>
       )}
     </>
+  );
+}
+
+function PaymentsPanel({
+  payments,
+  currencySymbol,
+  formatCurrency,
+  onChanged,
+}: {
+  payments: any[];
+  currencySymbol: string;
+  formatCurrency: (v: number | string) => string;
+  onChanged: () => Promise<void>;
+}) {
+  const { showNotification } = useNotification();
+  const [busy, setBusy] = useState<number | null>(null);
+
+  // Open the payment's receipt, generating it first if it doesn't exist.
+  const openReceipt = async (p: any) => {
+    try {
+      setBusy(p.payment_id);
+      let receiptPk = p.receipt_pk;
+      let number = p.receipt_id;
+      if (!receiptPk) {
+        const res = await ReceiptService.generate(p.payment_id);
+        receiptPk = res.data.receipt_id;
+        number = res.data.receipt_number;
+        await onChanged();
+      }
+      const pdf = await ReceiptService.download(receiptPk);
+      openPdf(
+        new Blob([pdf.data], { type: "application/pdf" }),
+        `receipt_${number || receiptPk}.pdf`,
+      );
+    } catch (e: any) {
+      console.error(e);
+      showNotification(
+        e.response?.data?.error || "Couldn't open the receipt.",
+        "error",
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl p-5 print:hidden">
+      <h3 className="font-bold text-[var(--text-main)] mb-3 flex items-center gap-2">
+        <ReceiptText className="w-4 h-4 text-emerald-500" />
+        Payments & receipts
+      </h3>
+      <ul className="divide-y divide-[var(--border-soft)]">
+        {payments.map((p) => (
+          <li
+            key={p.payment_id}
+            className="flex flex-wrap items-center justify-between gap-3 py-3"
+          >
+            <div className="min-w-0">
+              <p className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                {currencySymbol}
+                {formatCurrency(p.amount)}
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                {new Date(p.payment_date).toLocaleDateString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+                {p.created_by ? ` · recorded by ${p.created_by}` : ""}
+                {p.receipt_id ? ` · ${p.receipt_id}` : ""}
+              </p>
+            </div>
+            <button
+              onClick={() => openReceipt(p)}
+              disabled={busy === p.payment_id}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[var(--border-soft)] text-sm font-bold text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors disabled:opacity-60"
+            >
+              {busy === p.payment_id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ReceiptText className="w-4 h-4" />
+              )}
+              {p.receipt_pk ? "View receipt" : "Generate receipt"}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

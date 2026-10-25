@@ -40,6 +40,7 @@ import { Users as SuperAdminUsers } from "./pages/SuperAdmin/Users";
 import { Currencies } from "./pages/SuperAdmin/Currencies";
 import { MarketplaceTags } from "./pages/SuperAdmin/MarketplaceTags";
 import { SubscriptionBanner } from "./components/SubscriptionBanner";
+import { PendingVendorReviewsBanner } from "./components/VendorReviews";
 import { Dashboard as SuperAdminDashboard } from "./pages/SuperAdmin/Dashboard";
 import { Bookings as SuperAdminBookings } from "./pages/SuperAdmin/Bookings";
 import { Invoices as SuperAdminInvoices } from "./pages/SuperAdmin/Invoices";
@@ -477,6 +478,11 @@ function AppLayout() {
                 canManage={currentUser.role !== "staff"}
               />
             )}
+            {currentUser &&
+              !currentUser.is_superuser &&
+              currentUser.organization_id && (
+                <PendingVendorReviewsBanner key={currentUser.organization_id} />
+              )}
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/inventory" element={<Inventory />} />

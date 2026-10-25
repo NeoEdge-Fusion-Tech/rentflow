@@ -138,3 +138,56 @@ class ChecklistTask(models.Model):
         if self.event_id and not self.organization_id:
             self.organization = self.event.organization
         super().save(*args, **kwargs)
+
+
+class VendorReview(models.Model):
+    """How a vendor performed on a project: punctuality, a 1–5 star rating
+    and a comment. One review per vendor per project."""
+
+    PUNCTUALITY_CHOICES = [
+        ("early", "Early"),
+        ("on_time", "On time"),
+        ("late", "Late"),
+        ("no_show", "No-show"),
+    ]
+
+    review_id = models.AutoField(primary_key=True)
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name="vendor_reviews"
+    )
+    vendor = models.ForeignKey(
+        "users.Vendor", on_delete=models.CASCADE, related_name="reviews"
+    )
+    organization = models.ForeignKey(
+        "users.Organization",
+        on_delete=models.CASCADE,
+        related_name="vendor_reviews",
+    )
+    punctuality = models.CharField(max_length=10, choices=PUNCTUALITY_CHOICES)
+    rating = models.PositiveSmallIntegerField()  # 1–5, 5 = best
+    comment = models.TextField(blank=True, default="")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vendor_reviews",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "vendor"], name="one_review_per_vendor_per_project"
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.event_id and not self.organization_id:
+            self.organization_id = self.event.organization_id
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.vendor} on {self.event}: {self.rating}★"

@@ -21,12 +21,22 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { ActionMenu } from "../components/ActionMenu";
+import { VendorReviewsList, Stars } from "../components/VendorReviews";
+import { VendorReviewService } from "@/src/api";
 import { useNotification } from "../context/NotificationContext";
 import { VendorService } from "@/src/api";
 
 export function Vendors() {
   const { showNotification, showConfirm } = useNotification();
   const [vendors, setVendors] = useState<any[]>([]);
+  const [tab, setTab] = useState<"vendors" | "reviews">("vendors");
+  // Average rating per vendor id, from their reviews.
+  const [ratings, setRatings] = useState<Record<string, any>>({});
+  useEffect(() => {
+    VendorReviewService.summary()
+      .then((res) => setRatings(res.data || {}))
+      .catch(() => {});
+  }, [tab]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -235,232 +245,87 @@ export function Vendors() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2 mt-4">
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">
-              Total Vendors
-            </p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">
-              {vendors.length}
-            </p>
-          </div>
-          <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
-            <Truck size={24} />
-          </div>
-        </div>
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">
-              Active Vendors
-            </p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">
-              {activeVendors}
-            </p>
-          </div>
-          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
-            <ShieldCheck size={24} />
-          </div>
-        </div>
+      <div className="flex items-center gap-1 border-b border-[var(--border-soft)]">
+        {(["vendors", "reviews"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              "px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors",
+              tab === t
+                ? "border-brand-primary text-[var(--text-main)]"
+                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]",
+            )}
+          >
+            {t === "vendors" ? "Vendors" : "Reviews"}
+          </button>
+        ))}
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search by name, contact, or service..."
-          className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
-        />
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
-        </div>
-      ) : displayedVendors.length === 0 ? (
-        <div className="text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
-          No vendors found.
-        </div>
-      ) : viewType === "card" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {displayedVendors.map((vendor) => (
-            <div
-              key={vendor.vendor_id}
-              className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
-                  {vendor.logo ? (
-                    <img
-                      src={vendor.logo}
-                      alt={vendor.business_name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    (vendor.business_name?.[0] || "V").toUpperCase()
-                  )}
-                </div>
-                <div className="flex gap-2 items-center">
-                  <span
-                    className={cn(
-                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      vendor.status === "active"
-                        ? "bg-emerald-500/10 text-emerald-500"
-                        : "bg-[var(--bg-app)] text-[var(--text-muted)]",
-                    )}
-                  >
-                    {vendor.status}
-                  </span>
-                  <ActionMenu items={vendorActions(vendor)} />
-                </div>
-              </div>
-
-              <div className="space-y-1 mb-6">
-                <h3 className="text-lg font-bold text-[var(--text-main)]">
-                  {vendor.business_name}
-                </h3>
-                <p className="text-sm text-[var(--text-muted)] font-medium">
-                  {vendor.contact_name || "No Contact Person"}
+      {tab === "reviews" ? (
+        <VendorReviewsList />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2 mt-4">
+            <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[var(--text-muted)]">
+                  Total Vendors
+                </p>
+                <p className="text-2xl font-bold text-[var(--text-main)]">
+                  {vendors.length}
                 </p>
               </div>
-
-              <div className="space-y-3 mb-8">
-                <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                  <Briefcase className="w-4 h-4 text-[var(--text-muted)]" />
-                  <span className="truncate">{vendor.service}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                  <Mail className="w-4 h-4 text-[var(--text-muted)]" />
-                  <span className="truncate">
-                    {vendor.contact_email || "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                  <Phone className="w-4 h-4 text-[var(--text-muted)]" />
-                  {vendor.contact_phone || "N/A"}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end pt-6 border-t border-[var(--border-subtle)]">
-                <button
-                  onClick={() => setViewingVendor(vendor)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline"
-                >
-                  View Profile
-                  <ExternalLink className="w-3 h-3" />
-                </button>
+              <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
+                <Truck size={24} />
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                  <th className="py-4 px-6 font-bold">Vendor Name</th>
-                  <th className="py-4 px-6 font-bold">Contact Info</th>
-                  <th className="py-4 px-6 font-bold">Service</th>
-                  <th className="py-4 px-6 font-bold text-center">Projects</th>
-                  <th className="py-4 px-6 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {displayedVendors.map((vendor) => (
-                  <tr
-                    key={vendor.vendor_id}
-                    className="hover:bg-[var(--bg-app)] transition-colors group"
-                  >
-                    <td className="py-4 px-6 font-bold text-[var(--text-main)]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
-                          {vendor.logo ? (
-                            <img
-                              src={vendor.logo}
-                              alt={vendor.business_name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            (vendor.business_name?.[0] || "V").toUpperCase()
-                          )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span>{vendor.business_name}</span>
-                          <div className="flex gap-2 items-center mt-0.5">
-                            <span
-                              className={cn(
-                                "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
-                                vendor.status === "active"
-                                  ? "bg-emerald-500/10 text-emerald-500"
-                                  : "bg-rose-500/10 text-rose-500",
-                              )}
-                            >
-                              {vendor.status}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex flex-col gap-1 text-[var(--text-muted)]">
-                        {vendor.contact_name && (
-                          <div className="flex items-center gap-1.5 whitespace-nowrap">
-                            <User className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate max-w-[150px]">
-                              {vendor.contact_name}
-                            </span>
-                          </div>
-                        )}
-                        {vendor.contact_email && (
-                          <div className="flex items-center gap-1.5 whitespace-nowrap">
-                            <Mail className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate max-w-[150px]">
-                              {vendor.contact_email}
-                            </span>
-                          </div>
-                        )}
-                        {vendor.contact_phone && (
-                          <div className="flex items-center gap-1.5 whitespace-nowrap">
-                            <Phone className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate max-w-[150px]">
-                              {vendor.contact_phone}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        {vendor.service || "General"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
-                      {vendor.projects_count || 0}
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <ActionMenu items={vendorActions(vendor)} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[var(--text-muted)]">
+                  Active Vendors
+                </p>
+                <p className="text-2xl font-bold text-[var(--text-main)]">
+                  {activeVendors}
+                </p>
+              </div>
+              <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+                <ShieldCheck size={24} />
+              </div>
+            </div>
           </div>
 
-          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
-            {displayedVendors.map((vendor) => (
-              <div
-                key={vendor.vendor_id}
-                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] border border-[var(--border-soft)] overflow-hidden shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search by name, contact, or service..."
+              className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
+            />
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center p-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+            </div>
+          ) : displayedVendors.length === 0 ? (
+            <div className="text-center py-12 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-2xl border border-dashed border-[var(--border-soft)]">
+              No vendors found.
+            </div>
+          ) : viewType === "card" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {displayedVendors.map((vendor) => (
+                <div
+                  key={vendor.vendor_id}
+                  className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group"
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
                       {vendor.logo ? (
                         <img
                           src={vendor.logo}
@@ -471,118 +336,317 @@ export function Vendors() {
                         (vendor.business_name?.[0] || "V").toUpperCase()
                       )}
                     </div>
-                    <div>
-                      <p className="font-bold text-[var(--text-main)] text-sm">
-                        {vendor.business_name}
-                      </p>
+                    <div className="flex gap-2 items-center">
                       <span
                         className={cn(
-                          "inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                           vendor.status === "active"
                             ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-rose-500/10 text-rose-500",
+                            : "bg-[var(--bg-app)] text-[var(--text-muted)]",
                         )}
                       >
                         {vendor.status}
                       </span>
+                      <ActionMenu items={vendorActions(vendor)} />
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                      {vendor.service || "General"}
-                    </span>
+
+                  <div className="space-y-1 mb-6">
+                    <h3 className="text-lg font-bold text-[var(--text-main)]">
+                      {vendor.business_name}
+                    </h3>
+                    {ratings[vendor.vendor_id] && (
+                      <div
+                        className="flex items-center gap-1.5"
+                        title={`${
+                          ratings[vendor.vendor_id].reviews
+                        } review(s) · ${
+                          ratings[vendor.vendor_id].late +
+                          ratings[vendor.vendor_id].no_show
+                        } late/no-show`}
+                      >
+                        <Stars
+                          value={ratings[vendor.vendor_id].avg_rating}
+                          size="w-3.5 h-3.5"
+                        />
+                        <span className="text-xs font-semibold text-[var(--text-muted)]">
+                          {ratings[vendor.vendor_id].avg_rating} (
+                          {ratings[vendor.vendor_id].reviews})
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-sm text-[var(--text-muted)] font-medium">
+                      {vendor.contact_name || "No Contact Person"}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 mb-8">
+                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                      <Briefcase className="w-4 h-4 text-[var(--text-muted)]" />
+                      <span className="truncate">{vendor.service}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                      <Mail className="w-4 h-4 text-[var(--text-muted)]" />
+                      <span className="truncate">
+                        {vendor.contact_email || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                      <Phone className="w-4 h-4 text-[var(--text-muted)]" />
+                      {vendor.contact_phone || "N/A"}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end pt-6 border-t border-[var(--border-subtle)]">
+                    <button
+                      onClick={() => setViewingVendor(vendor)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline"
+                    >
+                      View Profile
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                      <th className="py-4 px-6 font-bold">Vendor Name</th>
+                      <th className="py-4 px-6 font-bold">Contact Info</th>
+                      <th className="py-4 px-6 font-bold">Service</th>
+                      <th className="py-4 px-6 font-bold text-center">
+                        Projects
+                      </th>
+                      <th className="py-4 px-6 font-bold text-right">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-subtle)]">
+                    {displayedVendors.map((vendor) => (
+                      <tr
+                        key={vendor.vendor_id}
+                        className="hover:bg-[var(--bg-app)] transition-colors group"
+                      >
+                        <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
+                              {vendor.logo ? (
+                                <img
+                                  src={vendor.logo}
+                                  alt={vendor.business_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                (vendor.business_name?.[0] || "V").toUpperCase()
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span>{vendor.business_name}</span>
+                              <div className="flex gap-2 items-center mt-0.5">
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                                    vendor.status === "active"
+                                      ? "bg-emerald-500/10 text-emerald-500"
+                                      : "bg-rose-500/10 text-rose-500",
+                                  )}
+                                >
+                                  {vendor.status}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                            {vendor.contact_name && (
+                              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                <User className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate max-w-[150px]">
+                                  {vendor.contact_name}
+                                </span>
+                              </div>
+                            )}
+                            {vendor.contact_email && (
+                              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                <Mail className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate max-w-[150px]">
+                                  {vendor.contact_email}
+                                </span>
+                              </div>
+                            )}
+                            {vendor.contact_phone && (
+                              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                <Phone className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate max-w-[150px]">
+                                  {vendor.contact_phone}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            {vendor.service || "General"}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
+                          {vendor.projects_count || 0}
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <ActionMenu items={vendorActions(vendor)} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                <div className="flex flex-col gap-1 text-xs text-[var(--text-muted)] pl-12">
-                  {vendor.contact_name && (
-                    <div className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{vendor.contact_name}</span>
+              <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+                {displayedVendors.map((vendor) => (
+                  <div
+                    key={vendor.vendor_id}
+                    className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] border border-[var(--border-soft)] overflow-hidden shrink-0">
+                          {vendor.logo ? (
+                            <img
+                              src={vendor.logo}
+                              alt={vendor.business_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            (vendor.business_name?.[0] || "V").toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-[var(--text-main)] text-sm">
+                            {vendor.business_name}
+                          </p>
+                          <span
+                            className={cn(
+                              "inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                              vendor.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-500"
+                                : "bg-rose-500/10 text-rose-500",
+                            )}
+                          >
+                            {vendor.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                          {vendor.service || "General"}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  {vendor.contact_email && (
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{vendor.contact_email}</span>
+
+                    <div className="flex flex-col gap-1 text-xs text-[var(--text-muted)] pl-12">
+                      {vendor.contact_name && (
+                        <div className="flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            {vendor.contact_name}
+                          </span>
+                        </div>
+                      )}
+                      {vendor.contact_email && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            {vendor.contact_email}
+                          </span>
+                        </div>
+                      )}
+                      {vendor.contact_phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            {vendor.contact_phone}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 shrink-0" />
+                        <span>{vendor.projects_count || 0} projects</span>
+                      </div>
                     </div>
-                  )}
-                  {vendor.contact_phone && (
-                    <div className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{vendor.contact_phone}</span>
+
+                    <div className="flex justify-end mt-2">
+                      <ActionMenu items={vendorActions(vendor)} />
                     </div>
-                  )}
-                  <div className="flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 shrink-0" />
-                    <span>{vendor.projects_count || 0} projects</span>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-                <div className="flex justify-end mt-2">
-                  <ActionMenu items={vendorActions(vendor)} />
+          {!isLoading && filteredVendors.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <p className="text-sm text-[var(--text-muted)]">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                  {Math.min(currentPage * itemsPerPage, filteredVendors.length)}{" "}
+                  of {filteredVendors.length} results
+                </p>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-[var(--text-muted)]">
+                    Rows per page:
+                  </label>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
+                  >
+                    <option value={6}>6</option>
+                    <option value={9}>9</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!isLoading && filteredVendors.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <p className="text-sm text-[var(--text-muted)]">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-              {Math.min(currentPage * itemsPerPage, filteredVendors.length)} of{" "}
-              {filteredVendors.length} results
-            </p>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-[var(--text-muted)]">
-                Rows per page:
-              </label>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
-              >
-                <option value={6}>6</option>
-                <option value={9}>9</option>
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) =>
+                      Math.min(
+                        Math.ceil(filteredVendors.length / itemsPerPage),
+                        p + 1,
+                      ),
+                    )
+                  }
+                  className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
+                  disabled={
+                    currentPage ===
+                    Math.ceil(filteredVendors.length / itemsPerPage)
+                  }
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.min(
-                    Math.ceil(filteredVendors.length / itemsPerPage),
-                    p + 1,
-                  ),
-                )
-              }
-              className="p-2 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={
-                currentPage === Math.ceil(filteredVendors.length / itemsPerPage)
-              }
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       {/* Modal */}

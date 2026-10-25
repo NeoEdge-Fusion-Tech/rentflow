@@ -156,9 +156,11 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
                 "payment_id": p.payment_id,
                 "amount": p.amount,
                 "payment_date": p.payment_date,
+                # receipt_id kept as the receipt *number* for compatibility.
                 "receipt_id": (
                     p.receipt.receipt_number if hasattr(p, "receipt") else None
                 ),
+                "receipt_pk": p.receipt.receipt_id if hasattr(p, "receipt") else None,
                 "created_by": p.created_by.get_full_name() if p.created_by else None,
             }
             for p in payments

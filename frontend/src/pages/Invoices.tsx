@@ -16,6 +16,7 @@ import {
   CreditCard,
   X,
   Upload,
+  ReceiptText,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -478,6 +479,18 @@ export function Invoices() {
                         icon: Download,
                         onClick: () => handleDownload(invoice),
                       },
+                      ...(Number(invoice.amount_paid) > 0
+                        ? [
+                            {
+                              label: "Payment receipts",
+                              icon: ReceiptText,
+                              onClick: () =>
+                                navigate(
+                                  `/invoices/${invoice.invoice_id}/preview`,
+                                ),
+                            },
+                          ]
+                        : []),
                       ...(invoice.status !== "paid" &&
                       invoice.status !== "cancelled"
                         ? [

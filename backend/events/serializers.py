@@ -3,7 +3,7 @@ from django.db.models import Sum
 from users.mixins import TenantSerializerMixin
 from users.serializers import VendorSerializer, ClientSerializer
 from feedback.models import FeedbackForm, ProjectFeedback
-from .models import Event, ExpenseLineItem, ChecklistTask
+from .models import Event, ExpenseLineItem, ChecklistTask, VendorReview
 
 
 class ExpenseLineItemSerializer(TenantSerializerMixin, serializers.ModelSerializer):
@@ -168,3 +168,61 @@ class ChecklistTaskSerializer(TenantSerializerMixin, serializers.ModelSerializer
         return ChecklistTaskSerializer(
             obj.subtasks.all(), many=True, context=self.context
         ).data
+
+
+class VendorReviewSerializer(TenantSerializerMixin, serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source="vendor.business_name", read_only=True)
+    vendor_service = serializers.CharField(source="vendor.service", read_only=True)
+    event_name = serializers.CharField(source="event.name", read_only=True)
+    event_end_date = serializers.DateField(source="event.end_date", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VendorReview
+        fields = [
+            "review_id",
+            "event",
+            "event_name",
+            "event_end_date",
+            "vendor",
+            "vendor_name",
+            "vendor_service",
+            "punctuality",
+            "rating",
+            "comment",
+            "created_by_name",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+    def get_created_by_name(self, obj):
+        u = obj.created_by
+        if not u:
+            return None
+        return f"{u.first_name} {u.last_name}".strip() or u.email
+
+    def validate_rating(self, value):
+        if not 1 <= value <= 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5 stars.")
+        return value
+
+    def validate(self, attrs):
+        event = attrs.get("event") or getattr(self.instance, "event", None)
+        vendor = attrs.get("vendor") or getattr(self.instance, "vendor", None)
+        if event and vendor:
+            used = ExpenseLineItem.objects.filter(event=event, vendor=vendor).exists()
+            if not used:
+                raise serializers.ValidationError(
+                    {"vendor": "This vendor has no expense on this project."}
+                )
+            dup = VendorReview.objects.filter(event=event, vendor=vendor)
+            if self.instance:
+                dup = dup.exclude(pk=self.instance.pk)
+            if dup.exists():
+                raise serializers.ValidationError(
+                    {
+                        "vendor": "This vendor has already been reviewed for this project."
+                    }
+                )
+        return attrs

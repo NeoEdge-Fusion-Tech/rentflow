@@ -1,4 +1,5 @@
 import datetime
+from django.db import models as django_models
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,14 +11,17 @@ from dateutil.relativedelta import relativedelta
 import django_filters.rest_framework as django_filters
 
 from users.mixins import TenantIsolationMixin
-from .models import Event, ExpenseLineItem, ChecklistTask
+from .models import Event, ExpenseLineItem, ChecklistTask, VendorReview
 from .serializers import (
     EventSerializer,
     ExpenseLineItemSerializer,
     ChecklistTaskSerializer,
+    VendorReviewSerializer,
 )
 from .utils import generate_checklist_pdf, compute_period_totals
 from config.pagination import StandardResultsSetPagination
+from config.filters import DateRangeOrderingFilter
+from rest_framework import filters as drf_filters
 
 
 def _resolve_organization(request):
@@ -319,4 +323,123 @@ class ChecklistTaskViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             as_attachment=True,
             filename=filename,
             content_type="application/pdf",
+        )
+
+
+def pending_vendor_reviews(organization):
+    """Vendors used on a finished project (completed, or past its end date,
+    and not cancelled) who haven't been reviewed for that project yet."""
+    today = timezone.localdate()
+    finished = (
+        Event.objects.filter(organization=organization)
+        .exclude(status="cancelled")
+        .filter(
+            django_models.Q(status="completed") | django_models.Q(end_date__lt=today)
+        )
+    )
+    reviewed = set(
+        VendorReview.objects.filter(event__in=finished).values_list(
+            "event_id", "vendor_id"
+        )
+    )
+    rows = (
+        ExpenseLineItem.objects.filter(event__in=finished, vendor__isnull=False)
+        .values(
+            "event_id",
+            "event__name",
+            "event__end_date",
+            "vendor_id",
+            "vendor__business_name",
+            "vendor__service",
+        )
+        .distinct()
+        .order_by("-event__end_date", "event_id", "vendor__business_name")
+    )
+    pending = []
+    for r in rows:
+        if (r["event_id"], r["vendor_id"]) in reviewed:
+            continue
+        pending.append(
+            {
+                "event": r["event_id"],
+                "event_name": r["event__name"],
+                "event_end_date": r["event__end_date"],
+                "vendor": r["vendor_id"],
+                "vendor_name": r["vendor__business_name"],
+                "vendor_service": r["vendor__service"],
+            }
+        )
+    return pending
+
+
+class VendorReviewViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
+    """Vendor performance reviews per project.
+    Filters: ?event, ?vendor, ?punctuality, ?rating, ?search (vendor, project,
+    comment), date range + ordering (see config.filters)."""
+
+    queryset = VendorReview.objects.select_related("vendor", "event", "created_by")
+    serializer_class = VendorReviewSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        drf_filters.SearchFilter,
+        DateRangeOrderingFilter,
+    ]
+    filterset_fields = ["event", "vendor", "punctuality", "rating"]
+    search_fields = [
+        "vendor__business_name",
+        "vendor__service",
+        "event__name",
+        "comment",
+    ]
+    date_filter_fields = {
+        "created": {"field": "created_at"},
+        "updated": {"field": "updated_at"},
+    }
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        kwargs = {"created_by": user}
+        if not user.is_superuser:
+            kwargs["organization"] = user.organization
+        serializer.save(**kwargs)
+
+    @action(detail=False, methods=["get"])
+    def pending(self, request):
+        """Reviews still to do: [{event, event_name, vendor, vendor_name…}]."""
+        org = getattr(request.user, "organization", None)
+        if org is None:
+            return Response([])
+        data = pending_vendor_reviews(org)
+        event = request.query_params.get("event")
+        if event and event.isdigit():
+            data = [p for p in data if p["event"] == int(event)]
+        return Response(data)
+
+    @action(detail=False, methods=["get"])
+    def summary(self, request):
+        """Average rating, review count and punctuality breakdown per vendor."""
+        from django.db.models import Avg, Count, Q
+
+        qs = self.filter_queryset(self.get_queryset())
+        rows = (
+            qs.values("vendor_id")
+            .annotate(
+                avg_rating=Avg("rating"),
+                reviews=Count("review_id"),
+                early=Count("review_id", filter=Q(punctuality="early")),
+                on_time=Count("review_id", filter=Q(punctuality="on_time")),
+                late=Count("review_id", filter=Q(punctuality="late")),
+                no_show=Count("review_id", filter=Q(punctuality="no_show")),
+            )
+            .order_by()
+        )
+        return Response(
+            {
+                str(r["vendor_id"]): {
+                    **r,
+                    "avg_rating": round(float(r["avg_rating"] or 0), 1),
+                }
+                for r in rows
+            }
         )

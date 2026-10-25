@@ -6,12 +6,14 @@ from .views import (
     ChecklistTaskViewSet,
     EventDashboardStatsAPIView,
     EventMonthlyBreakdownAPIView,
+    VendorReviewViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"events", EventViewSet, basename="event")
 router.register(r"expenses", ExpenseLineItemViewSet, basename="expense")
 router.register(r"checklist-tasks", ChecklistTaskViewSet, basename="checklisttask")
+router.register(r"vendor-reviews", VendorReviewViewSet, basename="vendorreview")
 
 urlpatterns = [
     path(
