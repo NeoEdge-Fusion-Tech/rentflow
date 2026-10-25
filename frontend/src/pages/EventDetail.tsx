@@ -612,8 +612,12 @@ export function EventDetail() {
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]">
                   {expenses.map((exp: any) => (
-                    <tr key={exp.expense_id}>
-                      <td className="py-3 pr-4 font-bold text-[var(--text-main)]">
+                    <tr
+                      key={exp.expense_id}
+                      onClick={() => openEditExpense(exp)}
+                      className="cursor-pointer hover:bg-[var(--bg-app)]/50 transition-colors group"
+                    >
+                      <td className="py-3 pr-4 font-bold text-[var(--text-main)] group-hover:text-brand-primary transition-colors">
                         {exp.expense_type === "vendor"
                           ? exp.vendor_details?.business_name
                           : exp.name}
@@ -645,7 +649,10 @@ export function EventDetail() {
                           )}`}
                         />
                       </td>
-                      <td className="py-3 pr-0 text-right">
+                      <td
+                        className="py-3 pr-0 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <ActionMenu items={expenseActions(exp)} />
                       </td>
                     </tr>
@@ -658,11 +665,12 @@ export function EventDetail() {
               {expenses.map((exp: any) => (
                 <div
                   key={exp.expense_id}
-                  className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                  onClick={() => openEditExpense(exp)}
+                  className="p-4 cursor-pointer hover:bg-[var(--bg-app)] transition-colors group"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
-                      <p className="font-bold text-[var(--text-main)] text-sm">
+                      <p className="font-bold text-[var(--text-main)] text-sm group-hover:text-brand-primary transition-colors">
                         {exp.expense_type === "vendor"
                           ? exp.vendor_details?.business_name
                           : exp.name}
@@ -695,7 +703,9 @@ export function EventDetail() {
                     <span className="text-xs text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
                     </span>
-                    <ActionMenu items={expenseActions(exp)} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu items={expenseActions(exp)} />
+                    </div>
                   </div>
                 </div>
               ))}

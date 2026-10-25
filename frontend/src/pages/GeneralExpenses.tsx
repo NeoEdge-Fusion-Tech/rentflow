@@ -336,9 +336,10 @@ export function GeneralExpenses() {
                   {displayedExpenses.map((exp: any) => (
                     <tr
                       key={exp.general_expense_id}
-                      className="hover:bg-[var(--bg-app)] transition-colors"
+                      onClick={() => openEditModal(exp)}
+                      className="cursor-pointer hover:bg-[var(--bg-app)] transition-colors group"
                     >
-                      <td className="py-3 px-4 font-bold text-[var(--text-main)]">
+                      <td className="py-3 px-4 font-bold text-[var(--text-main)] group-hover:text-brand-primary transition-colors">
                         {exp.expense_type === "vendor"
                           ? exp.vendor_name
                           : exp.name}
@@ -372,7 +373,10 @@ export function GeneralExpenses() {
                           )}`}
                         />
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td
+                        className="py-3 px-4 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <ActionMenu items={expenseActions(exp)} />
                       </td>
                     </tr>
@@ -385,7 +389,8 @@ export function GeneralExpenses() {
               {displayedExpenses.map((exp: any) => (
                 <div
                   key={exp.general_expense_id}
-                  className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                  onClick={() => openEditModal(exp)}
+                  className="p-4 cursor-pointer hover:bg-[var(--bg-app)] transition-colors group"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -393,7 +398,7 @@ export function GeneralExpenses() {
                         <Wallet className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-[var(--text-main)] text-sm truncate">
+                        <p className="font-bold text-[var(--text-main)] text-sm truncate group-hover:text-brand-primary transition-colors">
                           {exp.expense_type === "vendor"
                             ? exp.vendor_name
                             : exp.name}
@@ -429,7 +434,9 @@ export function GeneralExpenses() {
                     <span className="text-xs text-[var(--text-muted)]">
                       {exp.date ? new Date(exp.date).toLocaleDateString() : "—"}
                     </span>
-                    <ActionMenu items={expenseActions(exp)} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu items={expenseActions(exp)} />
+                    </div>
                   </div>
                 </div>
               ))}
