@@ -16,6 +16,7 @@ import {
   User,
   Copy,
   Paperclip,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -46,6 +47,8 @@ export function EventDetail() {
   // Edit event modal
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditSaving, setIsEditSaving] = useState(false);
+  const [linkIds, setLinkIds] = useState<string[] | null>(null);
+  const [isLinkSaving, setIsLinkSaving] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
 
@@ -168,6 +171,23 @@ export function EventDetail() {
       showNotification("Failed to update project", "error");
     } finally {
       setIsEditSaving(false);
+    }
+  };
+
+  // --- Invoices linked from the detail page ---
+  const saveLinkedInvoices = async () => {
+    if (!id || !linkIds || isLinkSaving) return;
+    try {
+      setIsLinkSaving(true);
+      await EventService.patch(id, { invoices: linkIds.map(Number) });
+      setLinkIds(null);
+      showNotification("Invoices updated", "success");
+      fetchEvent();
+    } catch (err) {
+      console.error("Failed to link invoices", err);
+      showNotification("Failed to update invoices", "error");
+    } finally {
+      setIsLinkSaving(false);
     }
   };
 
@@ -539,8 +559,47 @@ export function EventDetail() {
           <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
             Invoices
           </h3>
+          {linkIds === null && (
+            <button
+              onClick={() =>
+                setLinkIds((event.invoices || []).map((v: any) => String(v)))
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-[var(--text-main)] bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl hover:bg-[var(--bg-surface)] transition-colors shadow-sm"
+            >
+              <Link2 className="w-3 h-3" />
+              {event.invoices_data?.length
+                ? "Manage invoices"
+                : "Link invoices"}
+            </button>
+          )}
         </div>
-        {!event.invoices_data || event.invoices_data.length === 0 ? (
+        {linkIds !== null && (
+          <div className="mb-4 space-y-3">
+            <InvoiceMultiSelect
+              invoices={invoices}
+              value={linkIds}
+              onChange={setLinkIds}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setLinkIds(null)}
+                disabled={isLinkSaving}
+                className="px-4 py-2 text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveLinkedInvoices}
+                disabled={isLinkSaving}
+                className="px-4 py-2 text-sm font-bold rounded-xl bg-brand-primary text-[var(--text-on-brand)] hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {isLinkSaving ? "Saving…" : "Save invoices"}
+              </button>
+            </div>
+          </div>
+        )}
+        {linkIds !== null ? null : !event.invoices_data ||
+          event.invoices_data.length === 0 ? (
           <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
             No invoices linked.
           </div>
