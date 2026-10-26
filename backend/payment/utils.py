@@ -1220,126 +1220,394 @@ def receipt_breakdown(receipt):
     }
 
 
+def _brand_colors(organization):
+    """The organization's brand colour, a pale tint of it, and the text
+    colour that reads on it. Falls back to slate for missing/bad values."""
+    raw = (getattr(organization, "primary_color", "") or "").strip()
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", raw):
+        raw = "#0f172a"
+    r, g, b = (int(raw[i : i + 2], 16) for i in (1, 3, 5))
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    tint = "#%02x%02x%02x" % tuple(int(c + (255 - c) * 0.9) for c in (r, g, b))
+    on_brand = "#0f172a" if luminance > 0.7 else "#ffffff"
+    return colors.HexColor(raw), colors.HexColor(tint), colors.HexColor(on_brand)
+
+
 def generate_receipt_pdf(receipt):
     """
-    Generates a PDF for a receipt.
-    Includes amount paid, balance left, and payment status.
+    Generates a branded PDF for a receipt, laid out like the invoice PDF
+    and accented with the organization's brand colour. Shows this payment
+    against the invoice total, everything paid before it, and the balance.
     """
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=0.5 * inch,
+        leftMargin=0.5 * inch,
+        topMargin=0.5 * inch,
+        bottomMargin=0.5 * inch,
+    )
     styles = getSampleStyleSheet()
     organization = receipt.organization
     currency_symbol = _currency_label(organization.currency)
+    brand, brand_tint, on_brand = _brand_colors(organization)
+    b = receipt_breakdown(receipt)
+    money = lambda v: f"{currency_symbol}{v:,.2f}"  # noqa: E731
+    full_width = 7.2 * inch
 
+    # Styles (shared with the invoice PDF)
     title_style = ParagraphStyle(
         "TitleStyle",
         parent=styles["Heading1"],
-        fontSize=24,
-        textColor=colors.HexColor("#10b981"),  # Green for success/receipt
-        spaceAfter=12,
+        fontSize=28,
+        textColor=colors.HexColor("#0f172a"),
+        spaceAfter=15,
+        fontName="Helvetica-Bold",
+    )
+    meta_label_style = ParagraphStyle(
+        "MetaLabel",
+        parent=styles["Normal"],
+        fontSize=10,
+        textColor=colors.HexColor("#64748b"),
+    )
+    meta_val_style = ParagraphStyle(
+        "MetaVal",
+        parent=styles["Normal"],
+        fontSize=10,
+        textColor=colors.HexColor("#0f172a"),
+        fontName="Helvetica-Bold",
+    )
+    box_header_style = ParagraphStyle(
+        "BoxHeader",
+        parent=styles["Normal"],
+        fontSize=9,
+        textColor=colors.HexColor("#64748b"),
+        fontName="Helvetica-Bold",
+        spaceAfter=6,
+    )
+    box_text_style = ParagraphStyle(
+        "BoxText",
+        parent=styles["Normal"],
+        fontSize=10,
+        textColor=colors.HexColor("#334155"),
+        leading=14,
+    )
+    box_title_style = ParagraphStyle(
+        "BoxTitle",
+        parent=styles["Normal"],
+        fontSize=12,
+        textColor=colors.HexColor("#0f172a"),
+        fontName="Helvetica-Bold",
+        spaceAfter=4,
+    )
+    section_style = ParagraphStyle(
+        "Section",
+        parent=box_title_style,
+        spaceAfter=8,
+    )
+    row_label_style = ParagraphStyle(
+        "RowLabel", parent=box_text_style, textColor=colors.HexColor("#64748b")
+    )
+    row_val_style = ParagraphStyle(
+        "RowVal",
+        parent=box_text_style,
+        textColor=colors.HexColor("#0f172a"),
+        fontName="Helvetica-Bold",
+        alignment=TA_RIGHT,
     )
 
     elements = []
 
-    # Header
-    elements.append(Paragraph(f"RECEIPT: {receipt.receipt_number}", title_style))
-    elements.append(Paragraph(f"Organization: {organization.name}", styles["Normal"]))
-    elements.append(
-        Paragraph(f"Date: {receipt.issue_date.strftime('%Y-%m-%d')}", styles["Normal"])
-    )
-    elements.append(Spacer(1, 0.5 * inch))
-
-    b = receipt_breakdown(receipt)
-    money = lambda v: f"{currency_symbol}{v:,.2f}"  # noqa: E731
-
-    # Client Info
-    elements.append(Paragraph("<b>Received From:</b>", styles["Normal"]))
-    elements.append(Paragraph(b["client_name"], styles["Normal"]))
-    elements.append(Spacer(1, 0.3 * inch))
-
-    payment_type = "Paid in full" if b["is_full"] else "Partial payment"
-
-    data = [["Payment breakdown", ""]]
-    if b["invoice_number"]:
-        data.append(["Invoice", b["invoice_number"]])
-    if b["booking_id"]:
-        data.append(["Booking ID", f"#{b['booking_id']}"])
-    if b["booking_title"]:
-        data.append(["Booking", b["booking_title"]])
-    data += [
-        ["Payment date", b["payment_date"].strftime("%d %b %Y, %H:%M")],
-        ["Invoice total", money(b["total"])],
-        ["Previously paid", money(b["previously_paid"])],
-        ["This payment", money(b["this_payment"])],
-        ["Total paid to date", money(b["paid_to_date"])],
-        ["Balance remaining", money(b["balance"])],
-        ["Status", payment_type],
-    ]
-    if b["reference"] and not b["reference"].startswith("AUTO-"):
-        data.append(["Reference", b["reference"]])
-
-    table = Table(data, colWidths=[2.5 * inch, 3 * inch])
-    table.setStyle(
+    # ---- Brand bar ----
+    bar = Table([[""]], colWidths=[full_width], rowHeights=[5])
+    bar.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ecfdf5")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#065f46")),
-                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1fae5")),
-                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("BACKGROUND", (0, 0), (0, 0), brand),
+                ("ROUNDEDCORNERS", [3, 3, 3, 3]),
             ]
         )
     )
-    elements.append(table)
+    elements.append(bar)
+    elements.append(Spacer(1, 0.3 * inch))
 
-    # Payment history (all payments up to this one)
+    # ---- Top Header ----
+    status_label = "Paid in full" if b["is_full"] else "Partial payment"
+    status_color = "#16a34a" if b["is_full"] else "#d97706"
+    left_meta = [
+        [
+            Paragraph("Receipt No #", meta_label_style),
+            Paragraph(receipt.receipt_number, meta_val_style),
+        ],
+        [
+            Paragraph("Receipt Date", meta_label_style),
+            Paragraph(receipt.issue_date.strftime("%b %d, %Y"), meta_val_style),
+        ],
+    ]
+    if b["invoice_number"]:
+        left_meta.append(
+            [
+                Paragraph("Invoice No #", meta_label_style),
+                Paragraph(b["invoice_number"], meta_val_style),
+            ]
+        )
+    if b["booking_id"]:
+        left_meta.append(
+            [
+                Paragraph("Booking ID", meta_label_style),
+                Paragraph(f"#{b['booking_id']}", meta_val_style),
+            ]
+        )
+    left_meta.append(
+        [
+            Paragraph("Status", meta_label_style),
+            Paragraph(
+                f"<font color='{status_color}'>{status_label}</font>", meta_val_style
+            ),
+        ]
+    )
+    meta_table = Table(left_meta, colWidths=[1.2 * inch, 2.5 * inch])
+    meta_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    header_left = [Paragraph("Payment Receipt", title_style), meta_table]
+
+    logo = _load_logo_flowable(organization, size=1.4 * inch)
+    if logo:
+        logo_table = Table([[logo]], colWidths=[2.2 * inch])
+        logo_table.setStyle(
+            TableStyle(
+                [
+                    ("ALIGN", (0, 0), (0, 0), "RIGHT"),
+                    ("VALIGN", (0, 0), (0, 0), "TOP"),
+                ]
+            )
+        )
+        header_right = logo_table
+    else:
+        header_right = Spacer(1, 1)
+
+    top_table = Table([[header_left, header_right]], colWidths=[5 * inch, 2.2 * inch])
+    top_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+            ]
+        )
+    )
+    elements.append(top_table)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # ---- Amount received banner ----
+    amount_label_style = ParagraphStyle(
+        "AmountLabel",
+        parent=styles["Normal"],
+        fontSize=9,
+        textColor=on_brand,
+        fontName="Helvetica-Bold",
+    )
+    amount_val_style = ParagraphStyle(
+        "AmountVal",
+        parent=styles["Normal"],
+        fontSize=24,
+        leading=28,
+        textColor=on_brand,
+        fontName="Helvetica-Bold",
+    )
+    amount_side_style = ParagraphStyle(
+        "AmountSide",
+        parent=styles["Normal"],
+        fontSize=10,
+        leading=14,
+        textColor=on_brand,
+        alignment=TA_RIGHT,
+    )
+    banner = Table(
+        [
+            [
+                [
+                    Paragraph("AMOUNT RECEIVED", amount_label_style),
+                    Spacer(1, 4),
+                    Paragraph(money(b["this_payment"]), amount_val_style),
+                ],
+                Paragraph(
+                    f"{b['payment_date'].strftime('%d %b %Y, %H:%M')}<br/>"
+                    f"<b>Balance: {money(b['balance'])}</b>",
+                    amount_side_style,
+                ),
+            ]
+        ],
+        colWidths=[4.2 * inch, 3 * inch],
+    )
+    banner.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), brand),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 16),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 16),
+                ("TOPPADDING", (0, 0), (-1, -1), 14),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 14),
+                ("ROUNDEDCORNERS", [8, 8, 8, 8]),
+            ]
+        )
+    )
+    elements.append(banner)
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # ---- Received By / Received From Boxes ----
+    received_by = [Paragraph("RECEIVED BY", box_header_style)]
+    received_by.append(Paragraph(organization.name, box_title_style))
+    if organization.address:
+        received_by.append(
+            Paragraph(organization.address.replace("\n", "<br/>"), box_text_style)
+        )
+    if organization.phone_number:
+        received_by.append(Paragraph(organization.phone_number, box_text_style))
+    if organization.email:
+        received_by.append(Paragraph(organization.email, box_text_style))
+
+    received_from = [Paragraph("RECEIVED FROM", box_header_style)]
+    received_from.append(Paragraph(b["client_name"], box_title_style))
+    if b["booking_title"]:
+        received_from.append(Paragraph(f"For: {b['booking_title']}", box_text_style))
+
+    box_bg = colors.HexColor("#f1f5f9")
+    boxes = []
+    for content in (received_by, received_from):
+        t = Table([[content]], colWidths=[3.5 * inch])
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), box_bg),
+                    ("PADDING", (0, 0), (0, 0), 12),
+                    ("ROUNDEDCORNERS", [8, 8, 8, 8]),
+                ]
+            )
+        )
+        boxes.append(t)
+    info_table = Table(
+        [[boxes[0], "", boxes[1]]], colWidths=[3.5 * inch, 0.2 * inch, 3.5 * inch]
+    )
+    info_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.35 * inch))
+
+    # ---- Payment breakdown ----
+    elements.append(Paragraph("Payment breakdown", section_style))
+    rows = [
+        ("Invoice total", money(b["total"])),
+        ("Previously paid", money(b["previously_paid"])),
+        ("This payment", money(b["this_payment"])),
+        ("Total paid to date", money(b["paid_to_date"])),
+        ("Balance remaining", money(b["balance"])),
+    ]
+    if b["reference"] and not b["reference"].startswith("AUTO-"):
+        rows.append(("Reference", b["reference"]))
+    data = [
+        [Paragraph(k, row_label_style), Paragraph(v, row_val_style)] for k, v in rows
+    ]
+    this_row, balance_row = 2, 4
+    breakdown = Table(data, colWidths=[4.6 * inch, 2.6 * inch])
+    breakdown.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#e2e8f0")),
+                ("BACKGROUND", (0, this_row), (-1, this_row), brand_tint),
+                ("LINEABOVE", (0, balance_row), (-1, balance_row), 1, brand),
+            ]
+        )
+    )
+    elements.append(breakdown)
+
+    # ---- Payment history (all payments up to this one) ----
     if len(b["history"]) > 1:
         elements.append(Spacer(1, 0.35 * inch))
-        elements.append(Paragraph("<b>Payment history</b>", styles["Normal"]))
-        elements.append(Spacer(1, 0.1 * inch))
+        elements.append(Paragraph("Payment history", section_style))
         hist = [["#", "Date", "Amount"]]
+        this_idx = None
         for idx, h in enumerate(b["history"], start=1):
+            if h["is_this"]:
+                this_idx = idx
             hist.append(
                 [
-                    f"{idx}{' (this receipt)' if h['is_this'] else ''}",
+                    f"{idx}{'  (this receipt)' if h['is_this'] else ''}",
                     h["date"].strftime("%d %b %Y"),
                     money(h["amount"]),
                 ]
             )
-        htable = Table(hist, colWidths=[2 * inch, 2 * inch, 1.5 * inch])
-        htable.setStyle(
-            TableStyle(
-                [
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f1f5f9")),
-                    ("ALIGN", (2, 0), (2, -1), "RIGHT"),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
-                ]
-            )
-        )
+        htable = Table(hist, colWidths=[3 * inch, 2.2 * inch, 2 * inch])
+        hstyle = [
+            ("BACKGROUND", (0, 0), (-1, 0), brand),
+            ("TEXTCOLOR", (0, 0), (-1, 0), on_brand),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("TEXTCOLOR", (0, 1), (-1, -1), colors.HexColor("#334155")),
+            ("ALIGN", (2, 0), (2, -1), "RIGHT"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("LINEBELOW", (0, 1), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+        ]
+        if this_idx:
+            hstyle += [
+                ("BACKGROUND", (0, this_idx), (-1, this_idx), brand_tint),
+                ("FONTNAME", (0, this_idx), (-1, this_idx), "Helvetica-Bold"),
+            ]
+        htable.setStyle(TableStyle(hstyle))
         elements.append(htable)
 
-    # Footer
+    # ---- Notes ----
     if receipt.notes:
-        elements.append(Spacer(1, 0.5 * inch))
-        elements.append(Paragraph("<b>Notes:</b>", styles["Normal"]))
-        elements.append(Paragraph(receipt.notes, styles["Normal"]))
+        elements.append(Spacer(1, 0.35 * inch))
+        elements.append(Paragraph("<b>Notes:</b>", box_title_style))
+        elements.append(Paragraph(receipt.notes, box_text_style))
 
+    # ---- Footer ----
     elements.append(Spacer(1, 0.5 * inch))
     elements.append(
         Paragraph(
-            "Thank you for your business!",
-            ParagraphStyle("CenterStyle", parent=styles["Normal"], alignment=TA_CENTER),
+            f"Thank you for your business, from all of us at {organization.name}.",
+            ParagraphStyle(
+                "Thanks",
+                parent=box_text_style,
+                alignment=TA_CENTER,
+                # A very light brand colour would vanish on white paper.
+                textColor=(
+                    brand
+                    if on_brand.hexval() == "0xffffff"
+                    else colors.HexColor("#334155")
+                ),
+                fontName="Helvetica-Bold",
+            ),
         )
     )
-
-    # Logo Footer
-    logo = _load_logo_flowable(organization)
-    if logo:
-        elements.append(Spacer(1, 0.5 * inch))
-        elements.append(logo)
+    elements.append(Spacer(1, 0.15 * inch))
+    elements.append(
+        Paragraph(
+            "Powered by NeoOps",
+            ParagraphStyle(
+                "Small",
+                parent=styles["Normal"],
+                fontSize=8,
+                textColor=colors.HexColor("#94a3b8"),
+                alignment=TA_CENTER,
+            ),
+        )
+    )
 
     doc.build(elements)
     buffer.seek(0)

@@ -24,19 +24,7 @@ import {
   ReceiptService,
 } from "../api";
 import { useNotification } from "../context/NotificationContext";
-
-/** Open a PDF blob in a new tab (falls back to download if blocked). */
-const openPdf = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, "_blank");
-  if (!win) {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-};
+import { PdfViewerModal } from "../components/PdfViewerModal";
 
 export function InvoicePreview() {
   const { id } = useParams();
@@ -540,8 +528,12 @@ function PaymentsPanel({
 }) {
   const { showNotification } = useNotification();
   const [busy, setBusy] = useState<number | null>(null);
+  const [viewer, setViewer] = useState<{
+    number: string;
+    blob: Blob | null;
+  } | null>(null);
 
-  // Open the payment's receipt, generating it first if it doesn't exist.
+  // Show the payment's receipt in-app, generating it first if needed.
   const openReceipt = async (p: any) => {
     try {
       setBusy(p.payment_id);
@@ -553,13 +545,15 @@ function PaymentsPanel({
         number = res.data.receipt_number;
         await onChanged();
       }
+      setViewer({ number: number || String(receiptPk), blob: null });
       const pdf = await ReceiptService.download(receiptPk);
-      openPdf(
-        new Blob([pdf.data], { type: "application/pdf" }),
-        `receipt_${number || receiptPk}.pdf`,
-      );
+      setViewer({
+        number: number || String(receiptPk),
+        blob: new Blob([pdf.data], { type: "application/pdf" }),
+      });
     } catch (e: any) {
       console.error(e);
+      setViewer(null);
       showNotification(
         e.response?.data?.error || "Couldn't open the receipt.",
         "error",
@@ -611,6 +605,14 @@ function PaymentsPanel({
           </li>
         ))}
       </ul>
+      {viewer && (
+        <PdfViewerModal
+          title={`Receipt ${viewer.number}`}
+          blob={viewer.blob}
+          filename={`receipt_${viewer.number}.pdf`}
+          onClose={() => setViewer(null)}
+        />
+      )}
     </div>
   );
 }

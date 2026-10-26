@@ -41,6 +41,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { cn } from "@/src/utils";
+import { PdfViewerModal } from "../components/PdfViewerModal";
 
 import {
   BookingService,
@@ -79,6 +80,11 @@ export function Bookings() {
   const [isAddingBooking, setIsAddingBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [pdfViewer, setPdfViewer] = useState<{
+    title: string;
+    filename: string;
+    blob: Blob | null;
+  } | null>(null);
   const [editingReceipt, setEditingReceipt] = useState<any>(null);
   const [isGeneratingPaymentLink, setIsGeneratingPaymentLink] = useState<
     any | null
@@ -193,12 +199,14 @@ export function Bookings() {
     fileName: string,
     action: "view" | "download" = "view",
   ) => {
-    let newWindow: Window | null = null;
     if (action === "view") {
-      newWindow = window.open("", "_blank");
-      if (newWindow) {
-        newWindow.document.write("Loading document...");
-      }
+      setPdfViewer({
+        title: `${
+          docType === "invoice" ? "Invoice" : "Receipt"
+        } ${fileName.replace(/^(invoice|receipt)_/, "")}`,
+        filename: fileName,
+        blob: null,
+      });
     }
 
     try {
@@ -208,15 +216,11 @@ export function Bookings() {
           : await ReceiptService.download(id);
 
       const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
 
       if (action === "view") {
-        if (newWindow) {
-          newWindow.location.href = url;
-        } else {
-          window.location.href = url;
-        }
+        setPdfViewer((v) => v && { ...v, blob });
       } else {
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
         link.setAttribute(
@@ -226,11 +230,12 @@ export function Bookings() {
         document.body.appendChild(link);
         link.click();
         link.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 10_000);
       }
     } catch (err) {
       console.error(`Failed to ${action} document`, err);
       showNotification(`Failed to load document`, "error");
-      if (newWindow) newWindow.close();
+      setPdfViewer(null);
     }
   };
   const [isManagingBooking, setIsManagingBooking] = useState(false);
@@ -4595,6 +4600,15 @@ export function Bookings() {
             </div>
           </div>
         </div>
+      )}
+
+      {pdfViewer && (
+        <PdfViewerModal
+          title={pdfViewer.title}
+          blob={pdfViewer.blob}
+          filename={pdfViewer.filename}
+          onClose={() => setPdfViewer(null)}
+        />
       )}
     </div>
   );
