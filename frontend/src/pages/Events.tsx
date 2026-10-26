@@ -23,6 +23,12 @@ import { useNotification } from "../context/NotificationContext";
 import { EventService, InvoiceService, FeedbackService } from "@/src/api";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { InvoiceMultiSelect } from "../components/InvoiceMultiSelect";
+import {
+  DateFilterBar,
+  DEFAULT_DATE_FILTER,
+  DateFilterValue,
+  dateFilterParams,
+} from "../components/DateFilterBar";
 import { ActionMenu } from "../components/ActionMenu";
 import { useVisibility } from "../context/VisibilityContext";
 
@@ -59,6 +65,9 @@ export function Events() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12); // Adjusted for better grid display
+  const [dateFilter, setDateFilter] =
+    useState<DateFilterValue>(DEFAULT_DATE_FILTER);
+  const [statusFilter, setStatusFilter] = useState("");
   const [totalCount, setTotalCount] = useState(0);
   const [viewType, setViewType] = useState<"card" | "list">(
     (localStorage.getItem("projectsViewType") as "card" | "list") || "card",
@@ -82,8 +91,10 @@ export function Events() {
     try {
       const response = await EventService.getAll({
         page,
-        search: searchTerm,
         page_size: itemsPerPage,
+        ...dateFilterParams(dateFilter),
+        ...(searchTerm.trim() ? { search: searchTerm.trim() } : {}),
+        ...(statusFilter ? { status: statusFilter } : {}),
       });
       setEvents(response.data.results || response.data);
       setTotalCount(
@@ -115,8 +126,11 @@ export function Events() {
   };
 
   useEffect(() => {
-    fetchEvents(currentPage);
-  }, [currentPage, searchTerm]);
+    // Short pause after typing before searching.
+    const t = setTimeout(() => fetchEvents(currentPage), searchTerm ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, dateFilter, statusFilter]);
 
   useEffect(() => {
     fetchInvoices();
@@ -253,9 +267,46 @@ export function Events() {
             setSearchTerm(e.target.value);
             setCurrentPage(1);
           }}
-          placeholder="Search projects..."
+          placeholder="Search by project, description, client, invoice or vendor…"
           className="w-full pl-10 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all shadow-sm"
         />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <DateFilterBar
+          value={dateFilter}
+          onChange={(v) => {
+            setDateFilter(v);
+            setCurrentPage(1);
+          }}
+          fields={[
+            { value: "event", label: "Project dates" },
+            { value: "created", label: "Date created" },
+            { value: "updated", label: "Last updated" },
+          ]}
+          sorts={[
+            { value: "-created", label: "Newest created" },
+            { value: "created", label: "Oldest created" },
+            { value: "-event", label: "Latest project date" },
+            { value: "event", label: "Earliest project date" },
+            { value: "-updated", label: "Recently updated" },
+          ]}
+        />
+        <select
+          aria-label="Status"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="h-10 pl-3 pr-8 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-sm font-medium text-[var(--text-main)] outline-none focus:border-brand-primary cursor-pointer"
+        >
+          <option value="">All statuses</option>
+          <option value="planned">Planned</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
       </div>
 
       {isLoading ? (

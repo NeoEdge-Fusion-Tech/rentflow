@@ -6,6 +6,7 @@ import {
   useSearchParams,
   useLocation,
 } from "react-router-dom";
+import { listUrl } from "../utils/listUrlState";
 import {
   ArrowLeft,
   Download,
@@ -442,7 +443,7 @@ export function InvoiceEditor() {
       if (!isEditMode) clearDraft(draftKey);
       if (!skipNavigate) {
         // Done: back to the invoice list, where the new/updated one is at the top.
-        navigate("/invoices", { replace: true });
+        navigate(listUrl("/invoices"), { replace: true });
         return res.data.invoice_id;
       }
       if (isEditMode) await loadInvoice(id!);
@@ -504,7 +505,7 @@ export function InvoiceEditor() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("/invoices")}
+            onClick={() => navigate(listUrl("/invoices"))}
             className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

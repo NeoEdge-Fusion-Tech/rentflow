@@ -47,7 +47,17 @@ class DateRangeOrderingFilter(BaseFilterBackend):
         start, end = _parse_date(params.get("date_from")), _parse_date(
             params.get("date_to")
         )
-        if spec and (start or end):
+        if spec and (start or end) and "range" in spec:
+            # Date-only span (e.g. a project's start/end): overlap the range.
+            lo_f, hi_f = spec["range"]
+            if start:
+                queryset = queryset.filter(
+                    Q(**{f"{hi_f}__gte": start})
+                    | Q(**{f"{hi_f}__isnull": True, f"{lo_f}__gte": start})
+                )
+            if end:
+                queryset = queryset.filter(**{f"{lo_f}__lte": end})
+        elif spec and (start or end):
             tz = _org_tz(request)
             lo = (
                 datetime.datetime.combine(start, datetime.time.min, tzinfo=tz)
@@ -93,6 +103,8 @@ class DateRangeOrderingFilter(BaseFilterBackend):
                 )
             )
             expr = F("_last_paid")
+        elif "range" in spec:
+            expr = F(spec["range"][0])
         else:
             expr = F(spec["field"])
         expr = expr.desc(nulls_last=True) if desc else expr.asc(nulls_last=True)

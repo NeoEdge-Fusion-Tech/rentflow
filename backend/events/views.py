@@ -150,8 +150,27 @@ class EventViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     pagination_class = StandardResultsSetPagination
-    filter_backends = [django_filters.DjangoFilterBackend]
+    filter_backends = [
+        django_filters.DjangoFilterBackend,
+        drf_filters.SearchFilter,
+        DateRangeOrderingFilter,
+    ]
     filterset_fields = ["status"]
+    # Search by name/description, linked invoice or its client, or vendor.
+    search_fields = [
+        "name",
+        "description",
+        "invoices__invoice_number",
+        "invoices__client__business_name",
+        "invoices__client__first_name",
+        "invoices__client__last_name",
+        "expenses__vendor__business_name",
+    ]
+    date_filter_fields = {
+        "created": {"field": "created_at"},
+        "updated": {"field": "updated_at"},
+        "event": {"range": ("start_date", "end_date")},
+    }
 
     def perform_create(self, serializer):
         user = self.request.user

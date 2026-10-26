@@ -1,7 +1,13 @@
 import React from "react";
 import { CalendarRange, ArrowDownUp, X } from "lucide-react";
 
-export type DateField = "created" | "updated" | "paid";
+// Built-ins; pages can add their own via the `fields` prop (e.g. "event").
+export type DateField = "created" | "updated" | "paid" | (string & {});
+
+export interface FilterOption {
+  value: string;
+  label: string;
+}
 
 export interface DateFilterValue {
   field: DateField;
@@ -82,21 +88,30 @@ export function DateFilterBar({
   value,
   onChange,
   allowPaid = true,
+  fields: customFields,
+  sorts: customSorts,
   className = "",
 }: {
   value: DateFilterValue;
   onChange: (v: DateFilterValue) => void;
   allowPaid?: boolean;
+  /** Override which dates can be filtered on. */
+  fields?: FilterOption[];
+  /** Override the sort options. */
+  sorts?: FilterOption[];
   className?: string;
 }) {
-  const fieldLabel: Record<DateField, string> = {
-    created: "Date created",
-    updated: "Last updated",
-    paid: "Date paid",
-  };
-  const fields: DateField[] = allowPaid
-    ? ["created", "updated", "paid"]
-    : ["created", "updated"];
+  const fields: FilterOption[] = customFields || [
+    { value: "created", label: "Date created" },
+    { value: "updated", label: "Last updated" },
+    ...(allowPaid ? [{ value: "paid", label: "Date paid" }] : []),
+  ];
+  const sorts: FilterOption[] = customSorts || [
+    { value: "-created", label: "Newest created" },
+    { value: "created", label: "Oldest created" },
+    { value: "-updated", label: "Recently updated" },
+    ...(allowPaid ? [{ value: "-paid", label: "Recently paid" }] : []),
+  ];
 
   const setPreset = (preset: string) => {
     if (preset === "custom") onChange({ ...value, preset });
@@ -118,8 +133,8 @@ export function DateFilterBar({
           className={selectCls}
         >
           {fields.map((f) => (
-            <option key={f} value={f}>
-              {fieldLabel[f]}
+            <option key={f.value} value={f.value}>
+              {f.label}
             </option>
           ))}
         </select>
@@ -171,10 +186,11 @@ export function DateFilterBar({
           onChange={(e) => onChange({ ...value, ordering: e.target.value })}
           className={selectCls}
         >
-          <option value="-created">Newest created</option>
-          <option value="created">Oldest created</option>
-          <option value="-updated">Recently updated</option>
-          {allowPaid && <option value="-paid">Recently paid</option>}
+          {sorts.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
         </select>
       </div>
 

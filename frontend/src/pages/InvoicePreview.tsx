@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { listUrl } from "../utils/listUrlState";
 import {
   ArrowLeft,
   Download,
@@ -185,7 +186,7 @@ export function InvoicePreview() {
         {/* Top Action Bar */}
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-4">
           <button
-            onClick={() => navigate("/invoices")}
+            onClick={() => navigate(listUrl("/invoices"))}
             className="flex items-center gap-2 text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />

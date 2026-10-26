@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { listUrl } from "../utils/listUrlState";
 import {
   ArrowLeft,
   Download,
@@ -352,7 +353,7 @@ export function QuotationEditor() {
       );
       if (!isEditMode) clearDraft(draftKey);
       if (!skipNavigate) {
-        navigate("/quotations", { replace: true });
+        navigate(listUrl("/quotations"), { replace: true });
         return res.data.quotation_id;
       }
       if (isEditMode) await loadQuotation(id!);
@@ -439,7 +440,7 @@ export function QuotationEditor() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("/quotations")}
+            onClick={() => navigate(listUrl("/quotations"))}
             className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

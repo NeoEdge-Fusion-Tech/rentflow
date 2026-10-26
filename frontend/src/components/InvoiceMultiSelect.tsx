@@ -80,9 +80,7 @@ export function InvoiceMultiSelect({ invoices, value, onChange }: Props) {
           rows.map((inv) => {
             const id = String(inv.invoice_id);
             const checked = value.includes(id);
-            const meta = [clientOf(inv), date(inv.issue_date), money(inv)]
-              .filter(Boolean)
-              .join(" · ");
+            const when = date(inv.issue_date);
             return (
               <label
                 key={id}
@@ -105,7 +103,9 @@ export function InvoiceMultiSelect({ invoices, value, onChange }: Props) {
                       : "border-[var(--border-soft)]"
                   }`}
                 >
-                  {checked && <Check className="w-3 h-3 text-white" />}
+                  {checked && (
+                    <Check className="w-3 h-3 text-[var(--text-on-brand)]" />
+                  )}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2 min-w-0">
@@ -123,11 +123,24 @@ export function InvoiceMultiSelect({ invoices, value, onChange }: Props) {
                       </span>
                     )}
                   </span>
-                  <span
-                    className="block text-xs text-[var(--text-muted)] truncate"
-                    style={{ fontFamily: "'Noto Sans', sans-serif" }}
-                  >
-                    {meta}
+                  {/* Client shortens first; date and amount always fit. */}
+                  <span className="flex items-baseline gap-1.5 min-w-0 text-xs text-[var(--text-muted)]">
+                    {clientOf(inv) && (
+                      <span className="truncate min-w-0" title={clientOf(inv)}>
+                        {clientOf(inv)}
+                      </span>
+                    )}
+                    <span className="shrink-0 whitespace-nowrap">
+                      {clientOf(inv) && when ? "· " : ""}
+                      {when}
+                      {when ? " · " : ""}
+                      <span
+                        className="font-bold text-[var(--text-main)]"
+                        style={{ fontFamily: "'Noto Sans', sans-serif" }}
+                      >
+                        {money(inv)}
+                      </span>
+                    </span>
                   </span>
                 </span>
               </label>

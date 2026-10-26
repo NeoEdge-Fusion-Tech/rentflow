@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { readListUrlState, useSyncListUrl } from "../utils/listUrlState";
 import {
   Plus,
   Search,
@@ -37,11 +38,22 @@ export function Quotations() {
     converted: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] =
-    useState<DateFilterValue>(DEFAULT_DATE_FILTER);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Tab/search/page/date filter live in the URL so returning from a record
+  // restores the same view (e.g. Trash).
+  const [searchParams] = useSearchParams();
+  const [initialList] = useState(() => readListUrlState(searchParams));
+  const [activeTab, setActiveTab] = useState(initialList.tab);
+  const [searchQuery, setSearchQuery] = useState(initialList.search);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(
+    initialList.dateFilter,
+  );
+  const [currentPage, setCurrentPage] = useState(initialList.page);
+  useSyncListUrl({
+    tab: activeTab,
+    search: searchQuery,
+    page: currentPage,
+    dateFilter,
+  });
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [itemsPerPage, setItemsPerPage] = useState(8);
   const defaultCurrencySymbol = localStorage.getItem("currencySymbol") || "$";

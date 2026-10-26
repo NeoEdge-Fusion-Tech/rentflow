@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { readListUrlState, useSyncListUrl } from "../utils/listUrlState";
 import {
   Plus,
   Search,
@@ -36,7 +37,11 @@ export function Invoices() {
   const { showNotification, showConfirm } = useNotification();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("All");
+  // Tab/search/page/date filter live in the URL so returning from a record
+  // restores the same view (e.g. Trash).
+  const [searchParams] = useSearchParams();
+  const [initialList] = useState(() => readListUrlState(searchParams));
+  const [activeTab, setActiveTab] = useState(initialList.tab);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Payment Modal State
@@ -44,16 +49,23 @@ export function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialList.search);
   // Debounced copy of the search box, so we don't query on every keystroke.
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(initialList.search);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
     return () => clearTimeout(t);
   }, [searchQuery]);
-  const [dateFilter, setDateFilter] =
-    useState<DateFilterValue>(DEFAULT_DATE_FILTER);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(
+    initialList.dateFilter,
+  );
+  const [currentPage, setCurrentPage] = useState(initialList.page);
+  useSyncListUrl({
+    tab: activeTab,
+    search: searchQuery,
+    page: currentPage,
+    dateFilter,
+  });
   const [totalCount, setTotalCount] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
