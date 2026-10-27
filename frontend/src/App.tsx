@@ -72,6 +72,8 @@ import { useTheme } from "./context/ThemeContext";
 import { useNotification } from "./context/NotificationContext";
 
 import { Pricing } from "./pages/Pricing";
+import { Features } from "./pages/Features";
+import { About } from "./pages/About";
 
 import { FeedbackForms } from "./pages/FeedbackForms";
 import { PublicFeedback } from "./pages/PublicFeedback";
@@ -109,6 +111,8 @@ function AppLayout() {
     [
       "/",
       "/pricing",
+      "/features",
+      "/about",
       "/login",
       "/register",
       "/onboarding",
@@ -230,6 +234,8 @@ function AppLayout() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/about" element={<About />} />
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
