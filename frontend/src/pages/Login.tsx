@@ -88,7 +88,7 @@ export function Login() {
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
-          <Logo className="h-16 mb-8" dark={theme !== "dark"} />
+          <Logo className="h-14 mb-8" dark={true} showSubtitle={true} />
           <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">
             Manage your inventory with NeoOps
           </h1>
@@ -101,7 +101,11 @@ export function Login() {
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm">
           <h2 className="mt-6 text-3xl font-extrabold text-[var(--text-main)] flex items-center gap-3">
-            <Logo className="h-10" />
+            <Logo
+              className="h-10"
+              dark={theme === "dark"}
+              showSubtitle={true}
+            />
           </h2>
           <h3 className="mt-8 text-2xl font-bold text-[var(--text-main)]">
             Sign in to your account

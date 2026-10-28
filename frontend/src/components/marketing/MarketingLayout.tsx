@@ -10,76 +10,7 @@ const NAV = [
   { to: "/about", label: "About" },
 ];
 
-function Logo() {
-  return (
-    <Link
-      to="/"
-      aria-label="NeoOps by NeoEdge Fusion"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "12px",
-        textDecoration: "none",
-      }}
-    >
-      <span
-        style={{
-          width: "40px",
-          height: "40px",
-          borderRadius: "12px",
-          background: "#07294C",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "none",
-        }}
-      >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M5 18V6l14 12V6"
-            stroke="#FFFFFF"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          ></path>
-          <circle cx="19" cy="5" r="2.4" fill="#FFC17D"></circle>
-        </svg>
-      </span>
-      <span
-        style={{ display: "flex", flexDirection: "column", lineHeight: "1" }}
-      >
-        <span
-          style={{
-            fontSize: "21px",
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: "#07294C",
-          }}
-        >
-          NeoOps
-        </span>
-        <span
-          style={{
-            fontSize: "10px",
-            fontWeight: 700,
-            letterSpacing: ".14em",
-            textTransform: "uppercase",
-            color: "#66717C",
-            marginTop: "4px",
-          }}
-        >
-          by NeoEdge Fusion
-        </span>
-      </span>
-    </Link>
-  );
-}
+import { Logo } from "../Logo";
 
 function Header() {
   const [open, setOpen] = useState(false);
@@ -90,7 +21,7 @@ function Header() {
   return (
     <header className="ne-header">
       <nav className="ne-nav ne-wrap" aria-label="Main">
-        <Logo />
+        <Logo to="/" showSubtitle={true} className="h-10" />
         <div
           className="ne-hide-sm"
           style={{ display: "flex", alignItems: "center", gap: "26px" }}

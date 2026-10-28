@@ -157,7 +157,12 @@ export function Sidebar({
                   currentOrgId={currentUser?.organization_id}
                 />
               ) : (
-                <Logo className="h-9" dark={theme === "dark"} showText={true} />
+                <Logo
+                  className="h-9"
+                  dark={theme === "dark"}
+                  showText={true}
+                  showSubtitle={true}
+                />
               )}
             </div>
             <button
