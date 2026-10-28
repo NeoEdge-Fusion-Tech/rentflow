@@ -43,25 +43,15 @@ export function Hero() {
         }}
       >
         <div style={{ flex: "1 1 500px", minWidth: "0" }}>
-          <div className="ne-ai-badge ne-in">
-            <span className="ne-ai-prefix">For</span>
-            <span className="ne-ai-roles">
-              Event Operators
-              <span className="ne-ai-dot">·</span>
-              Planners
-              <span className="ne-ai-dot">·</span>
-              Rental & Production Businesses
-            </span>
-          </div>
           <h1
-            className="ne-h1 ne-in ne-d1"
+            className="ne-h1 ne-in"
             style={{
               fontSize: "76px",
               lineHeight: ".96",
               letterSpacing: "-0.06em",
               fontWeight: "700",
               color: "#07294C",
-              margin: "24px 0 0",
+              margin: "0",
             }}
           >
             The OS for event ops.{" "}
