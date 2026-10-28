@@ -43,26 +43,30 @@ export function Hero() {
         }}
       >
         <div style={{ flex: "1 1 500px", minWidth: "0" }}>
-          <span
-            className="ne-pill ne-in"
-            style={{
-              textTransform: "none",
-              letterSpacing: "0",
-              fontSize: "13px",
-              fontWeight: "700",
-            }}
-          >
-            <span
-              className="ne-live"
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#FFC17D",
-              }}
-            ></span>
-            For event operators, planners, rental and production businesses
-          </span>
+          <div className="ne-ai-badge ne-in">
+            <span className="ne-ai-chip">
+              <svg
+                className="ne-ai-sparkle"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path d="M8 0.5L9.6 5.6C9.9 6.5 10.6 7.2 11.5 7.5L16.5 9L11.5 10.5C10.6 10.8 9.9 11.5 9.6 12.4L8 17.5L6.4 12.4C6.1 11.5 5.4 10.8 4.5 10.5L-0.5 9L4.5 7.5C5.4 7.2 6.1 6.5 6.4 5.6L8 0.5Z" />
+              </svg>
+              <span>AI-Powered</span>
+            </span>
+            <div className="ne-ai-content">
+              <span className="ne-ai-prefix">For</span>
+              <span className="ne-ai-roles">
+                Event Operators
+                <span className="ne-ai-dot">·</span>
+                Planners
+                <span className="ne-ai-dot">·</span>
+                Rental & Production Businesses
+              </span>
+            </div>
+          </div>
           <h1
             className="ne-h1 ne-in ne-d1"
             style={{

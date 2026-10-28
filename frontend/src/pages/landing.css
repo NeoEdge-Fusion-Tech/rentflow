@@ -50,6 +50,95 @@
   color: #07294c;
   background: #ffffff;
 }
+/* AI-Styled Hero Badge */
+.ne .ne-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 4px 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 166, 82, 0.38);
+  box-shadow:
+    0 2px 12px -2px rgba(7, 41, 76, 0.08),
+    0 0 0 1px rgba(7, 41, 76, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 100%;
+  cursor: default;
+}
+.ne .ne-ai-badge:hover {
+  border-color: rgba(255, 166, 82, 0.65);
+  box-shadow:
+    0 4px 20px -3px rgba(255, 166, 82, 0.22),
+    0 0 0 1px rgba(255, 166, 82, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+.ne .ne-ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 8px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fff0e0 0%, #ffe3c6 100%);
+  border: 1px solid rgba(255, 166, 82, 0.45);
+  color: #d96b0a;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.ne .ne-ai-sparkle {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  fill: #e26d0a;
+}
+.ne .ne-ai-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.ne .ne-ai-prefix {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 12.5px;
+}
+.ne .ne-ai-roles {
+  color: #07294c;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.ne .ne-ai-dot {
+  color: #ffa652;
+  font-weight: 900;
+  margin: 0 4px;
+  opacity: 0.85;
+}
+@media (max-width: 640px) {
+  .ne .ne-ai-badge {
+    padding: 5px 12px 5px 5px;
+    gap: 7px;
+    flex-wrap: wrap;
+    border-radius: 16px;
+  }
+  .ne .ne-ai-content {
+    font-size: 12px;
+    white-space: normal;
+  }
+  .ne .ne-ai-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+}
+
 .ne .ne-h2 {
   font-size: 64px;
   line-height: 0.95;
