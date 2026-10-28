@@ -1,11 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
+import { useTheme } from "../context/ThemeContext";
+import { Logo } from "./Logo";
+
 interface FooterProps {
   className?: string;
 }
 
 export function Footer({ className = "" }: FooterProps) {
+  const { theme } = useTheme();
+
   return (
     <div
       className={`py-6 mt-12 text-center w-full flex justify-center ${className}`}
@@ -14,23 +19,7 @@ export function Footer({ className = "" }: FooterProps) {
         <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">
           A product of
         </span>
-        <a
-          href="https://neoedgefusion.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block transition-transform hover:scale-105"
-        >
-          <img
-            src="/logo_light.png"
-            alt="NeoEdge Fusion"
-            className="h-7 logo-light-mode"
-          />
-          <img
-            src="/logo_dark.png"
-            alt="NeoEdge Fusion"
-            className="h-7 logo-dark-mode"
-          />
-        </a>
+        <Logo className="h-6" dark={theme === "dark"} to="/" />
         <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">
           &copy; {new Date().getFullYear()}
         </span>

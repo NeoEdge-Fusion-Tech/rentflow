@@ -152,15 +152,7 @@ export function MarketingLayout({
             }}
           >
             <div style={{ gridColumn: "span 1" }}>
-              <img
-                src="/landing/neoedge-logo.png"
-                alt="NeoEdge Fusion"
-                style={{
-                  width: "96px",
-                  height: "96px",
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
+              <Logo dark={true} showSubtitle={true} className="h-10" />
               <p
                 style={{
                   fontSize: "14px",

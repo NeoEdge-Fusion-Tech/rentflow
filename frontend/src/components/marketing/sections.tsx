@@ -260,7 +260,8 @@ export function Hero() {
               <div className="ap-body">
                 <aside className="ap-side">
                   <div className="ap-logo">
-                    <span className="ap-mark">N</span>NeoOps
+                    <span className="ap-mark" />
+                    NeoOps
                   </div>
                   <div className="ap-biz">
                     NeoEdge Fusion
@@ -2688,7 +2689,8 @@ export function ProductTour() {
                       <div className="ap-body">
                         <aside className="ap-side">
                           <div className="ap-logo">
-                            <span className="ap-mark">N</span>NeoOps
+                            <span className="ap-mark" />
+                            NeoOps
                           </div>
                           <div className="ap-biz">
                             NeoEdge Fusion
@@ -3098,7 +3100,8 @@ export function ProductTour() {
                       <div className="ap-body">
                         <aside className="ap-side">
                           <div className="ap-logo">
-                            <span className="ap-mark">N</span>NeoOps
+                            <span className="ap-mark" />
+                            NeoOps
                           </div>
                           <div className="ap-biz">
                             NeoEdge Fusion
@@ -3655,7 +3658,8 @@ export function ProductTour() {
                       <div className="ap-body">
                         <aside className="ap-side">
                           <div className="ap-logo">
-                            <span className="ap-mark">N</span>NeoOps
+                            <span className="ap-mark" />
+                            NeoOps
                           </div>
                           <div className="ap-biz">
                             NeoEdge Fusion
@@ -4096,7 +4100,8 @@ export function ProductTour() {
                       <div className="ap-body">
                         <aside className="ap-side">
                           <div className="ap-logo">
-                            <span className="ap-mark">N</span>NeoOps
+                            <span className="ap-mark" />
+                            NeoOps
                           </div>
                           <div className="ap-biz">
                             NeoEdge Fusion
@@ -4662,7 +4667,8 @@ export function ProductTour() {
                       <div className="ap-body">
                         <aside className="ap-side">
                           <div className="ap-logo">
-                            <span className="ap-mark">N</span>NeoOps
+                            <span className="ap-mark" />
+                            NeoOps
                           </div>
                           <div className="ap-biz">
                             NeoEdge Fusion
@@ -5038,7 +5044,8 @@ export function ProductTour() {
                       <div className="ap-body">
                         <aside className="ap-side">
                           <div className="ap-logo">
-                            <span className="ap-mark">N</span>NeoOps
+                            <span className="ap-mark" />
+                            NeoOps
                           </div>
                           <div className="ap-biz">
                             NeoEdge Fusion

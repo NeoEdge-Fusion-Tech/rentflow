@@ -6,6 +6,7 @@ export interface LogoProps {
   showText?: boolean;
   showSubtitle?: boolean;
   dark?: boolean;
+  shade?: "orange" | "dark" | "white";
   to?: string;
   href?: string;
   onClick?: () => void;
@@ -13,16 +14,15 @@ export interface LogoProps {
 }
 
 /**
- * NeoOps Icon Mark:
- * Rounded squircle in brand navy (#072B50) featuring the stylized 'N'
- * and signature amber operational node (#FFAB57).
+ * The official NeoOps Icon Mark:
+ * Characteristic head (circle) and body (semicircle bowl) in signature orange (#FFA652) or dark shade (#07294C).
  */
 export function NeoOpsIcon({
   className = "w-full h-full",
-  alt = "NeoOps Icon",
+  color = "#FFA652",
 }: {
   className?: string;
-  alt?: string;
+  color?: string;
 }) {
   return (
     <svg
@@ -30,50 +30,79 @@ export function NeoOpsIcon({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label={alt}
-      role="img"
+      aria-hidden="true"
     >
-      <rect width="100" height="100" rx="26" fill="#072B50" />
+      {/* Head - Circle */}
+      <circle cx="50" cy="28" r="14" fill={color} />
+      {/* Body - Semicircle Bowl */}
       <path
-        d="M28 68V34L72 68V46"
-        stroke="#FFFFFF"
-        strokeWidth="9.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M50 88C72.0914 88 90 70.0914 90 48H10C10 70.0914 27.9086 88 50 88Z"
+        fill={color}
       />
-      <circle cx="72" cy="33" r="6.5" fill="#FFAB57" />
     </svg>
   );
 }
 
 /**
- * Original NeoOps Logo Component:
- * Uses the authentic brand asset directly from the master design file.
- * Automatically selects the white-text version for dark backgrounds
- * and the navy-text version for light backgrounds.
+ * NeoOps Brand Logo:
+ * - Icon: Signature circle & bowl mark (in signature orange #FFA652 or dark shade #07294C).
+ * - Typography: "Neo" (Dark navy on light bg, pure white on dark bg) + "Ops" (Signature Orange #FFA652).
+ * - Subtitle: "BY NEOEDGE FUSION" (optional).
  */
 export function Logo({
   className = "h-8",
   showText = true,
+  showSubtitle = false,
   dark = false,
+  shade = "orange",
   to,
   href,
   onClick,
-  alt = "NeoOps - by NeoEdge Fusion",
 }: LogoProps) {
-  const imageSrc = !showText
-    ? "/neoops-original-badge.png"
-    : dark
-      ? "/logo_dark.png"
-      : "/logo_light.png";
+  // Resolve icon color based on shade & theme
+  let iconColor = "#FFA652";
+  if (shade === "dark") {
+    iconColor = "#07294C";
+  } else if (shade === "white") {
+    iconColor = "#FFFFFF";
+  }
+
+  // On dark background: "Neo" is white (#FFFFFF)
+  // On white / light background: "Neo" is dark navy (#07294C)
+  const neoTextColor = dark ? "text-white" : "text-[#07294C]";
+  const opsTextColor = shade === "dark" ? "text-[#07294C]" : "text-[#FFA652]";
+  const subtitleColor = dark ? "text-white/70" : "text-[#64748B]";
 
   const content = (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className={`select-none object-contain ${className}`}
-      draggable={false}
-    />
+    <div
+      className={`inline-flex items-center gap-2.5 select-none ${className}`}
+    >
+      {/* NeoOps icon mark */}
+      <div className="h-full aspect-square flex-shrink-0 flex items-center justify-center">
+        <NeoOpsIcon
+          className="w-full h-full drop-shadow-sm"
+          color={iconColor}
+        />
+      </div>
+
+      {showText && (
+        <div className="flex flex-col justify-center leading-none">
+          <div className="flex items-center text-xl sm:text-2xl font-black tracking-tight">
+            <span className={neoTextColor}>Neo</span>
+            <span className={opsTextColor}>Ops</span>
+          </div>
+          {showSubtitle && (
+            <span
+              className={`text-[9px] sm:text-[10px] font-bold tracking-[0.14em] uppercase ${subtitleColor} mt-1`}
+            >
+              by NeoEdge Fusion
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   );
 
   if (to) {
@@ -115,4 +144,5 @@ export function Logo({
   return <div className="inline-flex items-center shrink-0">{content}</div>;
 }
 
+export const NeoOpsLogo = Logo;
 export default Logo;

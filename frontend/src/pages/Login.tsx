@@ -88,7 +88,7 @@ export function Login() {
       <div className="flex-1 hidden lg:flex items-center justify-center bg-brand-primary p-12 overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-primary to-brand-primary/80 z-0"></div>
         <div className="z-10 max-w-lg">
-          <Logo className="h-14 mb-8" dark={true} showSubtitle={true} />
+          <Logo className="h-14 mb-8" dark={theme !== "dark"} />
           <h1 className="text-5xl font-bold text-brand-accent mb-6 leading-tight">
             Manage your inventory with NeoOps
           </h1>
