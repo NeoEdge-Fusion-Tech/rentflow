@@ -47,6 +47,16 @@ export function Footer({ className = "" }: FooterProps) {
         <span className="text-[var(--border-strong)] hidden sm:inline px-2">
           |
         </span>
+        <Link
+          to="/event-budget-calculator"
+          className="text-[10px] font-bold text-[var(--text-muted)] hover:text-brand-primary uppercase tracking-widest mt-1 transition-colors"
+        >
+          Budget Calculator
+        </Link>
+        <span className="text-[var(--border-strong)] hidden sm:inline px-2">
+          |
+        </span>
+
         <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">
           v1.1
         </span>

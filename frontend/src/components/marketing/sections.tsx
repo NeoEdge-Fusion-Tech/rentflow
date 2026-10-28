@@ -179,26 +179,6 @@ export function Hero() {
               >
                 <path d="M5 12l5 5L20 7"></path>
               </svg>
-              Works offline, syncs later
-            </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "7px",
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#07294C"
-                strokeWidth="2.6"
-                aria-hidden="true"
-              >
-                <path d="M5 12l5 5L20 7"></path>
-              </svg>
               Built by event operators
             </span>
           </div>

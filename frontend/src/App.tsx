@@ -78,6 +78,7 @@ import { About } from "./pages/About";
 import { FeedbackForms } from "./pages/FeedbackForms";
 import { PublicFeedback } from "./pages/PublicFeedback";
 import { Landing } from "./pages/Landing";
+import { EventBudgetCalculator } from "./pages/EventBudgetCalculator";
 import { PublicRentals } from "./pages/PublicRentals";
 import { PublicRentalCheckout } from "./pages/PublicRentalCheckout";
 import { PublicPaymentComplete } from "./pages/PublicPaymentComplete";
@@ -113,6 +114,8 @@ function AppLayout() {
       "/pricing",
       "/features",
       "/about",
+      "/event-budget-calculator",
+      "/budget-calculator",
       "/login",
       "/register",
       "/onboarding",
@@ -126,6 +129,8 @@ function AppLayout() {
     location.pathname.startsWith("/public/organizations/");
   // Public pages anyone may view, signed in or not (no dashboard redirect).
   const isPublicPage =
+    location.pathname === "/event-budget-calculator" ||
+    location.pathname === "/budget-calculator" ||
     location.pathname.startsWith("/f/") ||
     location.pathname.startsWith("/marketplace") ||
     location.pathname.startsWith("/public/store/") ||
@@ -236,6 +241,14 @@ function AppLayout() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/features" element={<Features />} />
             <Route path="/about" element={<About />} />
+            <Route
+              path="/event-budget-calculator"
+              element={<EventBudgetCalculator />}
+            />
+            <Route
+              path="/budget-calculator"
+              element={<EventBudgetCalculator />}
+            />
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

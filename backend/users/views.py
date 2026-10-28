@@ -935,3 +935,70 @@ class OrganizationMembershipViewSet(TenantIsolationMixin, viewsets.ModelViewSet)
         if not user.is_superuser:
             kwargs["organization"] = user.organization
         serializer.save(**kwargs)
+
+
+from django.http import HttpResponse
+from .models import Waitlist
+from .serializers import WaitlistSerializer
+from .budget_export import (
+    generate_budget_calculator_pdf,
+    generate_budget_calculator_csv,
+)
+
+
+class WaitlistAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = WaitlistSerializer(data=request.data)
+        if serializer.is_valid():
+            entry = serializer.save()
+            return Response(
+                {
+                    "success": True,
+                    "message": "Thank you! You have been successfully added.",
+                    "data": WaitlistSerializer(entry).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BudgetCalculatorExportAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        fmt = request.data.get("format", "pdf").lower()
+        user_info = request.data.get("user_info")
+
+        if user_info and isinstance(user_info, dict):
+            email = user_info.get("email", "").strip()
+            first_name = user_info.get("first_name", "").strip()
+            last_name = user_info.get("last_name", "").strip()
+            company = user_info.get("company", "").strip()
+            if email and (first_name or last_name):
+                waitlist_data = {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "company": company,
+                    "email": email,
+                    "referral_type": "event_budget",
+                }
+                w_serializer = WaitlistSerializer(data=waitlist_data)
+                if w_serializer.is_valid():
+                    w_serializer.save()
+
+        if fmt in ["excel", "xlsx", "csv"]:
+            csv_content = generate_budget_calculator_csv(request.data)
+            response = HttpResponse(csv_content, content_type="text/csv; charset=utf-8")
+            response["Content-Disposition"] = (
+                'attachment; filename="event_budget_report.csv"'
+            )
+            return response
+        else:
+            pdf_content = generate_budget_calculator_pdf(request.data)
+            response = HttpResponse(pdf_content, content_type="application/pdf")
+            response["Content-Disposition"] = (
+                'attachment; filename="event_budget_report.pdf"'
+            )
+            return response

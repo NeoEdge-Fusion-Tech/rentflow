@@ -13,6 +13,7 @@ from .models import (
     Currency,
     Feedback,
     GlobalConfig,
+    Waitlist,
 )
 
 
@@ -745,3 +746,29 @@ class OrganizationMembershipSerializer(
             "role_name",
         ]
         read_only_fields = ["organization", "created_at"]
+
+
+class WaitlistSerializer(serializers.ModelSerializer):
+    referral_type = serializers.CharField(required=False, default="event_budget")
+
+    class Meta:
+        model = Waitlist
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "company",
+            "email",
+            "referral_type",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def validate_referral_type(self, value):
+        if not value:
+            return "event_budget"
+        normalized = value.strip().lower().replace(" ", "_").replace("-", "_")
+        valid_types = dict(Waitlist.REFERRAL_TYPE_CHOICES).keys()
+        if normalized in valid_types:
+            return normalized
+        return "event_budget"

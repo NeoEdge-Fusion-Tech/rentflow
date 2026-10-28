@@ -653,3 +653,34 @@ export const PublicFeedbackService = {
   getForm: (uuid: string) => api.get(`/feedback/public/${uuid}/`),
   submitResponse: (data: any) => api.post("/feedback/public/", data),
 };
+
+export const WaitlistService = {
+  create: (data: {
+    first_name: string;
+    last_name: string;
+    company: string;
+    email: string;
+    referral_type?: "event_budget" | "waitlist" | "event_market_space" | string;
+  }) => api.post("/users/waitlist/", data),
+};
+
+export const BudgetCalculatorService = {
+  exportReport: (data: {
+    format: "pdf" | "excel" | "csv";
+    client_price: number;
+    currency_code: string;
+    currency_symbol: string;
+    costs: Array<{ name: string; amount: number }>;
+    contingency_percent?: number;
+    target_margin_percent?: number;
+    user_info?: {
+      first_name?: string;
+      last_name?: string;
+      company?: string;
+      email?: string;
+    };
+  }) =>
+    api.post("/users/budget-calculator/export/", data, {
+      responseType: "blob",
+    }),
+};

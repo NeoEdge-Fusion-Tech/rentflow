@@ -459,3 +459,29 @@ class GlobalConfig(models.Model):
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(id=1)
         return obj
+
+
+class Waitlist(models.Model):
+    REFERRAL_TYPE_CHOICES = (
+        ("event_budget", "Event Budget"),
+        ("waitlist", "Waitlist"),
+        ("event_market_space", "Event Market Space"),
+    )
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    company = models.CharField(max_length=255, blank=True, default="")
+    email = models.EmailField()
+    referral_type = models.CharField(
+        max_length=50,
+        choices=REFERRAL_TYPE_CHOICES,
+        default="event_budget",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Waitlist"
+        verbose_name_plural = "Waitlist Entries"
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email}) - {self.get_referral_type_display()}"

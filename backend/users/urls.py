@@ -26,6 +26,8 @@ from .views import (
     RoleViewSet,
     OrganizationMembershipViewSet,
     GlobalConfigAPIView,
+    WaitlistAPIView,
+    BudgetCalculatorExportAPIView,
 )
 
 router = DefaultRouter()
@@ -101,6 +103,12 @@ urlpatterns = [
         "superadmin/stats/", SuperAdminStatsAPIView.as_view(), name="superadmin-stats"
     ),
     path("feedback/", FeedbackAPIView.as_view(), name="feedback"),
+    path("waitlist/", WaitlistAPIView.as_view(), name="waitlist"),
+    path(
+        "budget-calculator/export/",
+        BudgetCalculatorExportAPIView.as_view(),
+        name="budget-calculator-export",
+    ),
     path("global-config/", GlobalConfigAPIView.as_view(), name="global_config"),
     path("", include(router.urls)),
 ]

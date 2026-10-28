@@ -5,6 +5,7 @@ import "../../pages/landing.css";
 const NAV = [
   { to: "/#cost", label: "What it saves" },
   { to: "/features", label: "Features" },
+  { to: "/event-budget-calculator", label: "Budget Calculator" },
   { to: "/about#for-who", label: "For Who" },
   { to: "/pricing", label: "Pricing" },
   { to: "/about", label: "About" },
@@ -193,6 +194,15 @@ export function MarketingLayout({
                 Features
               </Link>
               <Link
+                to="/event-budget-calculator"
+                style={{
+                  color: "rgba(255,255,255,.72)",
+                  textDecoration: "none",
+                }}
+              >
+                Budget Calculator
+              </Link>
+              <Link
                 to="/pricing"
                 style={{
                   color: "rgba(255,255,255,.72)",
@@ -201,6 +211,7 @@ export function MarketingLayout({
               >
                 Pricing
               </Link>
+
               <Link
                 to="/about"
                 style={{
