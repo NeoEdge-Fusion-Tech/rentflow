@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { WaitlistService, BudgetCalculatorService } from "../api";
+import "./EventBudgetCalculator.css";
 
 interface CostItem {
   id: string;
@@ -319,13 +320,10 @@ export function EventBudgetCalculator() {
 
   return (
     <MarketingLayout title="Event Budget & Profit Calculator | NeoOps">
-      <div
-        className="ne-sec"
-        style={{ padding: "60px 0 100px", minHeight: "85vh" }}
-      >
+      <div className="ebc-sec">
         <div className="ne-wrap">
           {/* Hero Banner Header */}
-          <div style={{ maxWidth: "800px", marginBottom: "48px" }}>
+          <div className="ebc-hero">
             <span
               className="ne-pill"
               style={{
@@ -337,16 +335,7 @@ export function EventBudgetCalculator() {
             >
               FREE TOOL
             </span>
-            <h1
-              className="ne-h2"
-              style={{
-                fontSize: "clamp(36px, 5vw, 62px)",
-                color: "#07294C",
-                letterSpacing: "-0.04em",
-                lineHeight: "1.08",
-                margin: "0 0 18px",
-              }}
-            >
+            <h1 className="ebc-title">
               Event budget and{" "}
               <span
                 className="ne-serif"
@@ -358,15 +347,7 @@ export function EventBudgetCalculator() {
                 profit calculator.
               </span>
             </h1>
-            <p
-              style={{
-                fontSize: "18px",
-                lineHeight: "1.6",
-                color: "#4A5663",
-                maxWidth: "680px",
-                margin: 0,
-              }}
-            >
+            <p className="ebc-subtitle">
               Enter what the client pays and what the event costs you. See your
               profit, your margin and the price you should be charging, before
               you send the quote.
@@ -398,26 +379,41 @@ export function EventBudgetCalculator() {
           )}
 
           {/* Main 2-Column Calculator */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-              gap: "36px",
-              alignItems: "start",
-            }}
-          >
+          <div className="ebc-grid">
             {/* Left Card: Input fields */}
-            <div
-              style={{
-                background: "#FFFFFF",
-                borderRadius: "24px",
-                border: "1px solid #E2E8F0",
-                padding: "32px",
-                boxShadow: "0 10px 30px rgba(7, 41, 76, 0.04)",
-              }}
-            >
+            <div className="ebc-card">
+              {/* Mobile Quick Live Summary: gives instant feedback on mobile as inputs change */}
+              <div className="ebc-mobile-live-summary">
+                <div>
+                  <span className="ebc-mobile-live-label">
+                    Estimated Profit
+                  </span>
+                  <div
+                    className="ebc-mobile-live-profit"
+                    style={{ color: profit >= 0 ? "#07294C" : "#DC2626" }}
+                  >
+                    {formatCurrency(profit)}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span className="ebc-mobile-live-label">Margin Status</span>
+                  <div>
+                    <span
+                      className="ebc-mobile-live-badge"
+                      style={{
+                        background: badge.bg,
+                        color: badge.text,
+                        borderColor: badge.border,
+                      }}
+                    >
+                      {marginPercent.toFixed(1)}% • {badge.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Client Price and Currency */}
-              <div style={{ marginBottom: "36px" }}>
+              <div style={{ marginBottom: "32px" }}>
                 <div
                   style={{
                     display: "flex",
@@ -445,38 +441,17 @@ export function EventBudgetCalculator() {
                     Currency
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <div style={{ position: "relative", flex: "1 1 auto" }}>
+                <div className="ebc-price-row">
+                  <div className="ebc-price-input-wrap">
                     <input
                       type="number"
                       value={clientPrice}
                       onChange={(e) => setClientPrice(e.target.value)}
                       placeholder="0"
-                      style={{
-                        width: "100%",
-                        height: "50px",
-                        borderRadius: "12px",
-                        border: "1px solid #CBD5E1",
-                        padding: "0 16px",
-                        fontSize: "18px",
-                        fontWeight: "600",
-                        color: "#07294C",
-                        outline: "none",
-                        boxSizing: "border-box",
-                        background: "#FFFFFF",
-                        transition: "border-color 0.2s",
-                      }}
-                      onFocus={(e) => (e.target.style.borderColor = "#07294C")}
-                      onBlur={(e) => (e.target.style.borderColor = "#CBD5E1")}
+                      className="ebc-price-input"
                     />
                   </div>
-                  <div
-                    style={{
-                      position: "relative",
-                      width: "125px",
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div className="ebc-currency-wrap">
                     <select
                       value={currency.code}
                       onChange={(e) => {
@@ -486,20 +461,7 @@ export function EventBudgetCalculator() {
                         if (sel) setCurrency(sel);
                       }}
                       aria-label="Select Currency"
-                      style={{
-                        width: "100%",
-                        height: "50px",
-                        borderRadius: "12px",
-                        border: "1px solid #CBD5E1",
-                        padding: "0 34px 0 14px",
-                        fontSize: "15px",
-                        fontWeight: "700",
-                        color: "#07294C",
-                        outline: "none",
-                        background: "#F8FAFC",
-                        appearance: "none",
-                        cursor: "pointer",
-                      }}
+                      className="ebc-currency-select"
                     >
                       {CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code}>
@@ -511,7 +473,7 @@ export function EventBudgetCalculator() {
                       style={{
                         position: "absolute",
                         right: "12px",
-                        top: "18px",
+                        top: "17px",
                         width: "16px",
                         height: "16px",
                         pointerEvents: "none",
@@ -524,14 +486,7 @@ export function EventBudgetCalculator() {
 
               {/* What the event costs you */}
               <div style={{ marginBottom: "28px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    marginBottom: "16px",
-                  }}
-                >
+                <div className="ebc-costs-header">
                   <h3
                     style={{
                       fontSize: "14px",
@@ -553,22 +508,9 @@ export function EventBudgetCalculator() {
                 </div>
 
                 {/* List of cost items */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                  }}
-                >
+                <div className="ebc-costs-list">
                   {costs.map((item) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        alignItems: "center",
-                      }}
-                    >
+                    <div key={item.id} className="ebc-cost-row">
                       <input
                         type="text"
                         value={item.name}
@@ -576,17 +518,7 @@ export function EventBudgetCalculator() {
                           handleCostChange(item.id, "name", e.target.value)
                         }
                         placeholder="Cost item name"
-                        style={{
-                          flex: "1 1 55%",
-                          height: "46px",
-                          borderRadius: "10px",
-                          border: "1px solid #E2E8F0",
-                          padding: "0 14px",
-                          fontSize: "14px",
-                          color: "#0A0D12",
-                          background: "#FFFFFF",
-                          outline: "none",
-                        }}
+                        className="ebc-cost-name"
                       />
                       <input
                         type="number"
@@ -595,47 +527,14 @@ export function EventBudgetCalculator() {
                           handleCostChange(item.id, "amount", e.target.value)
                         }
                         placeholder="0"
-                        style={{
-                          flex: "1 1 35%",
-                          height: "46px",
-                          borderRadius: "10px",
-                          border: "1px solid #E2E8F0",
-                          padding: "0 14px",
-                          fontSize: "15px",
-                          fontWeight: "600",
-                          color: "#07294C",
-                          background: "#FFFFFF",
-                          outline: "none",
-                          textAlign: "right",
-                        }}
+                        className="ebc-cost-amount"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveCost(item.id)}
                         title="Remove cost"
                         aria-label="Remove cost"
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "8px",
-                          border: "1px solid #E2E8F0",
-                          background: "#FFFFFF",
-                          color: "#94A3B8",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                          transition: "all 0.15s",
-                          flexShrink: 0,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = "#DC2626";
-                          e.currentTarget.style.borderColor = "#FCA5A5";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = "#94A3B8";
-                          e.currentTarget.style.borderColor = "#E2E8F0";
-                        }}
+                        className="ebc-cost-remove"
                       >
                         <X style={{ width: "16px", height: "16px" }} />
                       </button>
@@ -778,19 +677,7 @@ export function EventBudgetCalculator() {
             </div>
 
             {/* Right Card: Dark Navy Profit Card */}
-            <div
-              style={{
-                background: "#07294C",
-                borderRadius: "28px",
-                padding: "36px",
-                color: "#FFFFFF",
-                boxShadow: "0 20px 40px rgba(7, 41, 76, 0.22)",
-                display: "flex",
-                flexDirection: "column",
-                position: "sticky",
-                top: "100px",
-              }}
-            >
+            <div className="ebc-profit-card">
               {/* Card Header Label */}
               <div
                 style={{
@@ -807,13 +694,9 @@ export function EventBudgetCalculator() {
 
               {/* Big Profit Display */}
               <div
+                className="ebc-profit-value"
                 style={{
-                  fontSize: "clamp(40px, 4.5vw, 54px)",
-                  fontWeight: "800",
-                  letterSpacing: "-0.04em",
                   color: profit >= 0 ? "#FFFFFF" : "#F87171",
-                  lineHeight: "1.05",
-                  marginBottom: "16px",
                 }}
               >
                 {formatCurrency(profit)}
@@ -849,86 +732,45 @@ export function EventBudgetCalculator() {
               </div>
 
               {/* Breakdown Rows */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "14px",
-                  borderTop: "1px solid rgba(255, 255, 255, 0.12)",
-                  paddingTop: "22px",
-                  marginBottom: "28px",
-                  fontSize: "15px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ color: "rgba(255, 255, 255, 0.72)" }}>
-                    Costs
-                  </span>
-                  <span style={{ fontWeight: "700" }}>
+              <div className="ebc-breakdown-list">
+                <div className="ebc-breakdown-row">
+                  <span className="ebc-breakdown-label">Costs</span>
+                  <span className="ebc-breakdown-value">
                     {formatCurrency(totalDirectCosts)}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ color: "rgba(255, 255, 255, 0.72)" }}>
+                <div className="ebc-breakdown-row">
+                  <span className="ebc-breakdown-label">
                     Contingency ({contingencyPercent}%)
                   </span>
-                  <span style={{ fontWeight: "700" }}>
+                  <span className="ebc-breakdown-value">
                     {formatCurrency(contingencyAmount)}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ color: "rgba(255, 255, 255, 0.72)" }}>
-                    Total costs
-                  </span>
-                  <span style={{ fontWeight: "700" }}>
+                <div className="ebc-breakdown-row">
+                  <span className="ebc-breakdown-label">Total costs</span>
+                  <span className="ebc-breakdown-value">
                     {formatCurrency(totalCosts)}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ color: "rgba(255, 255, 255, 0.72)" }}>
-                    Your margin
-                  </span>
-                  <span style={{ fontWeight: "700" }}>
+                <div className="ebc-breakdown-row">
+                  <span className="ebc-breakdown-label">Your margin</span>
+                  <span className="ebc-breakdown-value">
                     {marginPercent.toFixed(1)}%
                   </span>
                 </div>
                 <div
+                  className="ebc-breakdown-row"
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
                     borderTop: "1px dashed rgba(255, 255, 255, 0.15)",
                     paddingTop: "14px",
                   }}
                 >
-                  <span style={{ color: "rgba(255, 255, 255, 0.72)" }}>
+                  <span className="ebc-breakdown-label">
                     Price for your target margin ({targetMarginPercent}%)
                   </span>
                   <span
+                    className="ebc-breakdown-value"
                     style={{
                       fontWeight: "800",
                       color: "#FFC17D",
@@ -954,37 +796,12 @@ export function EventBudgetCalculator() {
               </p>
 
               {/* Export Buttons */}
-              <div
-                style={{ display: "flex", gap: "10px", marginBottom: "16px" }}
-              >
+              <div className="ebc-export-row">
                 <button
                   type="button"
                   onClick={() => handleExportClick("pdf")}
                   disabled={isExporting}
-                  style={{
-                    flex: "1 1 50%",
-                    height: "44px",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
-                    background: "rgba(255, 255, 255, 0.08)",
-                    color: "#FFFFFF",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      "rgba(255, 255, 255, 0.16)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      "rgba(255, 255, 255, 0.08)";
-                  }}
+                  className="ebc-export-btn"
                 >
                   <FileText
                     style={{ width: "16px", height: "16px", color: "#FFC17D" }}
@@ -995,30 +812,7 @@ export function EventBudgetCalculator() {
                   type="button"
                   onClick={() => handleExportClick("excel")}
                   disabled={isExporting}
-                  style={{
-                    flex: "1 1 50%",
-                    height: "44px",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
-                    background: "rgba(255, 255, 255, 0.08)",
-                    color: "#FFFFFF",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      "rgba(255, 255, 255, 0.16)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      "rgba(255, 255, 255, 0.08)";
-                  }}
+                  className="ebc-export-btn"
                 >
                   <FileSpreadsheet
                     style={{ width: "16px", height: "16px", color: "#4ADE80" }}
@@ -1063,38 +857,16 @@ export function EventBudgetCalculator() {
 
       {/* Lead Capture Modal for Non-logged-in Users */}
       {showLeadModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(7, 41, 76, 0.75)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: "24px",
-              maxWidth: "480px",
-              width: "100%",
-              padding: "36px",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              position: "relative",
-            }}
-          >
+        <div className="ebc-modal-overlay">
+          <div className="ebc-modal-card">
             <button
               type="button"
               onClick={() => setShowLeadModal(false)}
               aria-label="Close dialog"
               style={{
                 position: "absolute",
-                right: "20px",
-                top: "20px",
+                right: "16px",
+                top: "16px",
                 width: "36px",
                 height: "36px",
                 borderRadius: "50%",
@@ -1110,7 +882,7 @@ export function EventBudgetCalculator() {
               <X style={{ width: "18px", height: "18px" }} />
             </button>
 
-            <div style={{ marginBottom: "24px" }}>
+            <div style={{ marginBottom: "20px" }}>
               <span
                 style={{
                   display: "inline-flex",
@@ -1131,7 +903,7 @@ export function EventBudgetCalculator() {
               </span>
               <h2
                 style={{
-                  fontSize: "24px",
+                  fontSize: "22px",
                   fontWeight: "800",
                   color: "#07294C",
                   margin: "0 0 8px",
@@ -1179,8 +951,8 @@ export function EventBudgetCalculator() {
               onSubmit={handleLeadSubmit}
               style={{ display: "flex", flexDirection: "column", gap: "14px" }}
             >
-              <div style={{ display: "flex", gap: "12px" }}>
-                <div style={{ flex: "1 1 50%" }}>
+              <div className="ebc-modal-names">
+                <div>
                   <label
                     style={{
                       display: "block",
@@ -1212,7 +984,7 @@ export function EventBudgetCalculator() {
                     }}
                   />
                 </div>
-                <div style={{ flex: "1 1 50%" }}>
+                <div>
                   <label
                     style={{
                       display: "block",
