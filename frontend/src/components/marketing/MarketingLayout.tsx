@@ -345,6 +345,18 @@ export function MarketingLayout({
                 NeoTech
               </a>
               <a
+                href="https://www.linkedin.com/showcase/getneoops/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="NeoOps on LinkedIn"
+                style={{
+                  color: "rgba(255,255,255,.72)",
+                  textDecoration: "none",
+                }}
+              >
+                LinkedIn
+              </a>
+              <a
                 href="mailto:info@neoedgefusion.com"
                 style={{
                   color: "rgba(255,255,255,.72)",
