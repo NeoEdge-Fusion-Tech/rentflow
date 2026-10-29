@@ -23,90 +23,93 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(ot2^#r0-(uel5=j-ddmbrf_e$agc_f3^kk=5d$gt9&fwgyhs+'
+SECRET_KEY = "django-insecure-(ot2^#r0-(uel5=j-ddmbrf_e$agc_f3^kk=5d$gt9&fwgyhs+"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'drf_spectacular',
-    'corsheaders',
-    'users',
-    'inventory',
-    'payment',
-    'notification',
-    'django_filters',
-    'cloudinary_storage',
-    'cloudinary',
-    'storages',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "drf_spectacular",
+    "corsheaders",
+    "users",
+    "inventory",
+    "payment",
+    "events",
+    "notification",
+    "feedback",
+    "attachments",
+    "django_filters",
+    "cloudinary_storage",
+    "cloudinary",
+    "storages",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'config.middleware.ErrorLoggingMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.ErrorLoggingMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-ENV_MODE = config('ENV_MODE', default='local')
+ENV_MODE = config("ENV_MODE", default="local")
 
-if ENV_MODE == 'dev':
+if ENV_MODE == "dev":
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='rentflow'),
-            'USER': config('DB_USERNAME', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='postgres'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME", default="rentflow"),
+            "USER": config("DB_USERNAME", default="postgres"),
+            "PASSWORD": config("DB_PASSWORD", default="postgres"),
+            "HOST": config("DB_HOST", default="localhost"),
+            "PORT": config("DB_PORT", default="5432"),
         }
     }
 else:
-    default_db = config('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
-    DATABASES = {
-        'default': dj_database_url.config(default=default_db)
-    }
+    default_db = config(
+        "DATABASE_URL", default="sqlite:///" + str(BASE_DIR / "db.sqlite3")
+    )
+    DATABASES = {"default": dj_database_url.config(default=default_db)}
 
 
 # Password validation
@@ -114,16 +117,16 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -131,9 +134,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -143,50 +146,80 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (user uploads, e.g. organization logos)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
-if ENV_MODE == 'prod':
-    # AWS S3 Storage for Production
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
-    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
-    AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
-    AWS_S3_SIGNATURE_VERSION = 's3v4'
+# Where uploaded files live, for the whole app. Set STORAGE_BACKEND in .env to
+# "cloudinary", "s3" or "local". When unset, keep the historical default
+# (S3 in prod, Cloudinary elsewhere) so existing file URLs keep working.
+STORAGE_BACKEND = config(
+    "STORAGE_BACKEND", default="s3" if ENV_MODE == "prod" else "cloudinary"
+).lower()
+
+# Max size of a single receipt / invoice attachment. Vercel rejects request
+# bodies over ~4.5 MB, so stay under that when the API runs there.
+ATTACHMENT_MAX_BYTES = config("ATTACHMENT_MAX_BYTES", default=4 * 1024 * 1024, cast=int)
+
+_STATICFILES = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
+
+if STORAGE_BACKEND == "s3":
+    AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
+    AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
+    AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", default="")
+    AWS_S3_REGION_NAME = config("AWS_S3_REGION_NAME", default="us-east-1")
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
-    
+
     STORAGES = {
-        "default": {
+        "default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
+        # Receipts are financial documents: serve them via expiring signed URLs.
+        "attachments": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {"querystring_auth": True, "querystring_expire": 600},
         },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-        },
+        "staticfiles": _STATICFILES,
     }
-    
-else:
-    # Cloudinary Storage for Dev
+
+elif STORAGE_BACKEND == "cloudinary":
     import cloudinary
-    
+
     CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
-        'API_KEY': config('CLOUDINARY_API_KEY', default=''),
-        'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+        "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME", default=""),
+        "API_KEY": config("CLOUDINARY_API_KEY", default=""),
+        "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
     }
-    
+
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
-        "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        # "raw" resources accept PDFs as well as images (Cloudinary blocks PDF
+        # delivery from the image pipeline on many accounts).
+        "attachments": {
+            "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",
         },
+        "staticfiles": _STATICFILES,
     }
+
+elif STORAGE_BACKEND == "local":
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "attachments": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": _STATICFILES,
+    }
+
+else:
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        f"Unknown STORAGE_BACKEND '{STORAGE_BACKEND}'. "
+        "Use 'cloudinary', 's3' or 'local'."
+    )
 
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = False
@@ -196,49 +229,67 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
-    "https://ops.neoedgefusion.com"
+    "https://ops.neoedgefusion.com",
+    "https://getneoops.com",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://\w+\.neoedgefusion\.com$",
+    r"^https://\w+\.getneoops\.com$",
 ]
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 AUTHENTICATION_BACKENDS = [
-    'users.backends.EmailBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    "users.backends.EmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
 
 from datetime import timedelta
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'USER_ID_CLAIM': 'user_id',
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "USER_ID_CLAIM": "user_id",
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'NeoOps API',
-    'DESCRIPTION': 'NeoOps SaaS Inventory and Booking APIs',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+    "TITLE": "NeoOps API",
+    "DESCRIPTION": "NeoOps SaaS Inventory and Booking APIs",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 # Paystack Configuration
-PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='sk_test_mock_key')
+PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="sk_test_mock_key")
+# Public base URL of this API, used for links in emails sent without a request.
+PUBLIC_API_BASE_URL = config("PUBLIC_API_BASE_URL", default="")
 
 # Email Configuration
-EMAIL_VENDOR = config('EMAIL_VENDOR', default='resend') # resend, ses, sendgrid
-RESEND_API_KEY = config('RESEND_API_KEY', default='re_mock_key')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@rentflow.com')
+EMAIL_VENDOR = config("EMAIL_VENDOR", default="resend")  # resend, ses, sendgrid
+RESEND_API_KEY = config("RESEND_API_KEY", default="re_mock_key")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@rentflow.com")
 
 # Free Tier Quotas
-FREE_TIER_MONTHLY_QUOTA = config('FREE_TIER_MONTHLY_QUOTA', default=10, cast=int)
+FREE_TIER_MONTHLY_QUOTA = config("FREE_TIER_MONTHLY_QUOTA", default=10, cast=int)
+MAX_ORGANIZATIONS_PER_USER = config("MAX_ORGANIZATIONS_PER_USER", default=5, cast=int)
+
+# Marketplace & Storefront Test Access
+# List of email profiles who can see the marketplace to test
+ALLOW_STORE = [
+    "sunnexajayi@gmail.com",
+    "okerenomso@gmail.com",
+    "adewumiolumide42@gmail.com",
+    # Add allowed email addresses here:
+]
+_env_allow_store = [
+    e.strip().lower() for e in config("ALLOW_STORE", default="").split(",") if e.strip()
+]
+ALLOW_STORE.extend(_env_allow_store)

@@ -6,6 +6,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from django.http import HttpResponse
 
+
 def api_home(request):
     html = """
     <!DOCTYPE html>
@@ -13,7 +14,7 @@ def api_home(request):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Neo Inventory API</title>
+        <title>NeoOps API</title>
         <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #050810; color: #F1F5F9; }
             .container { text-align: center; padding: 3rem; background: #0D121F; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); border: 1px solid #1E293B; }
@@ -29,7 +30,7 @@ def api_home(request):
     </head>
     <body>
         <div class="container">
-            <h1>Neo Inventory API</h1>
+            <h1>NeoOps API</h1>
             <p>The backend systems are fully operational.</p>
             <div class="status"><span class="pulse"></span> API is Live</div>
             <div class="links">
@@ -41,15 +42,24 @@ def api_home(request):
     """
     return HttpResponse(html)
 
+
 urlpatterns = [
-    path('', api_home, name='home'),
-    path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
-    path('api/notification/', include('notification.urls')),
-    path('api/inventory/', include('inventory.urls')),
-    path('api/payment/', include('payment.urls')),
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path("", api_home, name="home"),
+    path("admin/", admin.site.urls),
+    path("api/users/", include("users.urls")),
+    path("api/notification/", include("notification.urls")),
+    path("api/inventory/", include("inventory.urls")),
+    path("api/payment/", include("payment.urls")),
+    path("api/events/", include("events.urls")),
+    path("api/feedback/", include("feedback.urls")),
+    path("api/attachments/", include("attachments.urls")),
+    path("api/public/", include("public_api.urls")),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
 ]
 
 if settings.DEBUG:

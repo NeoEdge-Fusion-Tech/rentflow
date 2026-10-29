@@ -6,76 +6,76 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0017_bankaccount_notes_bankaccount_swift_code'),
+        ("users", "0017_bankaccount_notes_bankaccount_swift_code"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='client',
-            name='company_name',
+            model_name="client",
+            name="company_name",
         ),
         migrations.RemoveField(
-            model_name='client',
-            name='first_name',
+            model_name="client",
+            name="first_name",
         ),
         migrations.RemoveField(
-            model_name='client',
-            name='last_name',
+            model_name="client",
+            name="last_name",
         ),
         migrations.AddField(
-            model_name='client',
-            name='account_details',
+            model_name="client",
+            name="account_details",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='additional_details',
+            model_name="client",
+            name="additional_details",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='business_name',
-            field=models.CharField(default='Unknown', max_length=255),
+            model_name="client",
+            name="business_name",
+            field=models.CharField(default="Unknown", max_length=255),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='client',
-            name='city',
+            model_name="client",
+            name="city",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='contact_email',
+            model_name="client",
+            name="contact_email",
             field=models.EmailField(blank=True, max_length=254, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='contact_name',
+            model_name="client",
+            name="contact_name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='contact_phone',
+            model_name="client",
+            name="contact_phone",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='industry',
+            model_name="client",
+            name="industry",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='shipping_details',
+            model_name="client",
+            name="shipping_details",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='tax_information',
+            model_name="client",
+            name="tax_information",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='client',
-            name='email',
+            model_name="client",
+            name="email",
             field=models.EmailField(blank=True, max_length=254, null=True),
         ),
     ]

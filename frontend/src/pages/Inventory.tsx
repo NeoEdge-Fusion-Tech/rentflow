@@ -1,73 +1,339 @@
-import React, { useState } from 'react';
-import { useNotification } from '../context/NotificationContext';
-import { 
-  Search, 
-  Plus, 
-  Filter, 
-  MoreVertical, 
-  Package, 
-  Tag, 
-  AlertTriangle, 
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useNotification } from "../context/NotificationContext";
+import {
+  Search,
+  Plus,
+  Filter,
+  MoreVertical,
+  Package,
+  Tag,
+  AlertTriangle,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Edit2,
   Trash2,
   TrendingUp,
-  X
-} from 'lucide-react';
-import { cn } from '@/src/utils';
-import { ProductService, CategoryService } from '../api';
+  X,
+  Printer,
+  QrCode,
+  Download,
+  Paperclip,
+  Store,
+  Tags,
+  ChevronDown,
+} from "lucide-react";
+import { cn } from "@/src/utils";
+import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
+import Barcode from "react-barcode";
+import { compressImage } from "../utils/compressImage";
+import {
+  ProductService,
+  ProductUnitService,
+  CategoryService,
+  MarketplaceTagService,
+  AuthService,
+} from "../api";
+import { MarketplaceProfileNotice } from "../components/MarketplaceProfileNotice";
+import { TagPicker, MarketplaceTagOption } from "../components/TagPicker";
+import { RevenueDisplay } from "../components/RevenueDisplay";
+import { ActionMenu } from "../components/ActionMenu";
+import { CurrencyBadge } from "../components/CurrencyBadge";
+import { AttachmentsModal } from "../components/AttachmentsPanel";
+
+const generateNextSerialNumber = (products: any[], draftUnits: any[]) => {
+  let maxNum = 0;
+  products.forEach((p) => {
+    p.units?.forEach((u: any) => {
+      if (u.serial_number && typeof u.serial_number === "string") {
+        const match = u.serial_number.match(/\d+$/);
+        if (match) {
+          const numPart = parseInt(match[0], 10);
+          if (numPart > maxNum) maxNum = numPart;
+        }
+      }
+    });
+  });
+  draftUnits.forEach((u) => {
+    if (u.serial_number && typeof u.serial_number === "string") {
+      const match = u.serial_number.match(/\d+$/);
+      if (match) {
+        const numPart = parseInt(match[0], 10);
+        if (numPart > maxNum) maxNum = numPart;
+      }
+    }
+  });
+  return `SN${String(maxNum + 1).padStart(6, "0")}`;
+};
 
 export function Inventory() {
   const { showNotification, showConfirm } = useNotification();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
+  const [selectedTagFilter, setSelectedTagFilter] = useState("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const currencySymbol = localStorage.getItem('currencySymbol') || '$';
+  const [showQRExportModal, setShowQRExportModal] = useState(false);
+  const [codeType, setCodeType] = useState<"QR" | "Barcode">("QR");
+  const [selectedUnitsForQR, setSelectedUnitsForQR] = useState<
+    { productName: string; unitName: string; identifier: string }[]
+  >([]);
+  const [singleQRView, setSingleQRView] = useState<{
+    productName: string;
+    unitName: string;
+    identifier: string;
+  } | null>(null);
+  const [currencySymbol, setCurrencySymbol] = useState(
+    () => localStorage.getItem("currencySymbol") || "$",
+  );
   const [units, setUnits] = useState([
-    { name: '', serial_number: '', status: 'available', unit_type: 'single', quantity: 1, unit_cost_price: '0.00', cost_price: '0.00', rental_price: '0.00', unit: 'per_day' }
+    {
+      name: "",
+      serial_number: "",
+      status: "available",
+      unit_type: "single",
+      quantity: 1,
+      unit_cost_price: "0.00",
+      cost_price: "0.00",
+      rental_price: "0.00",
+      unit: "per_day",
+      description: "",
+    },
   ]);
   const [products, setProducts] = useState<any[]>([]);
-  
-  const formatCurrency = (amount: number | string) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+
+  useEffect(() => {
+    if (showQRExportModal || singleQRView) {
+      document.body.classList.add("is-printing-qr");
+    } else {
+      document.body.classList.remove("is-printing-qr");
+    }
+    return () => {
+      document.body.classList.remove("is-printing-qr");
+    };
+  }, [showQRExportModal, singleQRView]);
+
+  const formatCurrency = (amount: number | string, overrideSymbol?: string) => {
+    // If a currency symbol is not provided, we try to grab it from local state if available.
+    // Assuming currencySymbol is available in the component scope.
+    let sym = overrideSymbol || "";
+    try {
+      sym = sym || currencySymbol || "";
+    } catch (e) {}
+    try {
+      sym = sym || defaultCurrencySymbol || "";
+    } catch (e) {}
+
+    const isRWF =
+      sym.toUpperCase().includes("RWF") || sym.toUpperCase().includes("RW");
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: isRWF ? 0 : 2,
+      maximumFractionDigits: isRWF ? 0 : 2,
     }).format(Number(amount));
   };
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [itemsPerPage, setItemsPerPage] = useState(6);
 
   const [categories, setCategories] = useState<any[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryDesc, setNewCategoryDesc] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [newCategoryIsActive, setNewCategoryIsActive] = useState(true);
+  const [newCategoryTags, setNewCategoryTags] = useState<number[]>([]);
+  const [marketplaceTags, setMarketplaceTags] = useState<
+    MarketplaceTagOption[]
+  >([]);
+  // Marketplace tags for the product being added/edited. `productTagsAuto`
+  // is true while they're just the category's defaults, so changing the
+  // category can swap them without clobbering a manual choice.
+  const [productTags, setProductTags] = useState<number[]>([]);
+  const [productTagsAuto, setProductTagsAuto] = useState(true);
   const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
   const [showDrillDown, setShowDrillDown] = useState(false);
   const [drillDownProduct, setDrillDownProduct] = useState<any | null>(null);
-  const [drillDownType, setDrillDownType] = useState<'total' | 'good' | 'available' | 'damaged'>('total');
+  const [drillDownType, setDrillDownType] = useState<
+    "total" | "good" | "available" | "damaged"
+  >("total");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [expandedProductIds, setExpandedProductIds] = useState<number[]>([]);
+  // Products created during this visit, oldest first, shown as a stack so
+  // the user can keep adding without losing track of what they just made.
+  const [recentlyAdded, setRecentlyAdded] = useState<any[]>([]);
 
   const toggleProductExpand = (id: number) => {
-    setExpandedProductIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    setExpandedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
+  const getUnitIdentifier = (unit: any): string =>
+    unit.unit_type === "single"
+      ? unit.serial_number || ""
+      : unit.product_unit_id.toString();
+
+  const viewUnitQR = (product: any, unit: any) => {
+    const identifier = getUnitIdentifier(unit);
+    if (!identifier) return;
+    setSingleQRView({
+      productName: product.name,
+      unitName: unit.name || (unit.unit_type === "single" ? "SN" : "Bulk"),
+      identifier,
+    });
+  };
+
+  const downloadUnitQR = (product: any, unit: any) => {
+    const identifier = getUnitIdentifier(unit);
+    if (!identifier) return;
+    // Desktop and mobile layouts each render their own hidden canvas.
+    const canvas = (document.getElementById(`qr-${unit.product_unit_id}`) ||
+      document.getElementById(
+        `qr-mobile-${unit.product_unit_id}`,
+      )) as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = `${product.name.replace(/\s+/g, "_")}_${identifier}_QR.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  // Quick editor for a product's marketplace listing + tags.
+  const [tagEditor, setTagEditor] = useState<{
+    product: any;
+    tags: number[];
+    listed: boolean;
+  } | null>(null);
+  const [savingTags, setSavingTags] = useState(false);
+
+  const openTagEditor = (product: any) =>
+    setTagEditor({
+      product,
+      tags: product.marketplace_tags || [],
+      listed: Boolean(product.available_for_rental),
+    });
+
+  const saveTagEditor = async () => {
+    if (!tagEditor) return;
+    try {
+      setSavingTags(true);
+      await ProductService.patch(tagEditor.product.product_id, {
+        marketplace_tags: tagEditor.tags,
+        available_for_rental: tagEditor.listed,
+      });
+      showNotification("Marketplace listing updated", "success");
+      setTagEditor(null);
+      fetchProducts();
+    } catch (e: any) {
+      console.error(e);
+      showNotification(
+        e.response?.data?.marketplace_tags?.[0] ||
+          "Failed to update marketplace tags.",
+        "error",
+      );
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const productActions = (product: any) => [
+    {
+      label: "Edit product",
+      icon: Edit2,
+      onClick: () => handleEditProductClick(product),
+    },
+    {
+      label: "Marketplace tags",
+      icon: Tags,
+      onClick: () => openTagEditor(product),
+    },
+    {
+      label: "Delete product",
+      icon: Trash2,
+      danger: true,
+      onClick: () => handleDeleteProduct(product.product_id),
+    },
+  ];
+
+  const [receiptsForUnit, setReceiptsForUnit] = useState<{
+    unitId: number;
+    label: string;
+  } | null>(null);
+
+  const openUnitReceipts = (product: any, unit: any) =>
+    setReceiptsForUnit({
+      unitId: unit.product_unit_id,
+      label: [product.name, unit.name || unit.serial_number]
+        .filter(Boolean)
+        .join(" · "),
+    });
+
+  const unitActions = (product: any, unit: any) => [
+    {
+      label: "Purchase receipts",
+      icon: Paperclip,
+      onClick: () => openUnitReceipts(product, unit),
+    },
+    {
+      label: "View QR code",
+      icon: QrCode,
+      disabled: !getUnitIdentifier(unit),
+      onClick: () => viewUnitQR(product, unit),
+    },
+    {
+      label: "Download QR code",
+      icon: Download,
+      disabled: !getUnitIdentifier(unit),
+      onClick: () => downloadUnitQR(product, unit),
+    },
+  ];
+
   const [newProduct, setNewProduct] = useState({
-    name: '',
-    category_id: '',
+    name: "",
+    category_id: "",
     is_active: true,
+    available_for_rental: false,
   });
 
   React.useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, [searchTerm]);
+  }, [
+    searchTerm,
+    selectedCategoryFilter,
+    selectedTagFilter,
+    selectedStatusFilter,
+  ]);
+
+  // Company-profile fields still needed before products can be listed on
+  // the marketplace (address, country, city, currency).
+  const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  const refreshProfileMissing = () =>
+    AuthService.getMe()
+      .then((res) =>
+        setProfileMissing(res.data.marketplace_profile_missing || []),
+      )
+      .catch(() => {});
+  React.useEffect(() => {
+    refreshProfileMissing();
+  }, []);
+
+  React.useEffect(() => {
+    MarketplaceTagService.getAll()
+      .then((res) => setMarketplaceTags(res.data.results || res.data))
+      .catch((e) => console.error("Failed to load marketplace tags", e));
+  }, []);
+
+  const categoryDefaultTags = (categoryId: string | number) => {
+    const cat = categories.find(
+      (c) => String(c.category_id) === String(categoryId),
+    );
+    const activeIds = new Set(marketplaceTags.map((t) => t.id));
+    return ((cat?.default_marketplace_tags || []) as number[]).filter((id) =>
+      activeIds.has(id),
+    );
+  };
 
   const fetchCategories = async () => {
     try {
@@ -80,41 +346,265 @@ export function Inventory() {
 
   const handleEditProductClick = (product: any) => {
     setEditingProductId(product.product_id);
+    setCollapsedUnits(
+      (product.units || [])
+        .map((_: any, i: number) => i)
+        .filter((i: number) => i > 0),
+    );
+    setProductTags(product.marketplace_tags || []);
+    setProductTagsAuto(false);
     setNewProduct({
       name: product.name,
       category_id: product.category.toString(),
       is_active: product.is_active,
+      available_for_rental: product.available_for_rental || false,
     });
-    setUnits(product.units && product.units.length > 0 
-      ? product.units.map((u: any) => ({
-          product_unit_id: u.product_unit_id,
-          name: u.name || '',
-          serial_number: u.serial_number || '',
-          status: u.status,
-          unit_type: u.unit_type || 'single',
-          quantity: u.quantity || 1,
-          unit_cost_price: u.unit_cost_price?.toString() || '0.00',
-          cost_price: u.cost_price.toString(),
-          rental_price: u.rental_price.toString(),
-          unit: u.unit || 'per_day',
-          // read-only breakdown fields
-          quantity_available: u.quantity_available ?? 0,
-          quantity_rented: u.quantity_rented ?? 0,
-          quantity_good: u.quantity_good ?? 0,
-          quantity_damaged: u.quantity_damaged ?? 0,
-        }))
-      : [{ name: '', serial_number: '', status: 'available', unit_type: 'single', quantity: 1, unit_cost_price: '0.00', cost_price: '0.00', rental_price: '0.00', unit: 'per_day' }]
+    setUnits(
+      product.units && product.units.length > 0
+        ? product.units.map((u: any) => ({
+            product_unit_id: u.product_unit_id,
+            name: u.name || "",
+            serial_number: u.serial_number || "",
+            status: u.status,
+            unit_type: u.unit_type || "single",
+            quantity: u.quantity || 1,
+            unit_cost_price: u.unit_cost_price?.toString() || "0.00",
+            cost_price: u.cost_price.toString(),
+            rental_price: u.rental_price.toString(),
+            unit: u.unit || "per_day",
+            description: u.description || "",
+            // read-only breakdown fields
+            quantity_available: u.quantity_available ?? 0,
+            quantity_rented: u.quantity_rented ?? 0,
+            quantity_good: u.quantity_good ?? 0,
+            quantity_damaged: u.quantity_damaged ?? 0,
+          }))
+        : [
+            {
+              name: "",
+              serial_number: "",
+              status: "available",
+              unit_type: "single",
+              quantity: 1,
+              unit_cost_price: "0.00",
+              cost_price: "0.00",
+              rental_price: "0.00",
+              unit: "per_day",
+              description: "",
+              image_file: null,
+            },
+          ],
     );
     setShowAddModal(true);
   };
 
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setSerialChecks({});
+    setCollapsedUnits([]);
+    setEditingProductId(null);
+    setProductTags([]);
+    setProductTagsAuto(true);
+    setNewProduct({
+      name: "",
+      category_id: "",
+      is_active: true,
+      available_for_rental: false,
+    });
+    setUnits([
+      {
+        name: "",
+        serial_number: generateNextSerialNumber(products, []),
+        status: "available",
+        unit_type: "single",
+        quantity: 1,
+        unit_cost_price: "0.00",
+        cost_price: "0.00",
+        rental_price: "0.00",
+        unit: "per_day",
+        description: "",
+      },
+    ]);
+  };
+
+  const needsMarketplaceTag =
+    newProduct.available_for_rental && marketplaceTags.length > 0;
+  // Unit cards in the product form can be collapsed to a one-line summary.
+  const [collapsedUnits, setCollapsedUnits] = useState<number[]>([]);
+  // Accordion: opening one unit closes the others; clicking an open unit
+  // closes it.
+  const toggleUnitCollapsed = (i: number) =>
+    setCollapsedUnits((prev) =>
+      prev.includes(i)
+        ? units.map((_, idx) => idx).filter((idx) => idx !== i)
+        : [...prev, i],
+    );
+  const removeUnitAt = (i: number) => {
+    setUnits((prev: any[]) => prev.filter((_, idx) => idx !== i));
+    setCollapsedUnits((prev) =>
+      prev.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)),
+    );
+    setSerialChecks({});
+  };
+
+  // Live serial-number checks for single units, keyed by unit index.
+  type SerialCheck = {
+    serial: string;
+    status: "checking" | "ok" | "taken" | "duplicate";
+    usedBy?: { product_name: string; unit_name?: string | null } | null;
+    suggestion?: string;
+  };
+  const [serialChecks, setSerialChecks] = useState<Record<number, SerialCheck>>(
+    {},
+  );
+  const [lastSerial, setLastSerial] = useState<string | null>(null);
+  const [serialSuggestion, setSerialSuggestion] = useState<string | null>(null);
+
+  const serialKey = units
+    .map(
+      (u: any) =>
+        `${u.unit_type}:${u.serial_number}:${u.product_unit_id || ""}`,
+    )
+    .join("|");
+
+  React.useEffect(() => {
+    if (!showAddModal) return;
+    const handle = setTimeout(() => {
+      units.forEach((u: any, i: number) => {
+        const serial = (u.serial_number || "").trim();
+        if (u.unit_type !== "single" || !serial) {
+          setSerialChecks((prev) => {
+            const next = { ...prev };
+            delete next[i];
+            return next;
+          });
+          return;
+        }
+        const others = units
+          .filter((o: any, j: number) => j !== i && o.unit_type === "single")
+          .map((o: any) => (o.serial_number || "").trim())
+          .filter(Boolean);
+        if (
+          others.some((o: string) => o.toLowerCase() === serial.toLowerCase())
+        ) {
+          setSerialChecks((prev) => ({
+            ...prev,
+            [i]: { serial, status: "duplicate" },
+          }));
+          return;
+        }
+        setSerialChecks((prev) => ({
+          ...prev,
+          [i]: { ...prev[i], serial, status: "checking" },
+        }));
+        ProductService.checkSerial(serial, u.product_unit_id, others)
+          .then((res) => {
+            setLastSerial(res.data.last_serial || null);
+            setSerialSuggestion(res.data.suggestion || null);
+            setSerialChecks((prev) =>
+              // Ignore stale responses for a serial that has since changed.
+              (units[i]?.serial_number || "").trim() !== serial
+                ? prev
+                : {
+                    ...prev,
+                    [i]: {
+                      serial,
+                      status: res.data.available ? "ok" : "taken",
+                      usedBy: res.data.used_by,
+                      suggestion: res.data.suggestion,
+                    },
+                  },
+            );
+          })
+          .catch(() =>
+            setSerialChecks((prev) => {
+              const next = { ...prev };
+              delete next[i];
+              return next;
+            }),
+          );
+      });
+    }, 350);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serialKey, showAddModal]);
+
+  const serialProblems = (
+    Object.entries(serialChecks) as [string, SerialCheck][]
+  ).some(
+    ([i, c]) =>
+      units[Number(i)]?.unit_type === "single" &&
+      (c.status === "taken" ||
+        c.status === "duplicate" ||
+        c.status === "checking"),
+  );
+
+  // Next free serial from the server (knows every product, not just the
+  // filtered list), skipping serials already typed in the form.
+  const fetchSuggestedSerial = async (draft: any[]) => {
+    try {
+      const reserved = draft
+        .map((u: any) => (u.serial_number || "").trim())
+        .filter(Boolean);
+      const res = await ProductService.checkSerial("", undefined, reserved);
+      setLastSerial(res.data.last_serial || null);
+      return res.data.suggestion as string;
+    } catch {
+      return generateNextSerialNumber(products, draft);
+    }
+  };
+
+  const openAddProduct = async () => {
+    setShowAddModal(true);
+    if (editingProductId) return;
+    const suggestion = await fetchSuggestedSerial([]);
+    setUnits((prev: any[]) =>
+      prev.length === 1 && !prev[0].product_unit_id
+        ? [{ ...prev[0], serial_number: suggestion }]
+        : prev,
+    );
+  };
+
+  const isProductFormValid = Boolean(
+    newProduct.name.trim() &&
+      newProduct.category_id &&
+      (!needsMarketplaceTag || productTags.length > 0) &&
+      !serialProblems &&
+      !(newProduct.available_for_rental && profileMissing.length > 0) &&
+      units.length > 0 &&
+      units.every((u) =>
+        u.unit_type === "single"
+          ? Boolean(
+              u.serial_number &&
+                String(u.serial_number).trim() &&
+                u.rental_price !== "" &&
+                u.unit_cost_price !== "",
+            )
+          : Boolean(
+              u.quantity &&
+                Number(u.quantity) > 0 &&
+                u.rental_price !== "" &&
+                u.unit_cost_price !== "",
+            ),
+      ),
+  );
+
   const handleSaveProduct = async () => {
     if (!newProduct.name.trim() || !newProduct.category_id) {
-      showNotification("Please fill in all required product fields.", 'warning');
+      showNotification(
+        "Please fill in all required product fields.",
+        "warning",
+      );
       return;
     }
-    if (units.length === 0 || (units[0].unit_type === 'single' && !units[0].serial_number?.trim())) {
-      showNotification("At least one product unit is required (with serial number for single items).", 'warning');
+    if (
+      units.length === 0 ||
+      (units[0].unit_type === "single" && !units[0].serial_number?.trim())
+    ) {
+      showNotification(
+        "At least one product unit is required (with serial number for single items).",
+        "warning",
+      );
       return;
     }
 
@@ -124,36 +614,172 @@ export function Inventory() {
         name: newProduct.name,
         category: parseInt(newProduct.category_id),
         is_active: newProduct.is_active,
-        units: units.map(u => ({
-          ...(u as any).product_unit_id ? { product_unit_id: (u as any).product_unit_id } : {},
+        available_for_rental: newProduct.available_for_rental,
+        marketplace_tags: productTags,
+        units: units.map((u) => ({
+          ...((u as any).product_unit_id
+            ? { product_unit_id: (u as any).product_unit_id }
+            : {}),
           name: u.name || null,
-          serial_number: u.unit_type === 'single' ? u.serial_number : null,
+          serial_number: u.unit_type === "single" ? u.serial_number : null,
           unit_type: u.unit_type,
           quantity: parseInt(u.quantity as any) || 1,
-          unit_cost_price: parseFloat(u.unit_cost_price || '0'),
-          status: u.status || 'available',
-          rental_price: parseFloat(u.rental_price || '0'),
-          unit: u.unit || 'per_day',
+          unit_cost_price: parseFloat(u.unit_cost_price || "0"),
+          status: u.status || "available",
+          rental_price: parseFloat(u.rental_price || "0"),
+          unit: u.unit || "per_day",
+          description: u.description || "",
           quantity_damaged: (u as any).quantity_damaged ?? 0,
-        }))
+        })),
       };
 
+      let finalProductId = editingProductId;
+      let savedProductData: any = null;
       if (editingProductId) {
-        await ProductService.update(editingProductId, productData);
-        showNotification("Product updated successfully!", 'success');
+        const res = await ProductService.update(editingProductId, productData);
+        savedProductData = res.data;
       } else {
-        await ProductService.create(productData);
-        showNotification("Product created successfully!", 'success');
+        const res = await ProductService.create(productData);
+        savedProductData = res.data;
+        finalProductId = res.data.product_id;
       }
-      
+
+      // Images upload after the product is saved. A failed upload must not
+      // undo a successful save, so collect problems and warn instead.
+      const imageProblems: string[] = [];
+      const uploadReason = (err: any) =>
+        err?.response?.status === 413
+          ? "file too large"
+          : err?.response?.data?.error || err?.message || "upload failed";
+
+      if (finalProductId && (newProduct as any).image_file) {
+        try {
+          const formData = new FormData();
+          formData.append(
+            "image",
+            await compressImage((newProduct as any).image_file),
+          );
+          await ProductService.uploadImage(finalProductId, formData);
+        } catch (err: any) {
+          console.error("Failed to upload product image", err);
+          imageProblems.push(`product image (${uploadReason(err)})`);
+        }
+      }
+
+      // Upload unit images
+      if (savedProductData && savedProductData.units) {
+        for (let i = 0; i < units.length; i++) {
+          const u: any = units[i];
+          if (u.image_file) {
+            // Find corresponding saved unit
+            // If editing, use product_unit_id, if creating, match by serial_number or index
+            const savedUnit = u.product_unit_id
+              ? savedProductData.units.find(
+                  (su: any) => su.product_unit_id === u.product_unit_id,
+                )
+              : savedProductData.units.find(
+                  (su: any) => su.serial_number === u.serial_number,
+                );
+
+            const unitId = savedUnit
+              ? savedUnit.product_unit_id
+              : savedProductData.units[i]
+                ? savedProductData.units[i].product_unit_id
+                : null;
+
+            if (unitId) {
+              try {
+                const formData = new FormData();
+                formData.append("image", await compressImage(u.image_file));
+                await ProductUnitService.uploadImage(unitId, formData);
+              } catch (err: any) {
+                console.error("Failed to upload unit image", err);
+                imageProblems.push(
+                  `image for unit ${
+                    u.name || u.serial_number || i + 1
+                  } (${uploadReason(err)})`,
+                );
+              }
+            }
+          }
+        }
+      }
+
       setShowAddModal(false);
+      setSerialChecks({});
+      setCollapsedUnits([]);
       setEditingProductId(null);
-      setNewProduct({ name: '', category_id: '', is_active: true });
-      setUnits([{ name: '', serial_number: '', status: 'available', unit_type: 'single', quantity: 1, unit_cost_price: '0.00', cost_price: '0.00', rental_price: '0.00', unit: 'per_day' }]);
-      fetchProducts();
+      setProductTags([]);
+      setProductTagsAuto(true);
+      setNewProduct({
+        name: "",
+        category_id: "",
+        is_active: true,
+        available_for_rental: false,
+        image_file: null,
+      } as any);
+      setUnits([
+        {
+          name: "",
+          serial_number: "",
+          status: "available",
+          unit_type: "single",
+          quantity: 1,
+          unit_cost_price: "0.00",
+          cost_price: "0.00",
+          rental_price: "0.00",
+          unit: "per_day",
+          description: "",
+        },
+      ]);
+      showNotification(
+        editingProductId
+          ? "Product updated successfully!"
+          : "Product created successfully!",
+        "success",
+      );
+      if (imageProblems.length) {
+        showNotification(
+          `Product saved, but some images didn't upload: ${imageProblems.join(
+            "; ",
+          )}. You can add them by editing the product.`,
+          "warning",
+        );
+      }
+      if (savedProductData?.product_id) {
+        setRecentlyAdded((prev) =>
+          editingProductId
+            ? prev.map((p) =>
+                p.product_id === savedProductData.product_id
+                  ? savedProductData
+                  : p,
+              )
+            : [...prev, savedProductData],
+        );
+      }
+      // Take the user back to the product list, newest first, with the
+      // saved product visible (clear filters that could hide it).
+      if (
+        searchTerm ||
+        selectedCategoryFilter ||
+        selectedTagFilter ||
+        selectedStatusFilter
+      ) {
+        // Changing filters re-triggers fetchProducts via the effect.
+        setSearchTerm("");
+        setSelectedCategoryFilter("");
+        setSelectedTagFilter("");
+        setSelectedStatusFilter("");
+      } else {
+        await fetchProducts();
+      }
+      document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: any) {
       console.error(e);
-      showNotification(e.response?.data?.error || "Failed to save product.", 'error');
+      showNotification(
+        e.response?.data?.error || "Failed to save product.",
+        "error",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -161,46 +787,62 @@ export function Inventory() {
 
   const handleDeleteProduct = async (id: number) => {
     showConfirm({
-      title: 'Delete Product',
-      message: 'Are you sure you want to delete this product? This action cannot be undone.',
-      type: 'danger',
-      confirmText: 'Delete',
+      title: "Delete Product",
+      message:
+        "Are you sure you want to delete this product? This action cannot be undone.",
+      type: "danger",
+      confirmText: "Delete",
       onConfirm: async () => {
         try {
           await ProductService.delete(id);
-          showNotification('Product deleted successfully', 'success');
+          setRecentlyAdded((prev) => prev.filter((p) => p.product_id !== id));
+          showNotification("Product deleted successfully", "success");
           fetchProducts();
         } catch (e) {
           console.error(e);
-          showNotification('Failed to delete product.', 'error');
+          showNotification("Failed to delete product.", "error");
         }
-      }
+      },
     });
   };
 
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) {
-      showNotification("Category name is required.", 'warning');
+      showNotification("Category name is required.", "warning");
       return;
     }
     try {
       setSavingCategory(true);
       if (editCategoryId) {
-        await CategoryService.update(editCategoryId, { name: newCategoryName, description: newCategoryDesc, is_active: newCategoryIsActive });
-        showNotification("Category updated!", 'success');
+        await CategoryService.update(editCategoryId, {
+          name: newCategoryName,
+          description: newCategoryDesc,
+          is_active: newCategoryIsActive,
+          default_marketplace_tags: newCategoryTags,
+        });
+        showNotification("Category updated!", "success");
       } else {
-        await CategoryService.create({ name: newCategoryName, description: newCategoryDesc, is_active: newCategoryIsActive });
-        showNotification("Category added!", 'success');
+        await CategoryService.create({
+          name: newCategoryName,
+          description: newCategoryDesc,
+          is_active: newCategoryIsActive,
+          default_marketplace_tags: newCategoryTags,
+        });
+        showNotification("Category added!", "success");
       }
-      setNewCategoryName('');
-      setNewCategoryDesc('');
+      setNewCategoryName("");
+      setNewCategoryDesc("");
       setNewCategoryIsActive(true);
+      setNewCategoryTags([]);
       setEditCategoryId(null);
       fetchCategories();
     } catch (error: any) {
       console.error(error);
-      showNotification(error.response?.data?.error || 'Failed to save category', 'error');
+      showNotification(
+        error.response?.data?.error || "Failed to save category",
+        "error",
+      );
     } finally {
       setSavingCategory(false);
     }
@@ -209,38 +851,60 @@ export function Inventory() {
   const handleEditCategoryClick = (c: any) => {
     setEditCategoryId(c.id || c.category_id);
     setNewCategoryName(c.name);
-    setNewCategoryDesc(c.description || '');
+    setNewCategoryDesc(c.description || "");
     setNewCategoryIsActive(c.is_active);
+    const activeIds = new Set(marketplaceTags.map((t) => t.id));
+    setNewCategoryTags(
+      ((c.default_marketplace_tags || []) as number[]).filter((id) =>
+        activeIds.has(id),
+      ),
+    );
   };
 
   const handleDeleteCategory = async (id: number) => {
     showConfirm({
-      title: 'Delete Category',
-      message: 'Are you sure you want to delete this category? This will fail if products are still assigned to it.',
-      type: 'danger',
-      confirmText: 'Delete',
+      title: "Delete Category",
+      message:
+        "Are you sure you want to delete this category? This will fail if products are still assigned to it.",
+      type: "danger",
+      confirmText: "Delete",
       onConfirm: async () => {
         try {
           await CategoryService.delete(id);
-          showNotification('Category deleted successfully', 'success');
+          showNotification("Category deleted successfully", "success");
           fetchCategories();
         } catch (error: any) {
           console.error(error);
-          showNotification(error.response?.data?.error || 'Failed to delete category. It may be in use.', 'error');
+          showNotification(
+            error.response?.data?.error ||
+              "Failed to delete category. It may be in use.",
+            "error",
+          );
         }
-      }
+      },
     });
   };
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
       // Backend expects 'search' parameter for SearchFilter
-      const response = await ProductService.getAll({ search: searchTerm });
+      const params: any = { search: searchTerm };
+      if (selectedCategoryFilter) params.category = selectedCategoryFilter;
+      if (selectedTagFilter) params.marketplace_tag = selectedTagFilter;
+      if (selectedStatusFilter) {
+        if (selectedStatusFilter === "all") params.all = "true";
+        else if (selectedStatusFilter === "active") params.is_active = "True";
+        else if (selectedStatusFilter === "inactive") {
+          params.all = "true";
+          params.is_active = "False";
+        }
+      }
+      const response = await ProductService.getAll(params);
       // DRF ModelViewSet returns { count, next, previous, results: [...] } when paginated
       setProducts(response.data.results || response.data);
       setCurrentPage(1);
     } catch (error) {
-      console.error('Error fetching inventory:', error);
+      console.error("Error fetching inventory:", error);
     } finally {
       setIsLoading(false);
     }
@@ -248,302 +912,984 @@ export function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-main)]">Inventory Management</h1>
-          <p className="text-[var(--text-muted)]">Manage your products, categories, and stock levels.</p>
-        </div>
-          <div className="flex gap-2">
+      {/* Main page content — hidden during QR print jobs so print pagination
+          only ever contains the .qr-print-only content (avoids extra/duplicate
+          pages from this section's height still counting toward the print layout) */}
+      <div className="print:hidden space-y-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-[var(--text-main)]">
+              Inventory Management
+            </h1>
+            <p className="text-[var(--text-muted)]">
+              Manage your products, categories, and stock levels.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+            <CurrencyBadge
+              onChange={(symbol) => {
+                setCurrencySymbol(symbol);
+                refreshProfileMissing();
+              }}
+            />
+            <button
+              onClick={() => setShowQRExportModal(true)}
+              title="Export product line QR codes"
+              className="h-10 inline-flex items-center gap-2 px-4 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl text-sm font-medium whitespace-nowrap hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+            >
+              <QrCode className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Export QR codes</span>
+            </button>
             <button
               onClick={() => setShowCategoryModal(true)}
-              className="px-4 py-2 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl font-medium hover:bg-[var(--bg-app)] transition-colors shadow-sm"
+              className="h-10 inline-flex items-center gap-2 px-4 border border-[var(--border-soft)] text-[var(--text-main)] bg-[var(--bg-surface)] rounded-xl text-sm font-medium whitespace-nowrap hover:bg-[var(--bg-app)] transition-colors shadow-sm"
             >
+              <Tag className="w-4 h-4 shrink-0" />
               Categories
             </button>
             <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-brand-primary text-brand-accent px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+              onClick={openAddProduct}
+              className="h-10 inline-flex items-center gap-2 bg-brand-primary text-brand-accent px-4 rounded-xl text-sm font-semibold whitespace-nowrap hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 shrink-0" />
               Add Product
             </button>
           </div>
-      </div>
+        </div>
 
-      {/* Module Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2 mt-4">
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">Total Products</p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">{products.length}</p>
-          </div>
-          <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary"><Package size={24}/></div>
-        </div>
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">Value of Displayed Stock (Cost)</p>
-            <p className="text-2xl font-bold text-[var(--text-main)]">{currencySymbol}{formatCurrency(products.reduce((acc, p) => acc + (parseFloat(p.total_cost_price) || 0), 0))}</p>
-          </div>
-          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500"><TrendingUp size={24}/></div>
-        </div>
-        <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-[var(--text-muted)]">Items Needing Repair</p>
-            <p className="text-2xl font-bold text-rose-500">{products.reduce((acc, p) => acc + (p.total_quantity_damaged_condition || 0), 0)}</p>
-          </div>
-          <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500"><AlertTriangle size={24}/></div>
-        </div>
-      </div>
+        {recentlyAdded.length > 0 && (
+          <section className="bg-[var(--bg-surface)] border border-brand-primary/30 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                <h2 className="font-bold text-[var(--text-main)]">
+                  Recently added
+                </h2>
+                <span className="text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full">
+                  {recentlyAdded.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setRecentlyAdded([])}
+                className="text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] px-2 py-1 rounded-lg hover:bg-[var(--bg-app)] transition-colors"
+              >
+                Done
+              </button>
+            </div>
 
-      {/* Filters & Search */}
-      <div className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-soft)] shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Search products, serial numbers..."
-            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-[var(--text-main)]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-            <Filter className="w-4 h-4" />
-            Category
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] font-medium transition-colors">
-            Status
-          </button>
-        </div>
-      </div>
+            <ol className="space-y-2">
+              {recentlyAdded.map((p, idx) => {
+                const unitCount = (p.units || []).reduce(
+                  (sum: number, u: any) =>
+                    sum +
+                    (u.unit_type === "bulk" ? Number(u.quantity) || 0 : 1),
+                  0,
+                );
+                const category =
+                  p.category_name ||
+                  categories.find((c) => c.category_id === p.category)?.name;
+                return (
+                  <li
+                    key={p.product_id}
+                    className="flex items-center gap-3 p-3 bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)] animate-in fade-in slide-in-from-bottom-1 duration-300"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="w-9 h-9 bg-[var(--bg-surface)] rounded-lg flex items-center justify-center text-[var(--text-muted)] shrink-0">
+                      <Package className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[var(--text-main)] truncate">
+                        {p.name}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">
+                        {[
+                          category,
+                          `${unitCount} unit${unitCount === 1 ? "" : "s"}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                    <ActionMenu
+                      items={[
+                        {
+                          label: "Edit product",
+                          icon: Edit2,
+                          onClick: () => handleEditProductClick(p),
+                        },
+                        {
+                          label: "Delete product",
+                          icon: Trash2,
+                          danger: true,
+                          onClick: () => {
+                            handleDeleteProduct(p.product_id);
+                          },
+                        },
+                      ]}
+                    />
+                  </li>
+                );
+              })}
+            </ol>
 
-      {/* Table */}
-      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
-                <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Product</th>
-                <th className="hidden lg:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Category</th>
-                <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">Cost</th>
-                <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">Qty</th>
-                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-emerald-500 uppercase tracking-wider text-center">Good</th>
-                <th className="px-2 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-blue-500 uppercase tracking-wider text-center">Avail</th>
-                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">Rented</th>
-                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-rose-500 uppercase tracking-wider text-center">Dmg</th>
-                <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-[var(--text-muted)]">
-                    Loading inventory...
-                  </td>
+            <button
+              onClick={openAddProduct}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[var(--border-soft)] rounded-xl text-sm font-bold text-brand-primary hover:border-brand-primary/50 hover:bg-brand-primary/5 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add new product
+            </button>
+          </section>
+        )}
+
+        {/* Module Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-2 mt-4">
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Total Products
+              </p>
+              <p className="text-2xl font-bold text-[var(--text-main)]">
+                {products.length}
+              </p>
+            </div>
+            <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">
+              <Package size={24} />
+            </div>
+          </div>
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Value of Displayed Stock (Cost)
+              </p>
+              <p className="text-2xl font-bold text-[var(--text-main)]">
+                <RevenueDisplay
+                  amount={`${currencySymbol}${formatCurrency(
+                    products.reduce(
+                      (acc, p) => acc + (parseFloat(p.total_cost_price) || 0),
+                      0,
+                    ),
+                  )}`}
+                />
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+              <TrendingUp size={24} />
+            </div>
+          </div>
+          <div className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border-soft)] shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--text-muted)]">
+                Items Needing Repair
+              </p>
+              <p className="text-2xl font-bold text-rose-500">
+                {products.reduce(
+                  (acc, p) => acc + (p.total_quantity_damaged_condition || 0),
+                  0,
+                )}
+              </p>
+            </div>
+            <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500">
+              <AlertTriangle size={24} />
+            </div>
+          </div>
+        </div>
+
+        {/* Filters & Search */}
+        <div className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-soft)] shadow-sm flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Search products, serial numbers..."
+              className="w-full pl-10 pr-4 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl outline-none focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all text-[var(--text-main)]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="relative">
+              <select
+                value={selectedCategoryFilter}
+                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                className="appearance-none flex items-center gap-2 pl-10 pr-8 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] bg-transparent hover:bg-[var(--bg-app)] font-medium transition-colors outline-none cursor-pointer"
+              >
+                <option value="">All Categories</option>
+                {categories.map((c) => (
+                  <option
+                    key={c.id || c.category_id}
+                    value={c.id || c.category_id}
+                  >
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M1 1L5 5L9 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="relative">
+              <select
+                value={selectedTagFilter}
+                onChange={(e) => setSelectedTagFilter(e.target.value)}
+                aria-label="Filter by marketplace tag"
+                className={cn(
+                  "appearance-none flex items-center gap-2 pl-10 pr-8 py-2 border rounded-xl text-[var(--text-main)] bg-transparent hover:bg-[var(--bg-app)] font-medium transition-colors outline-none cursor-pointer",
+                  selectedTagFilter
+                    ? "border-brand-primary"
+                    : "border-[var(--border-soft)]",
+                )}
+              >
+                <option value="">All Marketplace Tags</option>
+                {marketplaceTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+                <option disabled>──────────</option>
+                <option value="untagged">Listed, needs tags</option>
+                <option value="unlisted">Not on marketplace</option>
+              </select>
+              <Tags className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M1 1L5 5L9 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="relative">
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                className="appearance-none flex items-center gap-2 pl-4 pr-8 py-2 border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] bg-transparent hover:bg-[var(--bg-app)] font-medium transition-colors outline-none cursor-pointer"
+              >
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                <svg
+                  width="10"
+                  height="6"
+                  viewBox="0 0 10 6"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M1 1L5 5L9 1"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
+                  <th className="px-4 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="hidden lg:table-cell px-4 lg:px-5 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-2 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                    Cost
+                  </th>
+                  <th className="px-2 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                    Qty
+                  </th>
+                  <th className="hidden sm:table-cell px-4 lg:px-5 py-4 text-xs font-semibold text-emerald-500 uppercase tracking-wider text-center">
+                    Good
+                  </th>
+                  <th className="px-2 sm:px-4 lg:px-5 py-4 text-[10px] sm:text-xs font-semibold text-blue-500 uppercase tracking-wider text-center">
+                    Avail
+                  </th>
+                  <th className="hidden sm:table-cell px-4 lg:px-5 py-4 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-center">
+                    Rented
+                  </th>
+                  <th className="px-4 lg:px-5 py-4 text-xs font-black text-rose-500 uppercase tracking-wider text-center">
+                    DAMAGED
+                  </th>
+                  <th className="sticky right-0 z-10 bg-[var(--bg-app)] shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.35)] px-3 py-4 text-[10px] sm:text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider text-right">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ) : products.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-[var(--text-muted)]">
-                    No products found.
-                  </td>
-                </tr>
-              ) : products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((product) => (
-                <React.Fragment key={product.product_id}>
-                  <tr className="hover:bg-[var(--bg-app)] transition-colors group cursor-pointer" onClick={() => toggleProductExpand(product.product_id)}>
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className={cn(
-                          "transition-transform duration-200",
-                          expandedProductIds.includes(product.product_id) ? "rotate-90" : ""
-                        )}>
-                          <ChevronRight className="w-3.5 h-3.5 sm:w-4 h-4 text-[var(--text-muted)]" />
-                        </div>
-                        <div className="hidden sm:flex w-8 h-8 bg-[var(--bg-app)] rounded-lg items-center justify-center text-[var(--text-muted)] shrink-0">
-                          <Package className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)] truncate">{product.name}</p>
-                          <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] uppercase tracking-wider truncate">{product.slug}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden lg:table-cell px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                        <Tag className="w-3 h-3" />
-                        {product.category_name || 'Uncategorized'}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-6 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
-                      {currencySymbol}{formatCurrency(product.total_cost_price)}
-                    </td>
-                    <td className="px-2 sm:px-6 py-4 text-center">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setDrillDownProduct(product); setDrillDownType('total'); setShowDrillDown(true); }}
-                        className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:text-brand-primary hover:underline transition-all"
-                      >
-                        {product.total_quantity || 0}
-                      </button>
-                    </td>
-                    <td className="hidden sm:table-cell px-6 py-4 text-center">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setDrillDownProduct(product); setDrillDownType('good'); setShowDrillDown(true); }}
-                        className="text-xs sm:text-sm font-bold text-emerald-600 hover:underline transition-all"
-                      >
-                        {product.total_quantity_good_condition || 0}
-                      </button>
-                    </td>
-                    <td className="px-2 sm:px-6 py-4 text-center">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setDrillDownProduct(product); setDrillDownType('available'); setShowDrillDown(true); }}
-                        className="text-xs sm:text-sm font-bold text-blue-600 hover:underline transition-all"
-                      >
-                        {product.total_quantity_good_condition_available || 0}
-                      </button>
-                    </td>
-                    <td className="hidden sm:table-cell px-6 py-4 text-center">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setDrillDownProduct(product); setDrillDownType('rented'); setShowDrillDown(true); }}
-                        className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:underline transition-all"
-                      >
-                        {Math.max(0, (product.total_quantity_good_condition || 0) - (product.total_quantity_good_condition_available || 0))}
-                      </button>
-                    </td>
-                    <td className="hidden sm:table-cell px-6 py-4 text-center">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setDrillDownProduct(product); setDrillDownType('damaged'); setShowDrillDown(true); }}
-                        className="text-xs sm:text-sm font-bold text-rose-600 hover:underline transition-all"
-                      >
-                        {product.total_quantity_damaged_condition || 0}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleEditProductClick(product); }}
-                          className="p-2 text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.product_id); }}
-                          className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-[var(--text-muted)]"
+                    >
+                      Loading inventory...
                     </td>
                   </tr>
-                  
-                  {/* Expanded Sub-table for Units */}
-                  {expandedProductIds.includes(product.product_id) && (
-                    <tr className="bg-[var(--bg-app)]/50">
-                      <td colSpan={9} className="px-12 py-4">
-                        <div className="border border-[var(--border-soft)] rounded-xl bg-[var(--bg-surface)] overflow-x-auto shadow-sm">
-                          <table className="w-full text-left min-w-[500px]">
-                            <thead className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
-                              <tr>
-                                <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Unit Name</th>
-                                <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Type</th>
-                                <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Qty</th>
-                                <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Unit Cost</th>
-                                <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Total Cost</th>
-                                <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center">Rental Rate</th>
-                                 <th className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Availability</th>
-                               </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--border-subtle)]">
-                              {product.units?.map((unit: any) => (
-                                <tr key={unit.product_unit_id} className="hover:bg-[var(--bg-app)] transition-colors">
-                                  <td className="px-4 py-2 text-xs font-semibold text-[var(--text-main)]">{unit.name || '-'}</td>
-                                  <td className="px-4 py-2 text-xs text-center">
-                                    <span className={cn(
-                                      "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                                      unit.unit_type === 'bulk' ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"
-                                    )}>
+                ) : products.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-[var(--text-muted)]"
+                    >
+                      No products found.
+                    </td>
+                  </tr>
+                ) : (
+                  products
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage,
+                    )
+                    .map((product) => (
+                      <React.Fragment key={product.product_id}>
+                        <tr
+                          className="hover:bg-[var(--bg-app)] transition-colors group cursor-pointer"
+                          onClick={() =>
+                            toggleProductExpand(product.product_id)
+                          }
+                        >
+                          <td className="px-4 sm:px-4 lg:px-5 py-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div
+                                className={cn(
+                                  "transition-transform duration-200",
+                                  expandedProductIds.includes(
+                                    product.product_id,
+                                  )
+                                    ? "rotate-90"
+                                    : "",
+                                )}
+                              >
+                                <ChevronRight className="w-3.5 h-3.5 sm:w-4 h-4 text-[var(--text-muted)]" />
+                              </div>
+                              <div className="hidden sm:flex w-8 h-8 bg-[var(--bg-app)] rounded-lg items-center justify-center text-[var(--text-muted)] shrink-0">
+                                <Package className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-semibold text-[var(--text-main)] truncate">
+                                  {product.name}
+                                </p>
+                                <MarketplaceTagLine
+                                  product={product}
+                                  onEdit={() => openTagEditor(product)}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="hidden lg:table-cell px-4 lg:px-5 py-4">
+                            <span
+                              className="inline-flex items-center gap-1.5 max-w-[11rem] px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]"
+                              title={product.category_name || "Uncategorized"}
+                            >
+                              <Tag className="w-3 h-3 shrink-0" />
+                              <span className="truncate">
+                                {product.category_name || "Uncategorized"}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="px-2 sm:px-4 lg:px-5 py-4 text-center text-xs sm:text-sm text-[var(--text-muted)] font-medium">
+                            <RevenueDisplay
+                              amount={`${currencySymbol}${formatCurrency(
+                                product.total_cost_price,
+                              )}`}
+                            />
+                          </td>
+                          <td className="px-2 sm:px-4 lg:px-5 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("total");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:text-brand-primary hover:underline transition-all"
+                            >
+                              {product.total_quantity || 0}
+                            </button>
+                          </td>
+                          <td className="hidden sm:table-cell px-4 lg:px-5 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("good");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-emerald-600 hover:underline transition-all"
+                            >
+                              {product.total_quantity_good_condition || 0}
+                            </button>
+                          </td>
+                          <td className="px-2 sm:px-4 lg:px-5 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("available");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-blue-600 hover:underline transition-all"
+                            >
+                              {product.total_quantity_good_condition_available ||
+                                0}
+                            </button>
+                          </td>
+                          <td className="hidden sm:table-cell px-4 lg:px-5 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("rented");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:underline transition-all"
+                            >
+                              {Math.max(
+                                0,
+                                (product.total_quantity_good_condition || 0) -
+                                  (product.total_quantity_good_condition_available ||
+                                    0),
+                              )}
+                            </button>
+                          </td>
+                          <td className="hidden sm:table-cell px-4 lg:px-5 py-4 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrillDownProduct(product);
+                                setDrillDownType("damaged");
+                                setShowDrillDown(true);
+                              }}
+                              className="text-xs sm:text-sm font-bold text-rose-600 hover:underline transition-all"
+                            >
+                              {product.total_quantity_damaged_condition || 0}
+                            </button>
+                          </td>
+                          <td className="sticky right-0 z-10 bg-[var(--bg-surface)] group-hover:bg-[var(--bg-app)] transition-colors shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.35)] px-3 py-4 text-right">
+                            <ActionMenu items={productActions(product)} />
+                          </td>
+                        </tr>
+
+                        {/* Expanded Sub-table for Units */}
+                        {expandedProductIds.includes(product.product_id) && (
+                          <tr className="bg-[var(--bg-app)]/50">
+                            <td colSpan={9} className="px-6 sm:px-12 py-6">
+                              <div className="border border-[var(--border-soft)] rounded-xl bg-[var(--bg-surface)] overflow-x-auto shadow-sm">
+                                <table className="w-full text-left min-w-[960px]">
+                                  <thead className="bg-[var(--bg-app)] border-b border-[var(--border-soft)]">
+                                    <tr>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">
+                                        Unit Name
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap text-center">
+                                        Type
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap text-center">
+                                        Qty
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap text-right">
+                                        Unit Cost
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap text-right">
+                                        Total Cost
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap text-right">
+                                        Rental Rate
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">
+                                        Availability
+                                      </th>
+                                      <th className="px-5 py-3.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap text-right">
+                                        <span className="sr-only">Actions</span>
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-[var(--border-subtle)]">
+                                    {product.units?.map((unit: any) => (
+                                      <tr
+                                        key={unit.product_unit_id}
+                                        className="hover:bg-[var(--bg-app)] transition-colors align-top"
+                                      >
+                                        <td className="px-5 py-4 min-w-[180px]">
+                                          <div className="text-sm font-semibold text-[var(--text-main)]">
+                                            {unit.name || "-"}
+                                          </div>
+                                          {unit.unit_type === "single" &&
+                                            unit.serial_number && (
+                                              <div className="text-xs font-mono text-[var(--text-muted)] mt-1">
+                                                SN: {unit.serial_number}
+                                              </div>
+                                            )}
+                                          {unit.description && (
+                                            <div
+                                              className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2 max-w-[260px]"
+                                              title={unit.description}
+                                            >
+                                              {unit.description}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="px-5 py-4 text-center">
+                                          <span
+                                            className={cn(
+                                              "inline-block px-2.5 py-1 rounded-md text-[11px] font-bold uppercase",
+                                              unit.unit_type === "bulk"
+                                                ? "bg-purple-500/10 text-purple-500"
+                                                : "bg-blue-500/10 text-blue-500",
+                                            )}
+                                          >
+                                            {unit.unit_type}
+                                          </span>
+                                        </td>
+                                        <td className="px-5 py-4 text-sm text-center text-[var(--text-main)] font-bold">
+                                          {unit.unit_type === "bulk"
+                                            ? unit.quantity
+                                            : 1}
+                                        </td>
+                                        <td className="px-5 py-4 text-sm text-right text-[var(--text-muted)] whitespace-nowrap">
+                                          <RevenueDisplay
+                                            hideToggle
+                                            amount={`${currencySymbol}${formatCurrency(
+                                              unit.unit_cost_price,
+                                            )}`}
+                                          />
+                                        </td>
+                                        <td className="px-5 py-4 text-sm text-right text-[var(--text-main)] font-bold whitespace-nowrap">
+                                          <RevenueDisplay
+                                            hideToggle
+                                            amount={`${currencySymbol}${formatCurrency(
+                                              unit.cost_price,
+                                            )}`}
+                                          />
+                                        </td>
+                                        <td className="px-5 py-4 text-sm text-right whitespace-nowrap">
+                                          <div className="font-bold text-brand-primary">
+                                            <RevenueDisplay
+                                              hideToggle
+                                              amount={`${currencySymbol}${formatCurrency(
+                                                unit.rental_price,
+                                              )}`}
+                                            />
+                                          </div>
+                                          <div className="text-xs text-[var(--text-muted)] mt-1">
+                                            {unit.unit?.replace("_", " ")}
+                                          </div>
+                                        </td>
+                                        <td className="px-5 py-4 min-w-[240px]">
+                                          <span
+                                            className={cn(
+                                              "inline-block px-2.5 py-1 rounded-full font-bold border text-[11px] uppercase",
+                                              unit.status === "available"
+                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                : unit.status === "rented"
+                                                  ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                                  : unit.status === "damaged"
+                                                    ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                                    : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-subtle)]",
+                                            )}
+                                          >
+                                            {unit.status}
+                                          </span>
+                                          <UnitQtyBreakdown unit={unit} />
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                          <ActionMenu
+                                            items={unitActions(product, unit)}
+                                          />
+                                          {/* Hidden canvas for downloading */}
+                                          <div className="hidden">
+                                            <QRCodeCanvas
+                                              id={`qr-${unit.product_unit_id}`}
+                                              value={getUnitIdentifier(unit)}
+                                              size={512}
+                                            />
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+            {isLoading ? (
+              <div className="p-8 text-center text-[var(--text-muted)]">
+                Loading inventory...
+              </div>
+            ) : products.length === 0 ? (
+              <div className="p-8 text-center text-[var(--text-muted)]">
+                No products found.
+              </div>
+            ) : (
+              products
+                .slice(
+                  (currentPage - 1) * itemsPerPage,
+                  currentPage * itemsPerPage,
+                )
+                .map((product) => {
+                  const isExpanded = expandedProductIds.includes(
+                    product.product_id,
+                  );
+                  const rentedQty = Math.max(
+                    0,
+                    (product.total_quantity_good_condition || 0) -
+                      (product.total_quantity_good_condition_available || 0),
+                  );
+                  return (
+                    <div
+                      key={product.product_id}
+                      className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                    >
+                      <div
+                        className="flex items-start justify-between gap-3 cursor-pointer"
+                        onClick={() => toggleProductExpand(product.product_id)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={cn(
+                              "transition-transform duration-200 shrink-0",
+                              isExpanded ? "rotate-90" : "",
+                            )}
+                          >
+                            <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+                          </div>
+                          <div className="w-8 h-8 bg-[var(--bg-app)] rounded-lg flex items-center justify-center text-[var(--text-muted)] shrink-0">
+                            <Package className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-[var(--text-main)] text-sm truncate">
+                              {product.name}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                              <Tag className="w-3 h-3" />
+                              {product.category_name || "Uncategorized"}
+                            </p>
+                            <MarketplaceTagLine
+                              product={product}
+                              onEdit={() => openTagEditor(product)}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-1 shrink-0">
+                          <div className="text-right">
+                            <p className="font-bold text-[var(--text-main)] text-sm">
+                              <RevenueDisplay
+                                amount={`${currencySymbol}${formatCurrency(
+                                  product.total_cost_price,
+                                )}`}
+                              />
+                            </p>
+                            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                              Cost
+                            </p>
+                          </div>
+                          <ActionMenu
+                            items={productActions(product)}
+                            className="-mt-1 -mr-2"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mt-3 pl-11">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("total");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-muted)] hover:text-brand-primary transition-colors"
+                        >
+                          Total {product.total_quantity || 0}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("good");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-emerald-500/10 text-[10px] font-bold text-emerald-600 transition-colors"
+                        >
+                          Good {product.total_quantity_good_condition || 0}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("available");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-blue-500/10 text-[10px] font-bold text-blue-600 transition-colors"
+                        >
+                          Avail{" "}
+                          {product.total_quantity_good_condition_available || 0}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("rented");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-muted)] transition-colors"
+                        >
+                          Rented {rentedQty}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDrillDownProduct(product);
+                            setDrillDownType("damaged");
+                            setShowDrillDown(true);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-rose-500/10 text-[10px] font-black text-rose-600 transition-colors"
+                        >
+                          Damaged{" "}
+                          {product.total_quantity_damaged_condition || 0}
+                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-4 pl-11 space-y-3">
+                          {product.units?.map((unit: any) => (
+                            <div
+                              key={unit.product_unit_id}
+                              className="p-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-app)]"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-[var(--text-main)] truncate">
+                                    {unit.name || "-"}
+                                  </p>
+                                  {unit.unit_type === "single" &&
+                                    unit.serial_number && (
+                                      <p className="text-xs font-mono text-[var(--text-muted)] mt-1">
+                                        SN: {unit.serial_number}
+                                      </p>
+                                    )}
+                                  {unit.description && (
+                                    <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">
+                                      {unit.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span
+                                    className={cn(
+                                      "px-2.5 py-1 rounded-full font-bold border text-[10px] uppercase",
+                                      unit.status === "available"
+                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                        : unit.status === "rented"
+                                          ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                          : unit.status === "damaged"
+                                            ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                            : "bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-subtle)]",
+                                    )}
+                                  >
+                                    {unit.status}
+                                  </span>
+                                  <ActionMenu
+                                    items={unitActions(product, unit)}
+                                    className="-mr-2"
+                                  />
+                                </div>
+                              </div>
+
+                              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 pt-4 border-t border-[var(--border-subtle)] text-xs">
+                                <div>
+                                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                                    Type
+                                  </dt>
+                                  <dd>
+                                    <span
+                                      className={cn(
+                                        "inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                        unit.unit_type === "bulk"
+                                          ? "bg-purple-500/10 text-purple-500"
+                                          : "bg-blue-500/10 text-blue-500",
+                                      )}
+                                    >
                                       {unit.unit_type}
                                     </span>
-                                  </td>
-                                  <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">{unit.unit_type === 'bulk' ? unit.quantity : 1}</td>
-                                  <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)]">{currencySymbol}{formatCurrency(unit.unit_cost_price)}</td>
-                                  <td className="px-4 py-2 text-xs text-center text-[var(--text-muted)] font-bold">{currencySymbol}{formatCurrency(unit.cost_price)}</td>
-                                  <td className="px-4 py-2 text-xs text-center font-bold text-brand-primary">
-                                    {currencySymbol}{formatCurrency(unit.rental_price)} 
-                                    <span className="text-[10px] font-normal text-[var(--text-muted)] ml-1">
-                                      {unit.unit?.replace('_', ' ')}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                                    Qty
+                                  </dt>
+                                  <dd className="font-bold text-[var(--text-main)]">
+                                    {unit.unit_type === "bulk"
+                                      ? unit.quantity
+                                      : 1}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                                    Unit Cost
+                                  </dt>
+                                  <dd className="text-[var(--text-main)]">
+                                    <RevenueDisplay
+                                      hideToggle
+                                      amount={`${currencySymbol}${formatCurrency(
+                                        unit.unit_cost_price,
+                                      )}`}
+                                    />
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                                    Total Cost
+                                  </dt>
+                                  <dd className="font-bold text-[var(--text-main)]">
+                                    <RevenueDisplay
+                                      hideToggle
+                                      amount={`${currencySymbol}${formatCurrency(
+                                        unit.cost_price,
+                                      )}`}
+                                    />
+                                  </dd>
+                                </div>
+                                <div className="col-span-2">
+                                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                                    Rental Rate
+                                  </dt>
+                                  <dd className="flex items-center gap-1 font-bold text-brand-primary">
+                                    <RevenueDisplay
+                                      hideToggle
+                                      amount={`${currencySymbol}${formatCurrency(
+                                        unit.rental_price,
+                                      )}`}
+                                    />
+                                    <span className="font-normal text-[var(--text-muted)]">
+                                      / {unit.unit?.replace("_", " ")}
                                     </span>
-                                  </td>
-                                   <td className="px-4 py-2 text-xs">
-                                     <div className="flex flex-col gap-1.5">
-                                       {/* Status badge */}
-                                       <span className={cn(
-                                         "px-2 py-0.5 rounded-full font-bold border text-[10px] w-fit uppercase",
-                                         unit.status === 'available' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                         unit.status === 'rented'    ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
-                                         unit.status === 'damaged'   ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
-                                         "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-subtle)]"
-                                       )}>
-                                         {unit.status}
-                                       </span>
-                                       {/* SN for single units */}
-                                       {unit.unit_type === 'single' && unit.serial_number && (
-                                         <span className="text-[9px] font-mono text-[var(--text-muted)] pl-0.5">SN: {unit.serial_number}</span>
-                                       )}
-                                       {/* Qty breakdown pills */}
-                                       <div className="flex flex-wrap gap-1 mt-0.5">
-                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-violet-500/10 text-violet-500" title="Good Condition">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />
-                                            {unit.quantity_good ?? 0} good
-                                          </span>
-                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500" title="Available">
-                                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                                           {unit.quantity_available ?? 0} avail
-                                         </span>
-                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-500" title="Currently Rented">
-                                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-                                           {unit.quantity_rented ?? 0} rented
-                                         </span>
-                                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-500/10 text-rose-500" title="Damaged">
-                                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
-                                           {unit.quantity_damaged ?? 0} dmg
-                                         </span>
-                                       </div>
-                                     </div>
-                                   </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                                  </dd>
+                                </div>
+                              </dl>
 
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-[var(--border-soft)] flex items-center justify-between">
-          <p className="text-sm text-[var(--text-muted)]">
-            Showing {products.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, products.length)} of {products.length} results
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(Math.ceil(products.length / itemsPerPage), p + 1))}
-              className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
-              disabled={currentPage === Math.ceil(products.length / itemsPerPage) || products.length === 0}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+                              <UnitQtyBreakdown unit={unit} />
+
+                              {/* Hidden canvas for downloading */}
+                              <div className="hidden">
+                                <QRCodeCanvas
+                                  id={`qr-mobile-${unit.product_unit_id}`}
+                                  value={getUnitIdentifier(unit)}
+                                  size={512}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            )}
+          </div>
+
+          {/* Pagination */}
+          <div className="px-4 sm:px-6 py-4 border-t border-[var(--border-soft)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+                Showing{" "}
+                {products.length === 0
+                  ? 0
+                  : (currentPage - 1) * itemsPerPage + 1}{" "}
+                to {Math.min(currentPage * itemsPerPage, products.length)} of{" "}
+                {products.length} results
+              </p>
+              <div className="flex items-center gap-2">
+                <label className="text-xs sm:text-sm text-[var(--text-muted)]">
+                  Rows per page:
+                </label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-[var(--bg-app)] border border-[var(--border-soft)] rounded px-2 py-1 text-sm text-[var(--text-main)] outline-none focus:border-brand-primary"
+                >
+                  <option value={6}>6</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(Math.ceil(products.length / itemsPerPage), p + 1),
+                  )
+                }
+                className="p-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-main)] hover:bg-[var(--bg-app)] disabled:opacity-50"
+                disabled={
+                  currentPage === Math.ceil(products.length / itemsPerPage) ||
+                  products.length === 0
+                }
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -551,294 +1897,740 @@ export function Inventory() {
       {/* Add Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[var(--border-soft)] shadow-2xl">
-            <h2 className="text-xl font-bold mb-4 text-[var(--text-main)]">{editingProductId ? 'Edit Product' : 'Add New Product'}</h2>
+          <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-[var(--border-soft)] shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <h2 className="text-xl font-bold text-[var(--text-main)]">
+                {editingProductId ? "Edit Product" : "Add New Product"}
+              </h2>
+              <button
+                type="button"
+                onClick={handleCloseAddModal}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            <div className="space-y-4">
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Product Name</label>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                  Product Name
+                </label>
                 <input
                   type="text"
                   value={newProduct.name}
-                  onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, name: e.target.value })
+                  }
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl p-2.5 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
                   placeholder="e.g. Sony A7III"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Category</label>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Category
+                  </label>
                   <select
                     value={newProduct.category_id}
-                    onChange={e => setNewProduct({...newProduct, category_id: e.target.value})}
+                    onChange={(e) => {
+                      setNewProduct({
+                        ...newProduct,
+                        category_id: e.target.value,
+                      });
+                      if (productTagsAuto) {
+                        setProductTags(categoryDefaultTags(e.target.value));
+                      }
+                    }}
                     className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl p-2.5 outline-none focus:border-brand-primary"
                   >
                     <option value="">Select Category...</option>
                     {categories.map((c: any) => (
-                      <option key={c.category_id} value={c.category_id}>{c.name}</option>
+                      <option key={c.category_id} value={c.category_id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Status</label>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                  Status
+                </label>
                 <label className="flex items-center gap-3 p-2.5 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer hover:bg-[var(--bg-surface)] transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={newProduct.is_active} 
-                    onChange={(e) => setNewProduct({...newProduct, is_active: e.target.checked})} 
+                  <input
+                    type="checkbox"
+                    checked={newProduct.is_active}
+                    onChange={(e) =>
+                      setNewProduct({
+                        ...newProduct,
+                        is_active: e.target.checked,
+                      })
+                    }
                     className="w-5 h-5 text-brand-primary rounded focus:ring-brand-primary accent-brand-primary cursor-pointer border-[var(--border-soft)]"
                   />
-                  <span className="text-sm font-medium text-[var(--text-main)]">{newProduct.is_active ? 'Active' : 'Inactive'}</span>
+                  <span className="text-sm font-medium text-[var(--text-main)]">
+                    {newProduct.is_active ? "Active" : "Inactive"}
+                  </span>
                 </label>
+                <label
+                  className={cn(
+                    "flex items-center gap-3 p-2.5 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] transition-colors mt-2",
+                    profileMissing.length > 0 &&
+                      !newProduct.available_for_rental
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer hover:bg-[var(--bg-surface)]",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    disabled={
+                      profileMissing.length > 0 &&
+                      !newProduct.available_for_rental
+                    }
+                    checked={newProduct.available_for_rental}
+                    onChange={(e) =>
+                      setNewProduct({
+                        ...newProduct,
+                        available_for_rental: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5 text-brand-primary rounded focus:ring-brand-primary accent-brand-primary cursor-pointer border-[var(--border-soft)]"
+                  />
+                  <span className="text-sm font-medium text-[var(--text-main)]">
+                    Available for Public Rental
+                  </span>
+                </label>
+                <MarketplaceProfileNotice missing={profileMissing} />
+                <div className="mt-3 p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)]/60">
+                  <p className="text-sm font-medium text-[var(--text-main)] flex items-center gap-1.5">
+                    <Tags className="w-4 h-4 text-brand-primary" />
+                    Marketplace tags
+                    {needsMarketplaceTag && (
+                      <span className="text-rose-500">*</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-3">
+                    {newProduct.available_for_rental
+                      ? "Customers filter the event marketplace by these. Pick every tag that fits this product."
+                      : "Used when this product is listed on the event marketplace (tick “Available for Public Rental”)."}
+                  </p>
+                  <TagPicker
+                    tags={marketplaceTags}
+                    value={productTags}
+                    onChange={(ids) => {
+                      setProductTags(ids);
+                      setProductTagsAuto(false);
+                    }}
+                  />
+                  {needsMarketplaceTag && productTags.length === 0 && (
+                    <p className="text-xs text-rose-500 font-medium mt-2">
+                      Pick at least one tag to list this product on the
+                      marketplace.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                  Product Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setNewProduct({
+                      ...newProduct,
+                      image_file: e.target.files ? e.target.files[0] : null,
+                    } as any)
+                  }
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary text-[var(--text-main)] text-sm transition-all"
+                />
               </div>
 
               <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
                 <div className="flex items-center gap-2 mb-3">
                   <Package className="w-5 h-5 text-brand-primary" />
-                  <h3 className="font-bold text-[var(--text-main)]">Product Units (Required)</h3>
+                  <h3 className="font-bold text-[var(--text-main)]">
+                    Product Units (Required)
+                  </h3>
                 </div>
-                <p className="text-xs text-[var(--text-muted)] mb-4">You must add at least one physical unit / serial number to track.</p>
-                
-                {units.map((unit, i) => (
-                  <div key={i} className="flex flex-col gap-3 p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] mb-4 group/unit relative">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex gap-2 items-center col-span-1 md:col-span-2">
-                        <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Unit Type:</label>
-                        <div className="flex bg-[var(--bg-surface)] rounded-lg p-0.5 border border-[var(--border-soft)]">
-                          <button 
-                            onClick={() => {
-                              const newUnits = [...units];
-                              newUnits[i].unit_type = 'single';
-                              setUnits(newUnits);
-                            }}
+                <p className="text-xs text-[var(--text-muted)] mb-4">
+                  You must add at least one physical unit / serial number to
+                  track.
+                </p>
+
+                {units.length > 1 && collapsedUnits.length < units.length && (
+                  <div className="flex justify-end mb-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCollapsedUnits(units.map((_, idx) => idx))
+                      }
+                      className="text-xs font-bold text-[var(--text-link)] hover:underline"
+                    >
+                      Collapse all
+                    </button>
+                  </div>
+                )}
+                {units.map((unit, i) => {
+                  const u: any = unit;
+                  const collapsed = collapsedUnits.includes(i);
+                  const check = serialChecks[i]?.status;
+                  const hasProblem =
+                    (u.unit_type === "single" &&
+                      (!String(u.serial_number || "").trim() ||
+                        check === "taken" ||
+                        check === "duplicate")) ||
+                    (u.unit_type !== "single" && !(Number(u.quantity) > 0)) ||
+                    u.rental_price === "" ||
+                    u.unit_cost_price === "";
+                  const summary =
+                    u.unit_type === "single"
+                      ? u.serial_number || "No serial yet"
+                      : `Bulk × ${u.quantity || 0}`;
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex flex-col gap-3 bg-[var(--bg-app)] rounded-2xl border mb-3 transition-colors",
+                        collapsed ? "p-3" : "p-4",
+                        hasProblem && collapsed
+                          ? "border-rose-500/50"
+                          : "border-[var(--border-soft)]",
+                      )}
+                    >
+                      {/* Header: click to expand/collapse */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleUnitCollapsed(i)}
+                          aria-expanded={!collapsed}
+                          className="flex-1 min-w-0 flex items-center gap-2.5 text-left rounded-lg px-1 -mx-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                        >
+                          <ChevronDown
                             className={cn(
-                              "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
-                              unit.unit_type === 'single' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                              "w-4 h-4 shrink-0 text-[var(--text-muted)] transition-transform",
+                              collapsed && "-rotate-90",
                             )}
-                          >Single</button>
-                          <button 
-                            onClick={() => {
-                              const newUnits = [...units];
-                              newUnits[i].unit_type = 'bulk';
-                              setUnits(newUnits);
-                            }}
-                            className={cn(
-                              "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
-                              unit.unit_type === 'bulk' ? "bg-brand-primary text-brand-accent shadow-sm" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                            )}
-                          >Bulk</button>
-                        </div>
+                          />
+                          <span className="text-sm font-bold text-[var(--text-main)] shrink-0">
+                            Unit {i + 1}
+                          </span>
+                          {(collapsed || u.name) && (
+                            <span className="text-sm text-[var(--text-muted)] truncate">
+                              {[u.name, summary].filter(Boolean).join(" · ")}
+                            </span>
+                          )}
+                          {collapsed && (
+                            <span className="ml-auto shrink-0 flex items-center gap-2">
+                              {hasProblem && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                                  Needs attention
+                                </span>
+                              )}
+                              <span className="text-xs font-bold text-[var(--text-main)] tabular-nums">
+                                {currencySymbol}
+                                {formatCurrency(u.rental_price || 0)}
+                                <span className="font-normal text-[var(--text-muted)]">
+                                  {" "}
+                                  /{" "}
+                                  {String(u.unit || "per_day").replace(
+                                    "per_",
+                                    "",
+                                  )}
+                                </span>
+                              </span>
+                            </span>
+                          )}
+                        </button>
+                        {units.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeUnitAt(i)}
+                            title="Remove this unit"
+                            className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Unit Name (Optional)</label>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. Unit A" 
-                          value={unit.name}
-                          onChange={(e) => {
-                            const newUnits = [...units];
-                            newUnits[i].name = e.target.value;
-                            setUnits(newUnits);
-                          }}
-                          className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
-                        />
-                      </div>
-                      
-                      {unit.unit_type === 'single' ? (
-                        <div>
-                          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Serial Number</label>
-                          <input 
-                            type="text" 
-                            placeholder="SN000000" 
-                            required
-                            value={unit.serial_number}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].serial_number = e.target.value;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Quantity</label>
-                          <input 
-                            type="number" 
-                            placeholder="Quantity" 
-                            required
-                            value={unit.quantity}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].quantity = parseInt(e.target.value) || 1;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
-                          />
-                        </div>
+                      {!collapsed && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex gap-2 items-center col-span-1 md:col-span-2">
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                Unit Type:
+                              </label>
+                              <div className="flex bg-[var(--bg-surface)] rounded-lg p-0.5 border border-[var(--border-soft)]">
+                                <button
+                                  onClick={() => {
+                                    const newUnits = [...units];
+                                    newUnits[i].unit_type = "single";
+                                    if (!newUnits[i].serial_number) {
+                                      newUnits[i].serial_number =
+                                        generateNextSerialNumber(
+                                          products,
+                                          newUnits,
+                                        );
+                                    }
+                                    setUnits(newUnits);
+                                  }}
+                                  className={cn(
+                                    "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
+                                    unit.unit_type === "single"
+                                      ? "bg-brand-primary text-brand-accent shadow-sm"
+                                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                                  )}
+                                >
+                                  Single
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const newUnits = [...units];
+                                    newUnits[i].unit_type = "bulk";
+                                    setUnits(newUnits);
+                                  }}
+                                  className={cn(
+                                    "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
+                                    unit.unit_type === "bulk"
+                                      ? "bg-brand-primary text-brand-accent shadow-sm"
+                                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                                  )}
+                                >
+                                  Bulk
+                                </button>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                Unit Name (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Unit A"
+                                value={unit.name}
+                                onChange={(e) => {
+                                  const newUnits = [...units];
+                                  newUnits[i].name = e.target.value;
+                                  setUnits(newUnits);
+                                }}
+                                className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                              />
+                            </div>
+
+                            <div className="col-span-1">
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                Unit Image
+                              </label>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const newUnits = [...units];
+                                    newUnits[i].image_file = file;
+                                    setUnits(newUnits);
+                                  }
+                                }}
+                                className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20"
+                              />
+                            </div>
+
+                            {unit.unit_type === "single" ? (
+                              <div>
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                  Serial Number
+                                </label>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="SN000000"
+                                    required
+                                    value={unit.serial_number}
+                                    onChange={(e) => {
+                                      const newUnits = [...units];
+                                      newUnits[i].serial_number =
+                                        e.target.value;
+                                      setUnits(newUnits);
+                                    }}
+                                    aria-invalid={
+                                      serialChecks[i]?.status === "taken" ||
+                                      serialChecks[i]?.status === "duplicate"
+                                    }
+                                    className={cn(
+                                      "w-full border rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]",
+                                      serialChecks[i]?.status === "taken" ||
+                                        serialChecks[i]?.status === "duplicate"
+                                        ? "border-rose-500"
+                                        : serialChecks[i]?.status === "ok"
+                                          ? "border-emerald-500/60"
+                                          : "border-[var(--border-soft)]",
+                                    )}
+                                  />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!unit.serial_number) {
+                                        alert(
+                                          "Please enter a serial number first to preview its QR code.",
+                                        );
+                                        return;
+                                      }
+                                      setSingleQRView({
+                                        productName:
+                                          newProduct.name || "Unknown Product",
+                                        unitName: "SN",
+                                        identifier: unit.serial_number,
+                                      });
+                                    }}
+                                    className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-surface)] transition-colors whitespace-nowrap flex items-center gap-2"
+                                  >
+                                    <QrCode className="w-4 h-4" />
+                                    View QR
+                                  </button>
+                                </div>
+                                {serialChecks[i]?.status === "checking" && (
+                                  <p className="text-xs text-[var(--text-muted)] mt-1.5">
+                                    Checking availability…
+                                  </p>
+                                )}
+                                {serialChecks[i]?.status === "taken" && (
+                                  <div className="mt-1.5 text-xs text-rose-500">
+                                    <p>
+                                      <strong>{serialChecks[i].serial}</strong>{" "}
+                                      is already used by “
+                                      {serialChecks[i].usedBy?.product_name}
+                                      {serialChecks[i].usedBy?.unit_name
+                                        ? ` – ${serialChecks[i].usedBy?.unit_name}`
+                                        : ""}
+                                      ”.
+                                    </p>
+                                    {serialChecks[i].suggestion && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newUnits = [...units];
+                                          newUnits[i].serial_number =
+                                            serialChecks[i]
+                                              .suggestion as string;
+                                          setUnits(newUnits);
+                                        }}
+                                        className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-primary/10 text-[var(--text-link)] font-bold hover:bg-brand-primary/20 transition-colors"
+                                      >
+                                        Use {serialChecks[i].suggestion} instead
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                {serialChecks[i]?.status === "duplicate" && (
+                                  <p className="mt-1.5 text-xs text-rose-500">
+                                    This serial number is already on another
+                                    unit in this form.
+                                  </p>
+                                )}
+                                {serialChecks[i]?.status === "ok" && (
+                                  <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                                    Available
+                                  </p>
+                                )}
+                                {lastSerial && (
+                                  <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                                    Last serial added:{" "}
+                                    <span className="font-mono">
+                                      {lastSerial}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                                  Quantity
+                                </label>
+                                <input
+                                  type="number"
+                                  placeholder="Quantity"
+                                  required
+                                  value={unit.quantity}
+                                  onChange={(e) => {
+                                    const newUnits = [...units];
+                                    newUnits[i].quantity =
+                                      e.target.value === ""
+                                        ? ("" as any)
+                                        : parseInt(e.target.value) || 1;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4">
+                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                              Unit Description (Optional)
+                            </label>
+                            <textarea
+                              placeholder="Additional details about this unit..."
+                              value={unit.description || ""}
+                              onChange={(e) => {
+                                const newUnits = [...units];
+                                newUnits[i].description = e.target.value;
+                                setUnits(newUnits);
+                              }}
+                              className="w-full border border-[var(--border-soft)] rounded-xl p-2 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)] resize-y"
+                              rows={2}
+                            />
+                          </div>
+
+                          {/* Quantity Breakdown — editable damaged stepper + derived displays */}
+                          {(unit as any).product_unit_id ? (
+                            <div className="space-y-3 p-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+                                Quantity Breakdown
+                              </p>
+                              {/* Damaged stepper — user-editable */}
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                                  <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />{" "}
+                                  Damaged
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newUnits = [...units];
+                                      const cur =
+                                        (newUnits[i] as any).quantity_damaged ??
+                                        0;
+                                      (newUnits[i] as any).quantity_damaged =
+                                        Math.max(0, cur - 1);
+                                      setUnits(newUnits);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-600 font-black hover:bg-rose-500/20 transition-colors"
+                                  >
+                                    −
+                                  </button>
+                                  <span className="w-8 text-center font-black text-rose-500 text-sm">
+                                    {(unit as any).quantity_damaged ?? 0}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newUnits = [...units];
+                                      const cur =
+                                        (newUnits[i] as any).quantity_damaged ??
+                                        0;
+                                      const max =
+                                        unit.quantity === ""
+                                          ? ("" as any)
+                                          : parseInt(String(unit.quantity)) ||
+                                            1;
+                                      (newUnits[i] as any).quantity_damaged =
+                                        Math.min(max, cur + 1);
+                                      setUnits(newUnits);
+                                    }}
+                                    className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-500 font-black hover:bg-rose-500/20 transition-colors"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                              {/* Derived read-only stats */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black uppercase text-emerald-500">
+                                    Good
+                                  </span>
+                                  <span className="font-black text-emerald-500">
+                                    {Math.max(
+                                      0,
+                                      (unit.quantity === ""
+                                        ? ("" as any)
+                                        : parseInt(String(unit.quantity)) ||
+                                          0) -
+                                        ((unit as any).quantity_damaged ?? 0),
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black uppercase text-blue-500">
+                                    Available
+                                  </span>
+                                  <span className="font-black text-blue-500">
+                                    {Math.max(
+                                      0,
+                                      Math.max(
+                                        0,
+                                        (unit.quantity === ""
+                                          ? ("" as any)
+                                          : parseInt(String(unit.quantity)) ||
+                                            0) -
+                                          ((unit as any).quantity_damaged ?? 0),
+                                      ) - ((unit as any).quantity_rented ?? 0),
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] font-black uppercase text-[var(--text-muted)]">
+                                    Rented
+                                  </span>
+                                  <span className="font-black text-[var(--text-main)]">
+                                    {(unit as any).quantity_rented ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-[9px] text-[var(--text-muted)] italic">
+                                Good = Total − Damaged &nbsp;|&nbsp; Available =
+                                Good − Rented
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-[var(--text-muted)] italic px-1">
+                              Quantity breakdown will appear after saving.
+                            </p>
+                          )}
+
+                          {/* Financial Info & Status */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-soft)]">
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Unit Status
+                              </label>
+                              <select
+                                value={unit.status}
+                                onChange={(e) => {
+                                  const newUnits = [...units];
+                                  newUnits[i].status = e.target.value;
+                                  setUnits(newUnits);
+                                }}
+                                className="w-full text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                              >
+                                <option value="available">Available</option>
+                                <option value="rented">Rented</option>
+                                <option value="damaged">Damaged</option>
+                                <option value="maintenance">Maintenance</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Unit Purchase Price
+                              </label>
+                              <div className="relative group/input text-[var(--text-main)]">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">
+                                  {currencySymbol}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={unit.unit_cost_price}
+                                  onChange={(e) => {
+                                    const newUnits = [...units];
+                                    newUnits[i].unit_cost_price =
+                                      e.target.value;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-bold outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Rental Rate
+                              </label>
+                              <div className="relative group/input">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">
+                                  {currencySymbol}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={unit.rental_price}
+                                  onChange={(e) => {
+                                    const newUnits = [...units];
+                                    newUnits[i].rental_price = e.target.value;
+                                    setUnits(newUnits);
+                                  }}
+                                  className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-black text-brand-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">
+                                Rental Unit
+                              </label>
+                              <select
+                                value={unit.unit}
+                                onChange={(e) => {
+                                  const newUnits = [...units];
+                                  newUnits[i].unit = e.target.value;
+                                  setUnits(newUnits);
+                                }}
+                                className="w-full text-sm font-bold bg-[var(--bg-app)] border-none text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
+                              >
+                                <option value="pcs">Piece (pcs)</option>
+                                <option value="per_hour">Per Hour</option>
+                                <option value="per_day">Per Day</option>
+                                <option value="per_week">Per Week</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {(unit as any).product_unit_id && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openUnitReceipts(
+                                  { name: newProduct.name },
+                                  unit as any,
+                                )
+                              }
+                              className="self-start inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary/5 px-2.5 py-1.5 rounded-lg transition-colors"
+                            >
+                              <Paperclip className="w-3.5 h-3.5" /> Purchase
+                              receipts
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
+                  );
+                })}
 
-                    {/* Quantity Breakdown — editable damaged stepper + derived displays */}
-                    {(unit as any).product_unit_id ? (
-                      <div className="space-y-3 p-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Quantity Breakdown</p>
-                        {/* Damaged stepper — user-editable */}
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Damaged
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newUnits = [...units];
-                                const cur = (newUnits[i] as any).quantity_damaged ?? 0;
-                                (newUnits[i] as any).quantity_damaged = Math.max(0, cur - 1);
-                                setUnits(newUnits);
-                              }}
-                              className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-600 font-black hover:bg-rose-500/20 transition-colors"
-                            >−</button>
-                            <span className="w-8 text-center font-black text-rose-500 text-sm">
-                              {(unit as any).quantity_damaged ?? 0}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newUnits = [...units];
-                                const cur = (newUnits[i] as any).quantity_damaged ?? 0;
-                                const max = parseInt(String(unit.quantity)) || 1;
-                                (newUnits[i] as any).quantity_damaged = Math.min(max, cur + 1);
-                                setUnits(newUnits);
-                              }}
-                              className="w-6 h-6 flex items-center justify-center rounded bg-rose-500/10 text-rose-500 font-black hover:bg-rose-500/20 transition-colors"
-                            >+</button>
-                          </div>
-                        </div>
-                        {/* Derived read-only stats */}
-                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                          <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black uppercase text-emerald-500">Good</span>
-                            <span className="font-black text-emerald-500">
-                              {Math.max(0, (parseInt(String(unit.quantity)) || 0) - ((unit as any).quantity_damaged ?? 0))}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black uppercase text-blue-500">Available</span>
-                            <span className="font-black text-blue-500">
-                              {Math.max(0,
-                                Math.max(0, (parseInt(String(unit.quantity)) || 0) - ((unit as any).quantity_damaged ?? 0))
-                                - ((unit as any).quantity_rented ?? 0)
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[9px] font-black uppercase text-[var(--text-muted)]">Rented</span>
-                            <span className="font-black text-[var(--text-main)]">{(unit as any).quantity_rented ?? 0}</span>
-                          </div>
-                        </div>
-                        <p className="text-[9px] text-[var(--text-muted)] italic">
-                          Good = Total − Damaged &nbsp;|&nbsp; Available = Good − Rented
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-[var(--text-muted)] italic px-1">Quantity breakdown will appear after saving.</p>
-                    )}
-
-                    {/* Financial Info & Status */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[var(--border-soft)]">
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Unit Status</label>
-                        <select 
-                          value={unit.status}
-                          onChange={(e) => {
-                            const newUnits = [...units];
-                            newUnits[i].status = e.target.value;
-                            setUnits(newUnits);
-                          }}
-                          className="w-full text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                        >
-                          <option value="available">Available</option>
-                          <option value="rented">Rented</option>
-                          <option value="damaged">Damaged</option>
-                          <option value="maintenance">Maintenance</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Unit Purchase Price</label>
-                        <div className="relative group/input text-[var(--text-main)]">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">{currencySymbol}</span>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            placeholder="0.00" 
-                            value={unit.unit_cost_price}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].unit_cost_price = e.target.value;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-bold outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Rental Rate</label>
-                        <div className="relative group/input">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--text-muted)] group-focus-within/input:text-brand-primary transition-colors">{currencySymbol}</span>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            placeholder="0.00" 
-                            value={unit.rental_price}
-                            onChange={(e) => {
-                              const newUnits = [...units];
-                              newUnits[i].rental_price = e.target.value;
-                              setUnits(newUnits);
-                            }}
-                            className="w-full pl-8 pr-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl text-sm font-black text-brand-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5">Rental Unit</label>
-                        <select 
-                          value={unit.unit}
-                          onChange={(e) => {
-                            const newUnits = [...units];
-                            newUnits[i].unit = e.target.value;
-                            setUnits(newUnits);
-                          }}
-                          className="w-full text-sm font-bold bg-[var(--bg-app)] border-none text-[var(--text-main)] rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
-                        >
-                          <option value="pcs">Piece (pcs)</option>
-                          <option value="per_hour">Per Hour</option>
-                          <option value="per_day">Per Day</option>
-                          <option value="per_week">Per Week</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Delete button positioned at top right of the unit card */}
-                    {units.length > 1 && (
-                      <button 
-                        onClick={() => setUnits(units.filter((_, idx) => idx !== i))} 
-                        className="absolute top-2 right-2 text-[var(--text-muted)] hover:text-rose-500 p-1.5 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover/unit:opacity-100"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                
-                <button 
-                  onClick={() => setUnits([...units, { name: '', serial_number: '', status: 'available', unit_type: 'single', quantity: 1, unit_cost_price: '0.00', cost_price: '0.00', rental_price: '0.00', unit: 'per_day' }])}
+                <button
+                  onClick={async () => {
+                    // Stack the existing units as summaries; open the new one.
+                    setCollapsedUnits(units.map((_, idx) => idx));
+                    const suggestion = await fetchSuggestedSerial(units);
+                    setUnits((prev: any[]) => [
+                      ...prev,
+                      {
+                        name: "",
+                        serial_number: suggestion,
+                        status: "available",
+                        unit_type: "single",
+                        quantity: 1,
+                        unit_cost_price: "0.00",
+                        cost_price: "0.00",
+                        rental_price: "0.00",
+                        unit: "per_day",
+                        description: "",
+                      },
+                    ]);
+                  }}
                   className="flex items-center gap-2 text-brand-primary text-sm font-bold mt-2 hover:bg-brand-primary/5 px-3 py-1.5 rounded-lg transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Add Another Unit / Batch
@@ -846,13 +2638,21 @@ export function Inventory() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-[var(--border-subtle)]">
-                      <button onClick={() => { setShowAddModal(false); setEditingProductId(null); setNewProduct({ name: '', category_id: '', is_active: true }); setUnits([{ name: '', serial_number: '', status: 'available', unit_type: 'single', quantity: 1, unit_cost_price: '0.00', cost_price: '0.00', rental_price: '0.00', unit: 'per_day' }]); }} className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors">Cancel</button>
-              <button 
-                onClick={handleSaveProduct} 
-                className="px-5 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20"
+            <div className="flex justify-end gap-3 p-6 border-t border-[var(--border-subtle)] shrink-0 bg-[var(--bg-surface)]">
+              <button
+                type="button"
+                onClick={handleCloseAddModal}
+                className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors"
               >
-                {editingProductId ? 'Update Product' : 'Save Product'}
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProduct}
+                disabled={!isProductFormValid || isLoading}
+                className="px-5 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity shadow-sm shadow-brand-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingProductId ? "Update Product" : "Save Product"}
               </button>
             </div>
           </div>
@@ -862,107 +2662,164 @@ export function Inventory() {
       {/* Categories Modal */}
       {showCategoryModal && (
         <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-lg w-full shadow-2xl border border-[var(--border-soft)] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50">
+          <div className="bg-[var(--bg-surface)] rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-[var(--border-soft)] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
                 Manage Categories
               </h2>
-              <button 
+              <button
                 onClick={() => setShowCategoryModal(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors p-1.5 rounded-lg hover:bg-[var(--bg-app)]"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
-            <div className="p-6">
-              <form onSubmit={handleSaveCategory} className="space-y-4 mb-6 relative">
+
+            <div className="p-6 overflow-y-auto flex-1">
+              <form
+                onSubmit={handleSaveCategory}
+                className="space-y-4 mb-6 relative"
+              >
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
-                    {editCategoryId ? 'Edit Category Name' : 'New Category Name'}
+                    {editCategoryId
+                      ? "Edit Category Name"
+                      : "New Category Name"}
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={newCategoryName}
-                    onChange={e => setNewCategoryName(e.target.value)}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="e.g. Lighting"
                     className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary transition-colors text-[var(--text-main)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Description (Optional)</label>
-                  <input 
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Description (Optional)
+                  </label>
+                  <input
                     type="text"
                     value={newCategoryDesc}
-                    onChange={e => setNewCategoryDesc(e.target.value)}
+                    onChange={(e) => setNewCategoryDesc(e.target.value)}
                     placeholder="Brief description of this category"
                     className="w-full bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl p-2.5 outline-none focus:border-brand-primary transition-colors text-[var(--text-main)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Status</label>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Status
+                  </label>
                   <label className="flex items-center gap-3 p-2.5 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer hover:bg-[var(--bg-surface)] transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={newCategoryIsActive} 
-                      onChange={(e) => setNewCategoryIsActive(e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      checked={newCategoryIsActive}
+                      onChange={(e) => setNewCategoryIsActive(e.target.checked)}
                       className="w-5 h-5 text-brand-primary rounded focus:ring-brand-primary accent-brand-primary cursor-pointer border-[var(--border-soft)]"
                     />
-                    <span className="text-sm font-medium text-[var(--text-main)]">{newCategoryIsActive ? 'Active' : 'Inactive'}</span>
+                    <span className="text-sm font-medium text-[var(--text-main)]">
+                      {newCategoryIsActive ? "Active" : "Inactive"}
+                    </span>
                   </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Default marketplace tags (Optional)
+                  </label>
+                  <p className="text-xs text-[var(--text-muted)] mb-2">
+                    Pre-selected on new products in this category.
+                  </p>
+                  <TagPicker
+                    tags={marketplaceTags}
+                    value={newCategoryTags}
+                    onChange={setNewCategoryTags}
+                  />
                 </div>
                 <div className="flex justify-end pt-2 gap-2">
                   {editCategoryId && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => {
                         setEditCategoryId(null);
-                        setNewCategoryName('');
-                        setNewCategoryDesc('');
+                        setNewCategoryName("");
+                        setNewCategoryDesc("");
                         setNewCategoryIsActive(true);
+                        setNewCategoryTags([]);
                       }}
                       className="bg-[var(--bg-app)] text-[var(--text-muted)] px-5 py-2.5 rounded-xl font-medium hover:bg-[var(--bg-surface)] border border-[var(--border-soft)] transition-colors whitespace-nowrap"
                     >
                       Cancel
                     </button>
                   )}
-                  <button 
+                  <button
                     type="submit"
-                    className="bg-brand-primary text-brand-accent px-5 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+                    disabled={!newCategoryName.trim()}
+                    className="bg-brand-primary text-brand-accent px-5 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {editCategoryId ? (
-                      <><Edit2 className="w-5 h-5 inline mr-1" /> Update Category</>
+                      <>
+                        <Edit2 className="w-5 h-5 inline mr-1" /> Update
+                        Category
+                      </>
                     ) : (
-                      <><Plus className="w-5 h-5 inline mr-1" /> Add Category</>
+                      <>
+                        <Plus className="w-5 h-5 inline mr-1" /> Add Category
+                      </>
                     )}
                   </button>
                 </div>
               </form>
 
-              <label className="block text-sm font-medium text-[var(--text-muted)] mb-2 mt-6 border-t border-[var(--border-subtle)] pt-6">Existing Categories</label>
+              <label className="block text-sm font-medium text-[var(--text-muted)] mb-2 mt-6 border-t border-[var(--border-subtle)] pt-6">
+                Existing Categories
+              </label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {categories.length === 0 ? (
-                  <p className="text-[var(--text-muted)] text-sm italic">No categories created yet.</p>
-                ) : categories.map(c => (
-                  <div key={c.id} className="flex justify-between items-center p-3 border border-[var(--border-soft)] rounded-lg bg-[var(--bg-app)]">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-[var(--text-main)]">{c.name}</span>
-                      <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                        <span className={cn("inline-block w-2 h-2 rounded-full", c.is_active ? "bg-emerald-500" : "bg-[var(--border-soft)]")} />
-                        {c.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                  <p className="text-[var(--text-muted)] text-sm italic">
+                    No categories created yet.
+                  </p>
+                ) : (
+                  categories.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex justify-between items-center p-3 border border-[var(--border-soft)] rounded-lg bg-[var(--bg-app)]"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium text-[var(--text-main)]">
+                          {c.name}
+                        </span>
+                        <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
+                          <span
+                            className={cn(
+                              "inline-block w-2 h-2 rounded-full",
+                              c.is_active
+                                ? "bg-emerald-500"
+                                : "bg-[var(--border-soft)]",
+                            )}
+                          />
+                          {c.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEditCategoryClick(c)}
+                          className="text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 p-1.5 rounded-lg transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDeleteCategory(c.id || c.category_id)
+                          }
+                          className="text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => handleEditCategoryClick(c)} className="text-[var(--text-muted)] hover:text-brand-primary hover:bg-brand-primary/10 p-1.5 rounded-lg transition-colors">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDeleteCategory(c.id || c.category_id)} className="text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -974,12 +2831,14 @@ export function Inventory() {
           <div className="bg-[var(--bg-surface)] rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-[var(--border-soft)] flex flex-col max-h-[85vh]">
             <div className="px-8 py-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-[var(--text-main)]">{drillDownProduct.name}</h2>
+                <h2 className="text-xl font-bold text-[var(--text-main)]">
+                  {drillDownProduct.name}
+                </h2>
                 <p className="text-sm text-[var(--text-muted)] font-medium capitalize">
                   Viewing {drillDownType} units
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowDrillDown(false)}
                 className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-xl transition-all border border-transparent hover:border-[var(--border-soft)]"
               >
@@ -991,36 +2850,51 @@ export function Inventory() {
               <div className="space-y-3">
                 {(drillDownProduct.units || [])
                   .filter((u: any) => {
-                    if (drillDownType === 'total') return true;
-                    if (drillDownType === 'good') return u.status !== 'damaged';
-                    if (drillDownType === 'available') return u.status === 'available';
-                    if (drillDownType === 'damaged') return u.status === 'damaged';
+                    if (drillDownType === "total") return true;
+                    if (drillDownType === "good") return u.status !== "damaged";
+                    if (drillDownType === "available")
+                      return u.status === "available";
+                    if (drillDownType === "damaged")
+                      return u.status === "damaged";
                     return true;
                   })
                   .map((unit: any) => (
-                    <div key={unit.product_unit_id} className="flex items-center justify-between p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] group hover:border-brand-primary/20 transition-all">
+                    <div
+                      key={unit.product_unit_id}
+                      className="flex items-center justify-between p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] group hover:border-brand-primary/20 transition-all"
+                    >
                       <div className="flex items-center gap-4">
                         <div className="p-2 bg-[var(--bg-surface)] rounded-lg border border-[var(--border-soft)] text-[var(--text-muted)] group-hover:text-brand-primary group-hover:bg-brand-primary/10 transition-colors">
                           <Package className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-[var(--text-main)]">{unit.serial_number}</p>
-                          <p className="text-xs text-[var(--text-muted)]">{unit.name || 'No unit name'}</p>
+                          <p className="text-sm font-bold text-[var(--text-main)]">
+                            {unit.serial_number}
+                          </p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {unit.name || "No unit name"}
+                          </p>
                         </div>
                       </div>
-                      <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                        unit.status === 'available' ? "bg-emerald-500/10 text-emerald-500" :
-                        unit.status === 'rented' ? "bg-blue-500/10 text-blue-500" :
-                        unit.status === 'damaged' ? "bg-rose-500/10 text-rose-500" :
-                        "bg-[var(--bg-app)] text-[var(--text-muted)]"
-                      )}>
+                      <span
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                          unit.status === "available"
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : unit.status === "rented"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : unit.status === "damaged"
+                                ? "bg-rose-500/10 text-rose-500"
+                                : "bg-[var(--bg-app)] text-[var(--text-muted)]",
+                        )}
+                      >
                         {unit.status}
                       </span>
                     </div>
                   ))}
-                
-                {(!drillDownProduct.units || drillDownProduct.units.length === 0) && (
+
+                {(!drillDownProduct.units ||
+                  drillDownProduct.units.length === 0) && (
                   <div className="text-center py-12 text-[var(--text-muted)] font-medium">
                     No units found for this category.
                   </div>
@@ -1030,6 +2904,598 @@ export function Inventory() {
           </div>
         </div>
       )}
+
+      {/* Export QR Codes Modal */}
+      {showQRExportModal && (
+        <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-[var(--border-soft)] shadow-2xl flex flex-col relative">
+            <div className="print:hidden flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-6 pb-4 border-b border-[var(--border-soft)] shrink-0">
+              <h2 className="text-xl font-bold text-[var(--text-main)]">
+                Export Product Line QR Codes
+              </h2>
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex bg-[var(--bg-app)] rounded-lg p-1 sm:mr-4 border border-[var(--border-soft)] print:hidden">
+                  <button
+                    onClick={() => setCodeType("QR")}
+                    className={cn(
+                      "px-3 py-1 text-sm font-bold rounded-md transition-all",
+                      codeType === "QR"
+                        ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                    )}
+                  >
+                    QR Code
+                  </button>
+                  <button
+                    onClick={() => setCodeType("Barcode")}
+                    className={cn(
+                      "px-3 py-1 text-sm font-bold transition-all rounded-md",
+                      codeType === "Barcode"
+                        ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                    )}
+                  >
+                    Barcode
+                  </button>
+                </div>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-brand-accent rounded-xl hover:opacity-90 font-bold text-sm transition-opacity"
+                >
+                  <Printer className="w-4 h-4" /> Print
+                </button>
+                <button
+                  onClick={() => setShowQRExportModal(false)}
+                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 pt-4 flex flex-col">
+              <div className="print:hidden space-y-4 mb-6 max-h-[30vh] overflow-y-auto border border-[var(--border-soft)] p-4 rounded-xl bg-[var(--bg-app)]/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-bold text-[var(--text-main)]">
+                    Select Units to Export
+                  </p>
+                  <button
+                    onClick={() => {
+                      const allIdentifiers: any[] = [];
+                      products.forEach(
+                        (p) =>
+                          p.units?.forEach((u: any) => {
+                            const identifier =
+                              u.unit_type === "single"
+                                ? u.serial_number
+                                : u.product_unit_id?.toString();
+                            if (identifier)
+                              allIdentifiers.push({
+                                productName: p.name,
+                                unitName:
+                                  u.name ||
+                                  (u.unit_type === "single" ? "SN" : "Bulk"),
+                                identifier,
+                              });
+                          }),
+                      );
+                      if (
+                        selectedUnitsForQR.length === allIdentifiers.length &&
+                        allIdentifiers.length > 0
+                      ) {
+                        setSelectedUnitsForQR([]);
+                      } else {
+                        setSelectedUnitsForQR(allIdentifiers);
+                      }
+                    }}
+                    className="text-xs font-bold text-brand-primary hover:underline"
+                  >
+                    {selectedUnitsForQR.length > 0
+                      ? "Deselect All"
+                      : "Select All"}
+                  </button>
+                </div>
+                {products.map((product) => (
+                  <div key={product.product_id} className="mb-4">
+                    <p className="font-bold text-sm text-[var(--text-main)]">
+                      {product.name}
+                    </p>
+                    <div className="ml-2 flex flex-wrap gap-2 mt-2">
+                      {product.units?.map((unit: any) => {
+                        const identifier =
+                          unit.unit_type === "single"
+                            ? unit.serial_number
+                            : unit.product_unit_id.toString();
+                        if (!identifier) return null;
+                        const isSelected = selectedUnitsForQR.some(
+                          (u) => u.identifier === identifier,
+                        );
+                        return (
+                          <label
+                            key={unit.product_unit_id}
+                            className="flex items-center gap-2 text-xs p-2 bg-[var(--bg-surface)] rounded-lg border border-[var(--border-soft)] cursor-pointer hover:border-brand-primary/50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              className="accent-brand-primary rounded"
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedUnitsForQR([
+                                    ...selectedUnitsForQR,
+                                    {
+                                      productName: product.name,
+                                      unitName:
+                                        unit.name ||
+                                        (unit.unit_type === "single"
+                                          ? "SN"
+                                          : "Bulk"),
+                                      identifier,
+                                    },
+                                  ]);
+                                } else {
+                                  setSelectedUnitsForQR(
+                                    selectedUnitsForQR.filter(
+                                      (u) => u.identifier !== identifier,
+                                    ),
+                                  );
+                                }
+                              }}
+                            />
+                            <span className="text-[var(--text-main)]">
+                              {unit.name ||
+                                (unit.unit_type === "single"
+                                  ? unit.serial_number
+                                  : "Bulk")}
+                            </span>
+                          </label>
+                        );
+                      })}
+                      {(!product.units || product.units.length === 0) && (
+                        <p className="text-xs text-[var(--text-muted)] ml-2">
+                          No units
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Print Only View — portaled straight to document.body so the print
+                layout is never confined by an ancestor's position/overflow/flex
+                (the modal box, its backdrop, or the app shell around it) */}
+              {createPortal(
+                <div className="hidden qr-print-only print:grid print:grid-cols-4 print:gap-2 print:p-1 print:bg-white print:text-black print:items-start print:content-start">
+                  {selectedUnitsForQR.map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center justify-start h-full min-w-0 p-2 border border-dashed border-gray-400 text-center"
+                      style={{ pageBreakInside: "avoid" }}
+                    >
+                      {codeType === "QR" ? (
+                        <QRCodeSVG
+                          value={item.identifier}
+                          size={160}
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            maxWidth: 160,
+                          }}
+                        />
+                      ) : (
+                        <Barcode
+                          value={item.identifier}
+                          width={2}
+                          height={80}
+                          fontSize={16}
+                        />
+                      )}
+                      <p className="font-bold mt-2 text-xs">
+                        {item.productName}
+                      </p>
+                      <p className="text-[10px] text-gray-700">
+                        {item.unitName}
+                      </p>
+                      <p className="text-[10px] text-gray-500 font-mono mt-1">
+                        {item.identifier}
+                      </p>
+                    </div>
+                  ))}
+                </div>,
+                document.body,
+              )}
+
+              {/* Preview for non-print mode */}
+              <div className="print:hidden flex-1 flex flex-col">
+                <p className="text-sm font-bold text-[var(--text-main)] mb-4 border-t border-[var(--border-soft)] pt-4">
+                  Preview
+                </p>
+                {selectedUnitsForQR.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-[var(--text-muted)]">
+                    <QrCode className="w-12 h-12 mb-2 opacity-50" />
+                    <p className="text-sm">
+                      Select units above to preview QR codes.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto max-h-[40vh] p-1">
+                    {selectedUnitsForQR.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex flex-col items-center justify-center p-4 border border-[var(--border-soft)] rounded-xl bg-white text-black text-center shadow-sm"
+                      >
+                        {codeType === "QR" ? (
+                          <QRCodeSVG value={item.identifier} size={100} />
+                        ) : (
+                          <Barcode
+                            value={item.identifier}
+                            width={1.5}
+                            height={50}
+                            fontSize={14}
+                            displayValue={false}
+                          />
+                        )}
+                        <p className="font-bold mt-3 text-xs truncate w-full">
+                          {item.productName}
+                        </p>
+                        <p className="text-[10px] text-gray-600 truncate w-full">
+                          {item.unitName}
+                        </p>
+                        <p className="text-[10px] text-gray-500 font-mono mt-1">
+                          {item.identifier}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single QR Code View Modal */}
+      {singleQRView && (
+        <>
+          {/* Print-only content, portaled straight to document.body so it isn't
+              confined by the modal box / backdrop / app shell ancestors */}
+          {createPortal(
+            <div className="hidden qr-print-only print:flex print:flex-col print:items-center print:justify-center print:text-center print:bg-white print:text-black">
+              {codeType === "QR" ? (
+                <QRCodeSVG
+                  value={singleQRView.identifier}
+                  size={280}
+                  style={{ width: 280, height: 280 }}
+                />
+              ) : (
+                <Barcode
+                  value={singleQRView.identifier}
+                  width={3}
+                  height={120}
+                  fontSize={20}
+                />
+              )}
+              <p className="font-bold text-sm mt-4">
+                {singleQRView.productName}
+              </p>
+              <p className="text-xs text-gray-700 mt-1">
+                {singleQRView.unitName}
+              </p>
+              <p className="text-xs text-gray-500 font-mono mt-2">
+                {singleQRView.identifier}
+              </p>
+            </div>,
+            document.body,
+          )}
+          <div className="fixed inset-0 bg-[var(--bg-app)]/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 print:hidden">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 pt-14 w-full max-w-sm flex flex-col items-center justify-center text-center border border-[var(--border-soft)] shadow-2xl relative">
+              <button
+                onClick={() => setSingleQRView(null)}
+                className="absolute top-4 right-4 p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex bg-[var(--bg-app)] rounded-lg p-1 mb-6 border border-[var(--border-soft)] w-full">
+                <button
+                  onClick={() => setCodeType("QR")}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-sm font-bold rounded-md transition-all",
+                    codeType === "QR"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                  )}
+                >
+                  QR Code
+                </button>
+                <button
+                  onClick={() => setCodeType("Barcode")}
+                  className={cn(
+                    "flex-1 px-3 py-1.5 text-sm font-bold rounded-md transition-all",
+                    codeType === "Barcode"
+                      ? "bg-[var(--bg-surface)] shadow-sm text-[var(--text-main)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
+                  )}
+                >
+                  Barcode
+                </button>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex items-center justify-center min-w-[280px] min-h-[150px]">
+                {codeType === "QR" ? (
+                  <QRCodeSVG value={singleQRView.identifier} size={280} />
+                ) : (
+                  <Barcode
+                    value={singleQRView.identifier}
+                    width={2}
+                    height={100}
+                    fontSize={16}
+                  />
+                )}
+              </div>
+
+              {/* Hidden canvas for downloading */}
+              <div className="hidden">
+                <QRCodeCanvas
+                  id="single-qr-canvas"
+                  value={singleQRView.identifier}
+                  size={512}
+                />
+              </div>
+
+              <p className="font-bold text-sm text-[var(--text-main)]">
+                {singleQRView.productName}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                {singleQRView.unitName}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] font-mono mt-2">
+                {singleQRView.identifier}
+              </p>
+
+              <div className="flex gap-3 w-full mt-8 print:hidden">
+                <button
+                  onClick={() => {
+                    const canvas = document.getElementById(
+                      "single-qr-canvas",
+                    ) as HTMLCanvasElement;
+                    if (canvas) {
+                      const url = canvas.toDataURL("image/png");
+                      const link = document.createElement("a");
+                      link.download = `${singleQRView.productName.replace(
+                        /\s+/g,
+                        "_",
+                      )}_${singleQRView.identifier}_${codeType}.png`;
+                      link.href = url;
+                      link.click();
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  <Download className="w-4 h-4" /> Download
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[var(--bg-app)] text-[var(--text-main)] border border-[var(--border-soft)] font-bold rounded-xl hover:bg-[var(--border-subtle)] transition-colors"
+                >
+                  <Printer className="w-4 h-4" /> Print
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      {receiptsForUnit && (
+        <AttachmentsModal
+          title="Purchase receipts"
+          subtitle={receiptsForUnit.label}
+          target="product_unit"
+          objectId={receiptsForUnit.unitId}
+          kinds={[{ value: "purchase_receipt", label: "Purchase receipt" }]}
+          onClose={() => setReceiptsForUnit(null)}
+        />
+      )}
+      {tagEditor && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-[var(--bg-app)]/80 backdrop-blur-sm">
+          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between gap-3 p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-[var(--text-main)]">
+                  Marketplace tags
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] truncate">
+                  {tagEditor.product.name}
+                </p>
+              </div>
+              <button
+                onClick={() => setTagEditor(null)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
+              <label className="flex items-start gap-3 p-3 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  disabled={profileMissing.length > 0 && !tagEditor.listed}
+                  checked={tagEditor.listed}
+                  onChange={(e) =>
+                    setTagEditor({ ...tagEditor, listed: e.target.checked })
+                  }
+                  className="w-5 h-5 mt-0.5 accent-brand-primary cursor-pointer"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-[var(--text-main)]">
+                    List on the event marketplace
+                  </span>
+                  <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                    Same as “Available for Public Rental”. Customers can find
+                    and request this product.
+                  </span>
+                </span>
+              </label>
+              <MarketplaceProfileNotice missing={profileMissing} />
+              <div>
+                <p className="text-sm font-medium text-[var(--text-main)] mb-1">
+                  Tags{" "}
+                  {tagEditor.listed && marketplaceTags.length > 0 && (
+                    <span className="text-rose-500">*</span>
+                  )}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mb-3">
+                  Pick every tag that describes this product. These are the
+                  filters customers use on the marketplace.
+                </p>
+                <TagPicker
+                  tags={marketplaceTags}
+                  value={tagEditor.tags}
+                  onChange={(ids) => setTagEditor({ ...tagEditor, tags: ids })}
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-[var(--border-soft)] flex justify-end gap-3 shrink-0">
+              <button
+                onClick={() => setTagEditor(null)}
+                className="px-5 py-2.5 text-[var(--text-muted)] font-medium hover:bg-[var(--bg-app)] rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveTagEditor}
+                disabled={
+                  savingTags ||
+                  (tagEditor.listed && profileMissing.length > 0) ||
+                  (tagEditor.listed &&
+                    marketplaceTags.length > 0 &&
+                    tagEditor.tags.length === 0)
+                }
+                className="px-5 py-2.5 bg-brand-primary text-brand-accent font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingTags ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function UnitQtyBreakdown({ unit }: { unit: any }) {
+  const pills = [
+    {
+      label: "good",
+      title: "Good Condition",
+      value: unit.quantity_good,
+      cls: "bg-violet-500/10 text-violet-500",
+      dot: "bg-violet-500",
+    },
+    {
+      label: "avail",
+      title: "Available",
+      value: unit.quantity_available,
+      cls: "bg-emerald-500/10 text-emerald-500",
+      dot: "bg-emerald-500",
+    },
+    {
+      label: "rented",
+      title: "Currently Rented",
+      value: unit.quantity_rented,
+      cls: "bg-blue-500/10 text-blue-500",
+      dot: "bg-blue-500",
+    },
+    {
+      label: "damaged",
+      title: "Damaged",
+      value: unit.quantity_damaged,
+      cls: "bg-rose-500/10 text-rose-500",
+      dot: "bg-rose-500",
+    },
+  ];
+  return (
+    <div className="flex flex-wrap gap-2 mt-3">
+      {pills.map((p) => (
+        <span
+          key={p.label}
+          title={p.title}
+          className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wide",
+            p.cls,
+          )}
+        >
+          <span
+            className={cn("w-1.5 h-1.5 rounded-full inline-block", p.dot)}
+          />
+          {p.value ?? 0} {p.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Marketplace status under a product's name: its tags, or a nudge to add
+// some when it's listed without any. Nothing for unlisted, untagged items.
+function MarketplaceTagLine({
+  product,
+  onEdit,
+}: {
+  product: any;
+  onEdit: () => void;
+}) {
+  const tags: { id: number; name: string }[] =
+    product.marketplace_tag_details || [];
+  const stop = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit();
+  };
+
+  // Listed on the marketplace but untagged: a quiet one-line nudge.
+  if (tags.length === 0) {
+    if (!product.available_for_rental) return null;
+    return (
+      <button
+        type="button"
+        onClick={stop}
+        title="Listed on the marketplace without tags — customers will only find it under “Other”. Click to add tags."
+        className="mt-1 inline-flex items-center gap-1.5 max-w-full whitespace-nowrap text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+        <Store className="w-3 h-3 shrink-0" />
+        <span className="truncate">Add tags</span>
+      </button>
+    );
+  }
+
+  // Tagged: first tag + "+N", always on one line.
+  const [first, ...rest] = tags;
+  return (
+    <button
+      type="button"
+      onClick={stop}
+      title={`${
+        product.available_for_rental
+          ? "Listed on the marketplace"
+          : "Not listed on the marketplace"
+      } · Tags: ${tags.map((t) => t.name).join(", ")} · Click to edit`}
+      className="mt-1 inline-flex items-center gap-1.5 max-w-full whitespace-nowrap text-[11px] text-left group/tags"
+    >
+      <Store
+        className={cn(
+          "w-3 h-3 shrink-0",
+          product.available_for_rental
+            ? "text-[var(--text-link)]"
+            : "text-[var(--text-muted)] opacity-50",
+        )}
+      />
+      <span className="truncate font-semibold text-[var(--text-muted)] group-hover/tags:text-[var(--text-main)]">
+        {first.name}
+      </span>
+      {rest.length > 0 && (
+        <span className="shrink-0 px-1.5 rounded-full bg-[var(--bg-app)] border border-[var(--border-subtle)] font-semibold text-[var(--text-muted)]">
+          +{rest.length}
+        </span>
+      )}
+    </button>
   );
 }

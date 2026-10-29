@@ -26,14 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
-    
+
     final success = await ApiService.login(
       email,
       password,
     );
-    
+
     setState(() => _isLoading = false);
-    
+
     if (mounted) {
       if (success) {
         Navigator.pushReplacement(
@@ -94,8 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white) 
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ],

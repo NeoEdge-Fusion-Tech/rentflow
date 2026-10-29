@@ -6,32 +6,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0019_client_logo'),
+        ("users", "0019_client_logo"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='client',
-            name='account_details',
+            model_name="client",
+            name="account_details",
         ),
         migrations.AddField(
-            model_name='client',
-            name='account_name',
+            model_name="client",
+            name="account_name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='account_number',
+            model_name="client",
+            name="account_number",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='bank_code',
+            model_name="client",
+            name="bank_code",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='client',
-            name='bank_name',
+            model_name="client",
+            name="bank_name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]
