@@ -19,13 +19,19 @@ def client_display_name(client):
     """Business name, else full name, else contact name/email."""
     if client is None:
         return None
-    for value in (
-        client.business_name,
-        " ".join(p for p in [client.first_name, client.last_name] if p),
-        client.contact_name,
-        client.email,
-    ):
-        if value and str(value).strip() and str(value).strip() != "None":
+    is_individual = getattr(client, "client_type", None) == "individual"
+    full_name = f"{client.first_name or ''} {client.last_name or ''}".strip()
+    biz_name = (client.business_name or "").strip()
+    contact = (client.contact_name or "").strip()
+    email = (client.email or "").strip()
+
+    candidates = (
+        [full_name, biz_name, contact, email]
+        if is_individual
+        else [biz_name, full_name, contact, email]
+    )
+    for value in candidates:
+        if value and str(value).strip().lower() != "none":
             return str(value).strip()
     return None
 
@@ -79,7 +85,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     )
     line_items = InvoiceLineItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
-    client_details = ClientSerializer(source="client", read_only=True)
+    client_details = serializers.SerializerMethodField()
     bank_account_details = BankAccountSerializer(source="bank_account", read_only=True)
     organization_name = serializers.CharField(
         source="organization.name", read_only=True
@@ -166,10 +172,25 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             for p in payments
         ]
 
+    def get_client_details(self, obj):
+        client = obj.client or (obj.booking.client if obj.booking else None)
+        if client:
+            return ClientSerializer(client, context=self.context).data
+        return None
+
     def validate(self, data):
-        client = data.get("client") or (self.instance.client if self.instance else None)
+        booking = data.get("booking") or (
+            self.instance.booking if self.instance else None
+        )
+        client = (
+            data.get("client")
+            or (self.instance.client if self.instance else None)
+            or (booking.client if booking else None)
+        )
         if not client:
             raise serializers.ValidationError({"client": "A client is required."})
+        if not data.get("client") and client:
+            data["client"] = client
         if not self.instance and not data.get("line_items"):
             raise serializers.ValidationError(
                 {"line_items": "At least one line item is required."}
@@ -263,7 +284,7 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     )
     line_items = QuotationLineItemSerializer(many=True, required=False)
     client_name = serializers.SerializerMethodField()
-    client_details = ClientSerializer(source="client", read_only=True)
+    client_details = serializers.SerializerMethodField()
     bank_account_details = BankAccountSerializer(source="bank_account", read_only=True)
     organization_name = serializers.CharField(
         source="organization.name", read_only=True
@@ -321,6 +342,12 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     def get_client_name(self, obj):
         return document_client_name(obj)
 
+    def get_client_details(self, obj):
+        client = obj.client or (obj.booking.client if obj.booking else None)
+        if client:
+            return ClientSerializer(client, context=self.context).data
+        return None
+
     def get_currency_symbol(self, obj):
         currency = obj.currency or (
             obj.organization.currency if obj.organization_id else None
@@ -328,9 +355,18 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return currency.symbol if currency else None
 
     def validate(self, data):
-        client = data.get("client") or (self.instance.client if self.instance else None)
+        booking = data.get("booking") or (
+            self.instance.booking if self.instance else None
+        )
+        client = (
+            data.get("client")
+            or (self.instance.client if self.instance else None)
+            or (booking.client if booking else None)
+        )
         if not client:
             raise serializers.ValidationError({"client": "A client is required."})
+        if not data.get("client") and client:
+            data["client"] = client
         if not self.instance and not data.get("line_items"):
             raise serializers.ValidationError(
                 {"line_items": "At least one line item is required."}

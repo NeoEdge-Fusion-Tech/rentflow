@@ -56,17 +56,34 @@ export function ClientPicker({
       <div className="flex items-center gap-2">
         <select
           value={value ?? ""}
-          onChange={(e) => onChange(parseInt(e.target.value))}
+          onChange={(e) =>
+            onChange(
+              e.target.value ? parseInt(e.target.value, 10) : ("" as any),
+            )
+          }
           className="flex-1 h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary text-sm font-medium text-[var(--text-main)] transition-all"
         >
           <option value="">Choose a client...</option>
-          {clients.map((c) => (
-            <option key={c.client_id} value={String(c.client_id)}>
-              {c.client_type === "individual"
-                ? `${c.first_name || ""} ${c.last_name || ""}`.trim()
-                : c.business_name}
-            </option>
-          ))}
+          {clients.map((c) => {
+            const isInd = c.client_type === "individual";
+            const fullName = `${c.first_name || ""} ${
+              c.last_name || ""
+            }`.trim();
+            const displayName = isInd
+              ? fullName ||
+                c.business_name ||
+                c.email ||
+                `Client #${c.client_id}`
+              : c.business_name ||
+                fullName ||
+                c.email ||
+                `Client #${c.client_id}`;
+            return (
+              <option key={c.client_id} value={String(c.client_id)}>
+                {displayName}
+              </option>
+            );
+          })}
         </select>
         <button
           type="button"

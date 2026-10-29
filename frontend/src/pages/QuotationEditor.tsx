@@ -177,7 +177,7 @@ export function QuotationEditor() {
     const q = res.data;
     setFormData((prev) => ({
       ...prev,
-      client: q.client || "",
+      client: q.client || q.client_details?.client_id || "",
       quotation_number: isDuplicate
         ? prev.quotation_number
         : q.quotation_number || "",
@@ -606,6 +606,73 @@ export function QuotationEditor() {
                 setClients((prev) => [...prev, client])
               }
             />
+
+            {(() => {
+              const selectedClient =
+                clients.find(
+                  (c) => String(c.client_id) === String(formData.client),
+                ) ||
+                (quotationMeta?.client_details &&
+                String(quotationMeta.client_details.client_id) ===
+                  String(formData.client)
+                  ? quotationMeta.client_details
+                  : null);
+              if (!selectedClient) return null;
+
+              const isInd = selectedClient.client_type === "individual";
+              const fullName = `${selectedClient.first_name || ""} ${
+                selectedClient.last_name || ""
+              }`.trim();
+              const primaryName = isInd
+                ? fullName || selectedClient.business_name
+                : selectedClient.business_name || fullName;
+              const contactPerson =
+                !isInd && selectedClient.contact_name
+                  ? selectedClient.contact_name
+                  : null;
+              const address = [
+                selectedClient.address,
+                selectedClient.city,
+                selectedClient.state,
+                selectedClient.country,
+              ]
+                .filter(Boolean)
+                .join(", ");
+              const contactInfo = [
+                selectedClient.phone_number || selectedClient.contact_phone,
+                selectedClient.email || selectedClient.contact_email,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+
+              return (
+                <div className="mt-4 pt-4 border-t border-[var(--border-soft)] flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-sm shrink-0 uppercase">
+                    {(primaryName || "C").charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-[var(--text-main)] truncate">
+                      {primaryName || "Unnamed Client"}
+                    </p>
+                    {contactPerson && (
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Attn: {contactPerson}
+                      </p>
+                    )}
+                    {address && (
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">
+                        {address}
+                      </p>
+                    )}
+                    {contactInfo && (
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                        {contactInfo}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </section>
 
           {/* Meta */}

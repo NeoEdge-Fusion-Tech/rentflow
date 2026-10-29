@@ -1,3 +1,4 @@
+import html
 import io
 import os
 import re
@@ -279,6 +280,107 @@ def _load_logo_flowable(organization, size=1.1 * inch):
     return None
 
 
+def _build_billed_to_box(
+    doc, box_header_style, box_title_style, box_text_style, header_title="BILLED TO"
+):
+    """
+    Builds the 'BILLED TO' / 'QUOTE TO' flowables list for an invoice or quotation,
+    intelligently resolving the client from the document or its linked booking,
+    and handling individual clients, businesses, contact names, and addresses.
+    """
+    client = getattr(doc, "client", None)
+    booking = getattr(doc, "booking", None)
+    if not client and booking is not None:
+        client = getattr(booking, "client", None)
+
+    billed_to = [Paragraph(html.escape(header_title), box_header_style)]
+
+    client_name = None
+    contact_name = None
+    email = None
+    phone = None
+    address_lines = []
+
+    if client:
+        is_individual = getattr(client, "client_type", None) == "individual"
+        full_name = f"{client.first_name or ''} {client.last_name or ''}".strip()
+        biz_name = (client.business_name or "").strip()
+        if biz_name.lower() == "none":
+            biz_name = ""
+        contact = (client.contact_name or "").strip()
+        if contact.lower() == "none":
+            contact = ""
+
+        if is_individual:
+            client_name = full_name or biz_name or contact or client.email
+        else:
+            client_name = biz_name or full_name or contact or client.email
+            if contact and contact.lower() != (client_name or "").lower():
+                contact_name = contact
+            elif full_name and full_name.lower() != (client_name or "").lower():
+                contact_name = full_name
+
+        email = client.email or client.contact_email
+        phone = client.phone_number or client.contact_phone
+
+        if client.address and client.address.strip():
+            address_lines.append(client.address.strip())
+
+        region = ", ".join(
+            p
+            for p in [client.city, client.state, client.country]
+            if p and str(p).strip()
+        )
+        if region:
+            if not client.address or region.lower() not in client.address.lower():
+                address_lines.append(region)
+
+    # Fallbacks from linked booking if fields are missing
+    if booking:
+        if not client_name and booking.contact_name:
+            client_name = booking.contact_name.strip()
+        elif not contact_name and booking.contact_name:
+            b_contact = booking.contact_name.strip()
+            if b_contact.lower() != (client_name or "").lower():
+                contact_name = b_contact
+
+        if not phone and booking.contact_phone:
+            phone = booking.contact_phone.strip()
+
+        if not address_lines:
+            if booking.address and booking.address.strip():
+                address_lines.append(booking.address.strip())
+            b_region = ", ".join(
+                p for p in [booking.city, booking.country] if p and str(p).strip()
+            )
+            if b_region:
+                if (
+                    not booking.address
+                    or b_region.lower() not in booking.address.lower()
+                ):
+                    address_lines.append(b_region)
+
+    if client_name:
+        billed_to.append(Paragraph(html.escape(client_name), box_title_style))
+        if contact_name:
+            billed_to.append(
+                Paragraph(f"Attn: {html.escape(contact_name)}", box_text_style)
+            )
+        if email:
+            billed_to.append(Paragraph(html.escape(email), box_text_style))
+        if phone:
+            billed_to.append(Paragraph(html.escape(phone), box_text_style))
+        if address_lines:
+            formatted_address = "<br/>".join(
+                html.escape(line).replace("\n", "<br/>") for line in address_lines
+            )
+            billed_to.append(Paragraph(formatted_address, box_text_style))
+    else:
+        billed_to.append(Paragraph("No client specified", box_text_style))
+
+    return billed_to
+
+
 def generate_invoice_pdf(invoice):
     """
     Generates a branded PDF for an invoice, using the invoice's own line
@@ -422,31 +524,24 @@ def generate_invoice_pdf(invoice):
 
     # ---- Billed By / Billed To Boxes ----
     billed_by = [Paragraph("BILLED BY", box_header_style)]
-    billed_by.append(Paragraph(organization.name, box_title_style))
+    billed_by.append(Paragraph(html.escape(organization.name), box_title_style))
     if organization.address:
         billed_by.append(
-            Paragraph(organization.address.replace("\n", "<br/>"), box_text_style)
+            Paragraph(
+                html.escape(organization.address).replace("\n", "<br/>"),
+                box_text_style,
+            )
         )
     if organization.phone_number:
-        billed_by.append(Paragraph(organization.phone_number, box_text_style))
+        billed_by.append(
+            Paragraph(html.escape(organization.phone_number), box_text_style)
+        )
     if organization.email:
-        billed_by.append(Paragraph(organization.email, box_text_style))
+        billed_by.append(Paragraph(html.escape(organization.email), box_text_style))
 
-    billed_to = [Paragraph("BILLED TO", box_header_style)]
-    client = invoice.client
-    if client:
-        client_name = f"{client.business_name}".strip()
-        billed_to.append(Paragraph(client_name, box_title_style))
-        if client.email:
-            billed_to.append(Paragraph(client.email, box_text_style))
-        if client.phone_number:
-            billed_to.append(Paragraph(client.phone_number, box_text_style))
-        if client.address:
-            billed_to.append(
-                Paragraph(client.address.replace("\n", "<br/>"), box_text_style)
-            )
-    else:
-        billed_to.append(Paragraph("No client specified", box_text_style))
+    billed_to = _build_billed_to_box(
+        invoice, box_header_style, box_title_style, box_text_style, "BILLED TO"
+    )
 
     # Wrap in tables for gray background
     box_bg = colors.HexColor("#f1f5f9")
@@ -861,31 +956,24 @@ def generate_quotation_pdf(quotation):
 
     # ---- Billed By / Billed To Boxes ----
     billed_by = [Paragraph("BILLED BY", box_header_style)]
-    billed_by.append(Paragraph(organization.name, box_title_style))
+    billed_by.append(Paragraph(html.escape(organization.name), box_title_style))
     if organization.address:
         billed_by.append(
-            Paragraph(organization.address.replace("\n", "<br/>"), box_text_style)
+            Paragraph(
+                html.escape(organization.address).replace("\n", "<br/>"),
+                box_text_style,
+            )
         )
     if organization.phone_number:
-        billed_by.append(Paragraph(organization.phone_number, box_text_style))
+        billed_by.append(
+            Paragraph(html.escape(organization.phone_number), box_text_style)
+        )
     if organization.email:
-        billed_by.append(Paragraph(organization.email, box_text_style))
+        billed_by.append(Paragraph(html.escape(organization.email), box_text_style))
 
-    billed_to = [Paragraph("BILLED TO", box_header_style)]
-    client = quotation.client
-    if client:
-        client_name = f"{client.business_name}".strip()
-        billed_to.append(Paragraph(client_name, box_title_style))
-        if client.email:
-            billed_to.append(Paragraph(client.email, box_text_style))
-        if client.phone_number:
-            billed_to.append(Paragraph(client.phone_number, box_text_style))
-        if client.address:
-            billed_to.append(
-                Paragraph(client.address.replace("\n", "<br/>"), box_text_style)
-            )
-    else:
-        billed_to.append(Paragraph("No client specified", box_text_style))
+    billed_to = _build_billed_to_box(
+        quotation, box_header_style, box_title_style, box_text_style, "BILLED TO"
+    )
 
     box_bg = colors.HexColor("#f1f5f9")
     by_table = Table([[billed_by]], colWidths=[3.5 * inch])
