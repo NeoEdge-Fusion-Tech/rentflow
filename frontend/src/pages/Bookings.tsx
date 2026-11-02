@@ -3861,7 +3861,8 @@ export function Bookings() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <button
+                            {/* Payment link hidden for now */}
+                            {/* <button
                               onClick={() => {
                                 setIsGeneratingPaymentLink(selectedBooking);
                                 setPaymentLinkAmount(
@@ -3873,7 +3874,7 @@ export function Bookings() {
                             >
                               <ExternalLink className="w-3 h-3" />
                               PAY LINK
-                            </button>
+                            </button> */}
                             <button
                               onClick={() => {
                                 const amount = prompt("Enter payment amount:");
@@ -3890,7 +3891,8 @@ export function Bookings() {
                           </div>
                         </div>
 
-                        {paymentLink && (
+                        {/* Active payment link hidden for now */}
+                        {/* {paymentLink && (
                           <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl animate-in slide-in-from-top-2">
                             <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">
                               Active Payment Link
@@ -3921,7 +3923,7 @@ export function Bookings() {
                               </button>
                             </div>
                           </div>
-                        )}
+                        )} */}
 
                         <div className="space-y-4">
                           {(selectedBooking.payments || []).map(
@@ -4060,7 +4062,8 @@ export function Bookings() {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              {paymentLink ? (
+              {/* Payment Link hidden for now */}
+              {/* {paymentLink ? (
                 <div className="p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] animate-in slide-in-from-bottom-2">
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2 text-left">
                     Payment Link Generated
@@ -4101,7 +4104,7 @@ export function Bookings() {
                   )}
                   Generate Payment Link
                 </button>
-              )}
+              )} */}
 
               <button
                 onClick={() =>

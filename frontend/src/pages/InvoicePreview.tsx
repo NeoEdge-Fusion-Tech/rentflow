@@ -221,7 +221,8 @@ export function InvoicePreview() {
                 <Check className="w-4 h-4" /> Record Payment
               </button>
             )}
-            {invoice.status !== "paid" && (
+            {/* Payment link button hidden for now */}
+            {/* {invoice.status !== "paid" && (
               <button
                 onClick={handleGeneratePaymentLink}
                 disabled={isGeneratingLink}
@@ -230,7 +231,7 @@ export function InvoicePreview() {
                 <Link className="w-4 h-4" />
                 {isGeneratingLink ? "Generating..." : "Get Payment Link"}
               </button>
-            )}
+            )} */}
           </div>
 
           {/* Mobile actions */}
@@ -249,7 +250,8 @@ export function InvoicePreview() {
             >
               <Edit2 className="w-4 h-4" />
             </button>
-            {invoice.status !== "paid" && (
+            {/* Payment link button hidden for now */}
+            {/* {invoice.status !== "paid" && (
               <button
                 onClick={handleGeneratePaymentLink}
                 disabled={isGeneratingLink}
@@ -258,7 +260,7 @@ export function InvoicePreview() {
               >
                 <Link className="w-4 h-4" />
               </button>
-            )}
+            )} */}
             <div className="relative">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
