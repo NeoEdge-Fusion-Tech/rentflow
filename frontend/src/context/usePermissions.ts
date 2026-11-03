@@ -21,7 +21,10 @@ export function usePermissions(currentUser?: any) {
     const modulePerms = permissions[module];
     if (!modulePerms) return false;
 
-    return modulePerms.includes(action);
+    // Lists (["read"]) or, from the role editor, flags ({ read: true }).
+    return Array.isArray(modulePerms)
+      ? modulePerms.includes(action)
+      : !!modulePerms[action];
   };
 
   return { hasPermission };

@@ -24,6 +24,7 @@ import {
   Eye,
   EyeOff,
   Download,
+  BarChart3,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { UserOrganizationSelector } from "./UserOrganizationSelector";
@@ -44,6 +45,7 @@ interface SidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: Package, label: "Inventory", path: "/inventory" },
   { icon: Users, label: "Clients", path: "/clients" },
   { icon: Truck, label: "Vendors", path: "/vendors" },
@@ -198,6 +200,13 @@ export function Sidebar({
                   item.label === "Bookings" &&
                   (currentUser?.has_booking === false ||
                     !hasPermission("bookings", "read"))
+                ) {
+                  return false;
+                }
+                if (
+                  item.label === "Analytics" &&
+                  currentUser?.role !== "admin" &&
+                  !hasPermission("reports", "read")
                 ) {
                   return false;
                 }

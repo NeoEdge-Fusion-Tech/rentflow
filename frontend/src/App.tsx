@@ -78,6 +78,7 @@ import { About } from "./pages/About";
 import { FeedbackForms } from "./pages/FeedbackForms";
 import { PublicFeedback } from "./pages/PublicFeedback";
 import { Landing } from "./pages/Landing";
+import { Analytics } from "./pages/Analytics";
 import { EventBudgetCalculator } from "./pages/EventBudgetCalculator";
 import { PublicRentals } from "./pages/PublicRentals";
 import { PublicRentalCheckout } from "./pages/PublicRentalCheckout";
@@ -528,6 +529,7 @@ function AppLayout() {
               <Route path="/events" element={<Events />} />
               <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/general-expenses" element={<GeneralExpenses />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/feedback-forms" element={<FeedbackForms />} />
               <Route path="/task-checklist" element={<TaskChecklist />} />
               <Route path="/support" element={<Support />} />

@@ -31,6 +31,7 @@ import {
 import { ActionMenu } from "../components/ActionMenu";
 import { AttachmentsModal } from "../components/AttachmentsPanel";
 import { FeedbackQrSheet } from "../components/FeedbackQrSheet";
+import { ProjectFeedbackPanel } from "../components/ProjectFeedbackPanel";
 import { ProjectVendorReviews } from "../components/VendorReviews";
 import { RevenueDisplay } from "../components/RevenueDisplay";
 import { InvoiceMultiSelect } from "../components/InvoiceMultiSelect";
@@ -78,10 +79,6 @@ export function EventDetail() {
   const [availableForms, setAvailableForms] = useState<any[]>([]);
   const [isAttachFeedbackOpen, setIsAttachFeedbackOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState<string>("");
-
-  const [viewingResponsesFor, setViewingResponsesFor] = useState<any>(null);
-  const [responses, setResponses] = useState<any[]>([]);
-  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
 
   const fetchEvent = async () => {
     if (!id) return;
@@ -397,19 +394,6 @@ export function EventDetail() {
     const url = `${window.location.origin}/f/${publicId}`;
     navigator.clipboard.writeText(url);
     showNotification("Public link copied to clipboard", "success");
-  };
-
-  const handleViewResponses = async (pf: any) => {
-    setViewingResponsesFor(pf);
-    setIsLoadingResponses(true);
-    try {
-      const res = await ProjectFeedbackService.getResponses(pf.id);
-      setResponses(res.data);
-    } catch (err) {
-      showNotification("Failed to load responses", "error");
-    } finally {
-      setIsLoadingResponses(false);
-    }
   };
 
   if (isLoading || !event) {
@@ -776,73 +760,15 @@ export function EventDetail() {
       {/* Vendor reviews (punctuality, rating, comment) */}
       {event && <ProjectVendorReviews event={event} expenses={expenses} />}
 
-      {/* Feedback Section */}
-      <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-[var(--text-main)] text-sm uppercase tracking-wider">
-            Client Feedback Forms
-          </h3>
-          <button
-            onClick={() => setIsAttachFeedbackOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-black text-white rounded-xl hover:opacity-90 transition-opacity shadow-sm bg-brand-primary"
-          >
-            <Plus className="w-3 h-3" /> Attach Form
-          </button>
-        </div>
-
-        {projectFeedbacks.length === 0 ? (
-          <div className="text-center py-10 text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-soft)]">
-            No feedback forms attached to this project.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {projectFeedbacks.map((pf: any) => (
-              <div
-                key={pf.id}
-                className="p-4 border border-[var(--border-soft)] rounded-xl bg-[var(--bg-app)] shadow-sm"
-              >
-                <h4 className="font-bold text-[var(--text-main)] mb-1 truncate">
-                  {pf.form?.title || "Unknown Form"}
-                </h4>
-                <p className="text-xs text-[var(--text-muted)] mb-3">
-                  Created: {new Date(pf.created_at).toLocaleDateString()}
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-xs font-medium px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md w-fit">
-                    Active Link
-                  </span>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <button
-                      onClick={() => handleViewResponses(pf)}
-                      className="text-sm font-bold text-[var(--text-main)] hover:text-brand-primary transition-colors"
-                    >
-                      View Responses
-                    </button>
-                    <button
-                      onClick={() => copyPublicLink(pf.public_id)}
-                      className="text-sm font-bold text-brand-primary hover:underline"
-                    >
-                      Copy Link
-                    </button>
-                    <button
-                      onClick={() => setQrSheetFor(pf)}
-                      className="text-sm font-bold text-brand-primary hover:underline"
-                    >
-                      Print QR
-                    </button>
-                    <button
-                      onClick={() => handleRemoveFeedback(pf.id)}
-                      className="text-sm font-bold text-rose-500 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Feedback: forms on this project, stats and responses */}
+      <ProjectFeedbackPanel
+        projectFeedbacks={projectFeedbacks}
+        eventName={event?.name}
+        onAttach={() => setIsAttachFeedbackOpen(true)}
+        onCopyLink={copyPublicLink}
+        onPrintQr={setQrSheetFor}
+        onRemove={handleRemoveFeedback}
+      />
 
       {/* Edit Project Modal */}
       {isEditOpen && editForm && (
@@ -1279,125 +1205,6 @@ export function EventDetail() {
         </div>
       )}
 
-      {/* View Responses Modal */}
-      {viewingResponsesFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-app)]/80 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface)] rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-[var(--border-soft)] shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-soft)] bg-[var(--bg-app)]/50 shrink-0">
-              <div>
-                <h2 className="text-lg font-bold text-[var(--text-main)]">
-                  Responses
-                </h2>
-                <p className="text-sm text-[var(--text-muted)]">
-                  {viewingResponsesFor.form?.title}
-                </p>
-              </div>
-              <button
-                onClick={() => setViewingResponsesFor(null)}
-                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-app)] rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1 min-h-0 bg-[var(--bg-app)]">
-              {isLoadingResponses ? (
-                <div className="text-center py-10 text-[var(--text-muted)]">
-                  Loading responses...
-                </div>
-              ) : responses.length === 0 ? (
-                <div className="text-center py-12 text-[var(--text-muted)] border-2 border-dashed border-[var(--border-soft)] rounded-2xl bg-[var(--bg-surface)]">
-                  No one has submitted feedback yet.
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {responses.map((response: any) => (
-                    <div
-                      key={response.id}
-                      className="bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl p-5 shadow-sm"
-                    >
-                      <div className="flex justify-between items-start mb-4 border-b border-[var(--border-soft)] pb-4">
-                        <div>
-                          <p className="font-bold text-[var(--text-main)]">
-                            {response.client_name || "Anonymous"}
-                          </p>
-                          {response.client_email && (
-                            <p className="text-sm text-[var(--text-muted)]">
-                              {response.client_email}
-                            </p>
-                          )}
-                        </div>
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {new Date(response.submitted_at).toLocaleString()}
-                        </span>
-                      </div>
-
-                      <div className="space-y-4">
-                        {response.answers.map((ans: any, idx: number) => {
-                          // Find question text if possible
-                          const q = viewingResponsesFor.form?.questions?.find(
-                            (q: any) => q.id === ans.question,
-                          );
-                          const qText = q
-                            ? q.question_text
-                            : `Question ${ans.question}`;
-                          const qType = q ? q.question_type : "TEXT";
-
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-subtle)]"
-                            >
-                              <p className="text-sm font-bold text-[var(--text-main)] mb-1">
-                                {qText}
-                              </p>
-                              {qType === "TEXT" && (
-                                <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">
-                                  {ans.answer_text || "—"}
-                                </p>
-                              )}
-                              {qType === "RATING" && (
-                                <div className="text-amber-400 font-bold">
-                                  {ans.answer_rating
-                                    ? "★".repeat(ans.answer_rating)
-                                    : "—"}
-                                  <span className="text-[var(--border-soft)] ml-1">
-                                    {ans.answer_rating
-                                      ? "★".repeat(5 - ans.answer_rating)
-                                      : ""}
-                                  </span>
-                                </div>
-                              )}
-                              {qType === "BOOLEAN" && (
-                                <span
-                                  className={cn(
-                                    "text-xs font-bold px-2 py-1 rounded-md",
-                                    ans.answer_boolean === true
-                                      ? "bg-emerald-500/10 text-emerald-500"
-                                      : ans.answer_boolean === false
-                                        ? "bg-rose-500/10 text-rose-500"
-                                        : "bg-[var(--bg-surface)] text-[var(--text-muted)]",
-                                  )}
-                                >
-                                  {ans.answer_boolean === true
-                                    ? "Yes"
-                                    : ans.answer_boolean === false
-                                      ? "No"
-                                      : "—"}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {receiptsFor && (
         <AttachmentsModal
           title="Receipts & invoices"

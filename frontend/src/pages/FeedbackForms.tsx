@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Save, X, Eye, GripVertical } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Save,
+  X,
+  Eye,
+  GripVertical,
+  BarChart3,
+  Star,
+} from "lucide-react";
 import { FeedbackService } from "../api";
 import { FeedbackForm, FeedbackQuestion } from "../types";
 import { useNotification } from "../context/NotificationContext";
 import { ActionMenu } from "../components/ActionMenu";
+import { FeedbackResultsModal } from "../components/ProjectFeedbackPanel";
 
 export function FeedbackForms() {
   const { showNotification, showConfirm } = useNotification();
   const [forms, setForms] = useState<FeedbackForm[]>([]);
+  const [resultsFor, setResultsFor] = useState<FeedbackForm | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Editor state
@@ -361,6 +373,45 @@ export function FeedbackForms() {
             <p className="text-[var(--text-muted)] text-sm line-clamp-2 mb-4 h-10">
               {form.description || "No description provided."}
             </p>
+            {/* Usage across projects */}
+            <button
+              type="button"
+              onClick={() => setResultsFor(form)}
+              className="w-full grid grid-cols-3 gap-2 mb-4 p-3 rounded-xl bg-[var(--bg-app)] hover:bg-brand-primary/5 border border-transparent hover:border-brand-primary/30 transition-colors text-left"
+              title="View results"
+            >
+              <span>
+                <span className="block text-lg font-black text-[var(--text-main)] tabular-nums leading-tight">
+                  {form.response_count ?? 0}
+                </span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  Responses
+                </span>
+              </span>
+              <span>
+                <span className="flex items-center gap-1 text-lg font-black text-[var(--text-main)] tabular-nums leading-tight">
+                  {form.average_rating != null ? (
+                    <>
+                      {form.average_rating.toFixed(1)}
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  Avg rating
+                </span>
+              </span>
+              <span>
+                <span className="block text-lg font-black text-[var(--text-main)] tabular-nums leading-tight">
+                  {form.project_count ?? 0}
+                </span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  Projects
+                </span>
+              </span>
+            </button>
             <div className="flex items-center justify-between pt-4 border-t border-[var(--border-soft)]">
               <span className="text-xs font-medium bg-[var(--bg-app)] px-2 py-1 rounded-md text-[var(--text-muted)]">
                 {form.questions?.length || 0} questions
@@ -368,6 +419,11 @@ export function FeedbackForms() {
               <ActionMenu
                 label="Form actions"
                 items={[
+                  {
+                    label: "View results",
+                    icon: BarChart3,
+                    onClick: () => setResultsFor(form),
+                  },
                   {
                     label: "Edit",
                     icon: Edit2,
@@ -409,6 +465,13 @@ export function FeedbackForms() {
           </div>
         )}
       </div>
+
+      {resultsFor && (
+        <FeedbackResultsModal
+          form={resultsFor}
+          onClose={() => setResultsFor(null)}
+        />
+      )}
     </div>
   );
 }

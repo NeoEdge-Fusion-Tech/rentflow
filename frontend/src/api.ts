@@ -637,6 +637,22 @@ export const FeedbackService = {
   updateForm: (id: number | string, data: any) =>
     api.put(`/feedback/forms/${id}/`, data),
   deleteForm: (id: number | string) => api.delete(`/feedback/forms/${id}/`),
+  // Results across every project using the form; pass { event } for one.
+  getFormSummary: (id: number | string, params?: { event?: number | string }) =>
+    api.request({
+      method: "get",
+      url: `/feedback/forms/${id}/summary/`,
+      params,
+    }),
+  getFormResponses: (
+    id: number | string,
+    params?: { event?: number | string },
+  ) =>
+    api.request({
+      method: "get",
+      url: `/feedback/forms/${id}/responses/`,
+      params,
+    }),
 };
 
 export const ProjectFeedbackService = {
@@ -646,7 +662,20 @@ export const ProjectFeedbackService = {
   delete: (id: number | string) =>
     api.delete(`/feedback/project-feedbacks/${id}/`),
   getResponses: (id: number | string) =>
-    api.get(`/feedback/project-feedbacks/${id}/responses/`),
+    api.request({
+      method: "get",
+      url: `/feedback/project-feedbacks/${id}/responses/`,
+    }),
+  getSummary: (id: number | string) =>
+    api.request({
+      method: "get",
+      url: `/feedback/project-feedbacks/${id}/summary/`,
+    }),
+};
+
+export const AnalyticsService = {
+  getOverview: (params?: { start?: string; end?: string }) =>
+    api.request({ method: "get", url: "/analytics/overview/", params }),
 };
 
 export const PublicFeedbackService = {

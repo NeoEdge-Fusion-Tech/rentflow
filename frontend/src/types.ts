@@ -163,6 +163,11 @@ export interface FeedbackForm {
   questions?: FeedbackQuestion[];
   created_at?: string;
   updated_at?: string;
+  // Usage stats (from the forms list)
+  project_count?: number | null;
+  response_count?: number | null;
+  last_response_at?: string | null;
+  average_rating?: number | null;
 }
 
 export interface ProjectFeedback {

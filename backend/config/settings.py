@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "events",
     "notification",
     "feedback",
+    "analytics",
     "attachments",
     "django_filters",
     "cloudinary_storage",

@@ -1,6 +1,14 @@
 from rest_framework import permissions
 
 
+def module_allows(module_perms, action):
+    """Role permissions come as a list (["read", "write"]) or, from the
+    role editor, a dict ({"read": True, "write": False})."""
+    if isinstance(module_perms, dict):
+        return bool(module_perms.get(action))
+    return action in (module_perms or [])
+
+
 class HasModulePermission(permissions.BasePermission):
     """
     Checks if the user has the required granular permission for a specific module.
@@ -50,9 +58,9 @@ class HasModulePermission(permissions.BasePermission):
                 return False
 
             role_perms = membership.role.permissions or {}
-            module_perms = role_perms.get(required_module, [])
-
-            return action in module_perms
+            if action in (role_perms.get("_all") or []):
+                return True
+            return module_allows(role_perms.get(required_module), action)
         except OrganizationMembership.DoesNotExist:
             # Fallback to legacy behavior if they don't have a membership yet
             return False

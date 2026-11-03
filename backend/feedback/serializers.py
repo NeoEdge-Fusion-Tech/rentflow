@@ -23,11 +23,41 @@ class FeedbackQuestionSerializer(serializers.ModelSerializer):
 
 
 class FeedbackFormSerializer(serializers.ModelSerializer):
+    # Usage stats, filled by FeedbackFormViewSet's annotations.
+    project_count = serializers.SerializerMethodField()
+    response_count = serializers.SerializerMethodField()
+    last_response_at = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+
+    def get_project_count(self, obj):
+        return getattr(obj, "project_count", None)
+
+    def get_response_count(self, obj):
+        return getattr(obj, "response_count", None)
+
+    def get_last_response_at(self, obj):
+        return getattr(obj, "last_response_at", None)
+
+    def get_average_rating(self, obj):
+        avg = getattr(obj, "average_rating", None)
+        return round(float(avg), 2) if avg is not None else None
+
     questions = FeedbackQuestionSerializer(many=True, required=False)
 
     class Meta:
         model = FeedbackForm
-        fields = ["id", "title", "description", "questions", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "title",
+            "description",
+            "questions",
+            "created_at",
+            "updated_at",
+            "project_count",
+            "response_count",
+            "last_response_at",
+            "average_rating",
+        ]
 
     def create(self, validated_data):
         questions_data = validated_data.pop("questions", [])
@@ -62,6 +92,10 @@ class ProjectFeedbackSerializer(serializers.ModelSerializer):
     )
 
     event_details = serializers.SerializerMethodField()
+    # Filled by ProjectFeedbackViewSet's annotations (absent on public reads).
+    response_count = serializers.IntegerField(read_only=True, required=False)
+    last_response_at = serializers.DateTimeField(read_only=True, required=False)
+    average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectFeedback
@@ -74,7 +108,14 @@ class ProjectFeedbackSerializer(serializers.ModelSerializer):
             "is_active",
             "created_at",
             "event_details",
+            "response_count",
+            "last_response_at",
+            "average_rating",
         ]
+
+    def get_average_rating(self, obj):
+        avg = getattr(obj, "average_rating", None)
+        return round(float(avg), 2) if avg is not None else None
 
     def get_event_details(self, obj):
         logo = obj.event.organization.company_logo
@@ -117,6 +158,12 @@ class FeedbackAnswerSerializer(serializers.ModelSerializer):
 
 class FeedbackResponseSerializer(serializers.ModelSerializer):
     answers = FeedbackAnswerSerializer(many=True)
+    event_id = serializers.IntegerField(
+        source="project_feedback.event_id", read_only=True
+    )
+    event_name = serializers.CharField(
+        source="project_feedback.event.name", read_only=True
+    )
 
     class Meta:
         model = FeedbackResponse
@@ -127,6 +174,8 @@ class FeedbackResponseSerializer(serializers.ModelSerializer):
             "client_email",
             "submitted_at",
             "answers",
+            "event_id",
+            "event_name",
         ]
         read_only_fields = ["id", "submitted_at"]
 
