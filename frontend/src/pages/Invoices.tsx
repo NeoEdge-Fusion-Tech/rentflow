@@ -330,7 +330,10 @@ export function Invoices() {
           displayedInvoices.map((invoice) => (
             <div
               key={invoice.invoice_id}
-              className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group"
+              onClick={() =>
+                navigate(`/invoices/${invoice.invoice_id}/preview`)
+              }
+              className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group cursor-pointer"
             >
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                 <div className="flex-1 flex items-start gap-4">
@@ -448,7 +451,10 @@ export function Invoices() {
                   );
                 })()}
 
-                <div className="flex items-center justify-end gap-2 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6">
+                <div
+                  className="flex items-center justify-end gap-2 border-t lg:border-t-0 lg:border-l border-[var(--border-subtle)] pt-4 lg:pt-0 lg:pl-6"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {invoice.status !== "paid" &&
                     invoice.status !== "cancelled" && (
                       <button

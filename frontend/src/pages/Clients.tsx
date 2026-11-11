@@ -379,7 +379,8 @@ export function Clients() {
           {displayedClients.map((client) => (
             <div
               key={client.client_id}
-              className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group"
+              onClick={() => setViewingClient(client)}
+              className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group cursor-pointer"
             >
               <div className="flex items-start justify-between mb-6">
                 <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
@@ -396,7 +397,10 @@ export function Clients() {
                     ).toUpperCase()
                   )}
                 </div>
-                <div className="flex gap-2 items-center">
+                <div
+                  className="flex gap-2 items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <span
                     className={cn(
                       "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
@@ -461,7 +465,10 @@ export function Clients() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setViewingClient(client)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewingClient(client);
+                  }}
                   className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline"
                 >
                   View Profile
@@ -488,7 +495,8 @@ export function Clients() {
                 {displayedClients.map((client) => (
                   <tr
                     key={client.client_id}
-                    className="hover:bg-[var(--bg-app)] transition-colors group"
+                    onClick={() => setViewingClient(client)}
+                    className="hover:bg-[var(--bg-app)] transition-colors group cursor-pointer"
                   >
                     <td className="py-4 px-6 font-bold text-[var(--text-main)]">
                       <div className="flex items-center gap-3">
@@ -564,7 +572,10 @@ export function Clients() {
                     <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
                       {client.bookings_count || 0}
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td
+                      className="py-4 px-6 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <ActionMenu items={clientActions(client)} />
                     </td>
                   </tr>
@@ -577,7 +588,8 @@ export function Clients() {
             {displayedClients.map((client) => (
               <div
                 key={client.client_id}
-                className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                onClick={() => setViewingClient(client)}
+                className="p-4 hover:bg-[var(--bg-app)] transition-colors cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="flex items-center gap-3 min-w-0">
@@ -655,7 +667,9 @@ export function Clients() {
                     </span>
                     Bookings
                   </div>
-                  <ActionMenu items={clientActions(client)} />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <ActionMenu items={clientActions(client)} />
+                  </div>
                 </div>
               </div>
             ))}

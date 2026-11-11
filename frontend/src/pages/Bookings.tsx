@@ -1032,7 +1032,11 @@ export function Bookings() {
             .map((booking) => (
               <div
                 key={booking.booking_id}
-                className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group"
+                onClick={() => {
+                  setSelectedBooking(booking);
+                  setIsViewingDetails(true);
+                }}
+                className="bg-[var(--bg-surface)] p-5 rounded-2xl border border-[var(--border-soft)] hover:border-brand-primary/20 hover:shadow-md transition-all group cursor-pointer"
               >
                 <div className="flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center">
                   <div className="flex-1 flex items-start gap-4 min-w-0">
@@ -1164,7 +1168,10 @@ export function Bookings() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 xl:border-l border-[var(--border-subtle)] xl:pl-6 flex-wrap">
+                  <div
+                    className="flex items-center gap-2 shrink-0 xl:border-l border-[var(--border-subtle)] xl:pl-6 flex-wrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       onClick={() => {
                         setSelectedBooking(booking);
