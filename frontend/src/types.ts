@@ -69,7 +69,8 @@ export interface User {
 }
 
 export interface Vendor {
-  id: string;
+  id?: string;
+  vendor_id?: number;
   business_name: string;
   contact_name?: string;
   contact_email?: string;
@@ -77,6 +78,11 @@ export interface Vendor {
   service: string;
   description?: string;
   status: "active" | "inactive";
+  logo?: string | null;
+  before_event_payment_percentage?: number | string | null;
+  after_event_payment_percentage?: number | string | null;
+  effective_before_event_payment_percentage?: number | null;
+  effective_after_event_payment_percentage?: number | null;
 }
 
 export interface EventProject {
@@ -107,8 +113,13 @@ export interface ExpenseLineItem {
   event: number;
   expense_type: "vendor" | "item";
   vendor?: number | null;
+  vendor_details?: any;
   name: string;
   amount: number;
+  before_event_amount?: number | null;
+  after_event_amount?: number | null;
+  before_event_payment_percentage?: number | null;
+  after_event_payment_percentage?: number | null;
   description?: string;
   date?: string | null;
 }

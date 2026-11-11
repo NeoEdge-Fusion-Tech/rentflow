@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -29,7 +29,6 @@ import {
 import { Logo } from "./Logo";
 import { UserOrganizationSelector } from "./UserOrganizationSelector";
 import { cn } from "@/src/utils";
-import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useVisibility } from "../context/VisibilityContext";
 import { usePermissions } from "../context/usePermissions";
@@ -102,6 +101,40 @@ export function Sidebar({
   const { hasPermission } = usePermissions(currentUser);
   const { isInstallable, promptInstall } = usePwa();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isItemActive = (itemPath: string) => {
+    const currentPath = location.pathname;
+    const currentSearch = location.search;
+
+    if (itemPath === "/settings?tab=billing") {
+      return (
+        currentPath === "/settings" && currentSearch.includes("tab=billing")
+      );
+    }
+
+    if (itemPath === "/settings") {
+      return (
+        currentPath === "/settings" && !currentSearch.includes("tab=billing")
+      );
+    }
+
+    if (itemPath === "/dashboard") {
+      return currentPath === "/dashboard";
+    }
+
+    return currentPath === itemPath || currentPath.startsWith(itemPath + "/");
+  };
+
+  const isSuperAdminItemActive = (itemPath: string) => {
+    if (itemPath === "/superadmin") {
+      return location.pathname === "/superadmin";
+    }
+    return (
+      location.pathname === itemPath ||
+      location.pathname.startsWith(itemPath + "/")
+    );
+  };
 
   const [isCollapsed, setIsCollapsed] = React.useState(() => {
     const saved = localStorage.getItem("sidebar_collapsed");
@@ -251,33 +284,28 @@ export function Sidebar({
                 }
                 return true;
               })
-              .map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  title={isCollapsed ? item.label : undefined}
-                  className={({ isActive }) =>
-                    cn(
+              .map((item) => {
+                const active = isItemActive(item.path);
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    title={isCollapsed ? item.label : undefined}
+                    className={cn(
                       "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors overflow-hidden",
-                      isActive
+                      active
                         ? "bg-brand-primary text-brand-accent shadow-lg shadow-brand-primary/20"
                         : "text-[var(--text-muted)] hover:bg-[var(--bg-app)] hover:text-brand-primary",
                       isCollapsed ? "justify-center" : "gap-3",
-                    )
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <item.icon className="w-5 h-5 shrink-0" />
-                      {!isCollapsed && (
-                        <>
-                          <span className="truncate">{item.label}</span>
-                        </>
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              ))}
+                    )}
+                  >
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    {!isCollapsed && (
+                      <span className="truncate">{item.label}</span>
+                    )}
+                  </NavLink>
+                );
+              })}
 
             {isSuperuser && (
               <>
@@ -288,33 +316,28 @@ export function Sidebar({
                     </p>
                   </div>
                 )}
-                {superAdminItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    title={isCollapsed ? item.label : undefined}
-                    className={({ isActive }) =>
-                      cn(
+                {superAdminItems.map((item) => {
+                  const active = isSuperAdminItemActive(item.path);
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      title={isCollapsed ? item.label : undefined}
+                      className={cn(
                         "flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors overflow-hidden",
-                        isActive
+                        active
                           ? "bg-brand-primary text-brand-accent shadow-lg shadow-brand-primary/20"
                           : "text-[var(--text-muted)] hover:bg-[var(--bg-app)] hover:text-brand-primary",
                         isCollapsed ? "justify-center" : "gap-3",
-                      )
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <item.icon className="w-5 h-5 shrink-0" />
-                        {!isCollapsed && (
-                          <>
-                            <span className="truncate">{item.label}</span>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                ))}
+                      )}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0" />
+                      {!isCollapsed && (
+                        <span className="truncate">{item.label}</span>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </>
             )}
           </nav>

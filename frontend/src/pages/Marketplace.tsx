@@ -296,7 +296,12 @@ export function Marketplace() {
           <div className="hidden lg:flex items-center gap-3 shrink-0">
             <ThemeToggle className="bg-transparent border-0 shadow-none p-2 rounded-full hover:bg-[var(--border-subtle)]" />
             <button
-              onClick={() => navigate("/pricing")}
+              onClick={() => {
+                const token =
+                  localStorage.getItem("token") ||
+                  sessionStorage.getItem("token");
+                navigate(token ? "/settings?tab=billing" : "/pricing");
+              }}
               className="px-4 py-2 text-sm font-bold bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] hover:border-brand-primary/50 hover:text-brand-primary rounded-xl transition-all shadow-sm"
             >
               Pricing

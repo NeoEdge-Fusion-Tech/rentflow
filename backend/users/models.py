@@ -48,6 +48,22 @@ class Organization(models.Model):
         default="#7c3aed",
         help_text="Hex color code for invoices and branding",
     )
+    vendor_payment_before_event_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        default=70.00,
+        help_text="Default percentage of vendor payment due before event",
+    )
+    vendor_payment_after_event_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        default=30.00,
+        help_text="Default percentage of vendor payment due after event",
+    )
     subscription_plan = models.CharField(
         max_length=50,
         choices=[("free", "Free"), ("basic", "Basic"), ("pro", "Pro")],
@@ -362,6 +378,20 @@ class Vendor(models.Model):
         default="active",
     )
     password = models.CharField(max_length=128, blank=True, null=True)
+    before_event_payment_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Percentage of payment due before event. If null, inherits from organization.",
+    )
+    after_event_payment_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Percentage of payment due after event. If null, inherits from organization.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -378,6 +408,28 @@ class Vendor(models.Model):
         blank=True,
         related_name="updated_vendors",
     )
+
+    @property
+    def effective_before_event_payment_percentage(self):
+        if self.before_event_payment_percentage is not None:
+            return float(self.before_event_payment_percentage)
+        if (
+            self.organization
+            and self.organization.vendor_payment_before_event_percentage is not None
+        ):
+            return float(self.organization.vendor_payment_before_event_percentage)
+        return 70.0
+
+    @property
+    def effective_after_event_payment_percentage(self):
+        if self.after_event_payment_percentage is not None:
+            return float(self.after_event_payment_percentage)
+        if (
+            self.organization
+            and self.organization.vendor_payment_after_event_percentage is not None
+        ):
+            return float(self.organization.vendor_payment_after_event_percentage)
+        return 30.0
 
     def __str__(self):
         return self.business_name

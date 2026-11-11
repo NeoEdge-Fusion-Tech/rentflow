@@ -8,6 +8,14 @@ from .models import Event, ExpenseLineItem, ChecklistTask, VendorReview
 
 class ExpenseLineItemSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     vendor_details = VendorSerializer(source="vendor", read_only=True)
+    before_event_amount = serializers.DecimalField(
+        max_digits=20, decimal_places=2, read_only=True
+    )
+    after_event_amount = serializers.DecimalField(
+        max_digits=20, decimal_places=2, read_only=True
+    )
+    before_event_payment_percentage = serializers.FloatField(read_only=True)
+    after_event_payment_percentage = serializers.FloatField(read_only=True)
 
     class Meta:
         model = ExpenseLineItem
@@ -19,12 +27,23 @@ class ExpenseLineItemSerializer(TenantSerializerMixin, serializers.ModelSerializ
             "vendor_details",
             "name",
             "amount",
+            "before_event_amount",
+            "after_event_amount",
+            "before_event_payment_percentage",
+            "after_event_payment_percentage",
             "description",
             "date",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = [
+            "created_at",
+            "updated_at",
+            "before_event_amount",
+            "after_event_amount",
+            "before_event_payment_percentage",
+            "after_event_payment_percentage",
+        ]
         extra_kwargs = {"name": {"required": False, "allow_blank": True}}
 
     def validate(self, data):

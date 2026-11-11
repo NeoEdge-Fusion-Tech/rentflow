@@ -18,13 +18,18 @@ import {
   LayoutGrid,
   List,
   User,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { ActionMenu } from "../components/ActionMenu";
 import { VendorReviewsList, Stars } from "../components/VendorReviews";
-import { VendorReviewService } from "@/src/api";
+import {
+  VendorReviewService,
+  VendorService,
+  AuthService,
+  OrganizationService,
+} from "@/src/api";
 import { useNotification } from "../context/NotificationContext";
-import { VendorService } from "@/src/api";
 
 export function Vendors() {
   const { showNotification, showConfirm } = useNotification();
@@ -50,6 +55,12 @@ export function Vendors() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingVendor, setEditingVendor] = useState<any>(null);
   const [viewingVendor, setViewingVendor] = useState<any>(null);
+  const [orgConfig, setOrgConfig] = useState<{ before: number; after: number }>(
+    {
+      before: 70,
+      after: 30,
+    },
+  );
 
   const [formData, setFormData] = useState({
     business_name: "",
@@ -60,7 +71,34 @@ export function Vendors() {
     description: "",
     status: "active",
     logo: null as File | string | null,
+    before_event_payment_percentage: "" as string | number,
+    after_event_payment_percentage: "" as string | number,
   });
+
+  const fetchOrgConfig = async () => {
+    try {
+      const me = await AuthService.getProfile();
+      if (me.data?.organization_id) {
+        const orgRes = await OrganizationService.get(me.data.organization_id);
+        if (orgRes?.data) {
+          setOrgConfig({
+            before:
+              orgRes.data.vendor_payment_before_event_percentage !== null &&
+              orgRes.data.vendor_payment_before_event_percentage !== undefined
+                ? Number(orgRes.data.vendor_payment_before_event_percentage)
+                : 70,
+            after:
+              orgRes.data.vendor_payment_after_event_percentage !== null &&
+              orgRes.data.vendor_payment_after_event_percentage !== undefined
+                ? Number(orgRes.data.vendor_payment_after_event_percentage)
+                : 30,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load org vendor payment config", e);
+    }
+  };
 
   const fetchVendors = async () => {
     setIsLoading(true);
@@ -76,6 +114,7 @@ export function Vendors() {
 
   useEffect(() => {
     fetchVendors();
+    fetchOrgConfig();
   }, []);
 
   const vendorActions = (vendor: any) => [
@@ -104,6 +143,8 @@ export function Vendors() {
       description: "",
       status: "active",
       logo: null,
+      before_event_payment_percentage: "",
+      after_event_payment_percentage: "",
     });
     setIsModalOpen(true);
   };
@@ -119,6 +160,16 @@ export function Vendors() {
       description: vendor.description || "",
       status: vendor.status || "active",
       logo: vendor.logo || null,
+      before_event_payment_percentage:
+        vendor.before_event_payment_percentage !== null &&
+        vendor.before_event_payment_percentage !== undefined
+          ? vendor.before_event_payment_percentage
+          : "",
+      after_event_payment_percentage:
+        vendor.after_event_payment_percentage !== null &&
+        vendor.after_event_payment_percentage !== undefined
+          ? vendor.after_event_payment_percentage
+          : "",
     });
     setIsModalOpen(true);
   };
@@ -152,6 +203,15 @@ export function Vendors() {
       if (key === "logo") {
         if (value instanceof File) {
           payload.append("logo", value);
+        }
+      } else if (
+        key === "before_event_payment_percentage" ||
+        key === "after_event_payment_percentage"
+      ) {
+        if (value !== "" && value !== null && value !== undefined) {
+          payload.append(key, String(value));
+        } else if (editingVendor) {
+          payload.append(key, "");
         }
       } else if (value !== null && value !== "") {
         payload.append(key, value as string);
@@ -319,203 +379,29 @@ export function Vendors() {
             </div>
           ) : viewType === "card" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {displayedVendors.map((vendor) => (
-                <div
-                  key={vendor.vendor_id}
-                  className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/10 transition-all group"
-                >
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
-                      {vendor.logo ? (
-                        <img
-                          src={vendor.logo}
-                          alt={vendor.business_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (vendor.business_name?.[0] || "V").toUpperCase()
-                      )}
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <span
-                        className={cn(
-                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          vendor.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-[var(--bg-app)] text-[var(--text-muted)]",
-                        )}
-                      >
-                        {vendor.status}
-                      </span>
-                      <ActionMenu items={vendorActions(vendor)} />
-                    </div>
-                  </div>
+              {displayedVendors.map((vendor) => {
+                const beforePct =
+                  vendor.effective_before_event_payment_percentage ??
+                  vendor.before_event_payment_percentage ??
+                  orgConfig.before;
+                const afterPct =
+                  vendor.effective_after_event_payment_percentage ??
+                  vendor.after_event_payment_percentage ??
+                  orgConfig.after;
+                const isCustomTerms =
+                  vendor.before_event_payment_percentage !== null &&
+                  vendor.before_event_payment_percentage !== undefined &&
+                  vendor.before_event_payment_percentage !== "";
 
-                  <div className="space-y-1 mb-6">
-                    <h3 className="text-lg font-bold text-[var(--text-main)]">
-                      {vendor.business_name}
-                    </h3>
-                    {ratings[vendor.vendor_id] && (
-                      <div
-                        className="flex items-center gap-1.5"
-                        title={`${
-                          ratings[vendor.vendor_id].reviews
-                        } review(s) · ${
-                          ratings[vendor.vendor_id].late +
-                          ratings[vendor.vendor_id].no_show
-                        } late/no-show`}
-                      >
-                        <Stars
-                          value={ratings[vendor.vendor_id].avg_rating}
-                          size="w-3.5 h-3.5"
-                        />
-                        <span className="text-xs font-semibold text-[var(--text-muted)]">
-                          {ratings[vendor.vendor_id].avg_rating} (
-                          {ratings[vendor.vendor_id].reviews})
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-sm text-[var(--text-muted)] font-medium">
-                      {vendor.contact_name || "No Contact Person"}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 mb-8">
-                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                      <Briefcase className="w-4 h-4 text-[var(--text-muted)]" />
-                      <span className="truncate">{vendor.service}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                      <Mail className="w-4 h-4 text-[var(--text-muted)]" />
-                      <span className="truncate">
-                        {vendor.contact_email || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                      <Phone className="w-4 h-4 text-[var(--text-muted)]" />
-                      {vendor.contact_phone || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end pt-6 border-t border-[var(--border-subtle)]">
-                    <button
-                      onClick={() => setViewingVendor(vendor)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline"
-                    >
-                      View Profile
-                      <ExternalLink className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
-                      <th className="py-4 px-6 font-bold">Vendor Name</th>
-                      <th className="py-4 px-6 font-bold">Contact Info</th>
-                      <th className="py-4 px-6 font-bold">Service</th>
-                      <th className="py-4 px-6 font-bold text-center">
-                        Projects
-                      </th>
-                      <th className="py-4 px-6 font-bold text-right">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border-subtle)]">
-                    {displayedVendors.map((vendor) => (
-                      <tr
-                        key={vendor.vendor_id}
-                        className="hover:bg-[var(--bg-app)] transition-colors group"
-                      >
-                        <td className="py-4 px-6 font-bold text-[var(--text-main)]">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
-                              {vendor.logo ? (
-                                <img
-                                  src={vendor.logo}
-                                  alt={vendor.business_name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                (vendor.business_name?.[0] || "V").toUpperCase()
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <span>{vendor.business_name}</span>
-                              <div className="flex gap-2 items-center mt-0.5">
-                                <span
-                                  className={cn(
-                                    "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
-                                    vendor.status === "active"
-                                      ? "bg-emerald-500/10 text-emerald-500"
-                                      : "bg-rose-500/10 text-rose-500",
-                                  )}
-                                >
-                                  {vendor.status}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex flex-col gap-1 text-[var(--text-muted)]">
-                            {vendor.contact_name && (
-                              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                <User className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate max-w-[150px]">
-                                  {vendor.contact_name}
-                                </span>
-                              </div>
-                            )}
-                            {vendor.contact_email && (
-                              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                <Mail className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate max-w-[150px]">
-                                  {vendor.contact_email}
-                                </span>
-                              </div>
-                            )}
-                            {vendor.contact_phone && (
-                              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                <Phone className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate max-w-[150px]">
-                                  {vendor.contact_phone}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                            {vendor.service || "General"}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
-                          {vendor.projects_count || 0}
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <ActionMenu items={vendorActions(vendor)} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="md:hidden divide-y divide-[var(--border-subtle)]">
-                {displayedVendors.map((vendor) => (
+                return (
                   <div
                     key={vendor.vendor_id}
-                    className="p-4 hover:bg-[var(--bg-app)] transition-colors"
+                    onClick={() => setViewingVendor(vendor)}
+                    className="bg-[var(--bg-surface)] rounded-3xl border border-[var(--border-soft)] p-6 hover:shadow-xl hover:border-brand-primary/20 transition-all group cursor-pointer flex flex-col justify-between"
                   >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] border border-[var(--border-soft)] overflow-hidden shrink-0">
+                    <div>
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="w-14 h-14 bg-[var(--bg-app)] rounded-2xl flex items-center justify-center text-xl font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden">
                           {vendor.logo ? (
                             <img
                               src={vendor.logo}
@@ -526,65 +412,358 @@ export function Vendors() {
                             (vendor.business_name?.[0] || "V").toUpperCase()
                           )}
                         </div>
-                        <div>
-                          <p className="font-bold text-[var(--text-main)] text-sm">
-                            {vendor.business_name}
-                          </p>
+                        <div
+                          className="flex gap-2 items-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <span
                             className={cn(
-                              "inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                               vendor.status === "active"
                                 ? "bg-emerald-500/10 text-emerald-500"
-                                : "bg-rose-500/10 text-rose-500",
+                                : "bg-[var(--bg-app)] text-[var(--text-muted)]",
                             )}
                           >
                             {vendor.status}
                           </span>
+                          <ActionMenu items={vendorActions(vendor)} />
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                          {vendor.service || "General"}
+
+                      <div className="space-y-1 mb-4">
+                        <h3 className="text-lg font-bold text-[var(--text-main)] group-hover:text-brand-primary transition-colors">
+                          {vendor.business_name}
+                        </h3>
+                        {ratings[vendor.vendor_id] && (
+                          <div
+                            className="flex items-center gap-1.5"
+                            title={`${
+                              ratings[vendor.vendor_id].reviews
+                            } review(s) · ${
+                              ratings[vendor.vendor_id].late +
+                              ratings[vendor.vendor_id].no_show
+                            } late/no-show`}
+                          >
+                            <Stars
+                              value={ratings[vendor.vendor_id].avg_rating}
+                              size="w-3.5 h-3.5"
+                            />
+                            <span className="text-xs font-semibold text-[var(--text-muted)]">
+                              {ratings[vendor.vendor_id].avg_rating} (
+                              {ratings[vendor.vendor_id].reviews})
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-sm text-[var(--text-muted)] font-medium">
+                          {vendor.contact_name || "No Contact Person"}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5 mb-6">
+                        <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                          <Briefcase className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                          <span className="truncate">{vendor.service}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                          <Mail className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                          <span className="truncate">
+                            {vendor.contact_email || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
+                          <Phone className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                          <span className="truncate">
+                            {vendor.contact_phone || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-[var(--border-subtle)]">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[var(--text-muted)] flex items-center gap-1.5 font-medium">
+                          <CreditCard className="w-3.5 h-3.5 text-brand-primary" />
+                          <span>Terms:</span>
                         </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[var(--text-main)]">
+                            {beforePct}% / {afterPct}%
+                          </span>
+                          {isCustomTerms ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-brand-primary/10 text-brand-primary uppercase">
+                              Custom
+                            </span>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium text-[var(--text-muted)] bg-[var(--bg-app)] border border-[var(--border-soft)]">
+                              Default
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col gap-1 text-xs text-[var(--text-muted)] pl-12">
-                      {vendor.contact_name && (
-                        <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">
-                            {vendor.contact_name}
-                          </span>
-                        </div>
-                      )}
-                      {vendor.contact_email && (
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">
-                            {vendor.contact_email}
-                          </span>
-                        </div>
-                      )}
-                      {vendor.contact_phone && (
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">
-                            {vendor.contact_phone}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1.5">
-                        <Briefcase className="w-3.5 h-3.5 shrink-0" />
-                        <span>{vendor.projects_count || 0} projects</span>
+                      <div className="flex items-center justify-end">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingVendor(vendor);
+                          }}
+                          className="flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:underline"
+                        >
+                          View Profile
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
                       </div>
-                    </div>
-
-                    <div className="flex justify-end mt-2">
-                      <ActionMenu items={vendorActions(vendor)} />
                     </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm overflow-hidden">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="text-[var(--text-muted)] text-xs uppercase tracking-wider border-b border-[var(--border-soft)]">
+                      <th className="py-4 px-6 font-bold">Vendor Name</th>
+                      <th className="py-4 px-6 font-bold">Contact Info</th>
+                      <th className="py-4 px-6 font-bold">Service</th>
+                      <th className="py-4 px-6 font-bold">Payment Terms</th>
+                      <th className="py-4 px-6 font-bold text-center">
+                        Projects
+                      </th>
+                      <th className="py-4 px-6 font-bold text-right">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-subtle)]">
+                    {displayedVendors.map((vendor) => {
+                      const beforePct =
+                        vendor.effective_before_event_payment_percentage ??
+                        vendor.before_event_payment_percentage ??
+                        orgConfig.before;
+                      const afterPct =
+                        vendor.effective_after_event_payment_percentage ??
+                        vendor.after_event_payment_percentage ??
+                        orgConfig.after;
+                      const isCustomTerms =
+                        vendor.before_event_payment_percentage !== null &&
+                        vendor.before_event_payment_percentage !== undefined &&
+                        vendor.before_event_payment_percentage !== "";
+
+                      return (
+                        <tr
+                          key={vendor.vendor_id}
+                          onClick={() => setViewingVendor(vendor)}
+                          className="hover:bg-[var(--bg-app)] transition-colors group cursor-pointer"
+                        >
+                          <td className="py-4 px-6 font-bold text-[var(--text-main)]">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] group-hover:bg-brand-primary/10 group-hover:text-brand-primary border border-[var(--border-soft)] transition-colors overflow-hidden shrink-0">
+                                {vendor.logo ? (
+                                  <img
+                                    src={vendor.logo}
+                                    alt={vendor.business_name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  (
+                                    vendor.business_name?.[0] || "V"
+                                  ).toUpperCase()
+                                )}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="group-hover:text-brand-primary transition-colors">
+                                  {vendor.business_name}
+                                </span>
+                                <div className="flex gap-2 items-center mt-0.5">
+                                  <span
+                                    className={cn(
+                                      "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                                      vendor.status === "active"
+                                        ? "bg-emerald-500/10 text-emerald-500"
+                                        : "bg-rose-500/10 text-rose-500",
+                                    )}
+                                  >
+                                    {vendor.status}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                              {vendor.contact_name && (
+                                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                  <User className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate max-w-[150px]">
+                                    {vendor.contact_name}
+                                  </span>
+                                </div>
+                              )}
+                              {vendor.contact_email && (
+                                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate max-w-[150px]">
+                                    {vendor.contact_email}
+                                  </span>
+                                </div>
+                              )}
+                              {vendor.contact_phone && (
+                                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                  <Phone className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate max-w-[150px]">
+                                    {vendor.contact_phone}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                              {vendor.service || "General"}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-[var(--text-main)] text-xs">
+                                {beforePct}% / {afterPct}%
+                              </span>
+                              {isCustomTerms ? (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-brand-primary/10 text-brand-primary uppercase">
+                                  Custom
+                                </span>
+                              ) : (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium text-[var(--text-muted)] bg-[var(--bg-app)] border border-[var(--border-soft)]">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-center font-bold text-[var(--text-main)]">
+                            {vendor.projects_count || 0}
+                          </td>
+                          <td
+                            className="py-4 px-6 text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ActionMenu items={vendorActions(vendor)} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="md:hidden divide-y divide-[var(--border-subtle)]">
+                {displayedVendors.map((vendor) => {
+                  const beforePct =
+                    vendor.effective_before_event_payment_percentage ??
+                    vendor.before_event_payment_percentage ??
+                    orgConfig.before;
+                  const afterPct =
+                    vendor.effective_after_event_payment_percentage ??
+                    vendor.after_event_payment_percentage ??
+                    orgConfig.after;
+                  const isCustomTerms =
+                    vendor.before_event_payment_percentage !== null &&
+                    vendor.before_event_payment_percentage !== undefined &&
+                    vendor.before_event_payment_percentage !== "";
+
+                  return (
+                    <div
+                      key={vendor.vendor_id}
+                      onClick={() => setViewingVendor(vendor)}
+                      className="p-4 hover:bg-[var(--bg-app)] transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[var(--bg-app)] rounded-xl flex items-center justify-center text-sm font-bold text-[var(--text-muted)] border border-[var(--border-soft)] overflow-hidden shrink-0">
+                            {vendor.logo ? (
+                              <img
+                                src={vendor.logo}
+                                alt={vendor.business_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              (vendor.business_name?.[0] || "V").toUpperCase()
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-[var(--text-main)] text-sm">
+                              {vendor.business_name}
+                            </p>
+                            <span
+                              className={cn(
+                                "inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                                vendor.status === "active"
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "bg-rose-500/10 text-rose-500",
+                              )}
+                            >
+                              {vendor.status}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            {vendor.service || "General"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1 text-xs text-[var(--text-muted)] pl-12">
+                        {vendor.contact_name && (
+                          <div className="flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">
+                              {vendor.contact_name}
+                            </span>
+                          </div>
+                        )}
+                        {vendor.contact_email && (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">
+                              {vendor.contact_email}
+                            </span>
+                          </div>
+                        )}
+                        {vendor.contact_phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">
+                              {vendor.contact_phone}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mt-1 pt-1 border-t border-[var(--border-subtle)] text-[11px]">
+                          <span className="flex items-center gap-1">
+                            <CreditCard className="w-3 h-3 text-brand-primary" />
+                            Terms:{" "}
+                            <strong>
+                              {beforePct}% / {afterPct}%
+                            </strong>
+                            {isCustomTerms ? (
+                              <span className="text-[8px] px-1 rounded bg-brand-primary/10 text-brand-primary">
+                                Custom
+                              </span>
+                            ) : null}
+                          </span>
+                          <span>{vendor.projects_count || 0} projects</span>
+                        </div>
+                      </div>
+
+                      <div
+                        className="flex justify-end mt-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ActionMenu items={vendorActions(vendor)} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -813,6 +992,98 @@ export function Vendors() {
                   />
                 </div>
 
+                <div className="space-y-3 pt-3 border-t border-[var(--border-soft)]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                      <CreditCard className="w-4 h-4 text-brand-primary" />{" "}
+                      Vendor Payment Terms
+                    </label>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-surface)] px-2 py-0.5 rounded-full border border-[var(--border-soft)]">
+                      {formData.before_event_payment_percentage !== ""
+                        ? "Custom Override"
+                        : `Default: ${orgConfig.before}% / ${orgConfig.after}%`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Percentage split for payments. Leave blank to inherit the
+                    workspace default ({orgConfig.before}% before /{" "}
+                    {orgConfig.after}% after event).
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-muted)]">
+                        Before Event (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          placeholder={String(orgConfig.before)}
+                          value={formData.before_event_payment_percentage}
+                          onChange={(e) => {
+                            const val =
+                              e.target.value === ""
+                                ? ""
+                                : Math.min(
+                                    100,
+                                    Math.max(0, Number(e.target.value)),
+                                  );
+                            const afterVal =
+                              val === "" ? "" : 100 - Number(val);
+                            setFormData({
+                              ...formData,
+                              before_event_payment_percentage: val,
+                              after_event_payment_percentage: afterVal,
+                            });
+                          }}
+                          className="w-full px-4 py-2.5 pr-8 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all font-bold text-sm"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] font-bold">
+                          %
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-muted)]">
+                        After Event (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          placeholder={String(orgConfig.after)}
+                          value={formData.after_event_payment_percentage}
+                          onChange={(e) => {
+                            const val =
+                              e.target.value === ""
+                                ? ""
+                                : Math.min(
+                                    100,
+                                    Math.max(0, Number(e.target.value)),
+                                  );
+                            const beforeVal =
+                              val === "" ? "" : 100 - Number(val);
+                            setFormData({
+                              ...formData,
+                              after_event_payment_percentage: val,
+                              before_event_payment_percentage: beforeVal,
+                            });
+                          }}
+                          className="w-full px-4 py-2.5 pr-8 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:bg-[var(--bg-surface)] focus:ring-2 focus:ring-brand-primary/10 focus:border-brand-primary transition-all font-bold text-sm"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] font-bold">
+                          %
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">
                     Status
@@ -928,6 +1199,57 @@ export function Vendors() {
                   <p className="text-sm font-medium text-[var(--text-main)]">
                     {viewingVendor.contact_phone || "N/A"}
                   </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-brand-primary" />{" "}
+                    Payment Terms
+                  </span>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      viewingVendor.before_event_payment_percentage !== null &&
+                        viewingVendor.before_event_payment_percentage !==
+                          undefined &&
+                        viewingVendor.before_event_payment_percentage !== ""
+                        ? "bg-brand-primary/10 text-brand-primary"
+                        : "bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-soft)]",
+                    )}
+                  >
+                    {viewingVendor.before_event_payment_percentage !== null &&
+                    viewingVendor.before_event_payment_percentage !==
+                      undefined &&
+                    viewingVendor.before_event_payment_percentage !== ""
+                      ? "Custom Override"
+                      : "Inherited Default"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="p-3 bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)]">
+                    <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                      Before Event
+                    </span>
+                    <p className="text-base font-bold text-[var(--text-main)] mt-0.5">
+                      {viewingVendor.effective_before_event_payment_percentage ??
+                        viewingVendor.before_event_payment_percentage ??
+                        orgConfig.before}
+                      %
+                    </p>
+                  </div>
+                  <div className="p-3 bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)]">
+                    <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                      After Event
+                    </span>
+                    <p className="text-base font-bold text-[var(--text-main)] mt-0.5">
+                      {viewingVendor.effective_after_event_payment_percentage ??
+                        viewingVendor.after_event_payment_percentage ??
+                        orgConfig.after}
+                      %
+                    </p>
+                  </div>
                 </div>
               </div>
 

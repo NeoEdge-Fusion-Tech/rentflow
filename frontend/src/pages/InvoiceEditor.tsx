@@ -406,9 +406,11 @@ export function InvoiceEditor() {
       : null,
     show_bank_details: formData.show_bank_details,
     discount_amount:
-      Number(formData.discount_percentage) > 0 ? 0 : formData.discount_amount,
-    discount_percentage: formData.discount_percentage,
-    tax_percentage: formData.tax_percentage,
+      Number(formData.discount_percentage) > 0
+        ? 0
+        : Number(formData.discount_amount) || 0,
+    discount_percentage: Number(formData.discount_percentage) || 0,
+    tax_percentage: Number(formData.tax_percentage) || 0,
     notes: formData.notes,
     title: formData.title,
     invoice_number: formData.invoice_number || undefined,
@@ -416,8 +418,8 @@ export function InvoiceEditor() {
       ...(li.line_item_id ? { line_item_id: li.line_item_id } : {}),
       name: li.name,
       description: li.description,
-      quantity: li.quantity,
-      unit_price: li.unit_price,
+      quantity: Number(li.quantity) || 1,
+      unit_price: Number(li.unit_price) || 0,
     })),
   });
 
@@ -451,11 +453,28 @@ export function InvoiceEditor() {
     } catch (err: any) {
       console.error("Failed to save invoice", err);
       const apiError = err.response?.data;
-      const message =
-        apiError?.client?.[0] ||
-        apiError?.line_items?.[0] ||
-        apiError?.detail ||
-        "Failed to save invoice.";
+      let message = "Failed to save invoice.";
+      if (typeof apiError === "string") {
+        message = apiError;
+      } else if (apiError?.detail) {
+        message = apiError.detail;
+      } else if (apiError?.client) {
+        message = Array.isArray(apiError.client)
+          ? apiError.client[0]
+          : apiError.client;
+      } else if (apiError?.line_items) {
+        if (Array.isArray(apiError.line_items)) {
+          const first = apiError.line_items[0];
+          if (typeof first === "string") {
+            message = first;
+          } else if (typeof first === "object" && first !== null) {
+            const [field, val] = Object.entries(first)[0] || [];
+            message = `${field}: ${Array.isArray(val) ? val[0] : val}`;
+          }
+        } else {
+          message = "Please check the line items.";
+        }
+      }
       showNotification(message, "error");
       return null;
     } finally {
@@ -503,17 +522,17 @@ export function InvoiceEditor() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate(listUrl("/invoices"))}
-            className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors"
+            className="p-2.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-xl text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-colors shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2 group">
-              Invoice
-              <div className="relative flex items-center">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-main)] flex items-center gap-1.5 sm:gap-2 group flex-wrap">
+              <span className="shrink-0">Invoice</span>
+              <div className="relative flex items-center min-w-0">
                 <input
                   type="text"
                   value={formData.invoice_number}
@@ -521,17 +540,17 @@ export function InvoiceEditor() {
                     setFormData({ ...formData, invoice_number: e.target.value })
                   }
                   placeholder="e.g. INV-0001"
-                  className="bg-transparent border-b border-dashed border-transparent group-hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-2xl font-bold max-w-[280px] transition-colors"
+                  className="bg-transparent border-b border-dashed border-[var(--border-soft)] sm:border-transparent group-hover:border-[var(--border-soft)] focus:border-brand-primary outline-none px-1 py-0.5 text-xl sm:text-2xl font-bold w-full max-w-[150px] sm:max-w-[280px] transition-colors truncate"
                 />
-                <Edit2 className="w-4 h-4 text-[var(--text-muted)] absolute -right-6 pointer-events-none" />
+                <Edit2 className="w-3.5 h-3.5 text-[var(--text-muted)] ml-1 shrink-0 opacity-60 group-hover:opacity-100 pointer-events-none" />
               </div>
             </h1>
-            <div className="flex items-center gap-3 mt-1">
-              <p className="text-[var(--text-muted)]">
+            <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
+              <p className="text-xs sm:text-sm text-[var(--text-muted)]">
                 Fill in the details, then save as draft or issue it.
               </p>
               {lastInvoiceMeta?.last_invoice_number && !isEditMode && (
-                <span className="text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] px-2 py-0.5 rounded-full">
+                <span className="text-[11px] sm:text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] border border-[var(--border-soft)] px-2 py-0.5 rounded-full shrink-0">
                   Last: {lastInvoiceMeta.last_invoice_number}
                 </span>
               )}
@@ -922,7 +941,7 @@ export function InvoiceEditor() {
                         value={item.name}
                         onFocus={() => setActiveDropdown(i)}
                         onBlur={() =>
-                          setTimeout(() => setActiveDropdown(null), 200)
+                          setTimeout(() => setActiveDropdown(null), 300)
                         }
                         onChange={(e) => {
                           updateLineItem(i, "name", e.target.value);
@@ -951,6 +970,25 @@ export function InvoiceEditor() {
                               <div
                                 key={u.product_unit_id}
                                 className="px-3 py-2.5 hover:bg-[var(--bg-surface)] cursor-pointer flex justify-between items-center border-b border-[var(--border-subtle)] last:border-0"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  updateLineItem(
+                                    i,
+                                    "name",
+                                    u.name ||
+                                      `${u.product.name}${
+                                        u.serial_number
+                                          ? ` (${u.serial_number})`
+                                          : ""
+                                      }`,
+                                  );
+                                  updateLineItem(
+                                    i,
+                                    "unit_price",
+                                    parseFloat(u.rental_price || 0),
+                                  );
+                                  setActiveDropdown(null);
+                                }}
                                 onClick={() => {
                                   updateLineItem(
                                     i,
@@ -1240,20 +1278,50 @@ export function InvoiceEditor() {
       </div>
 
       {/* Mobile Sticky Action Bar */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-app)] border-t border-[var(--border-soft)] p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 flex items-center gap-2">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)] border-t border-[var(--border-soft)] p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.1)] z-40 space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider shrink-0">
+              Total:
+            </span>
+            <span className="text-base font-black text-[var(--text-main)] truncate">
+              <RevenueDisplay
+                amount={`${currencySymbol}${formatCurrency(grandTotal)}`}
+              />
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handlePreview}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg text-xs hover:bg-[var(--border-soft)] transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" /> Preview
+            </button>
+            {isEditMode && (
+              <button
+                onClick={handleDownload}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-lg text-xs hover:bg-[var(--border-soft)] transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> PDF
+              </button>
+            )}
+          </div>
+        </div>
+
         {!isEditMode ? (
-          <>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => handleSave("draft")}
               disabled={isSaving}
-              className="flex-1 justify-center px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50"
+              className="flex-1 justify-center px-4 py-2.5 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] font-bold rounded-xl hover:bg-[var(--border-soft)] transition-colors text-sm disabled:opacity-50"
             >
               Save Draft
             </button>
             <button
               onClick={() => handleSave("issued")}
               disabled={isSaving}
-              className="flex-1 justify-center px-4 py-3 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
+              className="flex-1 justify-center px-4 py-2.5 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
               style={{
                 backgroundColor:
                   org?.primary_color || "var(--color-brand-primary, #7c3aed)",
@@ -1261,24 +1329,39 @@ export function InvoiceEditor() {
             >
               {isSaving ? "Saving..." : "Save & Issue"}
             </button>
-          </>
+          </div>
         ) : (
-          <button
-            onClick={() => handleSave()}
-            disabled={isSaving}
-            className="w-full justify-center px-4 py-3 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
-            style={{
-              backgroundColor:
-                org?.primary_color || "var(--color-brand-primary, #7c3aed)",
-            }}
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={formData.status}
+              onChange={(e) =>
+                setFormData({ ...formData, status: e.target.value })
+              }
+              className="w-1/3 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-xl py-2 px-2 text-xs font-bold text-[var(--text-main)] outline-none"
+            >
+              <option value="draft">Draft</option>
+              <option value="issued">Issued</option>
+              <option value="partially_paid">Partially Paid</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button
+              onClick={() => handleSave()}
+              disabled={isSaving}
+              className="flex-1 justify-center px-4 py-2 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50 shadow-sm"
+              style={{
+                backgroundColor:
+                  org?.primary_color || "var(--color-brand-primary, #7c3aed)",
+              }}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         )}
       </div>
 
       {/* Spacer for mobile sticky bar */}
-      <div className="h-20 sm:hidden"></div>
+      <div className="h-28 sm:hidden"></div>
 
       <ProductSelectorModal
         isOpen={isProductModalOpen}

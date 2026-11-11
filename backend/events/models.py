@@ -88,6 +88,40 @@ class ExpenseLineItem(models.Model):
         related_name="created_expense_items",
     )
 
+    @property
+    def before_event_payment_percentage(self):
+        if self.expense_type == "vendor" and self.vendor:
+            return self.vendor.effective_before_event_payment_percentage
+        return None
+
+    @property
+    def after_event_payment_percentage(self):
+        if self.expense_type == "vendor" and self.vendor:
+            return self.vendor.effective_after_event_payment_percentage
+        return None
+
+    @property
+    def before_event_amount(self):
+        pct = self.before_event_payment_percentage
+        if pct is not None and self.amount is not None:
+            from decimal import Decimal
+
+            return round(
+                Decimal(str(self.amount)) * (Decimal(str(pct)) / Decimal("100")), 2
+            )
+        return None
+
+    @property
+    def after_event_amount(self):
+        pct = self.after_event_payment_percentage
+        if pct is not None and self.amount is not None:
+            from decimal import Decimal
+
+            return round(
+                Decimal(str(self.amount)) * (Decimal(str(pct)) / Decimal("100")), 2
+            )
+        return None
+
     def save(self, *args, **kwargs):
         if self.event_id and not self.organization_id:
             self.organization = self.event.organization

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "../utils/cropImage";
 import { useNotification } from "../context/NotificationContext";
@@ -71,10 +72,19 @@ const timeZoneOptions = (current?: string) => {
 
 export function Settings() {
   const { showNotification, showConfirm } = useNotification();
-  const initialTab = new URLSearchParams(window.location.search).get("tab");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
-    initialTab === "billing" ? "Billing & Plans" : "Workspace",
+    tabParam === "billing" ? "Billing & Plans" : "Workspace",
   );
+
+  useEffect(() => {
+    if (tabParam === "billing") {
+      setActiveTab("Billing & Plans");
+    } else if (!tabParam && activeTab === "Billing & Plans") {
+      setActiveTab("Workspace");
+    }
+  }, [tabParam]);
 
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -422,6 +432,18 @@ export function Settings() {
           payout_account_id: org.payout_account_id,
           currency_id: org.currency?.id || org.currency_id || null,
           primary_color: org.primary_color,
+          vendor_payment_before_event_percentage:
+            org.vendor_payment_before_event_percentage !== undefined &&
+            org.vendor_payment_before_event_percentage !== "" &&
+            org.vendor_payment_before_event_percentage !== null
+              ? Number(org.vendor_payment_before_event_percentage)
+              : 70,
+          vendor_payment_after_event_percentage:
+            org.vendor_payment_after_event_percentage !== undefined &&
+            org.vendor_payment_after_event_percentage !== "" &&
+            org.vendor_payment_after_event_percentage !== null
+              ? Number(org.vendor_payment_after_event_percentage)
+              : 30,
         };
         await OrganizationService.patch(org.id, payload);
         showNotification("Workspace updated! Settings are saved.", "success");
@@ -677,7 +699,14 @@ export function Settings() {
         ].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setActiveTab(tab);
+              if (tab === "Billing & Plans") {
+                setSearchParams({ tab: "billing" });
+              } else {
+                setSearchParams({});
+              }
+            }}
             className={`pb-4 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab
                 ? "border-brand-primary text-brand-primary"
@@ -1046,6 +1075,125 @@ export function Settings() {
                 className="bg-brand-primary text-brand-accent px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-soft)] shadow-sm p-6">
+            <h2 className="text-lg font-bold text-[var(--text-main)] mb-2 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-brand-primary" /> Vendor
+              Payment Configuration
+            </h2>
+            <p className="text-xs text-[var(--text-muted)] mb-6">
+              Set the default payment terms for service vendors across your
+              projects. New vendors will inherit these percentages by default,
+              and can be overridden individually in the Vendor Directory.
+            </p>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    Before Event Payment (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={
+                        org?.vendor_payment_before_event_percentage !==
+                          undefined &&
+                        org?.vendor_payment_before_event_percentage !== null
+                          ? org.vendor_payment_before_event_percentage
+                          : 70
+                      }
+                      onChange={(e) => {
+                        const val =
+                          e.target.value === ""
+                            ? ""
+                            : Math.min(
+                                100,
+                                Math.max(0, Number(e.target.value)),
+                              );
+                        const afterVal = val === "" ? "" : 100 - Number(val);
+                        setOrg({
+                          ...org,
+                          vendor_payment_before_event_percentage: val,
+                          vendor_payment_after_event_percentage: afterVal,
+                        });
+                      }}
+                      className="w-full px-3 py-2 pr-8 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary font-bold"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)] font-bold">
+                      %
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Deposit/advance amount paid before event starts.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">
+                    After Event Payment (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={
+                        org?.vendor_payment_after_event_percentage !==
+                          undefined &&
+                        org?.vendor_payment_after_event_percentage !== null
+                          ? org.vendor_payment_after_event_percentage
+                          : 30
+                      }
+                      onChange={(e) => {
+                        const val =
+                          e.target.value === ""
+                            ? ""
+                            : Math.min(
+                                100,
+                                Math.max(0, Number(e.target.value)),
+                              );
+                        const beforeVal = val === "" ? "" : 100 - Number(val);
+                        setOrg({
+                          ...org,
+                          vendor_payment_after_event_percentage: val,
+                          vendor_payment_before_event_percentage: beforeVal,
+                        });
+                      }}
+                      className="w-full px-3 py-2 pr-8 border border-[var(--border-soft)] bg-[var(--bg-app)] text-[var(--text-main)] rounded-lg focus:outline-none focus:ring-brand-primary focus:border-brand-primary font-bold"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)] font-bold">
+                      %
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Balance amount paid after event completion.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-[var(--bg-app)] rounded-xl border border-[var(--border-soft)] flex items-center justify-between text-xs">
+                <span className="text-[var(--text-muted)]">
+                  Current Default Split:
+                </span>
+                <span className="font-bold text-[var(--text-main)]">
+                  {org?.vendor_payment_before_event_percentage ?? 70}% Before
+                  Event / {org?.vendor_payment_after_event_percentage ?? 30}%
+                  After Event
+                </span>
+              </div>
+
+              <button
+                onClick={handleUpdateWorkspace}
+                className="bg-brand-primary text-brand-accent px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                Save Payment Config
               </button>
             </div>
           </div>

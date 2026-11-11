@@ -6,6 +6,11 @@ interface FooterProps {
 }
 
 export function Footer({ className = "" }: FooterProps) {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token") || sessionStorage.getItem("token")
+      : null;
+
   return (
     <div
       className={`py-6 mt-12 text-center w-full flex justify-center ${className}`}
@@ -39,7 +44,7 @@ export function Footer({ className = "" }: FooterProps) {
           |
         </span>
         <Link
-          to="/pricing"
+          to={token ? "/settings?tab=billing" : "/pricing"}
           className="text-[10px] font-bold text-[var(--text-muted)] hover:text-brand-primary uppercase tracking-widest mt-1 transition-colors"
         >
           Pricing

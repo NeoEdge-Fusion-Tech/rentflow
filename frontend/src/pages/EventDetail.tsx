@@ -17,6 +17,7 @@ import {
   Copy,
   Paperclip,
   Link2,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { useNotification } from "../context/NotificationContext";
@@ -661,9 +662,58 @@ export function EventDetail() {
                       className="cursor-pointer hover:bg-[var(--bg-app)]/50 transition-colors group"
                     >
                       <td className="py-3 pr-4 font-bold text-[var(--text-main)] group-hover:text-brand-primary transition-colors">
-                        {exp.expense_type === "vendor"
-                          ? exp.vendor_details?.business_name
-                          : exp.name}
+                        <div>
+                          <span>
+                            {exp.expense_type === "vendor"
+                              ? exp.vendor_details?.business_name || exp.name
+                              : exp.name}
+                          </span>
+                          {exp.expense_type === "vendor" &&
+                            (() => {
+                              const bPct =
+                                exp.before_event_payment_percentage ??
+                                exp.vendor_details
+                                  ?.effective_before_event_payment_percentage ??
+                                exp.vendor_details
+                                  ?.before_event_payment_percentage ??
+                                70;
+                              const aPct =
+                                exp.after_event_payment_percentage ??
+                                exp.vendor_details
+                                  ?.effective_after_event_payment_percentage ??
+                                exp.vendor_details
+                                  ?.after_event_payment_percentage ??
+                                30;
+                              const bAmt =
+                                exp.before_event_amount ??
+                                (Number(exp.amount) * bPct) / 100;
+                              const aAmt =
+                                exp.after_event_amount ??
+                                (Number(exp.amount) * aPct) / 100;
+
+                              return (
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] font-normal text-[var(--text-muted)]">
+                                  <span>
+                                    Before:{" "}
+                                    <span className="font-semibold text-[var(--text-main)]">
+                                      {defaultCurrencySymbol}
+                                      {formatCurrency(bAmt)}
+                                    </span>{" "}
+                                    ({bPct}%)
+                                  </span>
+                                  <span>•</span>
+                                  <span>
+                                    After:{" "}
+                                    <span className="font-semibold text-[var(--text-main)]">
+                                      {defaultCurrencySymbol}
+                                      {formatCurrency(aAmt)}
+                                    </span>{" "}
+                                    ({aPct}%)
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                        </div>
                       </td>
                       <td className="py-3 pr-4">
                         <span
@@ -715,7 +765,7 @@ export function EventDetail() {
                     <div>
                       <p className="font-bold text-[var(--text-main)] text-sm group-hover:text-brand-primary transition-colors">
                         {exp.expense_type === "vendor"
-                          ? exp.vendor_details?.business_name
+                          ? exp.vendor_details?.business_name || exp.name
                           : exp.name}
                       </p>
                       <span
@@ -728,6 +778,48 @@ export function EventDetail() {
                       >
                         {exp.expense_type}
                       </span>
+                      {exp.expense_type === "vendor" &&
+                        (() => {
+                          const bPct =
+                            exp.before_event_payment_percentage ??
+                            exp.vendor_details
+                              ?.effective_before_event_payment_percentage ??
+                            exp.vendor_details
+                              ?.before_event_payment_percentage ??
+                            70;
+                          const aPct =
+                            exp.after_event_payment_percentage ??
+                            exp.vendor_details
+                              ?.effective_after_event_payment_percentage ??
+                            exp.vendor_details
+                              ?.after_event_payment_percentage ??
+                            30;
+                          const bAmt =
+                            exp.before_event_amount ??
+                            (Number(exp.amount) * bPct) / 100;
+                          const aAmt =
+                            exp.after_event_amount ??
+                            (Number(exp.amount) * aPct) / 100;
+
+                          return (
+                            <div className="mt-1.5 text-xs text-[var(--text-muted)] space-y-0.5">
+                              <p>
+                                Before ({bPct}%):{" "}
+                                <span className="font-semibold text-[var(--text-main)]">
+                                  {defaultCurrencySymbol}
+                                  {formatCurrency(bAmt)}
+                                </span>
+                              </p>
+                              <p>
+                                After ({aPct}%):{" "}
+                                <span className="font-semibold text-[var(--text-main)]">
+                                  {defaultCurrencySymbol}
+                                  {formatCurrency(aAmt)}
+                                </span>
+                              </p>
+                            </div>
+                          );
+                        })()}
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-bold text-[var(--text-main)] flex items-center justify-end">
@@ -1008,9 +1100,74 @@ export function EventDetail() {
                         amount: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all"
+                    className="w-full px-4 py-3 bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl outline-none focus:border-brand-primary transition-all font-bold"
                   />
                 </div>
+
+                {expenseForm.expense_type === "vendor" &&
+                  expenseForm.vendor &&
+                  (() => {
+                    const selectedVendor = vendors.find(
+                      (v: any) =>
+                        String(v.vendor_id) === String(expenseForm.vendor),
+                    );
+                    const beforePct =
+                      selectedVendor?.effective_before_event_payment_percentage ??
+                      selectedVendor?.before_event_payment_percentage ??
+                      70;
+                    const afterPct =
+                      selectedVendor?.effective_after_event_payment_percentage ??
+                      selectedVendor?.after_event_payment_percentage ??
+                      30;
+                    const totalAmt = parseFloat(expenseForm.amount) || 0;
+                    const beforeAmt = (totalAmt * beforePct) / 100;
+                    const afterAmt = (totalAmt * afterPct) / 100;
+
+                    return (
+                      <div className="p-4 bg-[var(--bg-app)] rounded-2xl border border-[var(--border-soft)] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-brand-primary" />{" "}
+                            Vendor Payment Terms
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-primary/10 text-brand-primary">
+                            {selectedVendor?.business_name || "Selected Vendor"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-3 bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-[var(--text-muted)]">
+                                Before Event
+                              </span>
+                              <span className="text-[10px] font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">
+                                {beforePct}%
+                              </span>
+                            </div>
+                            <p className="text-base font-bold text-[var(--text-main)] mt-1">
+                              {defaultCurrencySymbol}
+                              {formatCurrency(beforeAmt)}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-[var(--bg-surface)] rounded-xl border border-[var(--border-soft)]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-[var(--text-muted)]">
+                                After Event
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                {afterPct}%
+                              </span>
+                            </div>
+                            <p className="text-base font-bold text-[var(--text-main)] mt-1">
+                              {defaultCurrencySymbol}
+                              {formatCurrency(afterAmt)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-muted)]">

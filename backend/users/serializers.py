@@ -216,6 +216,8 @@ class OrganizationSerializer(TenantSerializerMixin, serializers.ModelSerializer)
             "currency",
             "currency_id",
             "primary_color",
+            "vendor_payment_before_event_percentage",
+            "vendor_payment_after_event_percentage",
             "is_active",
             "created_at",
             "revenue",
@@ -604,6 +606,8 @@ class ClientSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 class VendorSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
+    effective_before_event_payment_percentage = serializers.FloatField(read_only=True)
+    effective_after_event_payment_percentage = serializers.FloatField(read_only=True)
 
     def get_created_by_name(self, obj):
         if obj.created_by:
@@ -634,12 +638,22 @@ class VendorSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "description",
             "logo",
             "status",
+            "before_event_payment_percentage",
+            "after_event_payment_percentage",
+            "effective_before_event_payment_percentage",
+            "effective_after_event_payment_percentage",
             "created_by_name",
             "updated_by_name",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["created_at", "updated_at", "organization"]
+        read_only_fields = [
+            "created_at",
+            "updated_at",
+            "organization",
+            "effective_before_event_payment_percentage",
+            "effective_after_event_payment_percentage",
+        ]
 
 
 from django.db import transaction

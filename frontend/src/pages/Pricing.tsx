@@ -26,11 +26,9 @@ export function Pricing() {
 
   useEffect(() => {
     if (token) {
-      AuthService.getMe()
-        .then((res) => setCurrentUser(res.data))
-        .catch(console.error);
+      navigate("/settings?tab=billing", { replace: true });
     }
-  }, [token]);
+  }, [token, navigate]);
 
   const handleUpgrade = async (plan: Plan) => {
     if (!token) {

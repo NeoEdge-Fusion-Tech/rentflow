@@ -148,8 +148,12 @@ function AppLayout() {
       !isPublicPage &&
       location.pathname !== "/onboarding"
     ) {
-      // If token exists and they are on an auth route, go to dashboard
-      navigate("/dashboard");
+      // If token exists and they are on an auth route, redirect to Billing & Plans if pricing, else dashboard
+      if (location.pathname === "/pricing") {
+        navigate("/settings?tab=billing", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     }
 
     if (token) {
