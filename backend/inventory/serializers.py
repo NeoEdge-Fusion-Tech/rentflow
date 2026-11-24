@@ -8,6 +8,9 @@ from .models import (
     BookingItemUnit,
     OrganizationBookingSettings,
     MarketplaceTag,
+    UnitAccessory,
+    HandoverCheck,
+    HandoverCheckLine,
 )
 
 from users.mixins import TenantSerializerMixin
@@ -123,8 +126,45 @@ class ProductCategorySerializer(TenantSerializerMixin, serializers.ModelSerializ
         return data
 
 
+class UnitAccessorySerializer(serializers.ModelSerializer):
+    accessory_id = serializers.IntegerField(required=False)
+    quantity = serializers.IntegerField(min_value=1, default=1)
+
+    class Meta:
+        model = UnitAccessory
+        fields = [
+            "accessory_id",
+            "kind",
+            "name",
+            "quantity",
+            "description",
+            "is_critical",
+        ]
+
+
+def sync_accessories(unit, accessories_data):
+    """Make the unit's active accessories match `accessories_data`. Removed
+    ones are deactivated (not deleted) so past checklists keep their link."""
+    existing = {a.accessory_id: a for a in unit.accessories.filter(is_active=True)}
+    for index, data in enumerate(accessories_data):
+        data = dict(data)
+        acc_id = data.pop("accessory_id", None)
+        data["sort_order"] = index
+        acc = existing.pop(acc_id, None) if acc_id else None
+        if acc:
+            for attr, value in data.items():
+                setattr(acc, attr, value)
+            acc.save()
+        else:
+            UnitAccessory.objects.create(product_unit=unit, **data)
+    for acc in existing.values():
+        acc.is_active = False
+        acc.save(update_fields=["is_active", "updated_at"])
+
+
 class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     product_unit_id = serializers.IntegerField(required=False)
+    accessories = UnitAccessorySerializer(many=True, required=False)
     # Override to remove automatic unique validator for nested updates
     serial_number = serializers.CharField(
         required=False, allow_null=True, allow_blank=True
@@ -140,6 +180,7 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "serial_number",
             "status",
             "description",
+            "stock_location",
             "image",
             "unit_cost_price",
             "quantity",
@@ -150,6 +191,7 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "quantity_rented",
             "quantity_good",
             "quantity_damaged",
+            "accessories",
         ]
         read_only_fields = [
             "product",
@@ -159,6 +201,28 @@ class ProductUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             "quantity_good",
         ]
         # quantity_damaged is writable — user can mark how many are damaged
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Only active accessories (removed ones are kept for history).
+        data["accessories"] = UnitAccessorySerializer(
+            [a for a in instance.accessories.all() if a.is_active], many=True
+        ).data
+        return data
+
+    def create(self, validated_data):
+        accessories = validated_data.pop("accessories", None)
+        unit = super().create(validated_data)
+        if accessories is not None:
+            sync_accessories(unit, accessories)
+        return unit
+
+    def update(self, instance, validated_data):
+        accessories = validated_data.pop("accessories", None)
+        unit = super().update(instance, validated_data)
+        if accessories is not None:
+            sync_accessories(unit, accessories)
+        return unit
 
     def validate_quantity_damaged(self, value):
         """Ensure quantity_damaged does not exceed the unit's total quantity."""
@@ -339,7 +403,10 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         for unit_data in units_data:
             # Pop product_unit_id if present (could be None or dummy)
             unit_data.pop("product_unit_id", None)
-            ProductUnit.objects.create(product=product, **unit_data)
+            accessories = unit_data.pop("accessories", None)
+            unit = ProductUnit.objects.create(product=product, **unit_data)
+            if accessories:
+                sync_accessories(unit, accessories)
 
         product.save()  # Trigger quantity sync from units
         return product
@@ -363,13 +430,17 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
 
             for unit_data in units_data:
                 unit_id = unit_data.pop("product_unit_id", None)
+                accessories = unit_data.pop("accessories", None)
                 if unit_id and unit_id in existing_units:
                     unit = existing_units.pop(unit_id)
                     for attr, value in unit_data.items():
                         setattr(unit, attr, value)
                     unit.save()
                 else:
-                    ProductUnit.objects.create(product=instance, **unit_data)
+                    unit = ProductUnit.objects.create(product=instance, **unit_data)
+                # Omitted = leave as is (older clients don't send it).
+                if accessories is not None:
+                    sync_accessories(unit, accessories)
 
             # Remaining units were removed
             for unit in existing_units.values():
@@ -379,8 +450,80 @@ class ProductSerializer(TenantSerializerMixin, serializers.ModelSerializer):
         return instance
 
 
+class HandoverCheckLineSerializer(serializers.ModelSerializer):
+    shortfall = serializers.ReadOnlyField()
+
+    class Meta:
+        model = HandoverCheckLine
+        fields = [
+            "line_id",
+            "accessory",
+            "kind",
+            "name",
+            "is_critical",
+            "expected_quantity",
+            "confirmed_quantity",
+            "shortfall",
+            "issue",
+            "note",
+        ]
+
+
+def _user_name(user):
+    if not user:
+        return None
+    full = " ".join(p for p in (user.first_name, user.last_name) if p).strip()
+    return full or getattr(user, "email", None) or user.username
+
+
+class HandoverCheckSerializer(serializers.ModelSerializer):
+    lines = HandoverCheckLineSerializer(many=True, read_only=True)
+    performed_by_name = serializers.SerializerMethodField()
+    resolved_by_name = serializers.SerializerMethodField()
+    booking_id = serializers.ReadOnlyField(
+        source="booking_item_unit.booking_item.booking_id"
+    )
+    product_name = serializers.ReadOnlyField(
+        source="booking_item_unit.product_unit.product.name"
+    )
+    serial_number = serializers.ReadOnlyField(
+        source="booking_item_unit.product_unit.serial_number"
+    )
+
+    class Meta:
+        model = HandoverCheck
+        fields = [
+            "check_id",
+            "booking_item_unit",
+            "booking_id",
+            "product_name",
+            "serial_number",
+            "stage",
+            "quantity",
+            "note",
+            "has_issues",
+            "is_incomplete",
+            "flag_reason",
+            "performed_by_name",
+            "performed_at",
+            "resolved_at",
+            "resolved_by_name",
+            "resolution_note",
+            "lines",
+        ]
+        read_only_fields = fields
+
+    def get_performed_by_name(self, obj):
+        return _user_name(obj.performed_by)
+
+    def get_resolved_by_name(self, obj):
+        return _user_name(obj.resolved_by)
+
+
 class BookingItemUnitSerializer(TenantSerializerMixin, serializers.ModelSerializer):
     serial_number = serializers.ReadOnlyField(source="product_unit.serial_number")
+    status = serializers.ReadOnlyField()
+    handover_checks = HandoverCheckSerializer(many=True, read_only=True)
     unit_type = serializers.ReadOnlyField(source="product_unit.unit_type")
     quantity_returned = serializers.ReadOnlyField(source="total_returned")
 
@@ -398,6 +541,8 @@ class BookingItemUnitSerializer(TenantSerializerMixin, serializers.ModelSerializ
             "quantity_returned",
             "pickup_date",
             "return_date",
+            "status",
+            "handover_checks",
         ]
 
 

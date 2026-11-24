@@ -212,3 +212,68 @@ export interface FeedbackResponse {
   submitted_at?: string;
   answers: FeedbackAnswer[];
 }
+
+/** A part that travels with a product unit (bolts, batteries, cables...). */
+export type KitItemKind = "accessory" | "consumable";
+
+export interface UnitAccessory {
+  accessory_id?: number;
+  /** Consumables (batteries, tape...) are expected to be used up. */
+  kind: KitItemKind;
+  name: string;
+  /** Per item for bulk units. */
+  quantity: number;
+  description?: string | null;
+  /** The unit can't work without it: missing at check-in = return incomplete. */
+  is_critical: boolean;
+}
+
+export type HandoverStage = "check_out" | "check_in";
+export type HandoverIssue =
+  | ""
+  | "missing"
+  | "damaged"
+  | "consumed"
+  | "not_sent";
+
+/** A line the scanner asks staff to confirm. */
+export interface ChecklistPromptLine {
+  accessory_id: number;
+  kind: KitItemKind;
+  name: string;
+  description: string;
+  is_critical: boolean;
+  expected_quantity: number;
+}
+
+export interface HandoverCheckLine {
+  line_id: number;
+  kind: KitItemKind;
+  name: string;
+  is_critical: boolean;
+  expected_quantity: number;
+  confirmed_quantity: number;
+  shortfall: number;
+  issue: HandoverIssue;
+  note: string | null;
+}
+
+export interface HandoverCheck {
+  check_id: number;
+  booking_item_unit: number;
+  booking_id: number;
+  product_name: string;
+  serial_number: string | null;
+  stage: HandoverStage;
+  quantity: number;
+  note: string | null;
+  has_issues: boolean;
+  is_incomplete: boolean;
+  flag_reason: string | null;
+  performed_by_name: string | null;
+  performed_at: string;
+  resolved_at: string | null;
+  resolved_by_name: string | null;
+  resolution_note: string | null;
+  lines: HandoverCheckLine[];
+}

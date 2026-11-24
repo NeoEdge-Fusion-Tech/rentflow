@@ -64,3 +64,48 @@ class HasModulePermission(permissions.BasePermission):
         except OrganizationMembership.DoesNotExist:
             # Fallback to legacy behavior if they don't have a membership yet
             return False
+
+
+def role_permissions(user):
+    """The permissions of the user's role in their active organization
+    (same rules as UserSerializer.active_role_permissions)."""
+    if user.is_superuser:
+        return {"_all": ["read", "write", "delete"]}
+    org_id = getattr(user, "organization_id", None)
+    if not org_id:
+        return {}
+    from .models import OrganizationMembership
+
+    membership = (
+        OrganizationMembership.objects.filter(
+            user=user, organization_id=org_id, is_active=True
+        )
+        .select_related("role")
+        .first()
+    )
+    if membership and membership.role:
+        return membership.role.permissions or {}
+    if user.role == "admin":
+        return {"_all": ["read", "write", "delete"]}
+    return {}
+
+
+def can_use_validator(user, action="read"):
+    """Validator users, admins, and any role granted the `validator_app`
+    module (e.g. Support) may check bookings out and in."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.role in ("admin", "validator"):
+        return True
+    perms = role_permissions(user)
+    if action in (perms.get("_all") or []):
+        return True
+    return module_allows(perms.get("validator_app"), action)
+
+
+class CanUseValidator(permissions.BasePermission):
+    message = "You don't have access to the validator."
+
+    def has_permission(self, request, view):
+        action = "read" if request.method in permissions.SAFE_METHODS else "write"
+        return can_use_validator(request.user, action)

@@ -357,6 +357,9 @@ class OrganizationViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             OrganizationMembership.objects.create(
                 user=user, organization=organization, role=admin_role, is_active=True
             )
+            from .roles import ensure_default_roles
+
+            ensure_default_roles(organization)
 
 
 class SubscriptionViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
@@ -683,7 +686,7 @@ class SuperAdminStatsAPIView(APIView):
 
         # Global booking volume
         active_bookings = Booking.objects.exclude(
-            status__in=["returned", "cancelled"]
+            status__in=["returned", "returned_incomplete", "cancelled"]
         ).count()
 
         # Chart Data (Last 6 Months)

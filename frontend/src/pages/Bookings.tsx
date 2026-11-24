@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { PdfViewerModal } from "../components/PdfViewerModal";
+import { BookingAccessoryChecks } from "../components/BookingAccessoryChecks";
 
 import {
   BookingService,
@@ -898,6 +899,11 @@ export function Bookings() {
             color: "emerald",
           },
           {
+            label: "Return Incomplete",
+            value: stats?.booking_stats?.returned_incomplete,
+            color: "rose",
+          },
+          {
             label: "Cancelled",
             value: stats?.booking_stats?.cancelled,
             color: "rose",
@@ -939,6 +945,7 @@ export function Bookings() {
           "confirmed",
           "picked_up",
           "returned",
+          "returned_incomplete",
           "cancelled",
         ].map((tab) => (
           <button
@@ -951,7 +958,9 @@ export function Bookings() {
                 : "text-[var(--text-muted)] hover:text-[var(--text-main)]",
             )}
           >
-            {tab.replace("_", " ")}
+            {tab === "returned_incomplete"
+              ? "Return incomplete"
+              : tab.replace("_", " ")}
             {activeTab === tab && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--text-link)] rounded-full" />
             )}
@@ -1056,9 +1065,11 @@ export function Bookings() {
                                   ? "bg-amber-50 text-amber-700 border-amber-100"
                                   : booking.status === "returned"
                                     ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                    : booking.status === "cancelled"
-                                      ? "bg-rose-50 text-rose-700 border-rose-100"
-                                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                                    : booking.status === "returned_incomplete"
+                                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                                      : booking.status === "cancelled"
+                                        ? "bg-rose-50 text-rose-700 border-rose-100"
+                                        : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
                           )}
                         >
                           {booking.status === "request"
@@ -2028,6 +2039,12 @@ export function Bookings() {
                               Returned
                             </option>
                             <option
+                              value="returned_incomplete"
+                              className="bg-[var(--bg-surface)] text-[var(--text-main)]"
+                            >
+                              Return Incomplete
+                            </option>
+                            <option
                               value="cancelled"
                               className="bg-[var(--bg-surface)] text-[var(--text-main)]"
                             >
@@ -2440,13 +2457,18 @@ export function Bookings() {
                                   ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                                   : selectedBooking.status === "returned"
                                     ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                    : selectedBooking.status === "cancelled"
+                                    : selectedBooking.status ===
+                                        "returned_incomplete"
                                       ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                                      : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
+                                      : selectedBooking.status === "cancelled"
+                                        ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                        : "bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-soft)]",
                           )}
                         >
-                          {selectedBooking.status?.replace("_", " ") ||
-                            "Request"}
+                          {selectedBooking.status === "returned_incomplete"
+                            ? "Return incomplete"
+                            : selectedBooking.status?.replace("_", " ") ||
+                              "Request"}
                         </span>
                         {/* Payment Status Badge */}
                         <span
@@ -2930,6 +2952,18 @@ export function Bookings() {
 
                   {activeManagerTab === "items" ? (
                     <>
+                      {!isManagingBooking && (
+                        <BookingAccessoryChecks
+                          booking={selectedBooking}
+                          onResolved={async () => {
+                            const res = await BookingService.get(
+                              selectedBooking.booking_id,
+                            );
+                            setSelectedBooking(res.data);
+                            fetchBookings();
+                          }}
+                        />
+                      )}
                       <div className="space-y-4">
                         {(isManagingBooking
                           ? editFormData?.items
@@ -3702,6 +3736,12 @@ export function Bookings() {
                                   className="bg-[var(--bg-surface)]"
                                 >
                                   Returned
+                                </option>
+                                <option
+                                  value="returned_incomplete"
+                                  className="bg-[var(--bg-surface)]"
+                                >
+                                  Return Incomplete
                                 </option>
                                 <option
                                   value="cancelled"

@@ -12,6 +12,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
+import { isValidatorOnly } from "./context/usePermissions";
 import { Dashboard } from "./pages/Dashboard";
 import { Inventory } from "./pages/Inventory";
 import { Clients } from "./pages/Clients";
@@ -137,6 +138,18 @@ function AppLayout() {
     location.pathname.startsWith("/public/store/") ||
     location.pathname.startsWith("/public/organizations/");
 
+  // Validator-only users can't open the rest of the app.
+  useEffect(() => {
+    if (
+      currentUser &&
+      isValidatorOnly(currentUser) &&
+      !isAuthRoute &&
+      !location.pathname.startsWith("/validation")
+    ) {
+      navigate("/validation", { replace: true });
+    }
+  }, [currentUser, location.pathname]);
+
   useEffect(() => {
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -183,10 +196,10 @@ function AppLayout() {
       localStorage.setItem("currencySymbol", res.data.currency_symbol || "$");
 
       if (
-        res.data.role === "validator" &&
-        (location.pathname === "/dashboard" || location.pathname === "/")
+        isValidatorOnly(res.data) &&
+        !location.pathname.startsWith("/validation")
       ) {
-        navigate("/validation");
+        navigate("/validation", { replace: true });
       }
     } catch (e) {
       console.error(e);

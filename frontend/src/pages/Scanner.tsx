@@ -8,10 +8,16 @@ import {
   Package,
   Layers,
   Tag,
+  AlertTriangle,
 } from "lucide-react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { cn } from "@/src/utils";
 import { ProductService } from "../api";
+import {
+  HandoverChecklist,
+  type ChecklistAnswer,
+  type ChecklistPrompt,
+} from "../components/HandoverChecklist";
 
 export function Scanner() {
   const [actionType, setActionType] = useState<"pickup" | "return">("pickup");
@@ -24,9 +30,15 @@ export function Scanner() {
 
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "checklist" | "success" | "error"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
   const [actionData, setActionData] = useState<any>(null);
+  // Set when the scanned unit has accessories to confirm first.
+  const [checklistPrompt, setChecklistPrompt] =
+    useState<ChecklistPrompt | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<any>(null);
 
   // Auto-reset secondary fields when mode changes to prevent accidental submissions
   useEffect(() => {
@@ -80,25 +92,56 @@ export function Scanner() {
         }
       }
 
-      const res = await ProductService.scan(payload);
+      await send(payload);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || "Action failed");
+      setStatus("error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      if (res.data.requires_quantity || res.data.requires_condition) {
-        // Edge case: our payload format perfectly overrides these, but if it triggers, show as error
-        throw new Error(
-          res.data.error ||
-            res.data.message ||
-            "Verification required by server.",
-        );
-      }
+  /** Posts a scan. The server may first ask for the accessory checklist. */
+  const send = async (payload: any) => {
+    const res = await ProductService.scan(payload);
 
-      setActionData(res.data);
-      setStatus("success");
+    if (res.data.requires_checklist) {
+      setPendingPayload(payload);
+      setChecklistPrompt(res.data);
+      setStatus("checklist");
+      return;
+    }
 
-      // Clear form for next scan
-      setSerialCode("");
-      setQuantity(1);
-      setQtyDamaged(0);
-      setCondition("good");
+    if (res.data.requires_quantity || res.data.requires_condition) {
+      // Edge case: our payload format perfectly overrides these, but if it triggers, show as error
+      throw new Error(
+        res.data.error ||
+          res.data.message ||
+          "Verification required by server.",
+      );
+    }
+
+    setActionData(res.data);
+    setStatus("success");
+
+    // Clear form for next scan
+    setSerialCode("");
+    setQuantity(1);
+    setQtyDamaged(0);
+    setCondition("good");
+    setChecklistPrompt(null);
+    setPendingPayload(null);
+  };
+
+  const confirmChecklist = async (answers: ChecklistAnswer[], note: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await send({
+        ...pendingPayload,
+        checklist: answers,
+        checklist_note: note,
+      });
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || "Action failed");
       setStatus("error");
@@ -136,6 +179,8 @@ export function Scanner() {
     setStatus("idle");
     setError(null);
     setActionData(null);
+    setChecklistPrompt(null);
+    setPendingPayload(null);
   };
 
   return (
@@ -145,7 +190,7 @@ export function Scanner() {
           Inventory Scanner
         </h1>
         <p className="text-xs sm:text-sm text-[var(--text-muted)]">
-          Record equipment pickups and returns quickly.
+          Check equipment out at pickup and back in on return.
         </p>
       </div>
 
@@ -169,6 +214,29 @@ export function Scanner() {
               <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1">
                 SN: {actionData.serial_number}
               </p>
+            )}
+
+            {actionData?.checklist?.has_issues && (
+              <div
+                className={cn(
+                  "mt-5 w-full flex gap-2 p-3 rounded-xl border text-sm",
+                  actionData.checklist.is_incomplete
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-600"
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400",
+                )}
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>
+                  <span className="font-bold">
+                    {actionData.checklist.is_incomplete
+                      ? "Return incomplete. "
+                      : "Accessories flagged. "}
+                  </span>
+                  {actionData.checklist.flag_reason}
+                  {actionData.checklist.is_incomplete &&
+                    ". Resolve it from the booking once the part is found or replaced."}
+                </p>
+              </div>
             )}
 
             <div className="mt-6 flex flex-col gap-3 w-full max-w-xs">
@@ -215,6 +283,19 @@ export function Scanner() {
           </div>
         )}
 
+        {/* ACCESSORY CHECKLIST */}
+        {status === "checklist" && checklistPrompt && !isLoading && (
+          <HandoverChecklist
+            // Remount (clear ticks) if the server sends a changed list.
+            key={checklistPrompt.checklist
+              .map((l) => `${l.accessory_id}:${l.expected_quantity}`)
+              .join(",")}
+            prompt={checklistPrompt}
+            onConfirm={confirmChecklist}
+            onBack={resetStatus}
+          />
+        )}
+
         {/* MAIN FORM */}
         {status === "idle" && !isLoading && (
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -236,7 +317,7 @@ export function Scanner() {
                         : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)]/50",
                     )}
                   >
-                    Pickup
+                    Check out
                   </button>
                   <button
                     type="button"
@@ -248,7 +329,7 @@ export function Scanner() {
                         : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-surface)]/50",
                     )}
                   >
-                    Return
+                    Check in
                   </button>
                 </div>
               </div>
@@ -491,7 +572,7 @@ export function Scanner() {
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <>Submit {actionType}</>
+                <>{actionType === "pickup" ? "Check out" : "Check in"}</>
               )}
             </button>
           </form>

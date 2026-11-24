@@ -15,6 +15,7 @@ from .models import (
     BookingItemUnit,
     OrganizationBookingSettings,
     MarketplaceTag,
+    HandoverCheck,
 )
 from .serializers import (
     ProductCategorySerializer,
@@ -26,12 +27,21 @@ from .serializers import (
     ProductAvailabilitySerializer,
     OrganizationBookingSettingsSerializer,
     MarketplaceTagSerializer,
+    HandoverCheckSerializer,
 )
 from django.utils.dateparse import parse_datetime
 import datetime
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum, Q, Count, F
+from django.db import transaction
+from .handover import (
+    ChecklistOutOfDate,
+    build_checklist,
+    check_summary,
+    normalize_submission,
+    record_check,
+)
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from users.models import Client, Vendor
@@ -164,7 +174,9 @@ class ProductViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
             qs = qs.filter(available_for_rental=False)
         elif tag and tag.isdigit():
             qs = qs.filter(marketplace_tags__id=int(tag)).distinct()
-        return qs.prefetch_related("marketplace_tags").order_by("-created_at")
+        return qs.prefetch_related("marketplace_tags", "units__accessories").order_by(
+            "-created_at"
+        )
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -277,6 +289,18 @@ class ProductUnitViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         if self.action == "list" and self.request.query_params.get("all") != "true":
             qs = qs.filter(product__is_active=True)
         return qs
+
+    @action(detail=False, methods=["get"], url_path="locations")
+    def locations(self, request):
+        """Stock locations already in use, for suggestions in the unit form."""
+        names = (
+            ProductUnit.objects.filter(organization_id=request.user.organization_id)
+            .exclude(stock_location="")
+            .values_list("stock_location", flat=True)
+            .distinct()
+            .order_by("stock_location")
+        )
+        return Response(list(names))
 
     @action(detail=False, methods=["get"], url_path="check-serial")
     def check_serial(self, request):
@@ -420,6 +444,17 @@ class BookingViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         "items__product__name",
         "invoices__invoice_number",
     ]
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .prefetch_related(
+                "items__units__handover_checks__lines",
+                "items__units__handover_checks__performed_by",
+                "items__units__handover_checks__resolved_by",
+            )
+        )
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -593,6 +628,9 @@ class TenantStatsAPIView(APIView):
             picked_up=Count("booking_id", filter=Q(status="picked_up")),
             booked=Count("booking_id", filter=Q(status="booked")),
             returned=Count("booking_id", filter=Q(status="returned")),
+            returned_incomplete=Count(
+                "booking_id", filter=Q(status="returned_incomplete")
+            ),
             cancelled=Count("booking_id", filter=Q(status="cancelled")),
         )
 
@@ -687,9 +725,117 @@ class TenantStatsAPIView(APIView):
         )
 
 
+class HandoverCheckViewSet(TenantIsolationMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    Accessory checklists completed at check out / check in.
+
+    Filters: ?booking=<id>  ?product_unit=<id>  ?open=true (unresolved
+    incomplete returns)  ?has_issues=true
+    """
+
+    queryset = HandoverCheck.objects.select_related(
+        "performed_by",
+        "resolved_by",
+        "booking_item_unit__booking_item",
+        "booking_item_unit__product_unit__product",
+    ).prefetch_related("lines")
+    serializer_class = HandoverCheckSerializer
+    permission_classes = [
+        permissions.IsAuthenticated,
+        HasPaidSubscription,
+        HasModulePermission,
+    ]
+    required_module = "bookings"
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        params = self.request.query_params
+        if params.get("booking"):
+            qs = qs.filter(
+                booking_item_unit__booking_item__booking_id=params["booking"]
+            )
+        if params.get("product_unit"):
+            qs = qs.filter(booking_item_unit__product_unit_id=params["product_unit"])
+        if params.get("open") == "true":
+            qs = qs.filter(is_incomplete=True, resolved_at__isnull=True)
+        if params.get("has_issues") == "true":
+            qs = qs.filter(has_issues=True)
+        return qs
+
+    @action(detail=True, methods=["post"])
+    def resolve(self, request, pk=None):
+        """Close a flagged check-in (part found, replaced or written off)."""
+        check = self.get_object()
+        note = (request.data.get("note") or "").strip()
+        if not note:
+            return Response(
+                {"error": "Add a note saying how this was resolved."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if check.resolved_at:
+            return Response(
+                {"error": "This has already been resolved."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            check.resolved_at = timezone.now()
+            check.resolved_by = request.user
+            check.resolution_note = note
+            check.save(update_fields=["resolved_at", "resolved_by", "resolution_note"])
+
+            # Last open flag on this unit: the return is now complete. Saving
+            # the unit re-evaluates the booking status (signal).
+            bu = check.booking_item_unit
+            if bu.status == "returned_incomplete" and not bu.has_open_critical_issues():
+                bu.status = "returned"
+                bu.save(update_fields=["status"])
+
+        return Response(self.get_serializer(check).data)
+
+
 class ScanItemAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated, HasPaidSubscription]
 
+    def _checklist(self, request, unit, booking_unit, stage, qty):
+        """
+        Returns (lines, None) when the handover may proceed: lines is empty
+        if the unit has no accessories. Returns (None, Response) when the
+        client must first confirm the accessory checklist.
+        """
+        lines = build_checklist(booking_unit, stage, qty)
+        if not lines:
+            return [], None
+
+        booking = booking_unit.booking_item.booking
+        verb = (
+            "checking out" if stage == HandoverCheck.STAGE_CHECK_OUT else "checking in"
+        )
+        prompt = {
+            "requires_checklist": True,
+            "stage": stage,
+            "checklist": lines,
+            "quantity": qty,
+            "product_name": unit.product.name,
+            "unit_name": unit.name,
+            "serial_number": unit.serial_number,
+            "stock_location": unit.stock_location,
+            "booking_id": f"#{booking.booking_id}",
+            "client_name": f"{booking.client.first_name} {booking.client.last_name}",
+            "message": f"Confirm the accessories you are {verb} with {unit.product.name}.",
+        }
+        submitted = request.data.get("checklist")
+        if submitted is None:
+            return None, Response(prompt)
+        try:
+            return normalize_submission(lines, submitted, stage), None
+        except ChecklistOutOfDate:
+            prompt["message"] = (
+                "The accessory list for this item has changed. Please confirm it again."
+            )
+            return None, Response(prompt)
+
+    @transaction.atomic
     def post(self, request):
         if not hasattr(request.user, "organization") or not request.user.organization:
             return Response(
@@ -703,6 +849,11 @@ class ScanItemAPIView(APIView):
         qty_good = request.data.get("qty_good")
         qty_damaged = request.data.get("qty_damaged")
         condition = request.data.get("condition", "good")  # For single units
+        # The validator app knows the exact booking line; the plain scanner
+        # matches the first open booking for the serial.
+        target = {}
+        if request.data.get("booking_item_unit_id"):
+            target["pk"] = request.data["booking_item_unit_id"]
 
         if not serial_number:
             return Response(
@@ -728,6 +879,7 @@ class ScanItemAPIView(APIView):
                     "product_name": unit.product.name,
                     "unit_name": unit.name,
                     "unit_type": unit.unit_type,
+                    "stock_location": unit.stock_location,
                     "status": unit.status,
                     "quantity": unit.quantity,  # total qty (bulk)
                     "available_quantity": unit.quantity_available,  # units available right now
@@ -744,6 +896,7 @@ class ScanItemAPIView(APIView):
                 booking_unit = (
                     BookingItemUnit.objects.filter(
                         product_unit=unit,
+                        **target,
                         quantity_picked_up__lt=models.F("quantity"),
                         booking_item__booking__status__in=[
                             "booked",
@@ -794,6 +947,12 @@ class ScanItemAPIView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
+                lines, prompt = self._checklist(
+                    request, unit, booking_unit, HandoverCheck.STAGE_CHECK_OUT, qty
+                )
+                if prompt:
+                    return prompt
+
                 booking_unit.quantity_picked_up += qty
                 if booking_unit.quantity_picked_up == booking_unit.quantity:
                     booking_unit.status = "picked_up"
@@ -809,10 +968,20 @@ class ScanItemAPIView(APIView):
                 )
                 item.save()
 
+                check = record_check(
+                    booking_unit,
+                    HandoverCheck.STAGE_CHECK_OUT,
+                    qty,
+                    lines,
+                    request.user,
+                    request.data.get("checklist_note", ""),
+                )
+
                 booking = item.booking
                 return Response(
                     {
                         "success": True,
+                        "checklist": check_summary(check),
                         "message": f"Marked {qty} items as Picked Up",
                         "product_name": unit.product.name,
                         "booking_id": f"#{booking.booking_id}",
@@ -825,6 +994,7 @@ class ScanItemAPIView(APIView):
                 booking_unit = (
                     BookingItemUnit.objects.filter(
                         product_unit=unit,
+                        **target,
                         status="pending",
                         booking_item__booking__status__in=[
                             "booked",
@@ -844,6 +1014,12 @@ class ScanItemAPIView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
+                lines, prompt = self._checklist(
+                    request, unit, booking_unit, HandoverCheck.STAGE_CHECK_OUT, 1
+                )
+                if prompt:
+                    return prompt
+
                 unit.status = "rented"
                 unit.save()  # triggers sync_quantities()
 
@@ -856,10 +1032,20 @@ class ScanItemAPIView(APIView):
                 item.total_picked_up = item.units.filter(status="picked_up").count()
                 item.save()
 
+                check = record_check(
+                    booking_unit,
+                    HandoverCheck.STAGE_CHECK_OUT,
+                    1,
+                    lines,
+                    request.user,
+                    request.data.get("checklist_note", ""),
+                )
+
                 booking = item.booking
                 return Response(
                     {
                         "success": True,
+                        "checklist": check_summary(check),
                         "message": "Item marked as Picked Up",
                         "product_name": unit.product.name,
                         "serial_number": unit.serial_number,
@@ -873,6 +1059,7 @@ class ScanItemAPIView(APIView):
                 booking_unit = (
                     BookingItemUnit.objects.filter(
                         product_unit=unit,
+                        **target,
                         # Consider both fully picked up and partially returned
                         quantity_picked_up__gt=models.F("quantity_returned_good")
                         + models.F("quantity_returned_damaged"),
@@ -929,6 +1116,26 @@ class ScanItemAPIView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
+                lines, prompt = self._checklist(
+                    request,
+                    unit,
+                    booking_unit,
+                    HandoverCheck.STAGE_CHECK_IN,
+                    total_returning,
+                )
+                if prompt:
+                    return prompt
+                # Recorded before the counts change: expected quantities
+                # depend on how many pieces were already back.
+                check = record_check(
+                    booking_unit,
+                    HandoverCheck.STAGE_CHECK_IN,
+                    total_returning,
+                    lines,
+                    request.user,
+                    request.data.get("checklist_note", ""),
+                )
+
                 booking_unit.quantity_returned_good += q_good
                 booking_unit.quantity_returned_damaged += q_damaged
 
@@ -945,7 +1152,11 @@ class ScanItemAPIView(APIView):
                     + booking_unit.quantity_returned_damaged
                     == booking_unit.quantity_picked_up
                 ):
-                    booking_unit.status = "returned"
+                    booking_unit.status = (
+                        "returned_incomplete"
+                        if booking_unit.has_open_critical_issues()
+                        else "returned"
+                    )
                     # Bulk unit return: if all are back, set inventory status
                     unit.status = "available"
 
@@ -975,6 +1186,7 @@ class ScanItemAPIView(APIView):
                 return Response(
                     {
                         "success": True,
+                        "checklist": check_summary(check),
                         "message": f"Returned {q_good} good and {q_damaged} damaged items",
                         "product_name": unit.product.name,
                         "booking_id": f"#{booking.booking_id}",
@@ -986,7 +1198,7 @@ class ScanItemAPIView(APIView):
                 # Single unit return
                 booking_unit = (
                     BookingItemUnit.objects.filter(
-                        product_unit=unit, status="picked_up"
+                        product_unit=unit, status="picked_up", **target
                     )
                     .select_related(
                         "booking_item__booking", "booking_item__booking__client"
@@ -1013,6 +1225,20 @@ class ScanItemAPIView(APIView):
                         }
                     )
 
+                lines, prompt = self._checklist(
+                    request, unit, booking_unit, HandoverCheck.STAGE_CHECK_IN, 1
+                )
+                if prompt:
+                    return prompt
+                check = record_check(
+                    booking_unit,
+                    HandoverCheck.STAGE_CHECK_IN,
+                    1,
+                    lines,
+                    request.user,
+                    request.data.get("checklist_note", ""),
+                )
+
                 if condition == "damaged":
                     unit.status = "damaged"
                     booking_unit.quantity_returned_damaged = 1
@@ -1026,19 +1252,30 @@ class ScanItemAPIView(APIView):
 
                 unit.save()
 
-                booking_unit.status = "returned"
+                booking_unit.status = (
+                    "returned_incomplete"
+                    if check and check.is_incomplete
+                    else "returned"
+                )
                 booking_unit.return_date = timezone.now()
                 booking_unit.save()
 
                 item = booking_unit.booking_item
-                item.total_returned = item.units.filter(status="returned").count()
+                item.total_returned = item.units.filter(
+                    status__in=["returned", "returned_incomplete"]
+                ).count()
                 item.save()
 
                 booking = item.booking
                 return Response(
                     {
                         "success": True,
-                        "message": f"Item marked as Returned ({condition})",
+                        "checklist": check_summary(check),
+                        "message": (
+                            f"Item returned ({condition}) — incomplete: {check.flag_reason}"
+                            if check and check.is_incomplete
+                            else f"Item marked as Returned ({condition})"
+                        ),
                         "product_name": unit.product.name,
                         "serial_number": unit.serial_number,
                         "booking_id": f"#{booking.booking_id}",

@@ -300,6 +300,8 @@ export const ProductService = {
       },
     }),
   delete: (id: number) => api.delete(`/inventory/products/${id}/`),
+  getStockLocations: () =>
+    api.request({ method: "get", url: "/inventory/units/locations/" }),
   getAvailability: (
     id: string | number,
     start_date: string,
@@ -341,6 +343,33 @@ export const BookingService = {
   patch: (id: number | string, data: any) =>
     api.patch(`/inventory/bookings/${id}/`, data),
   delete: (id: number | string) => api.delete(`/inventory/bookings/${id}/`),
+};
+
+/** Validator app. Uses api.request to bypass the GET cache: must be live. */
+export const ValidationService = {
+  getBookings: (params: { date?: string; search?: string }) =>
+    api.request({
+      method: "get",
+      url: "/inventory/validation/bookings/",
+      params,
+    }),
+  getBooking: (id: number | string) =>
+    api.request({
+      method: "get",
+      url: `/inventory/validation/bookings/${id}/`,
+    }),
+};
+
+/** Accessory checklists completed at check out / check in. */
+export const HandoverCheckService = {
+  getAll: (params?: {
+    booking?: number | string;
+    product_unit?: number | string;
+    open?: boolean;
+    has_issues?: boolean;
+  }) => api.get("/inventory/handover-checks/", { params }),
+  resolve: (id: number, note: string) =>
+    api.post(`/inventory/handover-checks/${id}/resolve/`, { note }),
 };
 
 export const ClientService = {

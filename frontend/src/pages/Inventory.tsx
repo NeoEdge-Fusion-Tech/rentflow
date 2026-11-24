@@ -23,6 +23,7 @@ import {
   Store,
   Tags,
   ChevronDown,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/src/utils";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
@@ -41,6 +42,8 @@ import { RevenueDisplay } from "../components/RevenueDisplay";
 import { ActionMenu } from "../components/ActionMenu";
 import { CurrencyBadge } from "../components/CurrencyBadge";
 import { AttachmentsModal } from "../components/AttachmentsPanel";
+import { UnitAccessoriesEditor } from "../components/UnitAccessoriesEditor";
+import type { UnitAccessory } from "../types";
 
 const generateNextSerialNumber = (products: any[], draftUnits: any[]) => {
   let maxNum = 0;
@@ -227,8 +230,10 @@ export function Inventory() {
       fetchProducts();
     } catch (e: any) {
       console.error(e);
+      const why = e.response?.data?.available_for_rental;
       showNotification(
-        e.response?.data?.marketplace_tags?.[0] ||
+        (Array.isArray(why) ? why[0] : why) ||
+          e.response?.data?.marketplace_tags?.[0] ||
           "Failed to update marketplace tags.",
         "error",
       );
@@ -373,6 +378,8 @@ export function Inventory() {
             rental_price: u.rental_price.toString(),
             unit: u.unit || "per_day",
             description: u.description || "",
+            stock_location: u.stock_location || "",
+            accessories: u.accessories || [],
             // read-only breakdown fields
             quantity_available: u.quantity_available ?? 0,
             quantity_rented: u.quantity_rented ?? 0,
@@ -396,7 +403,15 @@ export function Inventory() {
           ],
     );
     setShowAddModal(true);
+    loadStockLocations();
   };
+
+  // Locations already in use, suggested in the unit form.
+  const [stockLocations, setStockLocations] = useState<string[]>([]);
+  const loadStockLocations = () =>
+    ProductService.getStockLocations()
+      .then((res) => setStockLocations(res.data))
+      .catch(() => {});
 
   const handleCloseAddModal = () => {
     setShowAddModal(false);
@@ -556,6 +571,7 @@ export function Inventory() {
 
   const openAddProduct = async () => {
     setShowAddModal(true);
+    loadStockLocations();
     if (editingProductId) return;
     const suggestion = await fetchSuggestedSerial([]);
     setUnits((prev: any[]) =>
@@ -629,7 +645,18 @@ export function Inventory() {
           rental_price: parseFloat(u.rental_price || "0"),
           unit: u.unit || "per_day",
           description: u.description || "",
+          stock_location: ((u as any).stock_location || "").trim(),
           quantity_damaged: (u as any).quantity_damaged ?? 0,
+          accessories: ((u as any).accessories || [])
+            .filter((a: UnitAccessory) => a.name.trim())
+            .map((a: UnitAccessory) => ({
+              ...(a.accessory_id ? { accessory_id: a.accessory_id } : {}),
+              kind: a.kind || "accessory",
+              name: a.name.trim(),
+              quantity: Math.max(1, Number(a.quantity) || 1),
+              description: a.description || "",
+              is_critical: !!a.is_critical,
+            })),
         })),
       };
 
@@ -1458,6 +1485,12 @@ export function Inventory() {
                                                 SN: {unit.serial_number}
                                               </div>
                                             )}
+                                          {unit.stock_location && (
+                                            <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] mt-1">
+                                              <MapPin className="w-3 h-3 shrink-0" />
+                                              {unit.stock_location}
+                                            </div>
+                                          )}
                                           {unit.description && (
                                             <div
                                               className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2 max-w-[260px]"
@@ -1716,6 +1749,12 @@ export function Inventory() {
                                         SN: {unit.serial_number}
                                       </p>
                                     )}
+                                  {unit.stock_location && (
+                                    <p className="flex items-center gap-1 text-xs text-[var(--text-muted)] mt-1">
+                                      <MapPin className="w-3 h-3 shrink-0" />
+                                      {unit.stock_location}
+                                    </p>
+                                  )}
                                   {unit.description && (
                                     <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">
                                       {unit.description}
@@ -2375,6 +2414,38 @@ export function Inventory() {
                           </div>
 
                           <div className="mt-4">
+                            <label
+                              htmlFor={`stock-location-${i}`}
+                              className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1"
+                            >
+                              Stock Location
+                            </label>
+                            <div className="relative">
+                              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                              <input
+                                id={`stock-location-${i}`}
+                                type="text"
+                                list="stock-location-options"
+                                placeholder="e.g. Warehouse A · Shelf 3"
+                                value={(unit as any).stock_location || ""}
+                                onChange={(e) =>
+                                  setUnits((prev: any[]) =>
+                                    prev.map((u, idx) =>
+                                      idx === i
+                                        ? {
+                                            ...u,
+                                            stock_location: e.target.value,
+                                          }
+                                        : u,
+                                    ),
+                                  )
+                                }
+                                className="w-full border border-[var(--border-soft)] rounded-xl py-2 pl-9 pr-3 outline-none focus:border-brand-primary text-sm bg-[var(--bg-surface)] text-[var(--text-main)]"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-4">
                             <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
                               Unit Description (Optional)
                             </label>
@@ -2589,6 +2660,30 @@ export function Inventory() {
                             </div>
                           </div>
 
+                          <UnitAccessoriesEditor
+                            accessories={(unit as any).accessories || []}
+                            unitType={unit.unit_type}
+                            onChange={(next) =>
+                              setUnits((prev: any[]) =>
+                                prev.map((u, idx) =>
+                                  idx === i ? { ...u, accessories: next } : u,
+                                ),
+                              )
+                            }
+                            copySources={units
+                              .map((u: any, idx) => ({
+                                idx,
+                                label:
+                                  u.name ||
+                                  u.serial_number ||
+                                  `Unit ${idx + 1}`,
+                                accessories: (u.accessories || []).filter(
+                                  (a: UnitAccessory) => a.name.trim(),
+                                ),
+                              }))
+                              .filter((src) => src.idx !== i)}
+                          />
+
                           {(unit as any).product_unit_id && (
                             <button
                               type="button"
@@ -2635,6 +2730,18 @@ export function Inventory() {
                 >
                   <Plus className="w-4 h-4" /> Add Another Unit / Batch
                 </button>
+                <datalist id="stock-location-options">
+                  {Array.from(
+                    new Set([
+                      ...stockLocations,
+                      ...units
+                        .map((u: any) => (u.stock_location || "").trim())
+                        .filter(Boolean),
+                    ]),
+                  ).map((loc) => (
+                    <option key={loc} value={loc} />
+                  ))}
+                </datalist>
               </div>
             </div>
 

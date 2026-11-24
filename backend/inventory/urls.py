@@ -11,7 +11,10 @@ from .views import (
     ScanItemAPIView,
     OrganizationBookingSettingsAPIView,
     MarketplaceTagViewSet,
+    HandoverCheckViewSet,
 )
+
+from .validation_views import ValidationBookingDetailView, ValidationBookingListView
 
 router = DefaultRouter()
 router.register(r"categories", ProductCategoryViewSet)
@@ -21,10 +24,21 @@ router.register(r"units", ProductUnitViewSet)
 router.register(r"bookings", BookingViewSet)
 router.register(r"booking-items", BookingItemViewSet)
 router.register(r"booking-item-units", BookingItemUnitViewSet)
+router.register(r"handover-checks", HandoverCheckViewSet)
 
 urlpatterns = [
     path("stats/", TenantStatsAPIView.as_view(), name="tenant-stats"),
     path("scan/", ScanItemAPIView.as_view(), name="scan-item"),
+    path(
+        "validation/bookings/",
+        ValidationBookingListView.as_view(),
+        name="validation-bookings",
+    ),
+    path(
+        "validation/bookings/<int:pk>/",
+        ValidationBookingDetailView.as_view(),
+        name="validation-booking-detail",
+    ),
     path(
         "booking-settings/",
         OrganizationBookingSettingsAPIView.as_view(),

@@ -31,7 +31,11 @@ import { UserOrganizationSelector } from "./UserOrganizationSelector";
 import { cn } from "@/src/utils";
 import { useTheme } from "../context/ThemeContext";
 import { useVisibility } from "../context/VisibilityContext";
-import { usePermissions } from "../context/usePermissions";
+import {
+  usePermissions,
+  canUseValidator,
+  isValidatorOnly,
+} from "../context/usePermissions";
 import { usePwa } from "../context/PwaContext";
 import { clearSession } from "../api";
 
@@ -57,7 +61,7 @@ const navItems = [
   { icon: ListChecks, label: "Task Checklist", path: "/task-checklist" },
   { icon: CreditCard, label: "Payments", path: "/payments" },
   { icon: QrCode, label: "Scanner", path: "/scanner" },
-  { icon: ScanLine, label: "Validation App", path: "/validation" },
+  { icon: ScanLine, label: "Validator", path: "/validation" },
   { icon: HelpCircle, label: "Help & Support", path: "/support" },
   { icon: Calendar, label: "Booking Settings", path: "/rental-settings" },
   { icon: Settings, label: "Settings", path: "/settings" },
@@ -213,12 +217,12 @@ export function Sidebar({
             {navItems
               .filter((item) => {
                 if (isSuperuser) return true;
-                if (currentUser?.role === "validator") {
-                  return item.label === "Validation App";
+                if (isValidatorOnly(currentUser)) {
+                  return item.label === "Validator";
                 }
-                if (item.label === "Validation App") {
+                if (item.label === "Validator") {
                   return (
-                    currentUser?.role === "staff" &&
+                    canUseValidator(currentUser) &&
                     currentUser?.has_booking !== false
                   );
                 }

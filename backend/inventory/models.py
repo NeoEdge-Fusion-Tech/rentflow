@@ -241,6 +241,8 @@ class ProductUnit(models.Model):
     # Unique within an organization (see Meta), not across the platform.
     serial_number = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
+    # Where the unit is kept, e.g. "Warehouse A · Shelf 3".
+    stock_location = models.CharField(max_length=255, blank=True, default="")
     status_choices = [
         ("available", "Available"),
         ("rented", "Rented"),
@@ -424,6 +426,9 @@ class Booking(models.Model):
         ("picked_up", "Picked Up"),
         # Final state once everything that went out has come back.
         ("returned", "Returned"),
+        # Everything came back, but a critical accessory was missing or
+        # damaged at check-in. Moves to "returned" once every flag is resolved.
+        ("returned_incomplete", "Return Incomplete"),
         ("cancelled", "Cancelled"),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default="request")
@@ -534,6 +539,8 @@ class BookingItemUnit(models.Model):
             ("pending", "Pending"),
             ("picked_up", "Picked Up"),
             ("returned", "Returned"),
+            # Back in, but with an unresolved critical accessory shortfall.
+            ("returned_incomplete", "Return Incomplete"),
         ],
         default="pending",
     )
@@ -555,6 +562,173 @@ class BookingItemUnit(models.Model):
     @property
     def total_returned(self):
         return self.quantity_returned_good + self.quantity_returned_damaged
+
+    def has_open_critical_issues(self):
+        return self.handover_checks.filter(
+            stage=HandoverCheck.STAGE_CHECK_IN,
+            is_incomplete=True,
+            resolved_at__isnull=True,
+        ).exists()
+
+
+class UnitAccessory(models.Model):
+    """
+    A part that travels with a product unit (e.g. 4 bolts for "360 Booth #2",
+    3 batteries for a camera). It is ticked off on a checklist at every check
+    out and check in. Parts are not stock items: no counts, no serials.
+
+    For bulk units, `quantity` is per piece and is multiplied by the number of
+    pieces handed over.
+
+    Removing an accessory deactivates it instead of deleting it, so a part
+    that is out on a booking can still be checked back in.
+    """
+
+    KIND_ACCESSORY = "accessory"
+    KIND_CONSUMABLE = "consumable"
+    KIND_CHOICES = [
+        (KIND_ACCESSORY, "Accessory"),
+        # Expected to be used up (batteries, tape, cable ties). Must be
+        # ticked at check out; optional at check in (with a reason) and never
+        # a loss.
+        (KIND_CONSUMABLE, "Consumable"),
+    ]
+
+    accessory_id = models.AutoField(primary_key=True)
+    product_unit = models.ForeignKey(
+        ProductUnit, on_delete=models.CASCADE, related_name="accessories"
+    )
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, default=KIND_ACCESSORY)
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="unit_accessories",
+    )
+    name = models.CharField(max_length=255)
+    quantity = models.PositiveIntegerField(default=1)
+    description = models.TextField(blank=True, null=True)
+    # Critical = the unit cannot work without it. Missing or damaged at
+    # check-in marks the return incomplete.
+    is_critical = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "accessory_id"]
+
+    def save(self, *args, **kwargs):
+        if not self.organization_id and self.product_unit_id:
+            self.organization_id = self.product_unit.organization_id
+        # Used-up items can't make a return incomplete.
+        if self.kind == self.KIND_CONSUMABLE:
+            self.is_critical = False
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.quantity} × {self.name}"
+
+
+class HandoverCheck(models.Model):
+    """One accessory checklist, completed when a unit is checked out (picked
+    up) or checked in (returned)."""
+
+    STAGE_CHECK_OUT = "check_out"
+    STAGE_CHECK_IN = "check_in"
+    STAGE_CHOICES = [
+        (STAGE_CHECK_OUT, "Check out"),
+        (STAGE_CHECK_IN, "Check in"),
+    ]
+
+    check_id = models.AutoField(primary_key=True)
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="handover_checks",
+    )
+    booking_item_unit = models.ForeignKey(
+        BookingItemUnit, on_delete=models.CASCADE, related_name="handover_checks"
+    )
+    stage = models.CharField(max_length=20, choices=STAGE_CHOICES)
+    # Pieces handed over in this scan (always 1 for single units).
+    quantity = models.PositiveIntegerField(default=1)
+    note = models.TextField(blank=True, null=True)
+    # Any part missing or damaged.
+    has_issues = models.BooleanField(default=False)
+    # A critical part missing or damaged at check-in.
+    is_incomplete = models.BooleanField(default=False)
+    # Generated summary, e.g. "Missing: 1 × Bolt (critical)".
+    flag_reason = models.TextField(blank=True, null=True)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="handover_checks",
+    )
+    performed_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resolved_handover_checks",
+    )
+    resolution_note = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-performed_at"]
+
+
+class HandoverCheckLine(models.Model):
+    ISSUE_MISSING = "missing"
+    ISSUE_DAMAGED = "damaged"
+    ISSUE_CONSUMED = "consumed"
+    ISSUE_NOT_SENT = "not_sent"
+    ISSUE_CHOICES = [
+        (ISSUE_MISSING, "Missing"),
+        (ISSUE_DAMAGED, "Damaged"),
+        (ISSUE_CONSUMED, "Used up"),
+        (ISSUE_NOT_SENT, "Not sent"),
+    ]
+    # Shortfalls that count as a loss (consumed / not sent are expected).
+    LOSS_ISSUES = (ISSUE_MISSING, ISSUE_DAMAGED)
+
+    line_id = models.AutoField(primary_key=True)
+    handover_check = models.ForeignKey(
+        HandoverCheck, on_delete=models.CASCADE, related_name="lines"
+    )
+    accessory = models.ForeignKey(
+        UnitAccessory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="check_lines",
+    )
+    # Snapshots, so later edits to the accessory don't rewrite history.
+    name = models.CharField(max_length=255)
+    kind = models.CharField(max_length=20, default="accessory")
+    is_critical = models.BooleanField(default=False)
+    expected_quantity = models.PositiveIntegerField(default=0)
+    confirmed_quantity = models.PositiveIntegerField(default=0)
+    # Why confirmed < expected. Blank when everything was there.
+    issue = models.CharField(
+        max_length=20, choices=ISSUE_CHOICES, blank=True, default=""
+    )
+    note = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["line_id"]
+
+    @property
+    def shortfall(self):
+        return max(0, self.expected_quantity - self.confirmed_quantity)
 
 
 @receiver([post_save, post_delete], sender=BookingItem)
@@ -602,15 +776,27 @@ def update_booking_and_item_status(sender, instance, **kwargs):
 
         # Check Booking Status
         booking = item.booking
-        if booking.status in ["booked", "confirmed", "picked_up"]:
+        if booking.status in [
+            "booked",
+            "confirmed",
+            "picked_up",
+            "returned",
+            "returned_incomplete",
+        ]:
             items = booking.items.all()
             total_picked_up = sum(i.total_picked_up for i in items)
             total_returned = sum(i.total_returned for i in items)
 
-            # Everything that went out has come back: the booking is done.
+            # Everything that went out has come back: the booking is done,
+            # unless a critical accessory came back missing or damaged.
             if total_picked_up > 0 and total_picked_up == total_returned:
-                booking.status = "returned"
-                booking.save(update_fields=["status"])
+                incomplete = BookingItemUnit.objects.filter(
+                    booking_item__booking=booking, status="returned_incomplete"
+                ).exists()
+                new_status = "returned_incomplete" if incomplete else "returned"
+                if booking.status != new_status:
+                    booking.status = new_status
+                    booking.save(update_fields=["status"])
 
 
 class OrganizationBookingSettings(models.Model):

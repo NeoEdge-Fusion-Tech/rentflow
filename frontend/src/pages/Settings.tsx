@@ -1713,7 +1713,7 @@ export function Settings() {
                           } hover:bg-brand-primary/5 transition-colors`}
                         >
                           <div className="px-4 py-3 text-sm font-medium text-[var(--text-main)] capitalize">
-                            {mod}
+                            {mod === "validator_app" ? "Validator" : mod}
                           </div>
                           {(["read", "write", "delete"] as const).map(
                             (action) => (

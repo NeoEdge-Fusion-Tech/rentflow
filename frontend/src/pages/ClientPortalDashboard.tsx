@@ -146,7 +146,8 @@ export function ClientPortalDashboard() {
                             ? "bg-green-100 text-green-700"
                             : booking.status === "request"
                               ? "bg-amber-100 text-amber-700"
-                              : booking.status === "returned"
+                              : booking.status === "returned" ||
+                                  booking.status === "returned_incomplete"
                                 ? "bg-gray-200 text-gray-700"
                                 : booking.status === "cancelled"
                                   ? "bg-rose-100 text-rose-700"
