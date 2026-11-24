@@ -424,6 +424,35 @@ class ValidatorAppTests(KitTestCase):
         )
         self.assertEqual(res[0]["client_name"], "AY Rentals")
 
+    def test_list_custom_range_and_phase_filters(self):
+        url = "/api/inventory/validation/bookings/"
+        out = self.book(self.booth()).booking_item.booking
+        self.checkout_all("BOOTH-2")
+        waiting = self.book(self.make_unit("CAM-7")).booking_item.booking
+        later = self.book(self.make_unit("CAM-9")).booking_item.booking
+        later.pickup_date = timezone.now() + timezone.timedelta(days=5)
+        later.return_date = timezone.now() + timezone.timedelta(days=6)
+        later.save()
+        done = self.book(self.make_unit("CAM-3")).booking_item.booking
+        Booking.objects.filter(pk=done.pk).update(status="returned")
+
+        def ids(**params):
+            return {b["booking_id"] for b in self.api.get(url, params).json()}
+
+        today = timezone.localdate()
+        in6 = today + timezone.timedelta(days=6)
+        self.assertEqual(
+            ids(**{"from": today.isoformat(), "to": in6.isoformat()}),
+            {out.pk, waiting.pk, later.pk, done.pk},
+        )
+        # Range that only covers the later booking (reversed bounds are swapped).
+        d5 = (today + timezone.timedelta(days=5)).isoformat()
+        self.assertEqual(ids(**{"from": in6.isoformat(), "to": d5}), {later.pk})
+
+        self.assertEqual(ids(date="all", phase="out"), {out.pk})
+        self.assertEqual(ids(date="all", phase="to_check_out"), {waiting.pk, later.pk})
+        self.assertEqual(ids(date="all", phase="checked_in"), {done.pk})
+
     def test_detail_shows_kit_actions_and_history(self):
         bu = self.book(self.booth())
         booking_id = bu.booking_item.booking_id

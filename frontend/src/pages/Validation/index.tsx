@@ -9,6 +9,7 @@ import {
   Package,
   ScanLine,
   Search,
+  X,
 } from "lucide-react";
 import { ValidationService } from "../../api";
 import { cn } from "@/src/utils";
@@ -58,6 +59,20 @@ export function bookingPhase(b: {
   return { label: "Out · to check in", tone: "indigo" };
 }
 
+/** Filter chips; values match the API's `phase` param. */
+const PHASE_FILTERS = [
+  { value: null, label: "All" },
+  { value: "to_check_out", label: "To check out" },
+  { value: "out", label: "Out · not back" },
+  { value: "checked_in", label: "Checked in" },
+] as const;
+
+const fmtShortDate = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
+
 export const TONE: Record<string, string> = {
   amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
@@ -73,24 +88,40 @@ export function Validation() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const date = params.get("date") || todayISO();
-  const allDates = date === "all";
+  const rangeFrom = params.get("from") || "";
+  const rangeTo = params.get("to") || "";
+  const isRange = Boolean(rangeFrom || rangeTo);
+  const allDates = !isRange && date === "all";
   const search = params.get("q") || "";
+  const phase = params.get("phase");
 
   const [query, setQuery] = useState(search);
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const setParam = (key: string, value: string | null) =>
+  const setParamsMany = (updates: Record<string, string | null>) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        if (value) next.set(key, value);
-        else next.delete(key);
+        for (const [key, value] of Object.entries(updates)) {
+          if (value) next.set(key, value);
+          else next.delete(key);
+        }
         return next;
       },
       { replace: true },
     );
+  const setParam = (key: string, value: string | null) =>
+    setParamsMany({ [key]: value });
+
+  // Picking a single day (or "all") leaves custom-range mode, and vice versa.
+  const setDay = (value: string | null) =>
+    setParamsMany({ date: value, from: null, to: null });
+  const openRange = () => {
+    const start = allDates ? todayISO() : date;
+    setParamsMany({ date: null, from: start, to: start });
+  };
 
   // Debounce typing into the URL.
   useEffect(() => {
@@ -104,7 +135,13 @@ export function Validation() {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
-    ValidationService.getBookings({ date, search: search || undefined })
+    ValidationService.getBookings({
+      ...(isRange
+        ? { from: rangeFrom || undefined, to: rangeTo || undefined }
+        : { date }),
+      search: search || undefined,
+      phase: phase || undefined,
+    })
       .then((res) => !cancelled && setBookings(res.data))
       .catch(
         (err) =>
@@ -115,18 +152,24 @@ export function Validation() {
     return () => {
       cancelled = true;
     };
-  }, [date, search]);
+  }, [date, rangeFrom, rangeTo, isRange, search, phase]);
 
-  const isToday = date === todayISO();
-  const dayLabel = allDates
-    ? "All dates"
-    : isToday
-      ? "Today"
-      : new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-        });
+  const isToday = !isRange && date === todayISO();
+  const rangeLabel =
+    rangeFrom && rangeTo && rangeFrom !== rangeTo
+      ? `${fmtShortDate(rangeFrom)} – ${fmtShortDate(rangeTo)}`
+      : fmtShortDate(rangeFrom || rangeTo || todayISO());
+  const dayLabel = isRange
+    ? rangeLabel
+    : allDates
+      ? "All dates"
+      : isToday
+        ? "Today"
+        : new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          });
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-10">
@@ -156,47 +199,125 @@ export function Validation() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center flex-1 min-w-0 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl">
+        {isRange ? (
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1 min-w-0 items-center gap-2 p-1.5 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl">
+              <Calendar className="w-4 h-4 ml-2 shrink-0 text-[var(--text-muted)]" />
+              <label className="flex-1 min-w-0">
+                <span className="sr-only">From</span>
+                <input
+                  type="date"
+                  value={rangeFrom}
+                  max={rangeTo || undefined}
+                  onChange={(e) => setParam("from", e.target.value || null)}
+                  className="w-full h-9 px-2 bg-transparent text-sm font-bold text-[var(--text-main)] outline-none"
+                  aria-label="From date"
+                />
+              </label>
+              <span className="text-sm text-[var(--text-muted)]">to</span>
+              <label className="flex-1 min-w-0">
+                <span className="sr-only">To</span>
+                <input
+                  type="date"
+                  value={rangeTo}
+                  min={rangeFrom || undefined}
+                  onChange={(e) => setParam("to", e.target.value || null)}
+                  className="w-full h-9 px-2 bg-transparent text-sm font-bold text-[var(--text-main)] outline-none"
+                  aria-label="To date"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setDay(null)}
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                aria-label="Clear custom range"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
             <button
               type="button"
-              disabled={allDates}
-              onClick={() => setParam("date", shiftDay(date, -1))}
-              className="p-3 text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-30"
-              aria-label="Previous day"
+              onClick={() => setDay(null)}
+              className="h-12 px-4 shrink-0 text-sm font-bold rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:border-brand-primary/40"
             >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <label className="relative flex-1 min-w-0 flex items-center justify-center gap-2 text-sm font-bold text-[var(--text-main)] cursor-pointer">
-              <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
-              {dayLabel}
-              <input
-                type="date"
-                value={allDates ? "" : date}
-                onChange={(e) => setParam("date", e.target.value || null)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                aria-label="Pick a date"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={allDates}
-              onClick={() => setParam("date", shiftDay(date, 1))}
-              className="p-3 text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-30"
-              aria-label="Next day"
-            >
-              <ChevronRight className="w-5 h-5" />
+              Today
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              setParam("date", allDates || !isToday ? null : "all")
-            }
-            className="h-12 px-4 shrink-0 text-sm font-bold rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:border-brand-primary/40"
-          >
-            {allDates || !isToday ? "Today" : "All dates"}
-          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center flex-1 min-w-0 bg-[var(--bg-surface)] border border-[var(--border-soft)] rounded-2xl">
+              <button
+                type="button"
+                disabled={allDates}
+                onClick={() => setDay(shiftDay(date, -1))}
+                className="p-3 text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-30"
+                aria-label="Previous day"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <label className="relative flex-1 min-w-0 flex items-center justify-center gap-2 text-sm font-bold text-[var(--text-main)] cursor-pointer">
+                <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
+                {dayLabel}
+                <input
+                  type="date"
+                  value={allDates ? "" : date}
+                  onChange={(e) => setDay(e.target.value || null)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  aria-label="Pick a date"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={allDates}
+                onClick={() => setDay(shiftDay(date, 1))}
+                className="p-3 text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-30"
+                aria-label="Next day"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={openRange}
+              className="h-12 px-4 shrink-0 text-sm font-bold rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:border-brand-primary/40"
+            >
+              Custom
+            </button>
+            <button
+              type="button"
+              onClick={() => setDay(allDates || !isToday ? null : "all")}
+              className="h-12 px-4 shrink-0 text-sm font-bold rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:border-brand-primary/40"
+            >
+              {allDates || !isToday ? "Today" : "All dates"}
+            </button>
+          </div>
+        )}
+
+        <div
+          role="radiogroup"
+          aria-label="Filter by check out / check in status"
+          className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0"
+        >
+          {PHASE_FILTERS.map((f) => {
+            const active = (phase || null) === f.value;
+            return (
+              <button
+                key={f.label}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setParam("phase", f.value)}
+                className={cn(
+                  "h-9 px-3.5 shrink-0 rounded-full text-xs font-bold border transition-colors",
+                  active
+                    ? "bg-brand-primary text-white border-brand-primary"
+                    : "bg-[var(--bg-surface)] text-[var(--text-main)] border-[var(--border-soft)] hover:border-brand-primary/40",
+                )}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -216,7 +337,16 @@ export function Validation() {
           <div className="text-center py-16 bg-[var(--bg-surface)] rounded-3xl border border-dashed border-[var(--border-soft)]">
             <Package className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
             <p className="text-[var(--text-main)] font-medium">
-              No bookings {allDates ? "found" : `for ${dayLabel.toLowerCase()}`}
+              No{" "}
+              {phase
+                ? `"${PHASE_FILTERS.find((f) => f.value === phase)?.label}" `
+                : ""}
+              bookings{" "}
+              {allDates
+                ? "found"
+                : isRange && rangeFrom && rangeTo && rangeFrom !== rangeTo
+                  ? `between ${dayLabel}`
+                  : `for ${isToday ? "today" : dayLabel}`}
               .
             </p>
             <p className="text-[var(--text-muted)] text-sm mt-1">
@@ -227,7 +357,7 @@ export function Validation() {
           <ul className="space-y-3">
             {bookings.map((b) => {
               const phase = bookingPhase(b);
-              const day = allDates || !isToday ? fmtDayTime : fmtTime;
+              const day = isToday ? fmtTime : fmtDayTime;
               return (
                 <li key={b.booking_id}>
                   <button

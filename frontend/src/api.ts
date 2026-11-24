@@ -347,7 +347,13 @@ export const BookingService = {
 
 /** Validator app. Uses api.request to bypass the GET cache: must be live. */
 export const ValidationService = {
-  getBookings: (params: { date?: string; search?: string }) =>
+  getBookings: (params: {
+    date?: string;
+    from?: string;
+    to?: string;
+    search?: string;
+    phase?: string;
+  }) =>
     api.request({
       method: "get",
       url: "/inventory/validation/bookings/",

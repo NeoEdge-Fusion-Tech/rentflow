@@ -58,12 +58,40 @@ def _unit_counts(booking):
     return {"booked": booked, "checked_out": out, "checked_in": back}
 
 
+PHASES = ("to_check_out", "out", "checked_in")
+
+
+def _phase(booking, counts):
+    """Coarse check out → check in stage; mirrors bookingPhase() in the app.
+
+    to_check_out: nothing has gone out yet
+    out:          some/all units went out and the booking isn't returned
+    checked_in:   the booking was checked back in (complete or not)
+    """
+    if booking.status in ("returned", "returned_incomplete"):
+        return "checked_in"
+    if counts["checked_out"] == 0:
+        return "to_check_out"
+    return "out"
+
+
+def _parse_day(value):
+    try:
+        return datetime.date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
 class ValidationBookingListView(APIView):
     """
-    GET ?date=YYYY-MM-DD (default today) | date=all, &search=<text>
+    GET ?date=YYYY-MM-DD (default today) | date=all
+        | from=YYYY-MM-DD&to=YYYY-MM-DD (custom range, inclusive)
+        &search=<text>
+        &phase=to_check_out|out|checked_in
 
-    Bookings picked up or returned on that day (in the organization's
-    timezone), searchable by client, title, contact, product or booking #.
+    Bookings picked up or returned in that day/range (in the organization's
+    timezone), searchable by client, title, contact, product or booking #,
+    optionally narrowed to one check out / check in phase.
     """
 
     permission_classes = [permissions.IsAuthenticated, CanUseValidator]
@@ -76,11 +104,23 @@ class ValidationBookingListView(APIView):
 
         tz = _org_tz(user.organization)
         date_param = request.query_params.get("date") or ""
-        if date_param != "all":
-            try:
-                day = datetime.date.fromisoformat(date_param)
-            except ValueError:
-                day = datetime.datetime.now(tz).date()
+        range_from = _parse_day(request.query_params.get("from"))
+        range_to = _parse_day(request.query_params.get("to"))
+        if range_from or range_to:
+            first = range_from or range_to
+            last = range_to or range_from
+            if last < first:
+                first, last = last, first
+            start = datetime.datetime.combine(first, datetime.time.min, tzinfo=tz)
+            end = datetime.datetime.combine(
+                last + datetime.timedelta(days=1), datetime.time.min, tzinfo=tz
+            )
+            qs = qs.filter(
+                Q(pickup_date__gte=start, pickup_date__lt=end)
+                | Q(return_date__gte=start, return_date__lt=end)
+            )
+        elif date_param != "all":
+            day = _parse_day(date_param) or datetime.datetime.now(tz).date()
             start = datetime.datetime.combine(day, datetime.time.min, tzinfo=tz)
             end = start + datetime.timedelta(days=1)
             qs = qs.filter(
@@ -111,8 +151,22 @@ class ValidationBookingListView(APIView):
             ).values_list("booking_item_unit__booking_item__booking_id", flat=True)
         )
 
+        phase = request.query_params.get("phase")
+        if phase not in PHASES:
+            phase = None
+        # Phase depends on unit counts, so narrow cheaply by status first.
+        if phase == "checked_in":
+            qs = qs.filter(status__in=["returned", "returned_incomplete"])
+        elif phase:
+            qs = qs.exclude(status__in=["returned", "returned_incomplete"])
+
         results = []
-        for b in qs.order_by("pickup_date", "booking_id")[:200]:
+        for b in qs.order_by("pickup_date", "booking_id"):
+            counts = _unit_counts(b)
+            if phase and _phase(b, counts) != phase:
+                continue
+            if len(results) >= 200:
+                break
             results.append(
                 {
                     "booking_id": b.booking_id,
@@ -131,7 +185,7 @@ class ValidationBookingListView(APIView):
                         }
                         for i in b.items.all()
                     ],
-                    "counts": _unit_counts(b),
+                    "counts": counts,
                     "has_open_issues": b.booking_id in open_flags,
                 }
             )
