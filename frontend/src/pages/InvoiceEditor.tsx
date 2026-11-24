@@ -432,6 +432,14 @@ export function InvoiceEditor() {
       showNotification("Every line item needs a name.", "warning");
       return null;
     }
+    const targetStatus = statusOverride || formData.status;
+    if (!["draft", "cancelled"].includes(targetStatus) && grandTotal <= 0) {
+      showNotification(
+        "Add an amount before issuing this invoice. You can save it as a draft for now.",
+        "warning",
+      );
+      return null;
+    }
     try {
       setIsSaving(true);
       const payload = buildPayload(statusOverride);
@@ -458,6 +466,10 @@ export function InvoiceEditor() {
         message = apiError;
       } else if (apiError?.detail) {
         message = apiError.detail;
+      } else if (apiError?.total_amount) {
+        message = Array.isArray(apiError.total_amount)
+          ? apiError.total_amount[0]
+          : apiError.total_amount;
       } else if (apiError?.client) {
         message = Array.isArray(apiError.client)
           ? apiError.client[0]

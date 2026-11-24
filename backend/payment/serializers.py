@@ -11,6 +11,67 @@ from .models import (
     GeneralExpense,
 )
 from .utils import compute_invoice_totals
+
+
+def validate_ready_to_issue(serializer, data, draft_statuses, label, action):
+    """
+    A document may be saved as a draft while incomplete, but it can't leave
+    draft (issued/sent/etc.) until it has a client, named line items and a
+    total greater than zero. Checked on create, on a status change, and
+    whenever line items/pricing are edited on a non-draft document.
+    """
+    instance = serializer.instance
+    status = data.get("status", instance.status if instance else "draft")
+    if status in draft_statuses:
+        return
+
+    pricing_fields = (
+        "line_items",
+        "discount_amount",
+        "discount_percentage",
+        "tax_percentage",
+    )
+    status_changed = instance is None or status != instance.status
+    if not status_changed and not any(f in data for f in pricing_fields):
+        return
+
+    if "line_items" in data:
+        line_items = data.get("line_items") or []
+    elif instance is not None:
+        line_items = list(instance.line_items.all())
+    else:
+        line_items = []
+
+    def _field(name):
+        if name in data:
+            return data.get(name)
+        return getattr(instance, name, 0) if instance is not None else 0
+
+    errors = {}
+    if not line_items:
+        errors["line_items"] = (
+            f"Add at least one line item before you {action} this {label}."
+        )
+    elif any(
+        not (i.get("name") if isinstance(i, dict) else i.name) for i in line_items
+    ):
+        errors["line_items"] = "Every line item needs a name."
+    else:
+        _, _, _, total = compute_invoice_totals(
+            line_items,
+            discount_amount=_field("discount_amount"),
+            discount_percentage=_field("discount_percentage"),
+            tax_percentage=_field("tax_percentage"),
+        )
+        if total <= 0:
+            errors["total_amount"] = (
+                f"The {label} total must be greater than zero before you {action} it. "
+                "Save it as a draft until the amounts are filled in."
+            )
+    if errors:
+        raise serializers.ValidationError(errors)
+
+
 from users.models import Organization, Subscription
 from users.serializers import ClientSerializer, BankAccountSerializer
 
@@ -195,6 +256,7 @@ class InvoiceSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"line_items": "At least one line item is required."}
             )
+        validate_ready_to_issue(self, data, ("draft", "cancelled"), "invoice", "issue")
         return data
 
     def _apply_totals(self, instance, line_items_data):
@@ -371,6 +433,7 @@ class QuotationSerializer(TenantSerializerMixin, serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"line_items": "At least one line item is required."}
             )
+        validate_ready_to_issue(self, data, ("draft", "cancelled"), "quotation", "send")
         return data
 
     def _apply_totals(self, instance, line_items_data):

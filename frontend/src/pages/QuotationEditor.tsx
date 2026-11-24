@@ -341,6 +341,14 @@ export function QuotationEditor() {
       showNotification("Every line item needs a name.", "warning");
       return null;
     }
+    const targetStatus = statusOverride || formData.status;
+    if (!["draft", "cancelled"].includes(targetStatus) && grandTotal <= 0) {
+      showNotification(
+        "Add an amount before sending this quotation. You can save it as a draft for now.",
+        "warning",
+      );
+      return null;
+    }
     try {
       setIsSaving(true);
       const payload = buildPayload(statusOverride);
@@ -362,6 +370,7 @@ export function QuotationEditor() {
       console.error("Failed to save quotation", err);
       const apiError = err.response?.data;
       const message =
+        apiError?.total_amount?.[0] ||
         apiError?.client?.[0] ||
         apiError?.line_items?.[0] ||
         apiError?.detail ||
