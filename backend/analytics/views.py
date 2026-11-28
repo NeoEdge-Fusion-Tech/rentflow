@@ -261,6 +261,17 @@ class AnalyticsOverviewView(APIView):
         # ---- Top clients ----------------------------------------------------
         clients = {}
         for inv in invoices:
+            if inv.client and (
+                (
+                    inv.client.email
+                    and inv.client.email.lower() == "sunnexajayi@gmail.com"
+                )
+                or (
+                    inv.client.contact_email
+                    and inv.client.contact_email.lower() == "sunnexajayi@gmail.com"
+                )
+            ):
+                continue
             key = inv.client_id or 0
             c = clients.setdefault(
                 key,
@@ -451,9 +462,12 @@ class AnalyticsOverviewView(APIView):
 
         new_clients = sum(
             1
-            for c in Client.objects.filter(organization=org).values_list(
-                "created_at", flat=True
+            for c in Client.objects.filter(organization=org)
+            .exclude(
+                Q(email__iexact="sunnexajayi@gmail.com")
+                | Q(contact_email__iexact="sunnexajayi@gmail.com")
             )
+            .values_list("created_at", flat=True)
             if p.has(p.local(c))
         )
         revenue = cur["revenue"]

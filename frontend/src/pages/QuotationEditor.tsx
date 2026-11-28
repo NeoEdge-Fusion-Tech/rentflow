@@ -175,18 +175,40 @@ export function QuotationEditor() {
   const loadQuotation = async (quotationId: string, isDuplicate = false) => {
     const res = await QuotationService.get(quotationId);
     const q = res.data;
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    let calculatedExpiryDate = "";
+    if (q.expiry_date) {
+      if (isDuplicate && q.issue_date) {
+        const origIssue = new Date(q.issue_date).getTime();
+        const origExpiry = new Date(q.expiry_date).getTime();
+        const diffDays = Math.round(
+          (origExpiry - origIssue) / (1000 * 60 * 60 * 24),
+        );
+        if (diffDays > 0) {
+          const newExpiry = new Date();
+          newExpiry.setDate(newExpiry.getDate() + diffDays);
+          calculatedExpiryDate = newExpiry.toISOString().slice(0, 10);
+        }
+      } else if (!isDuplicate) {
+        calculatedExpiryDate = new Date(q.expiry_date)
+          .toISOString()
+          .slice(0, 10);
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       client: q.client || q.client_details?.client_id || "",
       quotation_number: isDuplicate
         ? prev.quotation_number
         : q.quotation_number || "",
-      issue_date: q.issue_date
-        ? new Date(q.issue_date).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10),
-      expiry_date: q.expiry_date
-        ? new Date(q.expiry_date).toISOString().slice(0, 10)
-        : "",
+      issue_date: isDuplicate
+        ? todayStr
+        : q.issue_date
+          ? new Date(q.issue_date).toISOString().slice(0, 10)
+          : todayStr,
+      expiry_date: calculatedExpiryDate,
       status: isDuplicate ? "draft" : q.status || "draft",
       currency: q.currency || "",
       bank_account: q.bank_account || "",

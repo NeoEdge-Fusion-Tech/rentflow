@@ -657,7 +657,14 @@ class TenantStatsAPIView(APIView):
         monthly_revenue = float(booking_revenue) + float(invoice_revenue)
 
         # Total Clients and Vendors
-        total_clients = Client.objects.filter(organization_id=organization.id).count()
+        total_clients = (
+            Client.objects.filter(organization_id=organization.id)
+            .exclude(
+                Q(email__iexact="sunnexajayi@gmail.com")
+                | Q(contact_email__iexact="sunnexajayi@gmail.com")
+            )
+            .count()
+        )
         total_vendors = Vendor.objects.filter(organization_id=organization.id).count()
 
         # Chart Data

@@ -231,7 +231,13 @@ export function Clients() {
     }
   };
 
-  const filteredClients = clients.filter((c) => {
+  const visibleClients = clients.filter(
+    (c) =>
+      (c.email || "").toLowerCase() !== "sunnexajayi@gmail.com" &&
+      (c.contact_email || "").toLowerCase() !== "sunnexajayi@gmail.com",
+  );
+
+  const filteredClients = visibleClients.filter((c) => {
     const searchString = `${c.business_name || ""} ${c.first_name || ""} ${
       c.last_name || ""
     } ${c.contact_name || ""} ${c.email || ""}`.toLowerCase();
@@ -243,11 +249,13 @@ export function Clients() {
     currentPage * itemsPerPage,
   );
 
-  const totalBookings = clients.reduce(
+  const totalBookings = visibleClients.reduce(
     (acc, c) => acc + (c.bookings_count || 0),
     0,
   );
-  const activeClients = clients.filter((c) => c.status === "active").length;
+  const activeClients = visibleClients.filter(
+    (c) => c.status === "active",
+  ).length;
 
   const isClientFormValid =
     formData.client_type === "business"
@@ -316,7 +324,7 @@ export function Clients() {
               Total Clients
             </p>
             <p className="text-2xl font-bold text-[var(--text-main)]">
-              {clients.length}
+              {visibleClients.length}
             </p>
           </div>
           <div className="p-3 bg-brand-primary/10 rounded-xl text-brand-primary">

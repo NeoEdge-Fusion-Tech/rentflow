@@ -200,22 +200,44 @@ export function InvoiceEditor() {
   const loadInvoice = async (invoiceId: string, isDuplicate = false) => {
     const res = await InvoiceService.get(invoiceId);
     const inv = res.data;
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    let calculatedDueDate = "";
+    if (inv.due_date) {
+      if (isDuplicate && inv.issue_date) {
+        const origIssue = new Date(inv.issue_date).getTime();
+        const origDue = new Date(inv.due_date).getTime();
+        const diffDays = Math.round(
+          (origDue - origIssue) / (1000 * 60 * 60 * 24),
+        );
+        if (diffDays > 0) {
+          const newDue = new Date();
+          newDue.setDate(newDue.getDate() + diffDays);
+          calculatedDueDate = newDue.toISOString().slice(0, 10);
+        }
+      } else if (!isDuplicate) {
+        calculatedDueDate = new Date(inv.due_date).toISOString().slice(0, 10);
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       client: inv.client || inv.client_details?.client_id || "",
-      booking: inv.booking || "",
+      booking: isDuplicate ? "" : inv.booking || "",
       invoice_number: isDuplicate
         ? prev.invoice_number
         : inv.invoice_number || "",
-      issue_date: inv.issue_date
-        ? new Date(inv.issue_date).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10),
-      due_date: inv.due_date
-        ? new Date(inv.due_date).toISOString().slice(0, 10)
-        : "",
-      event_date: inv.event_date
-        ? new Date(inv.event_date).toISOString().slice(0, 10)
-        : "",
+      issue_date: isDuplicate
+        ? todayStr
+        : inv.issue_date
+          ? new Date(inv.issue_date).toISOString().slice(0, 10)
+          : todayStr,
+      due_date: calculatedDueDate,
+      event_date: isDuplicate
+        ? ""
+        : inv.event_date
+          ? new Date(inv.event_date).toISOString().slice(0, 10)
+          : "",
       status: isDuplicate ? "draft" : inv.status || "draft",
       currency: inv.currency || "",
       bank_account: inv.bank_account || "",

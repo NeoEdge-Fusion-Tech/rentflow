@@ -570,6 +570,10 @@ class ClientViewSet(TenantIsolationMixin, viewsets.ModelViewSet):
         return (
             super()
             .get_queryset()
+            .exclude(
+                Q(email__iexact="sunnexajayi@gmail.com")
+                | Q(contact_email__iexact="sunnexajayi@gmail.com")
+            )
             .annotate(
                 bookings_count=Count("bookings", distinct=True),
                 standalone_invoices_count=Count(

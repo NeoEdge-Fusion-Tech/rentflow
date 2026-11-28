@@ -64,26 +64,33 @@ export function ClientPicker({
           className="flex-1 h-12 px-4 bg-[var(--bg-app)] border border-[var(--border-soft)] rounded-2xl outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary text-sm font-medium text-[var(--text-main)] transition-all"
         >
           <option value="">Choose a client...</option>
-          {clients.map((c) => {
-            const isInd = c.client_type === "individual";
-            const fullName = `${c.first_name || ""} ${
-              c.last_name || ""
-            }`.trim();
-            const displayName = isInd
-              ? fullName ||
-                c.business_name ||
-                c.email ||
-                `Client #${c.client_id}`
-              : c.business_name ||
-                fullName ||
-                c.email ||
-                `Client #${c.client_id}`;
-            return (
-              <option key={c.client_id} value={String(c.client_id)}>
-                {displayName}
-              </option>
-            );
-          })}
+          {clients
+            .filter(
+              (c) =>
+                (c.email || "").toLowerCase() !== "sunnexajayi@gmail.com" &&
+                (c.contact_email || "").toLowerCase() !==
+                  "sunnexajayi@gmail.com",
+            )
+            .map((c) => {
+              const isInd = c.client_type === "individual";
+              const fullName = `${c.first_name || ""} ${
+                c.last_name || ""
+              }`.trim();
+              const displayName = isInd
+                ? fullName ||
+                  c.business_name ||
+                  c.email ||
+                  `Client #${c.client_id}`
+                : c.business_name ||
+                  fullName ||
+                  c.email ||
+                  `Client #${c.client_id}`;
+              return (
+                <option key={c.client_id} value={String(c.client_id)}>
+                  {displayName}
+                </option>
+              );
+            })}
         </select>
         <button
           type="button"
